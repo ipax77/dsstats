@@ -17,7 +17,7 @@ namespace dsstats.migrations.mysql.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.14")
+                .HasAnnotation("ProductVersion", "9.0.16")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -198,6 +198,281 @@ namespace dsstats.migrations.mysql.Migrations
                     b.ToTable("CombinedReplays");
                 });
 
+            modelBuilder.Entity("dsstats.db.InHouseDeviceLinkCode", b =>
+                {
+                    b.Property<int>("InHouseDeviceLinkCodeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHouseDeviceLinkCodeId"));
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("DisplayCode")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("varchar(12)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("InHouseUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("InHouseDeviceLinkCodeId");
+
+                    b.HasIndex("CodeHash")
+                        .IsUnique();
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("InHouseUserId");
+
+                    b.ToTable("InHouseDeviceLinkCodes");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHouseGameSessionSimplified", b =>
+                {
+                    b.Property<int>("InHouseGameSessionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHouseGameSessionId"));
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<int>("CreatedByInHouseUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)");
+
+                    b.Property<Guid>("PublicId")
+                        .HasColumnType("char(36)");
+
+                    b.PrimitiveCollection<string>("ReplayIds")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("InHouseGameSessionId");
+
+                    b.HasIndex("ClosedAt");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("CreatedByInHouseUserId");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique();
+
+                    b.ToTable("InHouseGameSessions", (string)null);
+                });
+
+            modelBuilder.Entity("dsstats.db.InHouseGameSessionStateSnapshot", b =>
+                {
+                    b.Property<int>("InHouseGameSessionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<string>("Json")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.HasKey("InHouseGameSessionId");
+
+                    b.ToTable("InHouseGameSessionStateSnapshots");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHousePasskeyCredential", b =>
+                {
+                    b.Property<int>("InHousePasskeyCredentialId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHousePasskeyCredentialId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CredentialId")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("varchar(512)");
+
+                    b.Property<string>("DeviceName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("InHouseUserId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsBackedUp")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("LastUsedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<byte[]>("PublicKey")
+                        .IsRequired()
+                        .HasColumnType("longblob");
+
+                    b.Property<uint>("SignatureCounter")
+                        .HasColumnType("int unsigned");
+
+                    b.Property<string>("UserHandle")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.HasKey("InHousePasskeyCredentialId");
+
+                    b.HasIndex("CredentialId")
+                        .IsUnique();
+
+                    b.HasIndex("InHouseUserId");
+
+                    b.HasIndex("UserHandle");
+
+                    b.ToTable("InHousePasskeyCredentials");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHouseProfile", b =>
+                {
+                    b.Property<int>("InHouseProfileId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHouseProfileId"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("InHouseUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.HasKey("InHouseProfileId");
+
+                    b.HasIndex("InHouseUserId");
+
+                    b.ToTable("InHouseProfiles");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHouseSession", b =>
+                {
+                    b.Property<int>("InHouseSessionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHouseSessionId"));
+
+                    b.Property<string>("AccessTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("InHouseUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RefreshExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("RefreshTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("InHouseSessionId");
+
+                    b.HasIndex("AccessTokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("InHouseUserId");
+
+                    b.HasIndex("RefreshTokenHash")
+                        .IsUnique();
+
+                    b.ToTable("InHouseSessions");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHouseUser", b =>
+                {
+                    b.Property<int>("InHouseUserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHouseUserId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("varchar(40)");
+
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("LastLoginAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("PublicId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("InHouseUserId");
+
+                    b.HasIndex("DisplayName");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique();
+
+                    b.ToTable("InHouseUsers");
+                });
+
             modelBuilder.Entity("dsstats.db.MauiConfig", b =>
                 {
                     b.Property<int>("MauiConfigId")
@@ -229,6 +504,21 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Property<string>("ReplayStartName")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<int>("SessionWindowGameMode")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SessionWindowHours")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("SessionWindowInitialized")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("SessionWindowMode")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SessionWindowReplayCount")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("UploadAskTime")
                         .HasPrecision(0)
@@ -485,6 +775,28 @@ namespace dsstats.migrations.mysql.Migrations
                         .HasColumnType("longtext");
 
                     b.ToTable("ReplayIdResult");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayObservers", b =>
+                {
+                    b.Property<int>("ReplayObserversId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayObserversId"));
+
+                    b.PrimitiveCollection<string>("PlayerIds")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReplayObserversId");
+
+                    b.HasIndex("ReplayId")
+                        .IsUnique();
+
+                    b.ToTable("ReplayObservers");
                 });
 
             modelBuilder.Entity("dsstats.db.ReplayPlayer", b =>
@@ -1134,6 +1446,100 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Navigation("ArcadeReplay");
                 });
 
+            modelBuilder.Entity("dsstats.db.InHouseDeviceLinkCode", b =>
+                {
+                    b.HasOne("dsstats.db.InHouseUser", "User")
+                        .WithMany("DeviceLinkCodes")
+                        .HasForeignKey("InHouseUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHouseGameSessionSimplified", b =>
+                {
+                    b.HasOne("dsstats.db.InHouseUser", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedByInHouseUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHouseGameSessionStateSnapshot", b =>
+                {
+                    b.HasOne("dsstats.db.InHouseGameSessionSimplified", "Session")
+                        .WithOne("StateSnapshot")
+                        .HasForeignKey("dsstats.db.InHouseGameSessionStateSnapshot", "InHouseGameSessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHousePasskeyCredential", b =>
+                {
+                    b.HasOne("dsstats.db.InHouseUser", "User")
+                        .WithMany("Passkeys")
+                        .HasForeignKey("InHouseUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHouseProfile", b =>
+                {
+                    b.HasOne("dsstats.db.InHouseUser", "User")
+                        .WithMany("Profiles")
+                        .HasForeignKey("InHouseUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("dsstats.db.ToonId", "ToonId", b1 =>
+                        {
+                            b1.Property<int>("InHouseProfileId")
+                                .HasColumnType("int");
+
+                            b1.Property<int>("Id")
+                                .HasColumnType("int");
+
+                            b1.Property<int>("Realm")
+                                .HasColumnType("int");
+
+                            b1.Property<int>("Region")
+                                .HasColumnType("int");
+
+                            b1.HasKey("InHouseProfileId");
+
+                            b1.HasIndex("Region", "Realm", "Id")
+                                .IsUnique();
+
+                            b1.ToTable("InHouseProfiles");
+
+                            b1.WithOwner()
+                                .HasForeignKey("InHouseProfileId");
+                        });
+
+                    b.Navigation("ToonId")
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHouseSession", b =>
+                {
+                    b.HasOne("dsstats.db.InHouseUser", "User")
+                        .WithMany("Sessions")
+                        .HasForeignKey("InHouseUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("dsstats.db.Player", b =>
                 {
                     b.OwnsOne("dsstats.db.ToonId", "ToonId", b1 =>
@@ -1189,6 +1595,17 @@ namespace dsstats.migrations.mysql.Migrations
                         .IsRequired();
 
                     b.Navigation("Upgrade");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayObservers", b =>
+                {
+                    b.HasOne("dsstats.db.Replay", "Replay")
+                        .WithMany()
+                        .HasForeignKey("ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
                 });
 
             modelBuilder.Entity("dsstats.db.ReplayPlayer", b =>
@@ -1348,6 +1765,22 @@ namespace dsstats.migrations.mysql.Migrations
             modelBuilder.Entity("dsstats.db.ArcadeReplay", b =>
                 {
                     b.Navigation("Players");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHouseGameSessionSimplified", b =>
+                {
+                    b.Navigation("StateSnapshot");
+                });
+
+            modelBuilder.Entity("dsstats.db.InHouseUser", b =>
+                {
+                    b.Navigation("DeviceLinkCodes");
+
+                    b.Navigation("Passkeys");
+
+                    b.Navigation("Profiles");
+
+                    b.Navigation("Sessions");
                 });
 
             modelBuilder.Entity("dsstats.db.MauiConfig", b =>

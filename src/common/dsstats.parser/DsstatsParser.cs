@@ -1,6 +1,8 @@
 using dsstats.shared;
+using dsstats.shared.InHouse;
 using s2protocol.NET;
 using s2protocol.NET.Models;
+using ExternalDirectStrikeObserver = Sc2DirectStrike.Parser.DirectStrikeObserver;
 using ExternalBreakpoint = Sc2DirectStrike.Parser.Breakpoint;
 using ExternalCommander = Sc2DirectStrike.Parser.Commander;
 using ExternalGameMode = Sc2DirectStrike.Parser.GameMode;
@@ -51,6 +53,21 @@ public static class DsstatsParser
         ReplayDto dto = externalReplay.ToDsstatsDto();
         SetMvp(dto);
         return dto;
+    }
+
+    public static InHouseParsedReplayDto ParseInHouseReplay(Sc2Replay replay)
+    {
+        ArgumentNullException.ThrowIfNull(replay);
+
+        var directStrikeReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.Parse(replay);
+        var dto = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.ParseDto(replay).ToDsstatsDto();
+        SetMvp(dto);
+
+        return new()
+        {
+            Replay = dto,
+            Observers = directStrikeReplay.Observers.Select(ToDsstatsDto).ToList(),
+        };
     }
 
     public static ReplayTourneyInfoDto? GetMetaData(Sc2Replay replay)
@@ -180,6 +197,22 @@ public static class DsstatsParser
             TierUpgrades = player.TierUpgrades.Select(ToSeconds).ToList(),
             Refineries = player.Refineries.Select(ToSeconds).ToList(),
             Player = ToDsstatsDto(player.Player)
+        };
+    }
+
+    private static InHouseReplayObserverDto ToDsstatsDto(ExternalDirectStrikeObserver observer)
+    {
+        return new()
+        {
+            Name = observer.Name,
+            Clan = observer.Clan,
+            SlotId = observer.SlotId,
+            ToonId = new ToonIdDto
+            {
+                Region = observer.Region,
+                Realm = observer.Realm,
+                Id = observer.Id,
+            },
         };
     }
 

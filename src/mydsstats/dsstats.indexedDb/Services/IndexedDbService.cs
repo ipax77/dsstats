@@ -1,4 +1,5 @@
 ﻿using dsstats.shared;
+using dsstats.shared.InHouse;
 using dsstats.shared.Upload;
 using Microsoft.JSInterop;
 using System.Reflection;
@@ -158,6 +159,24 @@ public class IndexedDbService
     {
         var module = await _moduleTask;
         await module.InvokeVoidAsync("saveSessionWindowSettings", settings);
+    }
+
+    public async Task<InHouseSessionDto?> GetInHouseSession()
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<InHouseSessionDto?>("getInHouseSession");
+    }
+
+    public async Task SaveInHouseSession(InHouseSessionDto session)
+    {
+        var module = await _moduleTask;
+        await module.InvokeVoidAsync("saveInHouseSession", session);
+    }
+
+    public async Task ClearInHouseSession()
+    {
+        var module = await _moduleTask;
+        await module.InvokeVoidAsync("clearInHouseSession");
     }
 
     public async Task<List<ProfileCandidateDto>> DetectTrackedProfileCandidates(int replayLimit = 10)

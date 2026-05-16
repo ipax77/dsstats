@@ -1,4 +1,5 @@
 using dsstats.apiServices;
+using dsstats.shared.InHouse;
 using dsstats.shared.Interfaces;
 using dsstats.web.Components;
 using pax.BlazorChartJs;
@@ -34,6 +35,7 @@ builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IBuildsService, BuildsService>();
 builder.Services.AddScoped<IDashboardStatsService, DashboardStatsService>();
+builder.Services.AddScoped<IInHouseClosedGameSessionService, InHouseClosedGameSessionService>();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

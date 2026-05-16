@@ -1,15 +1,21 @@
 using dsstats.api;
+using dsstats.api.Authentication;
 using dsstats.api.Hubs;
+using dsstats.api.InHouse;
 using dsstats.api.Services;
 using dsstats.db;
 using dsstats.dbServices;
 using dsstats.dbServices.Builds;
+using dsstats.dbServices.InHouse;
 using dsstats.dbServices.Stats;
 using dsstats.ratings;
+using dsstats.shared.InHouse;
 using dsstats.shared.Interfaces;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using sc2arcade.crawler;
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 
 var MyAllowSpecificOrigins = "dsstatsOrigin";
@@ -52,6 +58,8 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddRateLimiter(options =>
 {
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
     options.AddFixedWindowLimiter(policyName: "fixed", options =>
     {
         options.PermitLimit = 4;
@@ -67,10 +75,29 @@ builder.Services.AddRateLimiter(options =>
         options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         options.QueueLimit = 0;
     });
+
+    options.AddPolicy("inhouse-device-link-attempt", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(GetClientPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 2,
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        }));
+
+    options.AddPolicy("inhouse-device-link-create", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(GetInHouseUserOrClientPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 2,
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        }));
 });
 
 builder.Services.AddDbConfig(builder.Configuration);
 builder.Services.AddUploadChannels();
+builder.Services.Configure<InHouseAuthOptions>(builder.Configuration.GetSection(InHouseAuthOptions.SectionName));
 
 if (builder.Environment.IsProduction())
 {
@@ -81,6 +108,32 @@ builder.Services.AddSignalR();
 builder.Services.AddMemoryCache();
 builder.Services.AddSC2ArcadeCrawler();
 
+var inHouseAuthOptions = builder.Configuration.GetSection(InHouseAuthOptions.SectionName).Get<InHouseAuthOptions>() ?? new();
+builder.Services.AddFido2(fidoOptions =>
+{
+    fidoOptions.ServerName = "mydsstats InHouse";
+    fidoOptions.ServerDomain = builder.Environment.IsProduction()
+        ? inHouseAuthOptions.ProductionRpId
+        : inHouseAuthOptions.LocalRpId;
+    fidoOptions.Origins = builder.Environment.IsProduction()
+        ? new HashSet<string> { inHouseAuthOptions.ProductionOrigin }
+        : inHouseAuthOptions.LocalOrigins.ToHashSet();
+});
+
+builder.Services
+    .AddAuthentication(InHouseBearerAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, InHouseBearerAuthenticationHandler>(
+        InHouseBearerAuthenticationHandler.SchemeName,
+        _ => { });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(InHousePolicies.CloseSession, policy => policy
+        .RequireAuthenticatedUser()
+        .RequireAssertion(context => InHouseAuthorization.CanCloseSession(
+            context.User,
+            context.Resource as IInHouseSessionAuthorizationResource)));
+});
 
 builder.Services.AddSingleton<AuthenticationFilterAttribute>();
 builder.Services.AddSingleton<UploadService>();
@@ -88,11 +141,15 @@ builder.Services.AddSingleton<ArcadeJobService>();
 builder.Services.AddSingleton<IImportService, ImportService>();
 builder.Services.AddSingleton<IRatingService, RatingService>();
 builder.Services.AddSingleton<IPickBanService, PickBanService>();
+builder.Services.AddSingleton<InHouseConnectionTracker>();
+builder.Services.AddSingleton<IInHouseAccountNotifier, InHouseAccountNotifier>();
+builder.Services.AddSingleton<IInHouseGameSessionService, InHouseGameSessionService>();
 
 builder.Services.AddScoped<IDashboardStatsService, DashboardStatsService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<TransitionService>();
+builder.Services.AddScoped<IInHouseAuthService, InHouseAuthService>();
 
 builder.Services.AddStats();
 builder.Services.AddScoped<IBuildsService, BuildsService>();
@@ -125,11 +182,12 @@ if (app.Environment.IsDevelopment())
 app.UseForwardedHeaders();
 // app.UseHttpsRedirection();
 
-app.UseRateLimiter();
 app.UseCors(MyAllowSpecificOrigins);
 
-
+app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseRateLimiter();
 
 app.UseRequestDecompression();
 app.UseResponseCompression();
@@ -137,5 +195,18 @@ app.MapControllers();
 
 app.MapHub<UploadHub>("/hubs/upload");
 app.MapHub<PickBanHub>("/hubs/pickban");
+app.MapHub<InHouseHub>("/hubs/inhouse");
 
 app.Run();
+
+static string GetClientPartitionKey(HttpContext httpContext)
+{
+    var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString();
+    return string.IsNullOrWhiteSpace(ipAddress) ? "unknown-client" : $"ip:{ipAddress}";
+}
+
+static string GetInHouseUserOrClientPartitionKey(HttpContext httpContext)
+{
+    var userId = httpContext.User.FindFirstValue(InHouseClaims.UserId);
+    return string.IsNullOrWhiteSpace(userId) ? GetClientPartitionKey(httpContext) : $"inhouse-user:{userId}";
+}

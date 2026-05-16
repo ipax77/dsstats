@@ -75,8 +75,29 @@
 		<span class="badge bg-success">Ready</span>
 	}
 
-	<span class="ms-auto small text-light opacity-50">v@(DecodeService.Version.ToString())</span>
+	<div class="ms-auto d-flex align-items-center gap-2">
+		<span class="small text-light opacity-50">v@(DecodeService.Version.ToString())</span>
+		<AuthorizeView>
+			<Authorized Context="authState">
+				<span class="small text-light">@authState.User.Identity?.Name</span>
+				<button type="button"
+						class="btn btn-outline-light btn-sm"
+						title="InHouse settings"
+						data-bs-toggle="modal"
+						data-bs-target="#inHouseAccountSettingsModal">
+					<i class="bi bi-gear"></i>
+					<span class="visually-hidden">InHouse settings</span>
+				</button>
+			</Authorized>
+		</AuthorizeView>
+	</div>
 </div>
+
+<AuthorizeView>
+	<Authorized>
+		<InHouseAccountSettingsModal />
+	</Authorized>
+</AuthorizeView>
 
 @code {
 	private DecodeInfoEventArgs? decodeInfo;

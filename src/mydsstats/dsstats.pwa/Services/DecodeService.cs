@@ -2,6 +2,7 @@
 using dsstats.parser;
 using dsstats.pwa.Clients;
 using dsstats.shared;
+using dsstats.shared.InHouse;
 using s2protocol.NET;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -22,7 +23,7 @@ public partial class DecodeService : IDisposable
     public bool Decoding { get; private set; }
     public ReplayDto? LatestReplay { get; private set; }
     public string? LatestReplayHash { get; private set; }
-    public static readonly Version Version = new(1, 5);
+    public static readonly Version Version = new(1, 6);
     private int _currentWorkerCount = -1;
 
     public DecodeService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory,
@@ -108,7 +109,8 @@ public partial class DecodeService : IDisposable
 
         try
         {
-            var sc2Replay = await decoder.DecodeAsync(stream, decoderOptions, decodeCts.Token);
+            using var replayStream = await CreateSeekableReplayStreamAsync(stream, decodeCts.Token);
+            var sc2Replay = await decoder.DecodeAsync(replayStream, decoderOptions, decodeCts.Token);
             if (sc2Replay is null)
             {
                 logger.LogWarning("Failed to decode replay from stream.");
@@ -161,6 +163,41 @@ public partial class DecodeService : IDisposable
         }
 
         return replayDto;
+    }
+
+    public async Task<InHouseParsedReplayDto> DecodeInHouseReplayFromStream(Stream stream, string originalFileName)
+    {
+        await ss.WaitAsync();
+        Decoding = true;
+        decodeCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
+        try
+        {
+            using var replayStream = await CreateSeekableReplayStreamAsync(stream, decodeCts.Token);
+            var sc2Replay = await decoder.DecodeAsync(replayStream, decoderOptions, decodeCts.Token);
+            if (sc2Replay is null)
+            {
+                throw new InvalidOperationException($"Failed to decode replay: {originalFileName}");
+            }
+
+            var parsedReplay = DsstatsParser.ParseInHouseReplay(sc2Replay);
+            parsedReplay.Replay.FileName = originalFileName;
+            LatestReplay = parsedReplay.Replay;
+            LatestReplayHash = parsedReplay.Replay.ComputeHash();
+            return parsedReplay;
+        }
+        finally
+        {
+            Decoding = false;
+            ss.Release();
+        }
+    }
+
+    private static async Task<MemoryStream> CreateSeekableReplayStreamAsync(Stream stream, CancellationToken token)
+    {
+        var replayStream = new MemoryStream();
+        await stream.CopyToAsync(replayStream, token);
+        replayStream.Position = 0;
+        return replayStream;
     }
 
     [SupportedOSPlatform("browser")]

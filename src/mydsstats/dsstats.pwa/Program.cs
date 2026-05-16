@@ -2,7 +2,9 @@ using dsstats.indexedDb.Services;
 using dsstats.pwa;
 using dsstats.pwa.Services;
 using dsstats.shared;
+using dsstats.shared.InHouse;
 using dsstats.shared.Interfaces;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using pax.BlazorChartJs;
@@ -18,7 +20,9 @@ builder.Services.Configure<HostOptions>(options =>
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-var isProduction = builder.HostEnvironment.IsProduction();
+builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+
+var isProduction = false; // builder.HostEnvironment.IsProduction();
 
 builder.Services.AddHttpClient("ApiClient", client =>
 {
@@ -38,6 +42,14 @@ builder.Services.AddHttpClient("api", client =>
     client.DefaultRequestHeaders.Authorization = new("DS8upload77");
 });
 
+builder.Services.AddHttpClient("InHouseApi", client =>
+{
+    client.BaseAddress = isProduction
+        ? new Uri("https://dsstats.pax77.org")
+        : new Uri("http://localhost:5279");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+
 builder.Services.AddChartJs(options =>
 {
     var version = "4.5.1";
@@ -54,6 +66,18 @@ builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<RatingService>();
 builder.Services.AddScoped<SessionProgressService>();
+builder.Services.AddScoped<InHouseAuthClient>();
+builder.Services.AddScoped<InHouseGameSessionsClient>();
+builder.Services.AddAuthorizationCore(options =>
+{
+    options.AddPolicy(InHousePolicies.CloseSession, policy => policy
+        .RequireAuthenticatedUser()
+        .RequireAssertion(context => InHouseAuthorization.CanCloseSession(
+            context.User,
+            context.Resource as IInHouseSessionAuthorizationResource)));
+});
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<AuthenticationStateProvider, InHouseAuthenticationStateProvider>();
 builder.Services.AddScoped<IPlayerService, dsstats.apiServices.PlayerService>();
 builder.Services.AddScoped<IStatsService, dsstats.apiServices.StatsService>();
 
