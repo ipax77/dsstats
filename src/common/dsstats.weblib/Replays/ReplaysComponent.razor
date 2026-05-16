@@ -41,13 +41,13 @@
 						<th scope="col">
 							<SortArrow Column="Team2">Team2</SortArrow>
 						</th>
-						<th scope="col">
+						<th scope="col" class="pointer" @onclick="@(e => SortList(e, "Exp2Win"))">
 							<SortArrow Column="Exp2Win">Exp2Win</SortArrow>
 						</th>
-						<th scope="col">
+						<th scope="col" class="pointer" @onclick="@(e => SortList(e, "AvgRating"))">
 							<SortArrow Column="AvgRating">AvgRating</SortArrow>
 						</th>
-						<th scope="col">
+						<th scope="col" class="pointer" @onclick="@(e => SortList(e, "LeaverType"))">
 							<SortArrow Column="LeaverType">LeaverType</SortArrow>
 						</th>
 					</tr>
