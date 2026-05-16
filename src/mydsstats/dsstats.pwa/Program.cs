@@ -22,7 +22,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 
 builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
 
-var isProduction = false; // builder.HostEnvironment.IsProduction();
+var isProduction = builder.HostEnvironment.IsProduction();
 
 builder.Services.AddHttpClient("ApiClient", client =>
 {
