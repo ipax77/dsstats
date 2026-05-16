@@ -7,6 +7,7 @@ public interface IInHouseGameSessionService
 {
     Task<List<InHouseGameSessionListDto>> GetActiveSessionsAsync(CancellationToken token);
     Task<InHouseClosedGameSessionsPageDto> GetClosedSessionsAsync(InHouseClosedGameSessionsRequest request, CancellationToken token);
+    Task<InHouseClosedGameSessionDetailDto?> GetClosedSessionAsync(Guid sessionId, CancellationToken token);
     Task<InHouseGameSessionDetailDto> CreateSessionAsync(int userId, InHouseCreateGameSessionRequest request, CancellationToken token);
     Task<InHouseGameSessionDetailDto?> GetSessionAsync(Guid sessionId, int userId, CancellationToken token);
     Task<InHouseGameSessionMutationResult> UploadReplayAsync(Guid sessionId, int userId, InHouseReplayUploadRequest request, CancellationToken token);

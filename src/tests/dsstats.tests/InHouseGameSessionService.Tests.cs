@@ -523,6 +523,68 @@ public sealed class InHouseGameSessionServiceTests
     }
 
     [TestMethod]
+    public async Task GetClosedSessionsAsync_NormalizesPagingAndExcludesActiveSessions()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var closed = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new InHouseCreateGameSessionRequest { Name = "Closed" }, CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(closed.SessionId, CreatePrincipal(user), CancellationToken.None);
+        await fixture.Service.CreateSessionAsync(user.InHouseUserId, new InHouseCreateGameSessionRequest { Name = "Active" }, CancellationToken.None);
+
+        var page = await fixture.Service.GetClosedSessionsAsync(
+            new InHouseClosedGameSessionsRequest { Page = -3, PageSize = 500 },
+            CancellationToken.None);
+
+        Assert.AreEqual(1, page.Page);
+        Assert.AreEqual(50, page.PageSize);
+        Assert.AreEqual(1, page.Total);
+        Assert.HasCount(1, page.Items);
+        Assert.AreEqual(closed.SessionId, page.Items[0].SessionId);
+    }
+
+    [TestMethod]
+    public async Task GetClosedSessionAsync_ReturnsPublicClosedSessionDetail()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var session = await fixture.Service.CreateSessionAsync(
+            user.InHouseUserId,
+            new InHouseCreateGameSessionRequest { Name = "Closed detail" },
+            CancellationToken.None);
+        await fixture.Service.UploadReplayAsync(
+            session.SessionId,
+            user.InHouseUserId,
+            new InHouseReplayUploadRequest { Replay = CreateReplay() },
+            CancellationToken.None);
+        await fixture.Service.CloseSessionAsync(session.SessionId, CreatePrincipal(user), CancellationToken.None);
+
+        var detail = await fixture.CreateService().GetClosedSessionAsync(session.SessionId, CancellationToken.None);
+
+        Assert.IsNotNull(detail);
+        Assert.AreEqual(session.SessionId, detail.SessionId);
+        Assert.AreEqual("Closed detail", detail.Name);
+        Assert.AreEqual(user.PublicId, detail.CreatedByUserId);
+        Assert.AreEqual(user.DisplayName, detail.CreatedByDisplayName);
+        Assert.HasCount(6, detail.Players);
+        Assert.HasCount(1, detail.Replays);
+        Assert.IsTrue(detail.ClosedAt > DateTime.MinValue);
+    }
+
+    [TestMethod]
+    public async Task GetClosedSessionAsync_ReturnsNullForActiveOrUnknownSession()
+    {
+        await using var fixture = await InHouseGameSessionFixture.CreateAsync();
+        var user = await fixture.AddUserAsync(1);
+        var active = await fixture.Service.CreateSessionAsync(user.InHouseUserId, new(), CancellationToken.None);
+
+        var activeDetail = await fixture.Service.GetClosedSessionAsync(active.SessionId, CancellationToken.None);
+        var unknownDetail = await fixture.Service.GetClosedSessionAsync(Guid.NewGuid(), CancellationToken.None);
+
+        Assert.IsNull(activeDetail);
+        Assert.IsNull(unknownDetail);
+    }
+
+    [TestMethod]
     public async Task GetSessionAsync_RestoresClosedSessionDetailWithoutActiveListCaching()
     {
         await using var fixture = await InHouseGameSessionFixture.CreateAsync();

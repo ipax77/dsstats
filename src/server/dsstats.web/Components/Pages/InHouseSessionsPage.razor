@@ -1,0 +1,332 @@
+@page "/te/inhouse-sessions"
+@rendermode InteractiveServer
+@using dsstats.shared
+@using dsstats.shared.InHouse
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Players
+@using dsstats.weblib.Replays
+@inject IInHouseClosedGameSessionService InHouseSessions
+@inject IReplayRepository ReplayRepository
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<PageTitle>dsstats - InHouse sessions</PageTitle>
+
+<div class="container-fluid">
+    @if (selectedSessionId is null)
+    {
+        <div style="max-width: 760px;">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <div class="d-inline-block p-2 rounded bgchart">
+                    <h3 class="text-warning mb-0">InHouse Sessions</h3>
+                </div>
+                <div class="ms-xl-auto d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 small text-muted" for="inhouse-page-size">Rows</label>
+                    <select id="inhouse-page-size" class="form-select form-select-sm" style="width: 5.5rem;" value="@request.PageSize" @onchange="OnPageSizeChanged">
+                        @foreach (var size in PageSizeOptions)
+                        {
+                            <option value="@size">@size</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            @if (isLoadingList)
+            {
+                <div class="alert alert-secondary">Loading sessions...</div>
+            }
+            else if (page.Items.Count == 0)
+            {
+                <div class="alert alert-secondary">No closed InHouse sessions found.</div>
+            }
+            else
+            {
+                <div class="table-responsive" style="max-height: 76vh; overflow-x: auto; overflow-y: auto;">
+                    <table class="tptable">
+                        <thead>
+                            <tr>
+                                <th scope="col">Closed</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Creator</th>
+                                <th scope="col" class="text-end">Games</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in page.Items)
+                            {
+                                <tr @key="item.SessionId"
+                                    class="pointer"
+                                    style="@(item.SessionId == selectedSessionId ? "background-color: #343a40;" : "")"
+                                    @onclick="() => SelectSession(item.SessionId)">
+                                    <td>@item.ClosedAt.ToString("yyyy-MM-dd")</td>
+                                    <td>@item.Name</td>
+                                    <td>@item.CreatedByDisplayName</td>
+                                    <td class="text-end">@item.Games</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                    <nav aria-label="InHouse sessions pages">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item @(request.Page <= 1 ? "disabled" : "")">
+                                <button class="page-link" type="button" @onclick="() => GoToPage(1)" disabled="@(request.Page <= 1)">First</button>
+                            </li>
+                            <li class="page-item @(request.Page <= 1 ? "disabled" : "")">
+                                <button class="page-link" type="button" @onclick="() => GoToPage(request.Page - 1)" disabled="@(request.Page <= 1)">Previous</button>
+                            </li>
+                            @foreach (var pageNumber in GetVisiblePages())
+                            {
+                                <li class="page-item @(pageNumber == request.Page ? "active" : "")">
+                                    <button class="page-link" type="button" @onclick="() => GoToPage(pageNumber)">@pageNumber</button>
+                                </li>
+                            }
+                            <li class="page-item @(request.Page >= TotalPages ? "disabled" : "")">
+                                <button class="page-link" type="button" @onclick="() => GoToPage(request.Page + 1)" disabled="@(request.Page >= TotalPages)">Next</button>
+                            </li>
+                            <li class="page-item @(request.Page >= TotalPages ? "disabled" : "")">
+                                <button class="page-link" type="button" @onclick="() => GoToPage(TotalPages)" disabled="@(request.Page >= TotalPages)">Last</button>
+                            </li>
+                        </ul>
+                    </nav>
+                    <span class="small text-muted">Page @request.Page of @TotalPages, @(page.Total.ToString("N0")) total</span>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div>
+            @if (isLoadingDetail)
+            {
+                <div class="alert alert-secondary">Loading session detail...</div>
+            }
+            else if (selectedSession is null)
+            {
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <button class="btn btn-outline-light btn-sm" @onclick="ClearSelection">
+                        <i class="bi bi-chevron-left me-1"></i>Sessions
+                    </button>
+                </div>
+                <div class="alert alert-warning">The selected closed session was not found.</div>
+            }
+            else
+            {
+                <div class="d-flex flex-wrap align-items-start gap-2 mb-3">
+                    <button class="btn btn-outline-light btn-sm mt-1" @onclick="ClearSelection">
+                        <i class="bi bi-chevron-left me-1"></i>Sessions
+                    </button>
+                    <div class="d-inline-block p-2 rounded bgchart">
+                        <h4 class="text-warning mb-1">@selectedSession.Name</h4>
+                        <div class="small text-muted">
+                            Closed @selectedSession.ClosedAt.ToString("yyyy-MM-dd HH:mm") by @selectedSession.CreatedByDisplayName
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12">
+                        <h5 class="text-warning">Players</h5>
+                        <div class="table-responsive" style="max-height: 32vh; max-width: 760px; overflow-x: auto; overflow-y: auto;">
+                            <table class="tptable w-auto">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Name</th>
+                                        <th scope="col" class="text-end">Games</th>
+                                        <th scope="col" class="text-end">WR</th>
+                                        <th scope="col" class="text-end">Delta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var player in selectedSession.Players)
+                                    {
+                                        <tr @key="GetPlayerKey(player)">
+                                            <td>@player.Name</td>
+                                            <td class="text-end">@player.Games</td>
+                                            <td class="text-end">@player.Winrate.ToString("P0")</td>
+                                            <td class="text-end @GetRatingDeltaClass(player.RatingDelta)">@FormatRatingDelta(player.RatingDelta)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <h5 class="text-warning">Games</h5>
+                        <div class="table-responsive" style="max-height: 56vh; max-width: 1120px; overflow-x: auto; overflow-y: auto;">
+                            <table class="tptable w-auto">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Time</th>
+                                        <th scope="col">Mode</th>
+                                        <th scope="col">Duration</th>
+                                        <th scope="col">Winner</th>
+                                        <th scope="col">Team 1</th>
+                                        <th scope="col">Team 2</th>
+                                        <th scope="col" class="text-end">Exp</th>
+                                        <th scope="col" class="text-end">Avg</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var replay in selectedSession.Replays)
+                                    {
+                                        <tr @key="replay.ReplayHash" class="pointer" @onclick="() => ShowReplay(replay.ReplayHash)">
+                                            <td>@replay.Gametime.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td>@replay.GameMode</td>
+                                            <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                                            <td>@replay.WinnerTeam</td>
+                                            <td><ReplayTeamComponent Replay="replay.ToReplayListDto()" TeamNumber="1" /></td>
+                                            <td><ReplayTeamComponent Replay="replay.ToReplayListDto()" TeamNumber="2" /></td>
+                                            <td class="text-end">@(replay.ExpectedWinProbability?.ToString("P0") ?? "-")</td>
+                                            <td class="text-end">@(replay.AvgRating?.ToString("N0") ?? "-")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" />
+<PlayerModal @ref="playerModal" />
+
+@code {
+    private static readonly int[] PageSizeOptions = [10, 25, 50];
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? Page { get; set; }
+
+    [SupplyParameterFromQuery(Name = "pageSize")]
+    public int? PageSize { get; set; }
+
+    [SupplyParameterFromQuery(Name = "session")]
+    public Guid? Session { get; set; }
+
+    private readonly CancellationTokenSource cts = new();
+    private InHouseClosedGameSessionsRequest request = new();
+    private InHouseClosedGameSessionsPageDto page = new();
+    private InHouseClosedGameSessionDetailDto? selectedSession;
+    private ReplayModal? replayModal;
+    private PlayerModal? playerModal;
+    private Guid? selectedSessionId;
+    private bool isLoadingList = true;
+    private bool isLoadingDetail;
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(page.Total / (double)Math.Max(1, request.PageSize)));
+
+    protected override async Task OnParametersSetAsync()
+    {
+        request = new()
+        {
+            Page = Math.Max(1, Page ?? 1),
+            PageSize = Math.Clamp(PageSize ?? 10, 1, 50),
+        };
+        selectedSessionId = Session;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (selectedSessionId is null)
+        {
+            selectedSession = null;
+            isLoadingList = true;
+            page = await InHouseSessions.GetClosedSessionsAsync(request, cts.Token);
+            request.Page = page.Page;
+            request.PageSize = page.PageSize;
+            isLoadingList = false;
+            return;
+        }
+
+        isLoadingList = false;
+        if (selectedSession?.SessionId == selectedSessionId)
+        {
+            return;
+        }
+
+        isLoadingDetail = true;
+        selectedSession = await InHouseSessions.GetClosedSessionAsync(selectedSessionId.Value, cts.Token);
+        isLoadingDetail = false;
+    }
+
+    private void SelectSession(Guid sessionId)
+    {
+        selectedSessionId = sessionId;
+        Navigate(request.Page, request.PageSize, sessionId);
+    }
+
+    private void GoToPage(int pageNumber)
+    {
+        Navigate(Math.Clamp(pageNumber, 1, TotalPages), request.PageSize, selectedSessionId);
+    }
+
+    private void OnPageSizeChanged(ChangeEventArgs args)
+    {
+        var pageSize = int.TryParse(args.Value?.ToString(), out var parsed) ? parsed : request.PageSize;
+        Navigate(1, Math.Clamp(pageSize, 1, 50), selectedSessionId);
+    }
+
+    private void ClearSelection()
+    {
+        selectedSessionId = null;
+        Navigate(request.Page, request.PageSize, null);
+    }
+
+    private void Navigate(int pageNumber, int pageSize, Guid? sessionId)
+    {
+        NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["page"] = pageNumber,
+            ["pageSize"] = pageSize,
+            ["session"] = sessionId,
+        }));
+    }
+
+    private IEnumerable<int> GetVisiblePages()
+    {
+        var start = Math.Max(1, request.Page - 2);
+        var end = Math.Min(TotalPages, start + 4);
+        start = Math.Max(1, end - 4);
+
+        for (var pageNumber = start; pageNumber <= end; pageNumber++)
+        {
+            yield return pageNumber;
+        }
+    }
+
+    private async Task ShowReplay(string replayHash)
+    {
+        if (string.IsNullOrWhiteSpace(replayHash))
+        {
+            return;
+        }
+
+        var replayDetails = await ReplayRepository.GetReplayDetails(replayHash);
+        if (replayDetails is not null)
+        {
+            replayModal?.Show(replayDetails);
+        }
+    }
+
+    private static string FormatRatingDelta(double? value)
+        => value is null ? string.Empty : value.Value.ToString("+0.0;-0.0;0.0");
+
+    private static string GetRatingDeltaClass(double? value)
+        => value is null || value == 0 ? string.Empty : value > 0 ? "text-success" : "text-danger";
+
+    private static string GetPlayerKey(InHouseGameSessionPlayerSummaryDto player)
+        => $"{player.ToonId.Region}-{player.ToonId.Realm}-{player.ToonId.Id}";
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

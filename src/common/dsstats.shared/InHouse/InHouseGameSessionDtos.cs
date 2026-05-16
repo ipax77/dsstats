@@ -43,6 +43,29 @@ public sealed class InHouseClosedGameSessionsPageDto
     public int Total { get; set; }
 }
 
+public sealed class InHouseClosedGameSessionDetailDto
+{
+    public Guid SessionId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public Guid CreatedByUserId { get; set; }
+    public string CreatedByDisplayName { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime ClosedAt { get; set; }
+    public List<InHouseGameSessionPlayerSummaryDto> Players { get; set; } = [];
+    public List<InHouseGameSessionReplayDto> Replays { get; set; } = [];
+}
+
+public interface IInHouseClosedGameSessionService
+{
+    Task<InHouseClosedGameSessionsPageDto> GetClosedSessionsAsync(
+        InHouseClosedGameSessionsRequest request,
+        CancellationToken token = default);
+
+    Task<InHouseClosedGameSessionDetailDto?> GetClosedSessionAsync(
+        Guid sessionId,
+        CancellationToken token = default);
+}
+
 public sealed class InHouseGameSessionDetailDto : IInHouseSessionAuthorizationResource
 {
     public Guid SessionId { get; set; }

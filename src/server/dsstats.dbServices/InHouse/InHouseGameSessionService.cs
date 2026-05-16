@@ -60,6 +60,27 @@ public sealed class InHouseGameSessionService(
         };
     }
 
+    public async Task<InHouseClosedGameSessionDetailDto?> GetClosedSessionAsync(
+        Guid sessionId,
+        CancellationToken token)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        var session = await context.InHouseGameSessions
+            .AsNoTracking()
+            .Include(session => session.CreatedBy)
+            .Include(session => session.StateSnapshot)
+            .Where(session => session.ClosedAt != null)
+            .FirstOrDefaultAsync(session => session.PublicId == sessionId, token);
+        if (session is null)
+        {
+            return null;
+        }
+
+        var state = RestoreState(session);
+        return state.ToClosedDetailDto();
+    }
+
     public async Task<InHouseGameSessionDetailDto> CreateSessionAsync(
         int userId,
         InHouseCreateGameSessionRequest request,
@@ -1032,6 +1053,27 @@ public sealed class InHouseGameSessionService(
                     .ThenBy(player => player.Name)
                     .Select(ToDto)
                     .ToList(),
+                Players = Players
+                    .OrderByDescending(player => player.Games)
+                    .ThenByDescending(player => player.RatingDelta ?? 0)
+                    .ThenBy(player => player.Name)
+                    .Select(player => player.ToDto())
+                    .ToList(),
+                Replays = Replays
+                    .OrderByDescending(replay => replay.Gametime)
+                    .Select(replay => replay.ToDto())
+                    .ToList(),
+            };
+
+        public InHouseClosedGameSessionDetailDto ToClosedDetailDto()
+            => new()
+            {
+                SessionId = SessionId,
+                Name = Name,
+                CreatedByUserId = CreatedByUserId,
+                CreatedByDisplayName = CreatedByDisplayName,
+                CreatedAt = CreatedAt,
+                ClosedAt = ClosedAt ?? CreatedAt,
                 Players = Players
                     .OrderByDescending(player => player.Games)
                     .ThenByDescending(player => player.RatingDelta ?? 0)
