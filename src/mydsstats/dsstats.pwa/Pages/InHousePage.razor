@@ -16,6 +16,7 @@
 @inject SessionProgressService SessionProgressService
 @inject IPlayerService PlayerService
 @inject IJSRuntime JS
+@inject InHouseHubOptions HubOptions
 
 <PageTitle>mydsstats - InHouse</PageTitle>
 
@@ -818,7 +819,7 @@
         }
 
         hubConnection = new HubConnectionBuilder()
-            .WithUrl(new Uri(Auth.ApiBaseAddress, "hubs/inhouse"), options =>
+            .WithUrl(new Uri(HubOptions.BaseAddress, "hubs/inhouse"), options =>
             {
                 options.AccessTokenProvider = Auth.GetAccessTokenAsync;
             })

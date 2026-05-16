@@ -23,6 +23,11 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
 
 var isProduction = builder.HostEnvironment.IsProduction();
+var inHouseHubBaseAddress = isProduction
+    ? new Uri(builder.HostEnvironment.BaseAddress)
+    : new Uri("http://localhost:5279");
+
+builder.Services.AddSingleton(new InHouseHubOptions(inHouseHubBaseAddress));
 
 builder.Services.AddHttpClient("ApiClient", client =>
 {
