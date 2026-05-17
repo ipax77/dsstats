@@ -1,7 +1,6 @@
-
 namespace dsstats.shared.DetailBuild;
 
-public static class DetailBuilds
+public static partial class DetailBuilds
 {
     public static ReplayBuildDetails? DetectStandardBuild(ReplayDto replayDto)
     {
@@ -107,21 +106,6 @@ public static class DetailBuilds
             (int)build,
             build.ToString()
         );
-    }
-
-    private static int DetectProtossBuild(SpawnDto? spawnDto)
-    {
-        return (int)ProtossBuild.None;
-    }
-
-    private static int DetectTerranBuild(SpawnDto? spawnDto)
-    {
-        return (int)TerranBuild.None;
-    }
-
-    private static int DetectZergBuild(SpawnDto? spawnDto)
-    {
-        return (int)ZergBuild.None;
     }
 
     private sealed record PlayerMatchup(ReplayPlayerDto P1, ReplayPlayerDto P2);
