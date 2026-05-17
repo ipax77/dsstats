@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql.Json.Microsoft" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\common\dsstats.parser\dsstats.parser.csproj" />
     <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />
     <ProjectReference Include="..\..\server\dsstats.dbServices\dsstats.dbServices.csproj" />
