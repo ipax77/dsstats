@@ -51,6 +51,10 @@
         background-color: #12243aE6;
     }
 
+    .tptable.timing-modal-highlight-table tbody tr.timing-modal-highlight > td:first-child {
+        box-shadow: inset 3px 0 0 rgba(13, 202, 240, 0.7);
+    }
+
 .preload-terran {
     background-image: url("/_content/dsstats.weblib/images/terran-min.png");
     background-repeat: no-repeat;
