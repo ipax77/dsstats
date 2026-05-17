@@ -43,6 +43,22 @@ public class BuildUnit
     public double Life { get; set; }
 }
 
+public class BuildUpgradeTimingDto
+{
+    public string Upgrade { get; set; } = string.Empty;
+    public double AverageTimeSeconds { get; set; }
+    public int Count { get; set; }
+    public double UsagePercent { get; set; }
+}
+
+public class BuildGasTimingDto
+{
+    public int Gas { get; set; }
+    public double AverageTimeSeconds { get; set; }
+    public int Count { get; set; }
+    public double UsagePercent { get; set; }
+}
+
 public static class BuildRequestExtensions
 {
     public static string GetMemKey(this BuildsRequest request)

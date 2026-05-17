@@ -1,0 +1,263 @@
+@using System.Globalization
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+
+<div class="modal" id="@ModalId" aria-hidden="true" aria-labelledby="@ModalId" tabindex="-1">
+	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+		<div class="modal-content">
+			<div class="modal-header bgchart2">
+				<h5 class="modal-title">
+					@Title
+					<span class="badge text-bg-secondary ms-2" title="@BadgeTitle">&sum; &gt; 9</span>
+				</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body bgchart">
+				@if (isLoading)
+				{
+					<div class="d-flex align-items-center gap-2">
+						<div class="spinner-border" role="status">
+							<span class="visually-hidden">Loading...</span>
+						</div>
+						<span>@LoadingText</span>
+					</div>
+				}
+				else if (timings.Count == 0)
+				{
+					<div class="alert alert-info mb-0" role="alert">
+						<i class="bi bi-info-circle me-2"></i>
+						@EmptyText
+					</div>
+				}
+				else
+				{
+					<div class="table-responsive">
+						<table class="@GetTableClass()">
+							<thead>
+								<tr>
+									<th>
+										<button class="btn btn-link p-0 text-decoration-none text-reset" type="button" @onclick='() => SortTimings(nameof(TimingModalRow.Name))'>
+											@NameColumn
+											<span class="bi @GetSortIcon(nameof(TimingModalRow.Name)) ms-1" aria-hidden="true"></span>
+										</button>
+									</th>
+									<th class="text-end">
+										<button class="btn btn-link p-0 text-decoration-none text-reset" type="button" @onclick='() => SortTimings(nameof(TimingModalRow.AverageTimeSeconds))'>
+											Avg Time
+											<span class="bi @GetSortIcon(nameof(TimingModalRow.AverageTimeSeconds)) ms-1" aria-hidden="true"></span>
+										</button>
+									</th>
+									<th class="text-end">
+										<button class="btn btn-link p-0 text-decoration-none text-reset" type="button" @onclick='() => SortTimings(nameof(TimingModalRow.Count))'>
+											Count
+											<span class="bi @GetSortIcon(nameof(TimingModalRow.Count)) ms-1" aria-hidden="true"></span>
+										</button>
+									</th>
+									<th class="text-end">
+										<button class="btn btn-link p-0 text-decoration-none text-reset" type="button" @onclick='() => SortTimings(nameof(TimingModalRow.UsagePercent))'>
+											%
+											<span class="bi @GetSortIcon(nameof(TimingModalRow.UsagePercent)) ms-1" aria-hidden="true"></span>
+										</button>
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								@foreach (var timing in GetSortedTimings())
+								{
+									<tr class="@GetTimingRowClass(timing)">
+										<td>@timing.Name</td>
+										<td class="text-end">@FormatTiming(timing.AverageTimeSeconds)</td>
+										<td class="text-end">@timing.Count.ToString("N0", CultureInfo.CurrentCulture)</td>
+										<td class="text-end">@timing.UsagePercent.ToString("F1", CultureInfo.CurrentCulture)%</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+</div>
+
+@code {
+	[Parameter, EditorRequired]
+	public string ModalId { get; set; } = default!;
+
+	[Parameter, EditorRequired]
+	public string Title { get; set; } = default!;
+
+	[Parameter, EditorRequired]
+	public string NameColumn { get; set; } = default!;
+
+	[Parameter, EditorRequired]
+	public string LoadingText { get; set; } = default!;
+
+	[Parameter, EditorRequired]
+	public string EmptyText { get; set; } = default!;
+
+	[Parameter, EditorRequired]
+	public string BadgeTitle { get; set; } = default!;
+
+	[Parameter]
+	public bool HighlightTopUsageRows { get; set; }
+
+	List<TimingModalRow> timings = [];
+	HashSet<string> highlightedTimings = new(StringComparer.OrdinalIgnoreCase);
+	bool isLoading;
+	string sortColumn = nameof(TimingModalRow.AverageTimeSeconds);
+	bool sortAscending = true;
+
+	public async Task Show(Func<CancellationToken, Task<List<TimingModalRow>>> loadTimings, CancellationToken token = default)
+	{
+		timings = [];
+		highlightedTimings.Clear();
+		isLoading = true;
+		await InvokeAsync(StateHasChanged);
+		await JSRuntime.InvokeVoidAsync("openModalById", ModalId);
+		try
+		{
+			SetTimings(await loadTimings(token));
+		}
+		catch (OperationCanceledException)
+		{
+			timings = [];
+			highlightedTimings.Clear();
+		}
+		finally
+		{
+			isLoading = false;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	public void Clear()
+	{
+		timings = [];
+		highlightedTimings.Clear();
+		isLoading = false;
+	}
+
+	private string GetTableClass()
+	{
+		return HighlightTopUsageRows ? "tptable timing-modal-highlight-table" : "tptable";
+	}
+
+	private string GetTimingRowClass(TimingModalRow timing)
+	{
+		return highlightedTimings.Contains(timing.Name) ? "timing-modal-highlight" : string.Empty;
+	}
+
+	private void SetTimings(List<TimingModalRow> newTimings)
+	{
+		timings = newTimings;
+		highlightedTimings = HighlightTopUsageRows
+			? GetHighlightedTimings(timings)
+			: [];
+	}
+
+	private IEnumerable<TimingModalRow> GetSortedTimings()
+	{
+		return sortColumn switch
+		{
+			nameof(TimingModalRow.Name) => sortAscending
+				? timings.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+				: timings.OrderByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase),
+			nameof(TimingModalRow.Count) => sortAscending
+				? timings.OrderBy(x => x.Count)
+				: timings.OrderByDescending(x => x.Count),
+			nameof(TimingModalRow.UsagePercent) => sortAscending
+				? timings.OrderBy(x => x.UsagePercent)
+				: timings.OrderByDescending(x => x.UsagePercent),
+			_ => sortAscending
+				? timings.OrderBy(x => x.AverageTimeSeconds)
+				: timings.OrderByDescending(x => x.AverageTimeSeconds)
+		};
+	}
+
+	private void SortTimings(string column)
+	{
+		if (sortColumn == column)
+		{
+			sortAscending = !sortAscending;
+			return;
+		}
+
+		sortColumn = column;
+		sortAscending = true;
+	}
+
+	private string GetSortIcon(string column)
+	{
+		return sortColumn == column
+			? (sortAscending ? "bi-caret-up-fill" : "bi-caret-down-fill")
+			: string.Empty;
+	}
+
+	private static string FormatTiming(double seconds)
+	{
+		return TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
+	}
+
+	private static HashSet<string> GetHighlightedTimings(List<TimingModalRow> sourceTimings)
+	{
+		var topTimings = new List<TimingModalRow>(Math.Min(5, sourceTimings.Count));
+		foreach (var timing in sourceTimings)
+		{
+			var insertIndex = -1;
+			for (var i = 0; i < topTimings.Count; i++)
+			{
+				if (CompareTimingHighlight(timing, topTimings[i]) < 0)
+				{
+					insertIndex = i;
+					break;
+				}
+			}
+
+			if (insertIndex < 0)
+			{
+				if (topTimings.Count < 5)
+				{
+					topTimings.Add(timing);
+				}
+				continue;
+			}
+
+			topTimings.Insert(insertIndex, timing);
+			if (topTimings.Count > 5)
+			{
+				topTimings.RemoveAt(5);
+			}
+		}
+
+		var highlights = new HashSet<string>(topTimings.Count, StringComparer.OrdinalIgnoreCase);
+		foreach (var timing in topTimings)
+		{
+			highlights.Add(timing.Name);
+		}
+		return highlights;
+	}
+
+	private static int CompareTimingHighlight(TimingModalRow left, TimingModalRow right)
+	{
+		var usageCompare = right.UsagePercent.CompareTo(left.UsagePercent);
+		if (usageCompare != 0)
+		{
+			return usageCompare;
+		}
+
+		var countCompare = right.Count.CompareTo(left.Count);
+		if (countCompare != 0)
+		{
+			return countCompare;
+		}
+
+		var timeCompare = left.AverageTimeSeconds.CompareTo(right.AverageTimeSeconds);
+		if (timeCompare != 0)
+		{
+			return timeCompare;
+		}
+
+		return StringComparer.OrdinalIgnoreCase.Compare(left.Name, right.Name);
+	}
+}

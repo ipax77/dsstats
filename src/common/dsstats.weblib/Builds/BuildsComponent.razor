@@ -58,7 +58,7 @@
 					<div class="card h-100 border-0 shadow-sm">
 						<div class="card-body bgchart2 text-center">
 							<div class="text-muted small mb-1">Avg Gain</div>
-							<h3 class="mb-0 text-nowrap text-success">@response.Stats.AvgGain.ToString("F2")</h3>
+							<h3 class="mb-0 text-nowrap @GetAvgGainClass(response.Stats.AvgGain)">@response.Stats.AvgGain.ToString("F2")</h3>
 						</div>
 					</div>
 				</div>
@@ -72,10 +72,26 @@
 				</div>
 				<div class="col-sm-4 col-md-3 col-lg-2">
 					<div class="card h-100 border-0 shadow-sm">
-						<div class="card-body bgchart2 text-center">
+						<button class="card-body bgchart2 text-center border-0 w-100 h-100 pointer position-relative"
+								type="button"
+								title="Show average gas timing"
+								@onclick="ShowGasTimings">
+							<i class="bi bi-fuel-pump position-absolute top-0 end-0 mt-1 me-2 text-warning small" aria-hidden="true"></i>
 							<div class="text-muted small mb-1">Gas</div>
 							<h3 class="mb-0 text-nowrap text-warning">@response.Stats.Gas.ToString("F2")</h3>
-						</div>
+						</button>
+					</div>
+				</div>
+				<div class="col-sm-4 col-md-3 col-lg-2">
+					<div class="card h-100 border-0 shadow-sm">
+						<button class="card-body bgchart2 text-center border-0 w-100 h-100 pointer position-relative"
+								type="button"
+								title="Show average upgrade timing"
+								@onclick="ShowUpgradeTimings">
+							<i class="bi bi-clock-history position-absolute top-0 end-0 mt-1 me-2 text-info small" aria-hidden="true"></i>
+							<div class="text-muted small mb-1">Upgrades</div>
+							<h3 class="mb-0 text-nowrap text-info">@response.Stats.Upgrades.ToString("N0")</h3>
+						</button>
 					</div>
 				</div>
 			</div>
@@ -273,6 +289,23 @@
 	</div>
 </div>
 
+<TimingModal @ref="gasTimingModal"
+			 ModalId="@gasTimingModalId"
+			 Title="@($"Average Gas Timing for {Request.Interest}")"
+			 NameColumn="Gas"
+			 LoadingText="Loading gas timings..."
+			 EmptyText="No gas timing data available for the selected criteria."
+			 BadgeTitle="Only gas timings with count greater than 9 are shown" />
+
+<TimingModal @ref="upgradeTimingModal"
+			 ModalId="@upgradeTimingModalId"
+			 Title="@($"Average Upgrade Timing for {Request.Interest}")"
+			 NameColumn="Upgrade"
+			 LoadingText="Loading upgrade timings..."
+			 EmptyText="No upgrade timing data available for the selected criteria."
+			 BadgeTitle="Only upgrades with count greater than 9 are shown"
+			 HighlightTopUsageRows="true" />
+
 <ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
 <PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(ReplayDetails!)" />
 
@@ -290,6 +323,10 @@
 	BuildSpawnComponent? buildSpawnComponent;
 	bool showSpawns;
 	string replayHash = string.Empty;
+	string upgradeTimingModalId = "buildUpgradeTimingModal";
+	string gasTimingModalId = "buildGasTimingModal";
+	TimingModal? upgradeTimingModal;
+	TimingModal? gasTimingModal;
 	ReplayModal? replayModal;
 	PlayerModal? playerModal;
 	ReplayDetails? ReplayDetails = null;
@@ -311,6 +348,8 @@
 	private async Task LoadData(bool dry = false)
 	{
 		isLoading = true;
+		upgradeTimingModal?.Clear();
+		gasTimingModal?.Clear();
 		await InvokeAsync(StateHasChanged);
 		response = await BuildsService.GetBuildResponse(Request, cts.Token);
 		isLoading = false;
@@ -329,6 +368,11 @@
 		if (winrate >= 50) return "#0d6efd"; // primary blue
 		if (winrate >= 40) return "#fd7e14"; // warning orange
 		return "#dc3545"; // danger red
+	}
+
+	private string GetAvgGainClass(double avgGain)
+	{
+		return avgGain < 0 ? "text-danger" : "text-success";
 	}
 
 	private string FormatDuration(double seconds)
@@ -371,6 +415,38 @@
 		{
 			buildSpawnComponent?.Update(replayHash, Request);
 		}
+	}
+
+	private async Task ShowUpgradeTimings()
+	{
+		if (upgradeTimingModal is null)
+		{
+			return;
+		}
+
+		await upgradeTimingModal.Show(async token =>
+		{
+			var timings = await BuildsService.GetUpgradeTimings(Request, token);
+			return timings
+				.Select(timing => new TimingModalRow(timing.Upgrade, timing.AverageTimeSeconds, timing.Count, timing.UsagePercent))
+				.ToList();
+		}, cts.Token);
+	}
+
+	private async Task ShowGasTimings()
+	{
+		if (gasTimingModal is null)
+		{
+			return;
+		}
+
+		await gasTimingModal.Show(async token =>
+		{
+			var timings = await BuildsService.GetGasTimings(Request, token);
+			return timings
+				.Select(timing => new TimingModalRow($"Gas {timing.Gas}", timing.AverageTimeSeconds, timing.Count, timing.UsagePercent))
+				.ToList();
+		}, cts.Token);
 	}
 
 	public void Dispose()
