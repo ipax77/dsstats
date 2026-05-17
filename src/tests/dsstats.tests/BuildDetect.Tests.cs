@@ -50,7 +50,7 @@ public sealed class BuildDetectTests
         Assert.HasCount(3, details.MatchupInfos);
 
         AssertBuild(details, 1, TerranBuild.Bio);
-        AssertBuild(details, 2, ProtossBuild.Stalker);
+        AssertBuild(details, 2, ProtossBuild.AdeptStalker);
         AssertBuild(details, 3, TerranBuild.Bio);
         AssertBuild(details, 4, ProtossBuild.Templar);
         AssertBuild(details, 5, TerranBuild.Bio);
@@ -60,7 +60,7 @@ public sealed class BuildDetectTests
     [TestMethod]
     public void CanDetectTerranBioFromNormalizedAlias()
     {
-        AssertTerranBuild(TerranBuild.Bio, new UnitDto { Name = "MarineLightweight", Count = 1 });
+        AssertTerranBuild(TerranBuild.Bio, new UnitDto { Name = "MarineLightweight", Count = 2 });
     }
 
     [TestMethod]
@@ -119,16 +119,16 @@ public sealed class BuildDetectTests
     [TestMethod]
     public void CanDetectProtossBuilds()
     {
-        AssertProtossBuild(ProtossBuild.Zealots, new UnitDto { Name = "Zealot", Count = 1 });
-        AssertProtossBuild(ProtossBuild.Stalker, new UnitDto { Name = "Stalker", Count = 1 });
+        AssertProtossBuild(ProtossBuild.Zealots, new UnitDto { Name = "Zealot", Count = 2 });
+        AssertProtossBuild(ProtossBuild.Stalker, new UnitDto { Name = "Stalker", Count = 2 });
         AssertProtossBuild(
             ProtossBuild.AdeptStalker,
             new UnitDto { Name = "Adept", Count = 2 },
-            new UnitDto { Name = "Stalker", Count = 1 });
+            new UnitDto { Name = "Stalker", Count = 2 });
         AssertProtossBuild(
             ProtossBuild.ZealotStalker,
             new UnitDto { Name = "Zealot", Count = 2 },
-            new UnitDto { Name = "Stalker", Count = 1 });
+            new UnitDto { Name = "Stalker", Count = 2 });
         AssertProtossBuild(ProtossBuild.Archons, new UnitDto { Name = "Archon", Count = 1 });
         AssertProtossBuild(ProtossBuild.Immortals, new UnitDto { Name = "Immortal", Count = 1 });
         AssertProtossBuild(
@@ -164,7 +164,7 @@ public sealed class BuildDetectTests
             ProtossBuild.AdeptStalker,
             new UnitDto { Name = "Adept", Count = 2 },
             new UnitDto { Name = "Zealot", Count = 2 },
-            new UnitDto { Name = "Stalker", Count = 1 });
+            new UnitDto { Name = "Stalker", Count = 2 });
     }
 
     [TestMethod]
@@ -183,27 +183,27 @@ public sealed class BuildDetectTests
     [TestMethod]
     public void CanDetectZergBuilds()
     {
-        AssertZergBuild(ZergBuild.Zerglings, new UnitDto { Name = "ZerglingLightweight", Count = 1 });
+        AssertZergBuild(ZergBuild.Zerglings, new UnitDto { Name = "ZerglingLightweight", Count = 2 });
         AssertZergBuild(
             ZergBuild.LingBanes,
-            new UnitDto { Name = "ZerglingLightweight", Count = 1 },
-            new UnitDto { Name = "Baneling", Count = 1 });
-        AssertZergBuild(ZergBuild.Queens, new UnitDto { Name = "Queen", Count = 1 });
-        AssertZergBuild(ZergBuild.Roaches, new UnitDto { Name = "Roach", Count = 1 });
+            new UnitDto { Name = "ZerglingLightweight", Count = 2 },
+            new UnitDto { Name = "Baneling", Count = 2 });
+        AssertZergBuild(ZergBuild.Queens, new UnitDto { Name = "Queen", Count = 2 });
+        AssertZergBuild(ZergBuild.Roaches, new UnitDto { Name = "Roach", Count = 2 });
         AssertZergBuild(
             ZergBuild.RoachQueen,
-            new UnitDto { Name = "Roach", Count = 1 },
-            new UnitDto { Name = "Queen", Count = 1 });
+            new UnitDto { Name = "Roach", Count = 2 },
+            new UnitDto { Name = "Queen", Count = 2 });
         AssertZergBuild(ZergBuild.Mutas, new UnitDto { Name = "Mutalisk", Count = 1 });
-        AssertZergBuild(ZergBuild.Hydras, new UnitDto { Name = "Hydralisk", Count = 1 });
+        AssertZergBuild(ZergBuild.Hydras, new UnitDto { Name = "Hydralisk", Count = 2 });
         AssertZergBuild(
             ZergBuild.RoachQueenLurker,
-            new UnitDto { Name = "Roach", Count = 1 },
-            new UnitDto { Name = "Queen", Count = 1 },
+            new UnitDto { Name = "Roach", Count = 2 },
+            new UnitDto { Name = "Queen", Count = 2 },
             new UnitDto { Name = "LurkerMP", Count = 1 });
         AssertZergBuild(
             ZergBuild.QueenLurker,
-            new UnitDto { Name = "Queen", Count = 1 },
+            new UnitDto { Name = "Queen", Count = 2 },
             new UnitDto { Name = "LurkerMP", Count = 1 });
         AssertZergBuild(ZergBuild.Ultras, new UnitDto { Name = "Ultralisk", Count = 1 });
     }
@@ -226,16 +226,28 @@ public sealed class BuildDetectTests
         AssertZergBuild(
             ZergBuild.RoachQueenLurker,
             new UnitDto { Name = "Hydralisk", Count = 1 },
-            new UnitDto { Name = "Roach", Count = 1 },
-            new UnitDto { Name = "Queen", Count = 1 },
+            new UnitDto { Name = "Roach", Count = 2 },
+            new UnitDto { Name = "Queen", Count = 2 },
             new UnitDto { Name = "LurkerMP", Count = 1 });
 
         AssertZergBuild(
             ZergBuild.RoachQueenLurker,
-            new UnitDto { Name = "Roach", Count = 1 },
-            new UnitDto { Name = "Queen", Count = 1 },
+            new UnitDto { Name = "Roach", Count = 2 },
+            new UnitDto { Name = "Queen", Count = 2 },
             new UnitDto { Name = "LurkerMP", Count = 1 },
             new UnitDto { Name = "Baneling", Count = 1 });
+    }
+
+    [TestMethod]
+    public void SingleCheapUnitsDoNotClassify()
+    {
+        AssertTerranBuild(TerranBuild.None, new UnitDto { Name = "MarineLightweight", Count = 1 });
+        AssertProtossBuild(ProtossBuild.None, new UnitDto { Name = "Stalker", Count = 1 });
+        AssertProtossBuild(ProtossBuild.None, new UnitDto { Name = "Zealot", Count = 1 });
+        AssertZergBuild(ZergBuild.None, new UnitDto { Name = "ZerglingLightweight", Count = 1 });
+        AssertZergBuild(ZergBuild.None, new UnitDto { Name = "Queen", Count = 1 });
+        AssertZergBuild(ZergBuild.None, new UnitDto { Name = "Roach", Count = 1 });
+        AssertZergBuild(ZergBuild.None, new UnitDto { Name = "Hydralisk", Count = 1 });
     }
 
     [TestMethod]
@@ -260,8 +272,8 @@ public sealed class BuildDetectTests
             1,
             1,
             2,
-            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 1 }),
-            Player(Commander.Terran, new UnitDto { Name = "MarineLightweight", Count = 1 }),
+            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 2 }),
+            Player(Commander.Terran, new UnitDto { Name = "MarineLightweight", Count = 2 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
@@ -272,8 +284,8 @@ public sealed class BuildDetectTests
             1,
             1,
             2,
-            Player(Commander.Zerg, new UnitDto { Name = "Roach", Count = 1 }, new UnitDto { Name = "Queen", Count = 1 }),
-            Player(Commander.Zerg, new UnitDto { Name = "Hydralisk", Count = 1 }),
+            Player(Commander.Zerg, new UnitDto { Name = "Roach", Count = 2 }, new UnitDto { Name = "Queen", Count = 2 }),
+            Player(Commander.Zerg, new UnitDto { Name = "Hydralisk", Count = 2 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
@@ -284,8 +296,8 @@ public sealed class BuildDetectTests
             1,
             1,
             2,
-            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 1 }),
-            Player(Commander.Zerg, new UnitDto { Name = "ZerglingLightweight", Count = 1 }),
+            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 2 }),
+            Player(Commander.Zerg, new UnitDto { Name = "ZerglingLightweight", Count = 2 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
@@ -308,9 +320,9 @@ public sealed class BuildDetectTests
     public void CanDetectTeamBuildCircularWraps()
     {
         var replayDto = CreateStandardReplayWithPlayers(
-            Player(Commander.Terran, new UnitDto { Name = "MarineLightweight", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "MarineLightweight", Count = 2 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
-            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 1 }),
+            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 2 }),
             Player(Commander.Zerg, new UnitDto { Name = "Mutalisk", Count = 1 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
             Player(Commander.Terran, new UnitDto { Name = "Liberator", Count = 1 }));
@@ -332,8 +344,8 @@ public sealed class BuildDetectTests
             2,
             3,
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
-            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 1 }),
-            Player(Commander.Zerg, new UnitDto { Name = "ZerglingLightweight", Count = 1 }),
+            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 2 }),
+            Player(Commander.Zerg, new UnitDto { Name = "ZerglingLightweight", Count = 2 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }));
@@ -360,11 +372,11 @@ public sealed class BuildDetectTests
     public void CanDetectTeamBuildsForBothTeams()
     {
         var replayDto = CreateStandardReplayWithPlayers(
-            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 1 }),
-            Player(Commander.Terran, new UnitDto { Name = "MarineLightweight", Count = 1 }),
+            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 2 }),
+            Player(Commander.Terran, new UnitDto { Name = "MarineLightweight", Count = 2 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
-            Player(Commander.Zerg, new UnitDto { Name = "Roach", Count = 1 }, new UnitDto { Name = "Queen", Count = 1 }),
-            Player(Commander.Zerg, new UnitDto { Name = "Hydralisk", Count = 1 }),
+            Player(Commander.Zerg, new UnitDto { Name = "Roach", Count = 2 }, new UnitDto { Name = "Queen", Count = 2 }),
+            Player(Commander.Zerg, new UnitDto { Name = "Hydralisk", Count = 2 }),
             Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }));
 
         var details = DetailBuilds.DetectStandardBuild(replayDto);

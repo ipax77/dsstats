@@ -6,13 +6,13 @@ public static partial class DetailBuilds
 {
     private static ZergBuild DetectZergBuild(SpawnDto spawnDto)
     {
-        var hasZergling = false;
-        var hasBaneling = false;
-        var hasQueen = false;
-        var hasRoach = false;
+        var zerglingCount = 0;
+        var banelingCount = 0;
+        var queenCount = 0;
+        var roachCount = 0;
         var hasLurker = false;
         var hasMutalisk = false;
-        var hasHydralisk = false;
+        var hydraliskCount = 0;
         var hasUltralisk = false;
 
         foreach (var unit in spawnDto.Units)
@@ -32,19 +32,19 @@ public static partial class DetailBuilds
                     hasMutalisk = true;
                     break;
                 case "Hydralisk":
-                    hasHydralisk = true;
+                    hydraliskCount += unit.Count;
                     break;
                 case "Zergling":
-                    hasZergling = true;
+                    zerglingCount += unit.Count;
                     break;
                 case "Baneling":
-                    hasBaneling = true;
+                    banelingCount += unit.Count;
                     break;
                 case "Queen":
-                    hasQueen = true;
+                    queenCount += unit.Count;
                     break;
                 case "Roach":
-                    hasRoach = true;
+                    roachCount += unit.Count;
                     break;
                 case "Lurker":
                     hasLurker = true;
@@ -62,41 +62,41 @@ public static partial class DetailBuilds
             return ZergBuild.Mutas;
         }
 
-        if (hasRoach && hasQueen && hasLurker)
+        if (roachCount >= 2 && queenCount >= 2 && hasLurker)
         {
             return ZergBuild.RoachQueenLurker;
         }
 
-        if (hasQueen && hasLurker)
+        if (queenCount >= 2 && hasLurker)
         {
             return ZergBuild.QueenLurker;
         }
 
-        if (hasRoach && hasQueen)
+        if (roachCount >= 2 && queenCount >= 2)
         {
             return ZergBuild.RoachQueen;
         }
 
-        if (hasHydralisk)
+        if (hydraliskCount >= 2)
         {
             return ZergBuild.Hydras;
         }
 
-        if (hasRoach)
+        if (roachCount >= 2)
         {
             return ZergBuild.Roaches;
         }
 
-        if (hasQueen)
+        if (queenCount >= 2)
         {
             return ZergBuild.Queens;
         }
 
-        if (hasZergling && hasBaneling)
+        if (zerglingCount >= 2 && banelingCount >= 2)
         {
             return ZergBuild.LingBanes;
         }
 
-        return hasZergling ? ZergBuild.Zerglings : ZergBuild.None;
+        return zerglingCount >= 2 ? ZergBuild.Zerglings : ZergBuild.None;
     }
 }

@@ -59,21 +59,21 @@ public static partial class DetailBuilds
             return ProtossBuild.Archons;
         }
 
-        if (adeptCount > stalkerCount && stalkerCount > 0)
+        if (adeptCount >= 2 && stalkerCount >= 2)
         {
             return ProtossBuild.AdeptStalker;
         }
 
-        if (zealotCount > stalkerCount && stalkerCount > 0)
+        if (zealotCount >= 2 && stalkerCount >= 2)
         {
             return ProtossBuild.ZealotStalker;
         }
 
-        if (stalkerCount > 0)
+        if (stalkerCount >= 2)
         {
             return ProtossBuild.Stalker;
         }
 
-        return zealotCount > 0 ? ProtossBuild.Zealots : ProtossBuild.None;
+        return zealotCount >= 2 ? ProtossBuild.Zealots : ProtossBuild.None;
     }
 }

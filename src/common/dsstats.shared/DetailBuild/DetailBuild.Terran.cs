@@ -6,7 +6,7 @@ public static partial class DetailBuilds
 {
     private static TerranBuild DetectTerranBuild(SpawnDto spawnDto)
     {
-        var hasBio = false;
+        var bioCount = 0;
         var hasMech = false;
         var hasLibs = false;
 
@@ -41,7 +41,7 @@ public static partial class DetailBuilds
                 case "Medivac":
                 case "Ghost":
                 case "Reaper":
-                    hasBio = true;
+                    bioCount += unit.Count;
                     break;
             }
         }
@@ -56,6 +56,6 @@ public static partial class DetailBuilds
             return TerranBuild.Mech;
         }
 
-        return hasBio ? TerranBuild.Bio : TerranBuild.None;
+        return bioCount >= 2 ? TerranBuild.Bio : TerranBuild.None;
     }
 }
