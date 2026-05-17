@@ -9,6 +9,8 @@ namespace dsstats.dbServices.Builds;
 
 public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFactory, IMemoryCache memoryCache) : IBuildsService
 {
+    private const string VanadiumPlatingControllerUpgrade = "VanadiumPlatingController";
+
     public async Task<BuildsResponse> GetBuildResponse(BuildsRequest request, CancellationToken token = default)
     {
         var memKey = request.GetMemKey();
@@ -188,6 +190,7 @@ public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFact
                     from upgrade in rp.Upgrades
                     where upgrade.Gameloop <= maxUpgradeSecond
                     && !upgrade.Upgrade!.Name.StartsWith("PlayerState")
+                    && upgrade.Upgrade.Name != VanadiumPlatingControllerUpgrade
                     group upgrade by upgrade.Upgrade!.Name into g
                     where g.Count() >= 10
                     orderby g.Average(x => x.Gameloop), g.Count() descending

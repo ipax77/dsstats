@@ -30,6 +30,7 @@ public sealed class BuildsServiceTests
                 [
                     ("BlinkTech", i < 5 ? 100 : 200),
                     ("Charge", i < 5 ? 200 : 280),
+                    ("VanadiumPlatingController", 150),
                     ("PlayerStateVictory", 250),
                     ("LateUpgrade", 400)
                 ]);
@@ -67,6 +68,7 @@ public sealed class BuildsServiceTests
         Assert.AreEqual(240.0, charge.AverageTimeSeconds, 0.0001);
         Assert.AreEqual(10, charge.Count);
         Assert.IsFalse(timings.Any(x => x.Upgrade.StartsWith("PlayerState")));
+        Assert.IsFalse(timings.Any(x => x.Upgrade == "VanadiumPlatingController"));
         Assert.IsFalse(timings.Any(x => x.Upgrade == "LateUpgrade"));
         Assert.IsFalse(timings.Any(x => x.Upgrade == "RareUpgrade"));
 
