@@ -7,6 +7,85 @@ const pending = new Map(); // jobId -> { resolve, reject }
 const queue   = [];      // queued jobs waiting for a free worker
 let   nextId  = 1;
 let   readyResolve = null;
+let   lifecycleListenersInstalled = false;
+let   browserPauseStartedAt = null;
+let   browserPauseMilliseconds = 0;
+
+const documentLifecycleEvents = ['freeze', 'resume'];
+const windowLifecycleEvents = ['pagehide', 'pageshow'];
+
+function beginBrowserPause() {
+    browserPauseStartedAt ??= Date.now();
+}
+
+function endBrowserPause() {
+    if (browserPauseStartedAt === null) {
+        return;
+    }
+
+    browserPauseMilliseconds += Math.max(0, Date.now() - browserPauseStartedAt);
+    browserPauseStartedAt = null;
+}
+
+function handleDocumentLifecycleEvent(event) {
+    if (event.type === 'freeze') {
+        beginBrowserPause();
+    } else if (event.type === 'resume') {
+        endBrowserPause();
+    }
+}
+
+function handleWindowLifecycleEvent(event) {
+    if (!event.persisted) {
+        return;
+    }
+
+    if (event.type === 'pagehide') {
+        beginBrowserPause();
+    } else if (event.type === 'pageshow') {
+        endBrowserPause();
+    }
+}
+
+function installLifecycleListeners() {
+    if (lifecycleListenersInstalled) {
+        return;
+    }
+
+    documentLifecycleEvents.forEach(eventName =>
+        document.addEventListener(eventName, handleDocumentLifecycleEvent));
+    windowLifecycleEvents.forEach(eventName =>
+        window.addEventListener(eventName, handleWindowLifecycleEvent));
+
+    lifecycleListenersInstalled = true;
+}
+
+function removeLifecycleListeners() {
+    if (!lifecycleListenersInstalled) {
+        return;
+    }
+
+    documentLifecycleEvents.forEach(eventName =>
+        document.removeEventListener(eventName, handleDocumentLifecycleEvent));
+    windowLifecycleEvents.forEach(eventName =>
+        window.removeEventListener(eventName, handleWindowLifecycleEvent));
+
+    lifecycleListenersInstalled = false;
+    browserPauseStartedAt = null;
+    browserPauseMilliseconds = 0;
+}
+
+export function consumeBrowserPauseMilliseconds() {
+    if (browserPauseStartedAt !== null) {
+        const now = Date.now();
+        browserPauseMilliseconds += Math.max(0, now - browserPauseStartedAt);
+        browserPauseStartedAt = now;
+    }
+
+    const pauseMilliseconds = browserPauseMilliseconds;
+    browserPauseMilliseconds = 0;
+    return Math.round(pauseMilliseconds);
+}
 
 function createWorker() {
     const state = {
@@ -57,6 +136,7 @@ function drain(state) {
 }
 
 export function initWorkerPool(count) {
+    installLifecycleListeners();
     for (let i = 0; i < count; i++) {
         workers.push(createWorker());
     }
@@ -70,6 +150,7 @@ export function waitForAllReady() {
 }
 
 export function terminateWorkerPool() {
+    removeLifecycleListeners();
     workers.forEach(w => w.worker.terminate());
     workers.length = 0;
     pending.clear();

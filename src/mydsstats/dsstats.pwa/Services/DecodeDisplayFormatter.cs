@@ -20,4 +20,10 @@ internal static class DecodeDisplayFormatter
             ? decodeInfo.Elapsed.ToString(@"mm\:ss", CultureInfo.InvariantCulture)
             : decodeInfo.Elapsed.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture);
     }
+
+    public static string FormatIdle(DecodeInfoEventArgs decodeInfo)
+        => decodeInfo.IdleTime.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
+
+    public static string FormatTotalIdle(DecodeInfoEventArgs decodeInfo)
+        => decodeInfo.TotalIdleTime.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
 }

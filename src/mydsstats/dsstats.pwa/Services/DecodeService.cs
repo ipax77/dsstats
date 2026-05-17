@@ -23,7 +23,7 @@ public partial class DecodeService : IDisposable
     public bool Decoding { get; private set; }
     public ReplayDto? LatestReplay { get; private set; }
     public string? LatestReplayHash { get; private set; }
-    public static readonly Version Version = new(1, 6);
+    public static readonly Version Version = new(1, 7);
     private int _currentWorkerCount = -1;
 
     public DecodeService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory,
@@ -414,6 +414,7 @@ public partial class DecodeService : IDisposable
         {
             if (cts.IsCancellationRequested) break;
             await DecodeFromDirectory(entry.Key, limit, aggregateState);
+            if (decodeCts?.IsCancellationRequested == true) break;
         }
     }
 
@@ -446,6 +447,9 @@ public class DecodeInfoEventArgs : EventArgs
     public int Error { get; set; }
     public TimeSpan Eta { get; set; }
     public TimeSpan Elapsed { get; set; }
+    public TimeSpan IdleTime { get; set; }
+    public TimeSpan TotalIdleTime { get; set; }
+    public bool IsIdle { get; set; }
     public bool Saving { get; set; }
     public bool Finished { get; set; }
     public string? Info { get; set; }

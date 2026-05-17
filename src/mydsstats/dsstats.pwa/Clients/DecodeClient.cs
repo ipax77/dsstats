@@ -49,6 +49,9 @@ public partial class DecodeClient : IAsyncDisposable
         return (true, null, result.Hash, replay);
     }
 
+    public TimeSpan ConsumeBrowserPause()
+        => TimeSpan.FromMilliseconds(ConsumeBrowserPauseMilliseconds());
+
     public ValueTask DisposeAsync()
     {
         if (_initialized)
@@ -72,4 +75,7 @@ public partial class DecodeClient : IAsyncDisposable
 
     [JSImport("decodeReplay", "DecodeClient")]
     private static partial Task<string> DecodeReplayJs(string base64Bytes);
+
+    [JSImport("consumeBrowserPauseMilliseconds", "DecodeClient")]
+    private static partial double ConsumeBrowserPauseMilliseconds();
 }

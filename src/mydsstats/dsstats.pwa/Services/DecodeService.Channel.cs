@@ -10,6 +10,7 @@ namespace dsstats.pwa.Services;
 public partial class DecodeService
 {
     private readonly Lock lastReplayLock = new();
+    private static readonly TimeSpan DecodeIdleThreshold = TimeSpan.FromSeconds(30);
 
     [SupportedOSPlatform("browser")]
     public async Task DecodeFromDirectory(string? dirKey = null, int limit = 100)
@@ -33,10 +34,12 @@ public partial class DecodeService
         int failedCount = 0;
         int processedCount = 0;
         int totalFiles = 0;
+        var progressClock = new DecodeProgressClock(sw, DecodeIdleThreshold);
 
         try
         {
             await EnsureWorkersAsync(workerCount);
+            _decodeClient!.ConsumeBrowserPause();
 
             var readChannel = Channel.CreateBounded<ReadItem>(new BoundedChannelOptions(workerCount)
             {
@@ -65,12 +68,10 @@ public partial class DecodeService
 
                         var streamRef = await dbService.GetFileContent(file.Path);
                         using var stream = await streamRef.OpenReadStreamAsync(5_000_000, decodeCts.Token);
-
-                        var ms = new MemoryStream();
-                        await stream.CopyToAsync(ms, decodeCts.Token);
+                        var data = await ReadReplayBytesAsync(stream, file.Size, decodeCts.Token);
 
                         await readChannel.Writer.WriteAsync(
-                            new ReadItem(file.Path, file.Size, file.LastModified, ms.ToArray()),
+                            new ReadItem(file.Path, file.Size, file.LastModified, data),
                             decodeCts.Token
                         );
                     }
@@ -153,33 +154,39 @@ public partial class DecodeService
                         logger.LogWarning("failed decoding replay: {error}", item.Error);
                     }
 
-                    Interlocked.Increment(ref processedCount);
+                    var processed = Interlocked.Increment(ref processedCount);
+                    RecordBrowserPause(progressClock);
+                    progressClock.RecordProgress(processed);
                 }
             });
-
-            var progressCts = CancellationTokenSource.CreateLinkedTokenSource(decodeCts.Token);
 
             Task? progressTask = null;
             try
             {
                 progressTask = Task.Run(async () =>
                 {
+                    var wasIdle = false;
                     while (!decodeCts.Token.IsCancellationRequested)
                     {
                         var processed = Volatile.Read(ref processedCount);
                         var decoded = Volatile.Read(ref replaysDecoded);
 
-                        var interval = processed < 20
+                        var interval = wasIdle
+                            ? TimeSpan.FromSeconds(2)
+                            : processed < 20
                             ? TimeSpan.FromMilliseconds(200)
                             : TimeSpan.FromMilliseconds(700);
 
                         await Task.Delay(interval, decodeCts.Token);
+                        RecordBrowserPause(progressClock);
 
                         var total = aggregateState?.Total ?? totalFiles;
                         var done = (aggregateState?.Processed ?? 0) + processed;
                         var successful = (aggregateState?.Successful ?? 0) + decoded;
                         var errors = (aggregateState?.Error ?? 0) + Volatile.Read(ref failedCount);
                         total = Math.Max(total, done);
+                        var progress = progressClock.GetSnapshot(totalFiles);
+                        wasIdle = progress.IsIdle;
 
                         OnDecodeStateChanged(new DecodeInfoEventArgs
                         {
@@ -187,10 +194,11 @@ public partial class DecodeService
                             Successful = successful,
                             Total = total,
                             Error = errors,
-                            Elapsed = sw.Elapsed,
-                            Eta = TimeSpan.FromTicks(
-                                sw.Elapsed.Ticks * (totalFiles - processed) / Math.Max(processed, 1)
-                            ),
+                            Elapsed = progress.ActiveElapsed,
+                            IdleTime = progress.IdleTime,
+                            TotalIdleTime = progress.TotalIdleTime,
+                            IsIdle = progress.IsIdle,
+                            Eta = CalculateEta(progress.ActiveElapsed, processed, totalFiles),
                             Saving = false,
                             Finished = false,
                             Info = $"Decoded: {successful}, Failed: {errors}"
@@ -230,6 +238,8 @@ public partial class DecodeService
         var finalErrors = (aggregateState?.Error ?? 0) + failedCount;
         var finalTotal = aggregateState?.Total ?? totalFiles;
         finalTotal = Math.Max(finalTotal, finalDone);
+        RecordBrowserPause(progressClock);
+        var finalProgress = progressClock.GetSnapshot(totalFiles);
 
         OnDecodeStateChanged(new DecodeInfoEventArgs
         {
@@ -237,7 +247,10 @@ public partial class DecodeService
             Successful = finalSuccessful,
             Total = finalTotal,
             Error = finalErrors,
-            Elapsed = sw.Elapsed,
+            Elapsed = finalProgress.ActiveElapsed,
+            IdleTime = TimeSpan.Zero,
+            TotalIdleTime = finalProgress.TotalIdleTime,
+            IsIdle = false,
             Eta = TimeSpan.Zero,
             Saving = false,
             Finished = true,
@@ -260,6 +273,53 @@ public partial class DecodeService
             _decodeCompletionsWithoutUpload++;
             if (_decodeCompletionsWithoutUpload == 1 || _decodeCompletionsWithoutUpload % 10 == 0)
                 OnPromptForUpload();
+        }
+    }
+
+    private static async Task<byte[]> ReadReplayBytesAsync(Stream stream, long fileSize, CancellationToken token)
+    {
+        if (fileSize is > 0 and <= 5_000_000)
+        {
+            var buffer = new byte[(int)fileSize];
+            var offset = 0;
+
+            while (offset < buffer.Length)
+            {
+                var read = await stream.ReadAsync(buffer.AsMemory(offset), token);
+                if (read == 0)
+                    break;
+
+                offset += read;
+            }
+
+            if (offset != buffer.Length)
+                Array.Resize(ref buffer, offset);
+
+            return buffer;
+        }
+
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms, token);
+        return ms.ToArray();
+    }
+
+    private static TimeSpan CalculateEta(TimeSpan activeElapsed, int processed, int total)
+    {
+        if (processed <= 0 || processed >= total)
+            return TimeSpan.Zero;
+
+        return TimeSpan.FromTicks(
+            activeElapsed.Ticks * (total - processed) / processed
+        );
+    }
+
+    [SupportedOSPlatform("browser")]
+    private void RecordBrowserPause(DecodeProgressClock progressClock)
+    {
+        var browserPause = _decodeClient?.ConsumeBrowserPause() ?? TimeSpan.Zero;
+        if (browserPause > TimeSpan.Zero)
+        {
+            progressClock.RecordBrowserPause(browserPause);
         }
     }
 
@@ -288,6 +348,100 @@ public partial class DecodeService
         public int Error { get; set; }
         public int Total { get; set; }
     }
+
+    private sealed class DecodeProgressClock
+    {
+        private readonly Stopwatch stopwatch;
+        private readonly TimeSpan idleThreshold;
+        private readonly Lock gate = new();
+        private int lastProcessed;
+        private TimeSpan lastProgressAt;
+        private TimeSpan accumulatedIdle;
+        private bool isIdle;
+
+        public DecodeProgressClock(Stopwatch stopwatch, TimeSpan idleThreshold)
+        {
+            this.stopwatch = stopwatch;
+            this.idleThreshold = idleThreshold;
+            lastProgressAt = stopwatch.Elapsed;
+        }
+
+        public void RecordProgress(int processed)
+        {
+            lock (gate)
+            {
+                if (processed == lastProcessed)
+                {
+                    return;
+                }
+
+                var now = stopwatch.Elapsed;
+                var stalledFor = now - lastProgressAt;
+                if (stalledFor >= idleThreshold)
+                {
+                    accumulatedIdle += stalledFor;
+                }
+
+                lastProcessed = processed;
+                lastProgressAt = now;
+                isIdle = false;
+            }
+        }
+
+        public void RecordBrowserPause(TimeSpan pause)
+        {
+            if (pause <= TimeSpan.Zero)
+            {
+                return;
+            }
+
+            lock (gate)
+            {
+                accumulatedIdle += pause;
+                var adjustedLastProgressAt = lastProgressAt + pause;
+                lastProgressAt = adjustedLastProgressAt > stopwatch.Elapsed
+                    ? stopwatch.Elapsed
+                    : adjustedLastProgressAt;
+            }
+        }
+
+        public DecodeProgressSnapshot GetSnapshot(int total)
+        {
+            lock (gate)
+            {
+                var now = stopwatch.Elapsed;
+                var idleTime = TimeSpan.Zero;
+                if (lastProcessed < total)
+                {
+                    var stalledFor = now - lastProgressAt;
+                    if (stalledFor >= idleThreshold)
+                    {
+                        isIdle = true;
+                        idleTime = stalledFor;
+                    }
+                    else
+                    {
+                        isIdle = false;
+                    }
+                }
+
+                var totalIdleTime = accumulatedIdle + idleTime;
+                var activeElapsed = now - totalIdleTime;
+                if (activeElapsed < TimeSpan.Zero)
+                {
+                    activeElapsed = TimeSpan.Zero;
+                }
+
+                return new DecodeProgressSnapshot(activeElapsed, idleTime, totalIdleTime, isIdle);
+            }
+        }
+    }
+
+    private readonly record struct DecodeProgressSnapshot(
+        TimeSpan ActiveElapsed,
+        TimeSpan IdleTime,
+        TimeSpan TotalIdleTime,
+        bool IsIdle);
 
     private async Task TryWriteDecodedItemAsync(
         Channel<DecodedItem> decodeChannel,

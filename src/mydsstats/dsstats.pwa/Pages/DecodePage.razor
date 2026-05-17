@@ -127,6 +127,20 @@
 									<span class="me-3">Saved: @decodeInfoEventArgs.Successful</span>
 									<span class="me-3">Errors: @decodeInfoEventArgs.Error</span>
 									<span class="me-3">Elapsed: @DecodeDisplayFormatter.FormatElapsed(decodeInfoEventArgs)</span>
+									@if (decodeInfoEventArgs.IsIdle)
+									{
+										<span class="me-3 d-inline-flex align-items-center gap-1">
+											Idle for: @DecodeDisplayFormatter.FormatIdle(decodeInfoEventArgs)
+											<i class="bi bi-info-circle" title="@IdleDecodeTooltip" aria-label="@IdleDecodeTooltip" tabindex="0"></i>
+										</span>
+									}
+									else if (decodeInfoEventArgs.TotalIdleTime > TimeSpan.Zero)
+									{
+										<span class="me-3 d-inline-flex align-items-center gap-1">
+											Idle total: @DecodeDisplayFormatter.FormatTotalIdle(decodeInfoEventArgs)
+											<i class="bi bi-info-circle" title="@IdleDecodeTooltip" aria-label="@IdleDecodeTooltip" tabindex="0"></i>
+										</span>
+									}
 									@if (!decodeInfoEventArgs.Finished && decodeInfoEventArgs.Eta > TimeSpan.Zero)
 									{
 										<span>ETA: @decodeInfoEventArgs.Eta.ToString(@"hh\:mm\:ss")</span>
@@ -276,6 +290,7 @@
 
 @code {
 	private bool isLoading;
+	private const string IdleDecodeTooltip = "Chrome may freeze background tabs to save resources. Replay decoding resumes automatically when the page wakes, and this paused time is excluded from elapsed time and ETA.";
 	private bool isLoadingFolders = true;
 	private readonly long maxFileSize = 2 * 1024 * 1024;
 	private readonly IReadOnlyList<int> decodeLimits = [1, 10, 100, 0];
@@ -493,6 +508,9 @@
 			Error = decodeInfoEventArgs.Error,
 			Eta = decodeInfoEventArgs.Eta,
 			Elapsed = decodeInfoEventArgs.Elapsed,
+			IdleTime = decodeInfoEventArgs.IdleTime,
+			TotalIdleTime = decodeInfoEventArgs.TotalIdleTime,
+			IsIdle = decodeInfoEventArgs.IsIdle,
 			Saving = decodeInfoEventArgs.Saving,
 			Finished = decodeInfoEventArgs.Finished,
 			Info = e.Info ?? decodeInfoEventArgs.Info,

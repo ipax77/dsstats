@@ -30,6 +30,14 @@
 		</button>
 	}
 
+	<span class="text-warning d-inline-flex align-items-center"
+		  title="@BackgroundDecodeWarning"
+		  aria-label="@BackgroundDecodeWarning"
+		  tabindex="0">
+		<i class="bi bi-exclamation-triangle-fill"></i>
+		<span class="visually-hidden">@BackgroundDecodeWarning</span>
+	</span>
+
 	<span class="badge bg-info text-dark">Decoded in DB: @totalReplayCount</span>
 
 	@if (decodeInfo != null)
@@ -40,12 +48,40 @@
 			<span class="badge bg-success">Saved: @decodeInfo.Successful</span>
 			<span class="badge bg-danger">Errors: @decodeInfo.Error</span>
 			<span class="badge bg-light text-dark">Elapsed: @DecodeDisplayFormatter.FormatElapsed(decodeInfo)</span>
+			@if (decodeInfo.IsIdle)
+			{
+				<span class="badge bg-warning text-dark d-inline-flex align-items-center gap-1">
+					Idle for: @DecodeDisplayFormatter.FormatIdle(decodeInfo)
+					<i class="bi bi-info-circle" title="@IdleDecodeTooltip" aria-label="@IdleDecodeTooltip" tabindex="0"></i>
+				</span>
+			}
+			else if (decodeInfo.TotalIdleTime > TimeSpan.Zero)
+			{
+				<span class="badge bg-warning text-dark d-inline-flex align-items-center gap-1">
+					Idle total: @DecodeDisplayFormatter.FormatTotalIdle(decodeInfo)
+					<i class="bi bi-info-circle" title="@IdleDecodeTooltip" aria-label="@IdleDecodeTooltip" tabindex="0"></i>
+				</span>
+			}
 			<span class="badge bg-light text-dark">ETA: @decodeInfo.Eta.ToString(@"hh\:mm\:ss")</span>
 		} else
 		{
 			<span class="badge bg-secondary">@decodeInfo.Done</span>
 			<span class="badge bg-danger">Errors: @decodeInfo.Error</span>
 			<span class="badge bg-light text-dark">Elapsed: @DecodeDisplayFormatter.FormatElapsed(decodeInfo)</span>
+			@if (decodeInfo.IsIdle)
+			{
+				<span class="badge bg-warning text-dark d-inline-flex align-items-center gap-1">
+					Idle for: @DecodeDisplayFormatter.FormatIdle(decodeInfo)
+					<i class="bi bi-info-circle" title="@IdleDecodeTooltip" aria-label="@IdleDecodeTooltip" tabindex="0"></i>
+				</span>
+			}
+			else if (decodeInfo.TotalIdleTime > TimeSpan.Zero)
+			{
+				<span class="badge bg-warning text-dark d-inline-flex align-items-center gap-1">
+					Idle total: @DecodeDisplayFormatter.FormatTotalIdle(decodeInfo)
+					<i class="bi bi-info-circle" title="@IdleDecodeTooltip" aria-label="@IdleDecodeTooltip" tabindex="0"></i>
+				</span>
+			}
 		}
 
 		@if (decodeInfo.UploadStatus == UploadStatus.Uploading)
@@ -100,6 +136,8 @@
 </AuthorizeView>
 
 @code {
+	private const string BackgroundDecodeWarning = "Replay decoding may pause while this tab is in the background. You can safely return later; decoding will resume automatically.";
+	private const string IdleDecodeTooltip = "Chrome may freeze background tabs to save resources. Replay decoding resumes automatically when the page wakes, and this paused time is excluded from elapsed time and ETA.";
 	private DecodeInfoEventArgs? decodeInfo;
 	private bool hasDirHandles;
 	private bool isDecoding;
@@ -147,6 +185,9 @@
 			Error = decodeInfo.Error,
 			Eta = decodeInfo.Eta,
 			Elapsed = decodeInfo.Elapsed,
+			IdleTime = decodeInfo.IdleTime,
+			TotalIdleTime = decodeInfo.TotalIdleTime,
+			IsIdle = decodeInfo.IsIdle,
 			Saving = decodeInfo.Saving,
 			Finished = decodeInfo.Finished,
 			Info = e.Info ?? decodeInfo.Info,
