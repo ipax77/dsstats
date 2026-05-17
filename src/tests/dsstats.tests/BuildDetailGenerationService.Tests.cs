@@ -65,6 +65,20 @@ public sealed class BuildDetailGenerationServiceTests
     }
 
     [TestMethod]
+    public async Task ProcessPendingBatchAsync_DetectsNonTeStandardReplay()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedDetectableReplayAsync(te: false);
+
+        var result = await fixture.Service.ProcessPendingBatchAsync();
+
+        Assert.AreEqual(1, result.Candidates);
+        Assert.AreEqual(1, result.Detected);
+        Assert.AreEqual(0, result.NotDetectable);
+        Assert.AreEqual(ReplayBuildDetailStatus.Detected, (await fixture.Context.ReplayBuildDetails.SingleAsync()).Status);
+    }
+
+    [TestMethod]
     public async Task ProcessPendingBatchAsync_MarksStructurallyInvalidReplayAsNotDetectable()
     {
         await using var fixture = await TestFixture.CreateAsync();
@@ -136,7 +150,7 @@ public sealed class BuildDetailGenerationServiceTests
             return new TestFixture(connection, context, service);
         }
 
-        public async Task SeedDetectableReplayAsync(bool withMin5Spawns = true)
+        public async Task SeedDetectableReplayAsync(bool withMin5Spawns = true, bool te = true)
         {
             var replay = new Replay
             {
@@ -146,7 +160,7 @@ public sealed class BuildDetailGenerationServiceTests
                 Version = "1.0",
                 GameMode = GameMode.Standard,
                 RegionId = 1,
-                TE = true,
+                TE = te,
                 PlayerCount = 6,
                 Gametime = new DateTime(2026, 1, 1),
                 BaseBuild = 90000,

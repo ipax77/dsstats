@@ -155,6 +155,7 @@ builder.Services.AddScoped<IInHouseAuthService, InHouseAuthService>();
 
 builder.Services.AddStats();
 builder.Services.AddScoped<IBuildsService, BuildsService>();
+builder.Services.AddScoped<IBuildDetailsService, BuildDetailsService>();
 
 builder.Services.AddScoped<TransitionService>();
 

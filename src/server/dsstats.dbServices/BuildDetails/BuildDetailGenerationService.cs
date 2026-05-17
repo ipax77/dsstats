@@ -88,6 +88,22 @@ public sealed class BuildDetailGenerationService(
 
         if (details.Count > 0)
         {
+            var detailReplayIds = details.Select(x => x.ReplayId).ToArray();
+            var existingReplayIds = await context.ReplayBuildDetails
+                .AsNoTracking()
+                .Where(x => detailReplayIds.Contains(x.ReplayId))
+                .Select(x => x.ReplayId)
+                .ToListAsync(token);
+
+            if (existingReplayIds.Count > 0)
+            {
+                var existingReplayIdSet = existingReplayIds.ToHashSet();
+                details.RemoveAll(x => existingReplayIdSet.Contains(x.ReplayId));
+            }
+        }
+
+        if (details.Count > 0)
+        {
             var autoDetectChanges = context.ChangeTracker.AutoDetectChangesEnabled;
             context.ChangeTracker.AutoDetectChangesEnabled = false;
             try
@@ -112,7 +128,6 @@ public sealed class BuildDetailGenerationService(
         return context.Replays
             .AsNoTracking()
             .Where(r => r.GameMode == GameMode.Standard
-                && r.TE
                 && r.WinnerTeam > 0
                 && r.PlayerCount == 6
                 && !context.ReplayBuildDetails.Any(d => d.ReplayId == r.ReplayId))

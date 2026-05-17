@@ -18,7 +18,7 @@ internal static class Program
     private const string DefaultReplayDirectory =
         @"C:\Users\pax77\Documents\StarCraft II\Accounts\107095918\2-S2-1-226401\Replays\Multiplayer";
 
-    private const string ReplayFilter = "Direct Strike TE*.SC2Replay";
+    private const string ReplayFilter = "Direct Strike*.SC2Replay";
     private const string DefaultDevelopmentSettingsPath = @"src\server\dsstats.api\appsettings.Development.json";
     private const int DefaultLimit = 1000;
     private const int DefaultDbBatchSize = 1000;
@@ -89,7 +89,7 @@ internal static class Program
             }
 
             Console.WriteLine();
-            Console.WriteLine("Direct Strike TE detail build populate");
+            Console.WriteLine("Direct Strike detail build populate");
             Console.WriteLine($"Candidates: {total.Candidates}");
             Console.WriteLine($"Detected: {total.Detected}");
             Console.WriteLine($"Not detectable: {total.NotDetectable}");
@@ -134,7 +134,7 @@ internal static class Program
             discovered = await GetReplayQuery(context).CountAsync();
             if (discovered == 0)
             {
-                Console.Error.WriteLine("No Direct Strike TE replays found in the dev database.");
+                Console.Error.WriteLine("No Direct Strike standard replays found in the dev database.");
                 return 1;
             }
 
@@ -469,7 +469,7 @@ internal static class Program
         string batchInfo,
         ScanResult result)
     {
-        Console.WriteLine("Direct Strike TE detail build scan");
+        Console.WriteLine("Direct Strike detail build scan");
         Console.WriteLine(source);
         Console.WriteLine($"Discovered: {discovered}");
         Console.WriteLine($"Attempted: {result.Attempted} of {selected}");
@@ -690,8 +690,7 @@ internal static class Program
             .Where(replay => replay.GameMode == GameMode.Standard
                 && replay.PlayerCount == 6
                 && replay.WinnerTeam != 0
-                && replay.TE
-                && replay.Title.StartsWith("Direct Strike TE"));
+                && replay.Title.StartsWith("Direct Strike"));
     }
 
     private static Task<List<DatabaseReplayDto>> FetchReplayBatch(

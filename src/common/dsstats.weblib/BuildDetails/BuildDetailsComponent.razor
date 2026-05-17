@@ -1,0 +1,577 @@
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Players
+@using dsstats.weblib.Replays
+@inject IBuildDetailsService BuildDetailsService
+@inject IReplayRepository ReplayRepository
+@implements IDisposable
+
+<div class="container-fluid">
+    <div class="mb-2 bgchart border rounded p-2">
+        <h4 class="mb-1">Build Details</h4>
+        <div class="text-muted">
+            Detected Standard build openings from Breakpoint Min5, using unit composition at the 5 minute mark. Builds are ranked by average rating gain; winrate and game count add context, and selected matchups show sample replays for closer inspection.
+        </div>
+    </div>
+
+    <div class="border rounded p-2 bgchart mb-2">
+        <EditForm EditContext="editContext">
+            <div class="row g-3 align-items-end">
+                <div class="col-auto">
+                    <label for="buildDetailsTimePeriod" class="form-label">Time Period</label>
+                    <InputSelect id="buildDetailsTimePeriod" @bind-Value="Request.TimePeriod" class="form-select">
+                        @foreach (var value in Data.GetBasicTimePeriods())
+                        {
+                            <option value="@value">@value</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-auto">
+                    <label for="buildDetailsCommander" class="form-label">Commander</label>
+                    <InputSelect id="buildDetailsCommander" @bind-Value="Request.Commander" class="form-select">
+                        <option value="@Commander.None">All</option>
+                        @foreach (var value in Data.GetStandardCommanders())
+                        {
+                            <option value="@value">@value</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-auto">
+                    <label for="buildDetailsTe" class="form-label">Replay Type</label>
+                    <InputSelect id="buildDetailsTe" @bind-Value="Request.TeFilter" class="form-select">
+                        @foreach (var value in Enum.GetValues<BuildDetailsTeFilter>())
+                        {
+                            <option value="@value">@GetTeFilterLabel(value)</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-auto">
+                    <label for="buildDetailsGas" class="form-label">Gas First</label>
+                    <InputSelect id="buildDetailsGas" @bind-Value="Request.GasFilter" class="form-select">
+                        @foreach (var value in Enum.GetValues<BuildDetailsGasFilter>())
+                        {
+                            <option value="@value">@GetGasFilterLabel(value)</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-auto">
+                    <label for="buildDetailsFromRating" class="form-label">From Rating: @Request.FromRating</label>
+                    <input type="range" id="buildDetailsFromRating" @bind="Request.FromRating"
+                           class="form-range" min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50" />
+                </div>
+                <div class="col-auto">
+                    <label for="buildDetailsToRating" class="form-label">To Rating: @Request.ToRating @(Request.ToRating == Data.MaxBuildRating ? "+" : "")</label>
+                    <input type="range" id="buildDetailsToRating" @bind="Request.ToRating"
+                           class="form-range" min="@Data.MinBuildRating" max="@Data.MaxBuildRating" step="50" />
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-sm btn-outline-warning mb-2" @onclick="SetRating">
+                        Set Rating
+                    </button>
+                </div>
+                <div class="col-auto">
+                    <div class="form-check mb-2">
+                        <InputCheckbox id="buildDetailsWithLeavers" @bind-Value="Request.WithLeavers" class="form-check-input" />
+                        <label for="buildDetailsWithLeavers" class="form-check-label">With Leavers</label>
+                    </div>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+
+    <div class="row g-2">
+        <div class="col-xxl-5 col-xl-6 col-lg-12">
+            <div class="bgchart border rounded p-2 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h4 class="mb-0">Build Details</h4>
+                    @if (overviewLoading)
+                    {
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    }
+                </div>
+                <div class="table-responsive" style="max-height: 74vh; overflow-y: auto;">
+                    <table class="tptable">
+                        <CascadingValue Value="overviewOrders">
+                            <thead class="user-select-none">
+                                <tr>
+                                    <th class="pointer" style="width: 90px;" @onclick="e => SortOverview(nameof(BuildDetailsOverviewRow.Commander))">
+                                        <SortArrow Column="@nameof(BuildDetailsOverviewRow.Commander)">Cmdr</SortArrow>
+                                    </th>
+                                    <th class="pointer" style="width: 160px;" @onclick="e => SortOverview(nameof(BuildDetailsOverviewRow.Build))">
+                                        <SortArrow Column="@nameof(BuildDetailsOverviewRow.Build)">Build</SortArrow>
+                                    </th>
+                                    <th class="pointer text-end" style="width: 90px;" @onclick="e => SortOverview(nameof(BuildDetailsOverviewRow.AverageRatingGain))">
+                                        <SortArrow Column="@nameof(BuildDetailsOverviewRow.AverageRatingGain)">Avg Gain</SortArrow>
+                                    </th>
+                                    <th class="pointer text-end" style="width: 80px;" @onclick="e => SortOverview(nameof(BuildDetailsOverviewRow.Winrate))">
+                                        <SortArrow Column="@nameof(BuildDetailsOverviewRow.Winrate)">Winrate</SortArrow>
+                                    </th>
+                                    <th class="pointer text-end" style="width: 80px;" @onclick="e => SortOverview(nameof(BuildDetailsOverviewRow.Games))">
+                                        <SortArrow Column="@nameof(BuildDetailsOverviewRow.Games)">Games</SortArrow>
+                                    </th>
+                                    <th class="pointer text-end" style="width: 80px;" @onclick="e => SortOverview(nameof(BuildDetailsOverviewRow.GasFirstRate))">
+                                        <SortArrow Column="@nameof(BuildDetailsOverviewRow.GasFirstRate)">Gas</SortArrow>
+                                    </th>
+                                </tr>
+                            </thead>
+                        </CascadingValue>
+                        <tbody class="text-nowrap">
+                            @if (overviewRows.Count == 0 && !overviewLoading)
+                            {
+                                <tr>
+                                    <td colspan="100">No build details found.</td>
+                                </tr>
+                            }
+                            @foreach (var row in SortedOverviewRows)
+                            {
+                                <tr class="pointer @(IsSelectedOverview(row) ? "table-active" : "")" @onclick="() => SelectOverview(row)">
+                                    <td class="text-warning">@row.Commander</td>
+                                    <td>@row.GetBuildName()</td>
+                                    <td class="text-end @GetGainClass(row.AverageRatingGain)">@row.AverageRatingGain.ToString("N2")</td>
+                                    <td class="text-end">@row.Winrate.ToString("N1")%</td>
+                                    <td class="text-end">@row.Games.ToString("N0")</td>
+                                    <td class="text-end">@row.GasFirstRate.ToString("N1")%</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xxl-4 col-xl-6 col-lg-12">
+            <div class="bgchart border rounded p-2 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h4 class="mb-0">@SelectedBuildTitle</h4>
+                    @if (matchupsLoading)
+                    {
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    }
+                </div>
+                <div class="table-responsive" style="max-height: 74vh; overflow-y: auto;">
+                    <table class="tptable">
+                        <CascadingValue Value="matchupOrders">
+                            <thead class="user-select-none">
+                                <tr>
+                                    <th class="pointer" style="width: 90px;" @onclick="e => SortMatchups(nameof(BuildDetailsMatchupRow.OpponentCommander))">
+                                        <SortArrow Column="@nameof(BuildDetailsMatchupRow.OpponentCommander)">Vs</SortArrow>
+                                    </th>
+                                    <th class="pointer" style="width: 160px;" @onclick="e => SortMatchups(nameof(BuildDetailsMatchupRow.OpponentBuild))">
+                                        <SortArrow Column="@nameof(BuildDetailsMatchupRow.OpponentBuild)">Build</SortArrow>
+                                    </th>
+                                    <th class="pointer text-end" style="width: 90px;" @onclick="e => SortMatchups(nameof(BuildDetailsMatchupRow.AverageRatingGain))">
+                                        <SortArrow Column="@nameof(BuildDetailsMatchupRow.AverageRatingGain)">Avg Gain</SortArrow>
+                                    </th>
+                                    <th class="pointer text-end" style="width: 80px;" @onclick="e => SortMatchups(nameof(BuildDetailsMatchupRow.Winrate))">
+                                        <SortArrow Column="@nameof(BuildDetailsMatchupRow.Winrate)">Winrate</SortArrow>
+                                    </th>
+                                    <th class="pointer text-end" style="width: 80px;" @onclick="e => SortMatchups(nameof(BuildDetailsMatchupRow.Games))">
+                                        <SortArrow Column="@nameof(BuildDetailsMatchupRow.Games)">Games</SortArrow>
+                                    </th>
+                                    <th class="text-end" style="width: 80px;">Gas</th>
+                                </tr>
+                            </thead>
+                        </CascadingValue>
+                        <tbody class="text-nowrap">
+                            @if (matchupRows.Count == 0 && !matchupsLoading)
+                            {
+                                <tr>
+                                    <td colspan="100">No matchup details found.</td>
+                                </tr>
+                            }
+                            @foreach (var row in SortedMatchupRows)
+                            {
+                                <tr class="pointer @(IsSelectedMatchup(row) ? "table-active" : "")" @onclick="() => SelectMatchup(row)">
+                                    <td class="text-warning">@row.OpponentCommander</td>
+                                    <td>@row.GetOpponentBuildName()</td>
+                                    <td class="text-end @GetGainClass(row.AverageRatingGain)">@row.AverageRatingGain.ToString("N2")</td>
+                                    <td class="text-end">@row.Winrate.ToString("N1")%</td>
+                                    <td class="text-end">@row.Games.ToString("N0")</td>
+                                    <td class="text-end">@row.SelectedGasFirstGames.ToString("N0")/@row.OpponentGasFirstGames.ToString("N0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xxl-3 col-xl-12">
+            <div class="bgchart border rounded p-2 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <h4 class="mb-0">Sample Replays</h4>
+                        @if (selectedMatchup is not null)
+                        {
+                            <div class="small text-muted">
+                                @selectedMatchup.Commander @selectedMatchup.GetBuildName()
+                                <span class="text-danger"> vs </span>
+                                @selectedMatchup.OpponentCommander @selectedMatchup.GetOpponentBuildName()
+                            </div>
+                        }
+                    </div>
+                    @if (samplesLoading)
+                    {
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    }
+                </div>
+                <div class="table-responsive">
+                    <table class="tptable">
+                        <thead>
+                            <tr>
+                                <th style="width: 24px;"></th>
+                                <th style="width: 100px;">Date</th>
+                                <th style="width: 80px;" class="text-end">Gain</th>
+                                <th style="width: 80px;" class="text-end">Rating</th>
+                                <th style="width: 70px;">Gas</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-nowrap">
+                            @if (sampleRows.Count == 0 && !samplesLoading)
+                            {
+                                <tr>
+                                    <td colspan="100">Select a matchup.</td>
+                                </tr>
+                            }
+                            @foreach (var sample in sampleRows)
+                            {
+                                <tr class="pointer" @onclick="() => LoadReplayDetails(sample.Replay.ReplayHash)">
+                                    <td><i class="bi bi-list-ul text-primary"></i></td>
+                                    <td>@sample.Replay.Gametime.ToString("yyyy-MM-dd")</td>
+                                    <td class="text-end @GetGainClass(sample.Replay.PlayerGain)">@sample.Replay.PlayerGain.ToString("N2")</td>
+                                    <td class="text-end">@sample.Replay.AvgRating</td>
+                                    <td>@(sample.GasFirst ? "This" : "")@(sample.GasFirst && sample.OpponentGasFirst ? "/" : "")@(sample.OpponentGasFirst ? "Opp" : "")</td>
+                                </tr>
+                            }
+                        </tbody>
+                        @if (SelectedSamplesRequest is not null && sampleRows.Count > 0)
+                        {
+                            <tfoot>
+                                <tr>
+                                    <td colspan="100" class="text-end"><a class="text-decoration-none" href="@SelectedSamplesRequest.GetReplayLink()">View replays</a></td>
+                                </tr>
+                            </tfoot>
+                        }
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
+<PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(replayDetails!)" />
+
+@code {
+    [Parameter, EditorRequired]
+    public BuildDetailsRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<BuildDetailsRequest> OnRequestChanged { get; set; }
+
+    private EditContext editContext = null!;
+    private readonly CancellationTokenSource cts = new();
+    private List<BuildDetailsOverviewRow> overviewRows = [];
+    private List<BuildDetailsMatchupRow> matchupRows = [];
+    private List<BuildDetailsSampleReplay> sampleRows = [];
+    private BuildDetailsOverviewRow? selectedOverview;
+    private BuildDetailsMatchupRow? selectedMatchup;
+    private ReplayModal? replayModal;
+    private PlayerModal? playerModal;
+    private ReplayDetails? replayDetails;
+    private bool overviewLoading;
+    private bool matchupsLoading;
+    private bool samplesLoading;
+    private readonly List<TableOrder> overviewOrders = [new() { Column = nameof(BuildDetailsOverviewRow.AverageRatingGain), Ascending = false }];
+    private readonly List<TableOrder> matchupOrders = [new() { Column = nameof(BuildDetailsMatchupRow.AverageRatingGain), Ascending = false }];
+
+    private string SelectedBuildTitle => selectedOverview is null
+        ? "Matchups"
+        : $"{selectedOverview.Commander} {selectedOverview.GetBuildName()}";
+
+    private BuildDetailsSamplesRequest? SelectedSamplesRequest => selectedOverview is null || selectedMatchup is null
+        ? null
+        : CreateSamplesRequest(selectedOverview, selectedMatchup);
+
+    private IEnumerable<BuildDetailsOverviewRow> SortedOverviewRows => overviewOrders[0].Column switch
+    {
+        nameof(BuildDetailsOverviewRow.Commander) => ApplyOverviewDirection(overviewRows.OrderBy(x => x.Commander).ThenBy(x => x.Build)),
+        nameof(BuildDetailsOverviewRow.Build) => ApplyOverviewDirection(overviewRows.OrderBy(x => x.GetBuildName()).ThenBy(x => x.Commander)),
+        nameof(BuildDetailsOverviewRow.Winrate) => ApplyOverviewDirection(overviewRows.OrderBy(x => x.Winrate).ThenByDescending(x => x.Games)),
+        nameof(BuildDetailsOverviewRow.Games) => ApplyOverviewDirection(overviewRows.OrderBy(x => x.Games).ThenBy(x => x.Commander)),
+        nameof(BuildDetailsOverviewRow.GasFirstRate) => ApplyOverviewDirection(overviewRows.OrderBy(x => x.GasFirstRate).ThenByDescending(x => x.Games)),
+        _ => ApplyOverviewDirection(overviewRows.OrderBy(x => x.AverageRatingGain).ThenBy(x => x.Games)),
+    };
+
+    private IEnumerable<BuildDetailsMatchupRow> SortedMatchupRows => matchupOrders[0].Column switch
+    {
+        nameof(BuildDetailsMatchupRow.OpponentCommander) => ApplyMatchupDirection(matchupRows.OrderBy(x => x.OpponentCommander).ThenBy(x => x.OpponentBuild)),
+        nameof(BuildDetailsMatchupRow.OpponentBuild) => ApplyMatchupDirection(matchupRows.OrderBy(x => x.GetOpponentBuildName()).ThenBy(x => x.OpponentCommander)),
+        nameof(BuildDetailsMatchupRow.Winrate) => ApplyMatchupDirection(matchupRows.OrderBy(x => x.Winrate).ThenByDescending(x => x.Games)),
+        nameof(BuildDetailsMatchupRow.Games) => ApplyMatchupDirection(matchupRows.OrderBy(x => x.Games).ThenBy(x => x.OpponentCommander)),
+        _ => ApplyMatchupDirection(matchupRows.OrderBy(x => x.AverageRatingGain).ThenBy(x => x.Games)),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        editContext = new(Request);
+        editContext.OnFieldChanged += FieldChanged;
+        await LoadOverview(true);
+    }
+
+    private async void FieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        NormalizeRatingRange();
+        await LoadOverview();
+    }
+
+    private async Task SetRating()
+    {
+        NormalizeRatingRange();
+        await LoadOverview();
+    }
+
+    private async Task LoadOverview(bool dry = false)
+    {
+        overviewLoading = true;
+        matchupsLoading = true;
+        samplesLoading = true;
+        matchupRows = [];
+        sampleRows = [];
+        selectedMatchup = null;
+        await InvokeAsync(StateHasChanged);
+
+        overviewRows = await BuildDetailsService.GetOverview(Request, cts.Token);
+        selectedOverview = overviewRows.FirstOrDefault(x => IsSameOverview(x, selectedOverview)) ?? overviewRows.FirstOrDefault();
+        overviewLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+        if (selectedOverview is not null)
+        {
+            await LoadMatchups(selectedOverview);
+        }
+        else
+        {
+            matchupsLoading = false;
+            samplesLoading = false;
+        }
+
+        if (!dry)
+        {
+            await OnRequestChanged.InvokeAsync(Request);
+        }
+    }
+
+    private async Task LoadMatchups(BuildDetailsOverviewRow row)
+    {
+        matchupsLoading = true;
+        samplesLoading = true;
+        matchupRows = [];
+        sampleRows = [];
+        selectedMatchup = null;
+        await InvokeAsync(StateHasChanged);
+
+        var request = CreateMatchupRequest(row);
+        matchupRows = await BuildDetailsService.GetMatchups(request, cts.Token);
+        selectedMatchup = matchupRows.FirstOrDefault();
+        matchupsLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+        if (selectedMatchup is not null)
+        {
+            await LoadSamples(row, selectedMatchup);
+        }
+        else
+        {
+            samplesLoading = false;
+        }
+    }
+
+    private async Task LoadSamples(BuildDetailsOverviewRow overview, BuildDetailsMatchupRow matchup)
+    {
+        samplesLoading = true;
+        sampleRows = [];
+        await InvokeAsync(StateHasChanged);
+
+        sampleRows = await BuildDetailsService.GetSampleReplays(CreateSamplesRequest(overview, matchup), cts.Token);
+        samplesLoading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SelectOverview(BuildDetailsOverviewRow row)
+    {
+        selectedOverview = row;
+        await LoadMatchups(row);
+    }
+
+    private async Task SelectMatchup(BuildDetailsMatchupRow row)
+    {
+        if (selectedOverview is null)
+        {
+            return;
+        }
+
+        selectedMatchup = row;
+        await LoadSamples(selectedOverview, row);
+    }
+
+    private BuildDetailsMatchupRequest CreateMatchupRequest(BuildDetailsOverviewRow row)
+    {
+        return new()
+        {
+            RatingType = Request.RatingType,
+            TimePeriod = Request.TimePeriod,
+            Commander = Request.Commander,
+            FromRating = Request.FromRating,
+            ToRating = Request.ToRating,
+            WithLeavers = Request.WithLeavers,
+            GasFilter = Request.GasFilter,
+            TeFilter = Request.TeFilter,
+            SelectedCommander = row.Commander,
+            SelectedBuild = row.Build,
+        };
+    }
+
+    private BuildDetailsSamplesRequest CreateSamplesRequest(BuildDetailsOverviewRow overview, BuildDetailsMatchupRow matchup)
+    {
+        return new()
+        {
+            RatingType = Request.RatingType,
+            TimePeriod = Request.TimePeriod,
+            Commander = Request.Commander,
+            FromRating = Request.FromRating,
+            ToRating = Request.ToRating,
+            WithLeavers = Request.WithLeavers,
+            GasFilter = Request.GasFilter,
+            TeFilter = Request.TeFilter,
+            SelectedCommander = overview.Commander,
+            SelectedBuild = overview.Build,
+            OpponentCommander = matchup.OpponentCommander,
+            OpponentBuild = matchup.OpponentBuild,
+            Count = 10,
+        };
+    }
+
+    private void SortOverview(string column)
+    {
+        ToggleSort(overviewOrders, column);
+    }
+
+    private void SortMatchups(string column)
+    {
+        ToggleSort(matchupOrders, column);
+    }
+
+    private static void ToggleSort(List<TableOrder> orders, string column)
+    {
+        var order = orders[0];
+        if (order.Column == column)
+        {
+            order.Ascending = !order.Ascending;
+        }
+        else
+        {
+            order.Column = column;
+            order.Ascending = column is nameof(BuildDetailsOverviewRow.Commander)
+                or nameof(BuildDetailsOverviewRow.Build)
+                or nameof(BuildDetailsMatchupRow.OpponentCommander)
+                or nameof(BuildDetailsMatchupRow.OpponentBuild);
+        }
+    }
+
+    private IEnumerable<BuildDetailsOverviewRow> ApplyOverviewDirection(IOrderedEnumerable<BuildDetailsOverviewRow> rows)
+    {
+        return overviewOrders[0].Ascending ? rows : rows.Reverse();
+    }
+
+    private IEnumerable<BuildDetailsMatchupRow> ApplyMatchupDirection(IOrderedEnumerable<BuildDetailsMatchupRow> rows)
+    {
+        return matchupOrders[0].Ascending ? rows : rows.Reverse();
+    }
+
+    private static bool IsSameOverview(BuildDetailsOverviewRow? left, BuildDetailsOverviewRow? right)
+    {
+        return left is not null
+            && right is not null
+            && left.Commander == right.Commander
+            && left.Build == right.Build;
+    }
+
+    private bool IsSelectedOverview(BuildDetailsOverviewRow row)
+    {
+        return IsSameOverview(row, selectedOverview);
+    }
+
+    private bool IsSelectedMatchup(BuildDetailsMatchupRow row)
+    {
+        return selectedMatchup is not null
+            && row.OpponentCommander == selectedMatchup.OpponentCommander
+            && row.OpponentBuild == selectedMatchup.OpponentBuild;
+    }
+
+    private void NormalizeRatingRange()
+    {
+        Request.FromRating = Math.Clamp(Request.FromRating, Data.MinBuildRating, Data.MaxBuildRating);
+        Request.ToRating = Math.Clamp(Request.ToRating, Data.MinBuildRating, Data.MaxBuildRating);
+        if (Request.FromRating > Request.ToRating)
+        {
+            (Request.FromRating, Request.ToRating) = (Request.ToRating, Request.FromRating);
+        }
+    }
+
+    private async Task LoadReplayDetails(string replayHash)
+    {
+        replayDetails = await ReplayRepository.GetReplayDetails(replayHash);
+        if (replayDetails is not null)
+        {
+            replayModal?.Show(replayDetails);
+        }
+    }
+
+    private void CloseReplay()
+    {
+        replayDetails = null;
+    }
+
+    private static string GetGasFilterLabel(BuildDetailsGasFilter filter)
+    {
+        return filter switch
+        {
+            BuildDetailsGasFilter.SelectedSide => "This build",
+            BuildDetailsGasFilter.OpponentSide => "Opponent",
+            BuildDetailsGasFilter.EitherSide => "Either",
+            BuildDetailsGasFilter.BothSides => "Both",
+            _ => "Any",
+        };
+    }
+
+    private static string GetTeFilterLabel(BuildDetailsTeFilter filter)
+    {
+        return filter switch
+        {
+            BuildDetailsTeFilter.TE => "TE",
+            BuildDetailsTeFilter.NonTE => "Non TE",
+            _ => "All",
+        };
+    }
+
+    private static string GetGainClass(double gain)
+    {
+        return gain < 0 ? "text-danger" : "text-success";
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= FieldChanged;
+        cts.Cancel();
+        cts.Dispose();
+    }
+}
