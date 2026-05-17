@@ -2,33 +2,36 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using dsstats.db;
 
 #nullable disable
 
-namespace dsstats.migrations.mysql.Migrations
+namespace dsstats.migrations.postgresql.Migrations
 {
     [DbContext(typeof(DsstatsContext))]
-    partial class DsstatsContextModelSnapshot : ModelSnapshot
+    [Migration("20260517184210_ReplayBuildDetails")]
+    partial class ReplayBuildDetails
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "9.0.16")
-                .HasAnnotation("Relational:MaxIdentifierLength", 64);
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("DsAbilityDsUnit", b =>
                 {
                     b.Property<int>("AbilitiesDsAbilityId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("DsUnitsDsUnitId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("AbilitiesDsAbilityId", "DsUnitsDsUnitId");
 
@@ -41,9 +44,9 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ArcadeReplayId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadeReplayId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ArcadeReplayId"));
 
                     b.Property<long>("BnetBucketId")
                         .HasColumnType("bigint");
@@ -53,26 +56,26 @@ namespace dsstats.migrations.mysql.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<int>("Duration")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("GameMode")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("Imported")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<int>("PlayerCount")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("RegionId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("WinnerTeam")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("ArcadeReplayId");
 
@@ -89,21 +92,21 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ArcadeReplayPlayerId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadeReplayPlayerId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ArcadeReplayPlayerId"));
 
                     b.Property<int>("ArcadeReplayId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("PlayerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("SlotNumber")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Team")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("ArcadeReplayPlayerId");
 
@@ -118,26 +121,26 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ArcadeReplayRatingId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ArcadeReplayRatingId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ArcadeReplayRatingId"));
 
                     b.Property<int>("ArcadeReplayId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("AvgRating")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ExpectedWinProbability")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    b.PrimitiveCollection<string>("PlayerRatingDeltas")
+                    b.PrimitiveCollection<int[]>("PlayerRatingDeltas")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("integer[]");
 
-                    b.PrimitiveCollection<string>("PlayerRatings")
+                    b.PrimitiveCollection<int[]>("PlayerRatings")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("integer[]");
 
                     b.HasKey("ArcadeReplayRatingId");
 
@@ -150,38 +153,38 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("CombinedReplayId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("CombinedReplayId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CombinedReplayId"));
 
                     b.Property<int?>("ArcadeReplayId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Duration")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("GameMode")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("Gametime")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<DateTime>("Imported")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<int>("PlayerCount")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("ReplayId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<bool>("TE")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("WinnerTeam")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("CombinedReplayId");
 
@@ -202,31 +205,31 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("InHouseDeviceLinkCodeId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHouseDeviceLinkCodeId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InHouseDeviceLinkCodeId"));
 
                     b.Property<string>("CodeHash")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DisplayCode")
                         .IsRequired()
                         .HasMaxLength(12)
-                        .HasColumnType("varchar(12)");
+                        .HasColumnType("character varying(12)");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("InHouseUserId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UsedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("InHouseDeviceLinkCodeId");
 
@@ -244,32 +247,32 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("InHouseGameSessionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHouseGameSessionId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InHouseGameSessionId"));
 
                     b.Property<DateTime?>("ClosedAt")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<int>("CreatedByInHouseUserId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(80)
-                        .HasColumnType("varchar(80)");
+                        .HasColumnType("character varying(80)");
 
                     b.Property<Guid>("PublicId")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
-                    b.PrimitiveCollection<string>("ReplayIds")
+                    b.PrimitiveCollection<int[]>("ReplayIds")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("integer[]");
 
                     b.HasKey("InHouseGameSessionId");
 
@@ -288,19 +291,19 @@ namespace dsstats.migrations.mysql.Migrations
             modelBuilder.Entity("dsstats.db.InHouseGameSessionStateSnapshot", b =>
                 {
                     b.Property<int>("InHouseGameSessionId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<string>("Json")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.HasKey("InHouseGameSessionId");
 
@@ -311,43 +314,43 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("InHousePasskeyCredentialId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHousePasskeyCredentialId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InHousePasskeyCredentialId"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CredentialId")
                         .IsRequired()
                         .HasMaxLength(512)
-                        .HasColumnType("varchar(512)");
+                        .HasColumnType("character varying(512)");
 
                     b.Property<string>("DeviceName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int>("InHouseUserId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<bool>("IsBackedUp")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("LastUsedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<byte[]>("PublicKey")
                         .IsRequired()
-                        .HasColumnType("longblob");
+                        .HasColumnType("bytea");
 
-                    b.Property<uint>("SignatureCounter")
-                        .HasColumnType("int unsigned");
+                    b.Property<long>("SignatureCounter")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("UserHandle")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("varchar(256)");
+                        .HasColumnType("character varying(256)");
 
                     b.HasKey("InHousePasskeyCredentialId");
 
@@ -365,23 +368,23 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("InHouseProfileId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHouseProfileId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InHouseProfileId"));
 
                     b.Property<bool>("Active")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("InHouseUserId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("varchar(30)");
+                        .HasColumnType("character varying(30)");
 
                     b.HasKey("InHouseProfileId");
 
@@ -394,34 +397,34 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("InHouseSessionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHouseSessionId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InHouseSessionId"));
 
                     b.Property<string>("AccessTokenHash")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("InHouseUserId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("RefreshExpiresAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("RefreshTokenHash")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
+                        .HasColumnType("character varying(128)");
 
                     b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("InHouseSessionId");
 
@@ -442,26 +445,26 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("InHouseUserId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("InHouseUserId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InHouseUserId"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(40)
-                        .HasColumnType("varchar(40)");
+                        .HasColumnType("character varying(40)");
 
                     b.Property<bool>("IsAdmin")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("LastLoginAt")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("PublicId")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
                     b.HasKey("InHouseUserId");
 
@@ -477,60 +480,60 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("MauiConfigId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("MauiConfigId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MauiConfigId"));
 
                     b.Property<Guid>("AppGuid")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("AutoDecode")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("CPUCores")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<bool>("CheckForUpdates")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Culture")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
-                    b.PrimitiveCollection<string>("IgnoreReplays")
+                    b.PrimitiveCollection<string[]>("IgnoreReplays")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text[]");
 
                     b.Property<string>("ReplayStartName")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<int>("SessionWindowGameMode")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("SessionWindowHours")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<bool>("SessionWindowInitialized")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("SessionWindowMode")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("SessionWindowReplayCount")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UploadAskTime")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<bool>("UploadCredential")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Version")
                         .IsRequired()
                         .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("character varying(10)");
 
                     b.HasKey("MauiConfigId");
 
@@ -541,14 +544,14 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("PlayerId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("PlayerId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PlayerId"));
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
+                        .HasColumnType("character varying(20)");
 
                     b.HasKey("PlayerId");
 
@@ -561,55 +564,55 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("PlayerRatingId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("PlayerRatingId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PlayerRatingId"));
 
                     b.Property<int>("ArcadeGames")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Change")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<double>("Confidence")
-                        .HasColumnType("double");
+                        .HasColumnType("double precision");
 
                     b.Property<double>("Consistency")
-                        .HasColumnType("double");
+                        .HasColumnType("double precision");
 
                     b.Property<int>("DsstatsGames")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Games")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("LastGame")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<int>("Main")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("MainCount")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Mvps")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("PlayerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Position")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<double>("Rating")
-                        .HasColumnType("double");
+                        .HasColumnType("double precision");
 
                     b.Property<int>("RatingType")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Wins")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("PlayerRatingId");
 
@@ -629,18 +632,18 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("PlayerUpgradeId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("PlayerUpgradeId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PlayerUpgradeId"));
 
                     b.Property<int>("Gameloop")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int?>("ReplayPlayerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("UpgradeId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("PlayerUpgradeId");
 
@@ -655,75 +658,75 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ReplayId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayId"));
 
                     b.Property<int>("BaseBuild")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Bunker")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Cannon")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("CompatHash")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<int>("Duration")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("FileName")
                         .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<int>("GameMode")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("Gametime")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<DateTime>("Imported")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
-                    b.PrimitiveCollection<string>("MiddleChanges")
+                    b.PrimitiveCollection<int[]>("MiddleChanges")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("integer[]");
 
                     b.Property<int>("PlayerCount")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("RegionId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("ReplayHash")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<bool>("TE")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
+                        .HasColumnType("character varying(50)");
 
                     b.Property<bool>("Uploaded")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Version")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
+                        .HasColumnType("character varying(50)");
 
                     b.Property<int>("WinnerTeam")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("ReplayId");
 
@@ -747,19 +750,19 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ReplayArcadeMatchId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayArcadeMatchId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayArcadeMatchId"));
 
                     b.Property<int>("ArcadeReplayId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("MatchTime")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<int>("ReplayId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("ReplayArcadeMatchId");
 
@@ -770,30 +773,30 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ReplayBuildDetailId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayBuildDetailId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayBuildDetailId"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<int>("DetectionVersion")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("FailureReason")
                         .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<int>("ReplayId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.HasKey("ReplayBuildDetailId");
 
@@ -809,11 +812,11 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<string>("ReplayIdsCsv")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<string>("SeqKey")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.ToTable("ReplayIdResult");
                 });
@@ -822,15 +825,15 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ReplayObserversId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayObserversId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayObserversId"));
 
-                    b.PrimitiveCollection<string>("PlayerIds")
-                        .HasColumnType("longtext");
+                    b.PrimitiveCollection<int[]>("PlayerIds")
+                        .HasColumnType("integer[]");
 
                     b.Property<int>("ReplayId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("ReplayObserversId");
 
@@ -844,72 +847,72 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ReplayPlayerId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayPlayerId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayPlayerId"));
 
                     b.Property<int>("Apm")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Clan")
                         .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("character varying(10)");
 
                     b.Property<string>("CompatHash")
                         .HasMaxLength(64)
-                        .HasColumnType("varchar(64)");
+                        .HasColumnType("character varying(64)");
 
                     b.Property<int>("Duration")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("GamePos")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<bool>("IsMvp")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsUploader")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("Messages")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)");
+                        .HasColumnType("character varying(20)");
 
                     b.Property<int>("OppRace")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Pings")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("PlayerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Race")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    b.PrimitiveCollection<string>("Refineries")
+                    b.PrimitiveCollection<int[]>("Refineries")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("integer[]");
 
                     b.Property<int>("ReplayId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Result")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("SelectedRace")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("TeamId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    b.PrimitiveCollection<string>("TierUpgrades")
+                    b.PrimitiveCollection<int[]>("TierUpgrades")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("integer[]");
 
                     b.HasKey("ReplayPlayerId");
 
@@ -924,51 +927,51 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ReplayPlayerBuildDetailId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayPlayerBuildDetailId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayPlayerBuildDetailId"));
 
                     b.Property<int>("Build")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Commander")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("GamePos")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<bool>("GasFirst")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("Lane")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("OppBuild")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("OppCommander")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("OppGamePos")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<bool>("OppGasFirst")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("OppReplayPlayerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ReplayBuildDetailId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ReplayPlayerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("TeamId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<bool>("Won")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.HasKey("ReplayPlayerBuildDetailId");
 
@@ -992,36 +995,36 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ReplayPlayerRatingId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayPlayerRatingId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayPlayerRatingId"));
 
                     b.Property<double>("ExpectedDelta")
                         .HasPrecision(7, 2)
-                        .HasColumnType("double");
+                        .HasColumnType("double precision");
 
                     b.Property<int>("Games")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("PlayerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<double>("RatingBefore")
                         .HasPrecision(7, 2)
-                        .HasColumnType("double");
+                        .HasColumnType("double precision");
 
                     b.Property<double>("RatingDelta")
                         .HasPrecision(7, 2)
-                        .HasColumnType("double");
+                        .HasColumnType("double precision");
 
                     b.Property<int>("RatingType")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ReplayPlayerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ReplayRatingId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("ReplayPlayerRatingId");
 
@@ -1039,28 +1042,28 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ReplayRatingId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayRatingId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayRatingId"));
 
                     b.Property<int>("AvgRating")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<double>("ExpectedWinProbability")
                         .HasPrecision(5, 2)
-                        .HasColumnType("double");
+                        .HasColumnType("double precision");
 
                     b.Property<bool>("IsPreRating")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<int>("LeaverType")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("RatingType")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ReplayId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("ReplayRatingId");
 
@@ -1076,24 +1079,24 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ReplayTeamBuildDetailId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayTeamBuildDetailId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayTeamBuildDetailId"));
 
                     b.Property<int>("FollowerReplayPlayerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("LeaderReplayPlayerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ReplayBuildDetailId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("TeamBuild")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("TeamId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("ReplayTeamBuildDetailId");
 
@@ -1112,28 +1115,28 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("ReplayUploadJobId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayUploadJobId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayUploadJobId"));
 
                     b.Property<string>("BlobFilePath")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<string>("Error")
                         .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<DateTime?>("FinishedAt")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<Guid>("Guid")
-                        .HasColumnType("char(36)");
+                        .HasColumnType("uuid");
 
                     b.HasKey("ReplayUploadJobId");
 
@@ -1148,25 +1151,25 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("Sc2ProfileId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Sc2ProfileId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Sc2ProfileId"));
 
                     b.Property<bool>("Active")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Folder")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<int>("MauiConfigId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("varchar(30)");
+                        .HasColumnType("character varying(30)");
 
                     b.HasKey("Sc2ProfileId");
 
@@ -1181,30 +1184,30 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("SpawnId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("SpawnId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("SpawnId"));
 
                     b.Property<int>("ArmyValue")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Breakpoint")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("GasCount")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Income")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("KilledValue")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ReplayPlayerId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("UpgradeSpent")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("SpawnId");
 
@@ -1217,22 +1220,22 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("SpawnUnitId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("SpawnUnitId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("SpawnUnitId"));
 
                     b.Property<int>("Count")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    b.PrimitiveCollection<string>("Positions")
+                    b.PrimitiveCollection<int[]>("Positions")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("integer[]");
 
                     b.Property<int>("SpawnId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("UnitId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("SpawnUnitId");
 
@@ -1247,14 +1250,14 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("UnitId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UnitId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UnitId"));
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(40)
-                        .HasColumnType("varchar(40)");
+                        .HasColumnType("character varying(40)");
 
                     b.HasKey("UnitId");
 
@@ -1268,21 +1271,21 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("BonusDamageId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("BonusDamageId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("BonusDamageId"));
 
                     b.Property<int>("Damage")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("DsWeaponId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("PerUpgrade")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("UnitType")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("BonusDamageId");
 
@@ -1295,45 +1298,45 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("DsAbilityId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DsAbilityId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DsAbilityId"));
 
                     b.Property<int>("AbilityTarget")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<float>("AoeRadius")
-                        .HasColumnType("float");
+                        .HasColumnType("real");
 
                     b.Property<int>("CastRange")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Commander")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Cooldown")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(310)
-                        .HasColumnType("varchar(310)");
+                        .HasColumnType("character varying(310)");
 
                     b.Property<float>("EnergyCost")
-                        .HasColumnType("float");
+                        .HasColumnType("real");
 
                     b.Property<bool>("GlobalTimer")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Requirements")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("DsAbilityId");
 
@@ -1344,62 +1347,62 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("DsUnitId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DsUnitId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DsUnitId"));
 
                     b.Property<int>("Armor")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Commander")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Cost")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<float>("EnergyRegen")
-                        .HasColumnType("float");
+                        .HasColumnType("real");
 
                     b.Property<float>("HealthRegen")
-                        .HasColumnType("float");
+                        .HasColumnType("real");
 
                     b.Property<int>("Life")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("MapUnitType")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("MaxEnergy")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("MovementType")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int>("ShieldArmor")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Shields")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<float>("Speed")
-                        .HasColumnType("float");
+                        .HasColumnType("real");
 
                     b.Property<int>("StartingEnergy")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Tier")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("UnitSize")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("UnitType")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("DsUnitId");
 
@@ -1410,31 +1413,31 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("DsUpgradeId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DsUpgradeId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DsUpgradeId"));
 
                     b.Property<int>("Commander")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Cost")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(300)
-                        .HasColumnType("varchar(300)");
+                        .HasColumnType("character varying(300)");
 
                     b.Property<int?>("DsUnitId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("RequiredTier")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Upgrade")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("DsUpgradeId");
 
@@ -1447,35 +1450,35 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("DsWeaponId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("DsWeaponId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DsWeaponId"));
 
                     b.Property<float>("AttackSpeed")
-                        .HasColumnType("float");
+                        .HasColumnType("real");
 
                     b.Property<int>("Attacks")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("CanTarget")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("Damage")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("DamagePerUpgrade")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("DsUnitId")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("character varying(100)");
 
                     b.Property<float>("Range")
-                        .HasColumnType("float");
+                        .HasColumnType("real");
 
                     b.HasKey("DsWeaponId");
 
@@ -1488,14 +1491,14 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("UpgradeId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UpgradeId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UpgradeId"));
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("UpgradeId");
 
@@ -1509,33 +1512,33 @@ namespace dsstats.migrations.mysql.Migrations
                 {
                     b.Property<int>("UploadJobId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("UploadJobId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UploadJobId"));
 
                     b.Property<string>("BlobFilePath")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
                     b.Property<string>("Error")
                         .HasMaxLength(200)
-                        .HasColumnType("varchar(200)");
+                        .HasColumnType("character varying(200)");
 
                     b.Property<DateTime?>("FinishedAt")
                         .HasPrecision(0)
-                        .HasColumnType("datetime(0)");
+                        .HasColumnType("timestamp(0) with time zone");
 
-                    b.PrimitiveCollection<string>("PlayerIds")
+                    b.PrimitiveCollection<int[]>("PlayerIds")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("integer[]");
 
                     b.Property<string>("Version")
                         .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("character varying(10)");
 
                     b.HasKey("UploadJobId");
 
@@ -1646,16 +1649,16 @@ namespace dsstats.migrations.mysql.Migrations
                     b.OwnsOne("dsstats.db.ToonId", "ToonId", b1 =>
                         {
                             b1.Property<int>("InHouseProfileId")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.Property<int>("Id")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.Property<int>("Realm")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.Property<int>("Region")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.HasKey("InHouseProfileId");
 
@@ -1690,16 +1693,16 @@ namespace dsstats.migrations.mysql.Migrations
                     b.OwnsOne("dsstats.db.ToonId", "ToonId", b1 =>
                         {
                             b1.Property<int>("PlayerId")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.Property<int>("Id")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.Property<int>("Realm")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.Property<int>("Region")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.HasKey("PlayerId");
 
@@ -1886,16 +1889,16 @@ namespace dsstats.migrations.mysql.Migrations
                     b.OwnsOne("dsstats.db.ToonId", "ToonId", b1 =>
                         {
                             b1.Property<int>("Sc2ProfileId")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.Property<int>("Id")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.Property<int>("Realm")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.Property<int>("Region")
-                                .HasColumnType("int");
+                                .HasColumnType("integer");
 
                             b1.HasKey("Sc2ProfileId");
 

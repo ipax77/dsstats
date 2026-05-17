@@ -5,6 +5,7 @@ using dsstats.api.InHouse;
 using dsstats.api.Services;
 using dsstats.db;
 using dsstats.dbServices;
+using dsstats.dbServices.BuildDetails;
 using dsstats.dbServices.Builds;
 using dsstats.dbServices.InHouse;
 using dsstats.dbServices.Stats;
@@ -144,6 +145,7 @@ builder.Services.AddSingleton<IPickBanService, PickBanService>();
 builder.Services.AddSingleton<InHouseConnectionTracker>();
 builder.Services.AddSingleton<IInHouseAccountNotifier, InHouseAccountNotifier>();
 builder.Services.AddSingleton<IInHouseGameSessionService, InHouseGameSessionService>();
+builder.Services.AddSingleton<BuildDetailGenerationService>();
 
 builder.Services.AddScoped<IDashboardStatsService, DashboardStatsService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();

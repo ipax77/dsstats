@@ -701,6 +701,8 @@ namespace dsstats.migrations.sqlite.Migrations
 
                     b.HasIndex("Gametime", "ReplayId");
 
+                    b.HasIndex("GameMode", "TE", "PlayerCount", "WinnerTeam", "Duration", "ReplayId");
+
                     b.HasIndex("Gametime", "Duration", "WinnerTeam", "PlayerCount", "GameMode", "TE");
 
                     b.ToTable("Replays");
@@ -725,6 +727,43 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.HasKey("ReplayArcadeMatchId");
 
                     b.ToTable("ReplayArcadeMatches");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayBuildDetail", b =>
+                {
+                    b.Property<int>("ReplayBuildDetailId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DetectionVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ReplayBuildDetailId");
+
+                    b.HasIndex("ReplayId")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "DetectionVersion");
+
+                    b.ToTable("ReplayBuildDetails");
                 });
 
             modelBuilder.Entity("dsstats.db.ReplayIdResult", b =>
@@ -838,6 +877,72 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.ToTable("ReplayPlayers");
                 });
 
+            modelBuilder.Entity("dsstats.db.ReplayPlayerBuildDetail", b =>
+                {
+                    b.Property<int>("ReplayPlayerBuildDetailId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Build")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Commander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GamePos")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("GasFirst")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Lane")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OppBuild")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OppCommander")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OppGamePos")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("OppGasFirst")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OppReplayPlayerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayBuildDetailId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayPlayerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TeamId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Won")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ReplayPlayerBuildDetailId");
+
+                    b.HasIndex("OppReplayPlayerId");
+
+                    b.HasIndex("ReplayBuildDetailId");
+
+                    b.HasIndex("ReplayPlayerId")
+                        .IsUnique();
+
+                    b.HasIndex("TeamId", "Lane");
+
+                    b.HasIndex("Commander", "Build", "OppCommander", "OppBuild");
+
+                    b.HasIndex("Commander", "Build", "TeamId", "Won");
+
+                    b.ToTable("ReplayPlayerBuildDetails");
+                });
+
             modelBuilder.Entity("dsstats.db.ReplayPlayerRating", b =>
                 {
                     b.Property<int>("ReplayPlayerRatingId")
@@ -916,6 +1021,40 @@ namespace dsstats.migrations.sqlite.Migrations
                         .IsUnique();
 
                     b.ToTable("ReplayRatings");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayTeamBuildDetail", b =>
+                {
+                    b.Property<int>("ReplayTeamBuildDetailId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FollowerReplayPlayerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("LeaderReplayPlayerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReplayBuildDetailId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TeamBuild")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TeamId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ReplayTeamBuildDetailId");
+
+                    b.HasIndex("FollowerReplayPlayerId");
+
+                    b.HasIndex("LeaderReplayPlayerId");
+
+                    b.HasIndex("ReplayBuildDetailId");
+
+                    b.HasIndex("TeamBuild", "TeamId");
+
+                    b.ToTable("ReplayTeamBuildDetails");
                 });
 
             modelBuilder.Entity("dsstats.db.ReplayUploadJob", b =>
@@ -1528,6 +1667,17 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.Navigation("Upgrade");
                 });
 
+            modelBuilder.Entity("dsstats.db.ReplayBuildDetail", b =>
+                {
+                    b.HasOne("dsstats.db.Replay", "Replay")
+                        .WithMany()
+                        .HasForeignKey("ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
+                });
+
             modelBuilder.Entity("dsstats.db.ReplayObservers", b =>
                 {
                     b.HasOne("dsstats.db.Replay", "Replay")
@@ -1556,6 +1706,33 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.Navigation("Player");
 
                     b.Navigation("Replay");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayPlayerBuildDetail", b =>
+                {
+                    b.HasOne("dsstats.db.ReplayPlayer", "OppReplayPlayer")
+                        .WithMany()
+                        .HasForeignKey("OppReplayPlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("dsstats.db.ReplayBuildDetail", "ReplayBuildDetail")
+                        .WithMany("PlayerBuilds")
+                        .HasForeignKey("ReplayBuildDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("dsstats.db.ReplayPlayer", "ReplayPlayer")
+                        .WithMany()
+                        .HasForeignKey("ReplayPlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OppReplayPlayer");
+
+                    b.Navigation("ReplayBuildDetail");
+
+                    b.Navigation("ReplayPlayer");
                 });
 
             modelBuilder.Entity("dsstats.db.ReplayPlayerRating", b =>
@@ -1594,6 +1771,33 @@ namespace dsstats.migrations.sqlite.Migrations
                         .IsRequired();
 
                     b.Navigation("Replay");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayTeamBuildDetail", b =>
+                {
+                    b.HasOne("dsstats.db.ReplayPlayer", "FollowerReplayPlayer")
+                        .WithMany()
+                        .HasForeignKey("FollowerReplayPlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("dsstats.db.ReplayPlayer", "LeaderReplayPlayer")
+                        .WithMany()
+                        .HasForeignKey("LeaderReplayPlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("dsstats.db.ReplayBuildDetail", "ReplayBuildDetail")
+                        .WithMany("TeamBuilds")
+                        .HasForeignKey("ReplayBuildDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FollowerReplayPlayer");
+
+                    b.Navigation("LeaderReplayPlayer");
+
+                    b.Navigation("ReplayBuildDetail");
                 });
 
             modelBuilder.Entity("dsstats.db.Sc2Profile", b =>
@@ -1731,6 +1935,13 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.Navigation("Players");
 
                     b.Navigation("Ratings");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayBuildDetail", b =>
+                {
+                    b.Navigation("PlayerBuilds");
+
+                    b.Navigation("TeamBuilds");
                 });
 
             modelBuilder.Entity("dsstats.db.ReplayPlayer", b =>

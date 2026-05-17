@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using dsstats.db;
 
@@ -11,9 +12,11 @@ using dsstats.db;
 namespace dsstats.migrations.mysql.Migrations
 {
     [DbContext(typeof(DsstatsContext))]
-    partial class DsstatsContextModelSnapshot : ModelSnapshot
+    [Migration("20260517184058_ReplayBuildDetails")]
+    partial class ReplayBuildDetails
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

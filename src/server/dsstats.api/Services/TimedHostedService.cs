@@ -1,5 +1,6 @@
 ﻿
 using dsstats.api.Hubs;
+using dsstats.dbServices.BuildDetails;
 using dsstats.dbServices.InHouse;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.SignalR;
@@ -9,6 +10,7 @@ namespace dsstats.api.Services;
 public class TimedHostedService(
     ArcadeJobService arcadeJobService,
     IRatingService ratingService,
+    BuildDetailGenerationService buildDetailGenerationService,
     IInHouseGameSessionService sessionService,
     IHubContext<InHouseHub> hubContext,
     ILogger<TimedHostedService> logger) : BackgroundService
@@ -50,6 +52,13 @@ public class TimedHostedService(
             if (nowTime.Hour == 3)
             {
                 await arcadeJobService.RunAsync(token);
+                var result = await buildDetailGenerationService.ProcessPendingBatchAsync(token: token);
+                logger.LogInformation(
+                    "Generated replay build details: {Detected} detected, {NotDetectable} not detectable, {Failed} failed from {Candidates} candidates.",
+                    result.Detected,
+                    result.NotDetectable,
+                    result.Failed,
+                    result.Candidates);
                 await CloseInactiveInHouseSessionsAsync(token);
             }
             else

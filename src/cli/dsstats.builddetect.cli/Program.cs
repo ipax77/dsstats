@@ -7,7 +7,9 @@ using dsstats.shared;
 using dsstats.shared.DetailBuild;
 using dsstats.shared.Units;
 using dsstats.dbServices;
+using dsstats.dbServices.BuildDetails;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace dsstats.builddetect.cli;
 
@@ -28,7 +30,79 @@ internal static class Program
             return await RunFileScan(args);
         }
 
+        if (args.Length > 0 && IsPopulateMode(args[0]))
+        {
+            return await RunDatabasePopulate(args);
+        }
+
         return await RunDatabaseScan(args);
+    }
+
+    private static async Task<int> RunDatabasePopulate(string[] args)
+    {
+        var maxCandidates = ParsePositiveInt(args, 1, int.MaxValue);
+        var batchSize = ParsePositiveInt(args, 2, DefaultDbBatchSize);
+        var connectionString = args.Length > 3 && !string.IsNullOrWhiteSpace(args[3])
+            ? args[3]
+            : GetDefaultConnectionString();
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            Console.Error.WriteLine(
+                $"Dev DB connection string not found. Expected dsstats:ConnectionString in {DefaultDevelopmentSettingsPath}, or pass it as args[3].");
+            return 1;
+        }
+
+        var options = CreateDbOptions(connectionString);
+        try
+        {
+            await using (var context = new DsstatsContext(options))
+            {
+                await context.Database.MigrateAsync();
+            }
+
+            var service = new BuildDetailGenerationService(
+                new DsstatsContextFactory(options),
+                NullLogger<BuildDetailGenerationService>.Instance);
+
+            var total = new BuildDetailGenerationTotal();
+
+            while (total.Candidates < maxCandidates)
+            {
+                var take = Math.Min(batchSize, maxCandidates - total.Candidates);
+                var result = await service.ProcessPendingBatchAsync(take);
+                if (result.Candidates == 0)
+                {
+                    break;
+                }
+
+                total.Add(result);
+                Console.WriteLine(
+                    string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"Batch {total.Batches}: candidates {result.Candidates}, detected {result.Detected}, not detectable {result.NotDetectable}, failed {result.Failed}"));
+
+                if (result.Candidates < take)
+                {
+                    break;
+                }
+            }
+
+            Console.WriteLine();
+            Console.WriteLine("Direct Strike TE detail build populate");
+            Console.WriteLine($"Candidates: {total.Candidates}");
+            Console.WriteLine($"Detected: {total.Detected}");
+            Console.WriteLine($"Not detectable: {total.NotDetectable}");
+            Console.WriteLine($"Failed: {total.Failed}");
+            Console.WriteLine($"Batches: {total.Batches}");
+
+            return total.Failed == 0 ? 0 : 1;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Dev DB populate failed: {GetInnermostMessage(ex)}");
+            return 1;
+        }
     }
 
     private static async Task<int> RunDatabaseScan(string[] args)
@@ -157,6 +231,12 @@ internal static class Program
     {
         return string.Equals(value, "files", StringComparison.OrdinalIgnoreCase)
             || Directory.Exists(value);
+    }
+
+    private static bool IsPopulateMode(string value)
+    {
+        return string.Equals(value, "populate", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "persist", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsBuildNoneInspection(string[] args, int index)
@@ -596,6 +676,7 @@ internal static class Program
 
         builder.UseMySql(connectionString, serverVersion, options =>
         {
+            options.MigrationsAssembly("dsstats.migrations.mysql");
             options.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
         });
 
@@ -862,5 +943,29 @@ internal static class Program
     private sealed record DatabaseReplayDto(int ReplayId, string FileName, ReplayDto Replay)
     {
         public string DisplayName => string.IsNullOrWhiteSpace(FileName) ? $"ReplayId {ReplayId}" : FileName;
+    }
+
+    private sealed class DsstatsContextFactory(DbContextOptions<DsstatsContext> options) : IDbContextFactory<DsstatsContext>
+    {
+        public DsstatsContext CreateDbContext()
+            => new(options);
+    }
+
+    private sealed class BuildDetailGenerationTotal
+    {
+        public int Batches { get; private set; }
+        public int Candidates { get; private set; }
+        public int Detected { get; private set; }
+        public int NotDetectable { get; private set; }
+        public int Failed { get; private set; }
+
+        public void Add(BuildDetailGenerationResult result)
+        {
+            Batches++;
+            Candidates += result.Candidates;
+            Detected += result.Detected;
+            NotDetectable += result.NotDetectable;
+            Failed += result.Failed;
+        }
     }
 }

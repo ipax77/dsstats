@@ -1,4 +1,5 @@
 using dsstats.db.UnitModels;
+using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -34,6 +35,9 @@ public class DsstatsContext : DbContext
     public DbSet<PlayerRating> PlayerRatings { get; set; }
     public DbSet<ReplayRating> ReplayRatings { get; set; }
     public DbSet<ReplayPlayerRating> ReplayPlayerRatings { get; set; }
+    public DbSet<ReplayBuildDetail> ReplayBuildDetails { get; set; }
+    public DbSet<ReplayPlayerBuildDetail> ReplayPlayerBuildDetails { get; set; }
+    public DbSet<ReplayTeamBuildDetail> ReplayTeamBuildDetails { get; set; }
     public DbSet<ArcadeReplay> ArcadeReplays { get; set; }
     public DbSet<ArcadeReplayPlayer> ArcadeReplayPlayers { get; set; }
     public DbSet<ReplayArcadeMatch> ReplayArcadeMatches { get; set; }
@@ -73,6 +77,7 @@ public class DsstatsContext : DbContext
             entity.HasIndex(i => i.Gametime);
             entity.HasIndex(i => new { i.Gametime, i.ReplayId });
             entity.HasIndex(i => new { i.Gametime, i.Duration, i.WinnerTeam, i.PlayerCount, i.GameMode, i.TE });
+            entity.HasIndex(i => new { i.GameMode, i.TE, i.PlayerCount, i.WinnerTeam, i.Duration, i.ReplayId });
         });
 
         modelBuilder.Entity<Player>(entity =>
@@ -253,6 +258,67 @@ public class DsstatsContext : DbContext
         modelBuilder.Entity<ReplayPlayerRating>()
             .HasIndex(x => new { x.ReplayRatingId, x.ReplayPlayerId, x.RatingType })
             .IsUnique();
+
+        modelBuilder.Entity<ReplayBuildDetail>(entity =>
+        {
+            entity.HasIndex(x => x.ReplayId)
+                .IsUnique();
+
+            entity.HasIndex(x => new { x.Status, x.DetectionVersion });
+
+            entity.HasOne(x => x.Replay)
+                .WithMany()
+                .HasForeignKey(x => x.ReplayId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReplayPlayerBuildDetail>(entity =>
+        {
+            entity.HasIndex(x => x.ReplayPlayerId)
+                .IsUnique();
+
+            entity.HasIndex(x => new { x.Commander, x.Build, x.OppCommander, x.OppBuild });
+            entity.HasIndex(x => new { x.TeamId, x.Lane });
+            entity.HasIndex(x => new { x.Commander, x.Build, x.TeamId, x.Won });
+            entity.HasIndex(x => x.OppReplayPlayerId);
+
+            entity.HasOne(x => x.ReplayBuildDetail)
+                .WithMany(x => x.PlayerBuilds)
+                .HasForeignKey(x => x.ReplayBuildDetailId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.ReplayPlayer)
+                .WithMany()
+                .HasForeignKey(x => x.ReplayPlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.OppReplayPlayer)
+                .WithMany()
+                .HasForeignKey(x => x.OppReplayPlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReplayTeamBuildDetail>(entity =>
+        {
+            entity.HasIndex(x => new { x.TeamBuild, x.TeamId });
+            entity.HasIndex(x => x.LeaderReplayPlayerId);
+            entity.HasIndex(x => x.FollowerReplayPlayerId);
+
+            entity.HasOne(x => x.ReplayBuildDetail)
+                .WithMany(x => x.TeamBuilds)
+                .HasForeignKey(x => x.ReplayBuildDetailId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.LeaderReplayPlayer)
+                .WithMany()
+                .HasForeignKey(x => x.LeaderReplayPlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.FollowerReplayPlayer)
+                .WithMany()
+                .HasForeignKey(x => x.FollowerReplayPlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         modelBuilder.Entity<ReplayIdResult>().HasNoKey();
 
