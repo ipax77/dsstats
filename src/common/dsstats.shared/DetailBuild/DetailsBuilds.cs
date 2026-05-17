@@ -179,6 +179,8 @@ public enum TerranBuild
     Libs = 2,
     Mech = 3,
     BC = 4,
+    Banshees = 5,
+    RavenViking = 6,
 }
 
 public enum ZergBuild

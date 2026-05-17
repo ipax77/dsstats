@@ -73,6 +73,137 @@ public sealed class BuildDetectTests
     }
 
     [TestMethod]
+    public void CanDetectTerranBioWithSupportTech()
+    {
+        AssertTerranBuild(
+            TerranBuild.Bio,
+            new UnitDto { Name = "MarineLightweight", Count = 36 },
+            new UnitDto { Name = "Raven", Count = 1 },
+            new UnitDto { Name = "Viking", Count = 1 });
+
+        AssertTerranBuild(
+            TerranBuild.Bio,
+            new UnitDto { Name = "MarineLightweight", Count = 26 },
+            new UnitDto { Name = "Marauder", Count = 2 },
+            new UnitDto { Name = "Reaper", Count = 2 },
+            new UnitDto { Name = "Raven", Count = 1 },
+            new UnitDto { Name = "WidowMine", Count = 4 });
+
+        AssertTerranBuild(
+            TerranBuild.Bio,
+            new UnitDto { Name = "MarineLightweight", Count = 28 },
+            new UnitDto { Name = "Raven", Count = 2 },
+            new UnitDto { Name = "Banshee", Count = 2 });
+
+        AssertTerranBuild(
+            TerranBuild.Bio,
+            new UnitDto { Name = "MarineLightweight", Count = 30 },
+            new UnitDto { Name = "Marauder", Count = 2 },
+            new UnitDto { Name = "SiegeTank", Count = 1 });
+
+        AssertTerranBuild(
+            TerranBuild.Bio,
+            new UnitDto { Name = "MarineLightweight", Count = 27 },
+            new UnitDto { Name = "Cyclone", Count = 4 },
+            new UnitDto { Name = "Raven", Count = 2 });
+
+        AssertTerranBuild(
+            TerranBuild.Bio,
+            new UnitDto { Name = "MarineLightweight", Count = 25 },
+            new UnitDto { Name = "Marauder", Count = 3 },
+            new UnitDto { Name = "Hellion", Count = 2 },
+            new UnitDto { Name = "Raven", Count = 1 });
+
+        AssertTerranBuild(
+            TerranBuild.Bio,
+            new UnitDto { Name = "MarineLightweight", Count = 26 },
+            new UnitDto { Name = "Marauder", Count = 3 },
+            new UnitDto { Name = "Cyclone", Count = 1 },
+            new UnitDto { Name = "Hellion", Count = 3 });
+
+        AssertTerranBuild(
+            TerranBuild.Bio,
+            new UnitDto { Name = "MarineLightweight", Count = 29 },
+            new UnitDto { Name = "ThorAP", Count = 1 });
+
+        AssertTerranBuild(
+            TerranBuild.Bio,
+            new UnitDto { Name = "MarineLightweight", Count = 27 },
+            new UnitDto { Name = "Raven", Count = 1 },
+            new UnitDto { Name = "ThorAP", Count = 1 });
+    }
+
+    [TestMethod]
+    public void CanDetectTerranBanshees()
+    {
+        AssertTerranBuild(TerranBuild.Banshees, new UnitDto { Name = "Banshee", Count = 3 });
+
+        AssertTerranBuild(
+            TerranBuild.Banshees,
+            new UnitDto { Name = "Banshee", Count = 4 },
+            new UnitDto { Name = "Cyclone", Count = 3 },
+            new UnitDto { Name = "Raven", Count = 2 },
+            new UnitDto { Name = "WidowMine", Count = 5 });
+
+        AssertTerranBuild(
+            TerranBuild.Banshees,
+            new UnitDto { Name = "Banshee", Count = 7 },
+            new UnitDto { Name = "MarineLightweight", Count = 8 },
+            new UnitDto { Name = "Raven", Count = 2 });
+    }
+
+    [TestMethod]
+    public void CanDetectTerranRavenViking()
+    {
+        AssertTerranBuild(
+            TerranBuild.RavenViking,
+            new UnitDto { Name = "Raven", Count = 5 },
+            new UnitDto { Name = "Viking", Count = 7 });
+
+        AssertTerranBuild(
+            TerranBuild.RavenViking,
+            new UnitDto { Name = "MarineLightweight", Count = 7 },
+            new UnitDto { Name = "Raven", Count = 4 },
+            new UnitDto { Name = "Viking", Count = 4 });
+
+        AssertTerranBuild(
+            TerranBuild.RavenViking,
+            new UnitDto { Name = "Marauder", Count = 2 },
+            new UnitDto { Name = "Raven", Count = 2 },
+            new UnitDto { Name = "Viking", Count = 7 });
+    }
+
+    [TestMethod]
+    public void HardTerranMechUnitsStillClassifyAsMech()
+    {
+        AssertTerranBuild(TerranBuild.Mech, new UnitDto { Name = "SiegeTank", Count = 1 });
+        AssertTerranBuild(TerranBuild.Mech, new UnitDto { Name = "ThorAP", Count = 1 });
+        AssertTerranBuild(TerranBuild.Mech, new UnitDto { Name = "Hellion", Count = 1 });
+        AssertTerranBuild(TerranBuild.Mech, new UnitDto { Name = "Hellbat", Count = 1 });
+        AssertTerranBuild(TerranBuild.Mech, new UnitDto { Name = "Cyclone", Count = 1 });
+
+        AssertTerranBuild(
+            TerranBuild.Mech,
+            new UnitDto { Name = "SiegeTank", Count = 3 },
+            new UnitDto { Name = "MarineLightweight", Count = 12 });
+
+        AssertTerranBuild(
+            TerranBuild.Mech,
+            new UnitDto { Name = "Hellion", Count = 4 },
+            new UnitDto { Name = "MarineLightweight", Count = 30 });
+
+        AssertTerranBuild(
+            TerranBuild.Mech,
+            new UnitDto { Name = "Cyclone", Count = 5 },
+            new UnitDto { Name = "MarineLightweight", Count = 30 });
+
+        AssertTerranBuild(
+            TerranBuild.Mech,
+            new UnitDto { Name = "ThorAP", Count = 2 },
+            new UnitDto { Name = "MarineLightweight", Count = 30 });
+    }
+
+    [TestMethod]
     public void CanDetectTerranLibs()
     {
         AssertTerranBuild(TerranBuild.Libs, new UnitDto { Name = "Liberator", Count = 1 });
@@ -100,7 +231,20 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "MarineLightweight", Count = 12 });
 
         AssertTerranBuild(
-            TerranBuild.Mech,
+            TerranBuild.Banshees,
+            new UnitDto { Name = "Banshee", Count = 3 },
+            new UnitDto { Name = "SiegeTank", Count = 1 },
+            new UnitDto { Name = "MarineLightweight", Count = 12 });
+
+        AssertTerranBuild(
+            TerranBuild.RavenViking,
+            new UnitDto { Name = "Raven", Count = 2 },
+            new UnitDto { Name = "Viking", Count = 4 },
+            new UnitDto { Name = "SiegeTank", Count = 1 },
+            new UnitDto { Name = "MarineLightweight", Count = 12 });
+
+        AssertTerranBuild(
+            TerranBuild.Bio,
             new UnitDto { Name = "SiegeTank", Count = 1 },
             new UnitDto { Name = "MarineLightweight", Count = 12 });
     }

@@ -5,6 +5,7 @@ using dsstats.db;
 using dsstats.parser;
 using dsstats.shared;
 using dsstats.shared.DetailBuild;
+using dsstats.shared.Units;
 using dsstats.dbServices;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,6 +36,7 @@ internal static class Program
         var limit = ParsePositiveInt(args, 0, DefaultLimit);
         var batchSize = ParsePositiveInt(args, 1, DefaultDbBatchSize);
         var inspectBuildNone = IsBuildNoneInspection(args, 2);
+        var inspectTerranMech = IsTerranMechInspection(args, 2);
         var connectionString = args.Length > 3 && !string.IsNullOrWhiteSpace(args[3])
             ? args[3]
             : GetDefaultConnectionString();
@@ -76,7 +78,7 @@ internal static class Program
 
                 foreach (var replay in batch)
                 {
-                    ProcessReplay(replay, result, inspectBuildNone);
+                    ProcessReplay(replay, result, inspectBuildNone, inspectTerranMech);
                 }
 
                 beforeReplayId = batch[^1].ReplayId;
@@ -106,6 +108,7 @@ internal static class Program
         var limit = ParsePositiveInt(args, 2, DefaultLimit);
         var maxParallelism = ParsePositiveInt(args, 3, Environment.ProcessorCount);
         var inspectBuildNone = IsBuildNoneInspection(args, 4);
+        var inspectTerranMech = IsTerranMechInspection(args, 4);
 
         if (!Directory.Exists(replayDirectory))
         {
@@ -137,7 +140,7 @@ internal static class Program
 
         await Parallel.ForEachAsync(selectedFiles, parallelOptions, async (file, _) =>
         {
-            await ProcessReplay(file, result, inspectBuildNone);
+            await ProcessReplay(file, result, inspectBuildNone, inspectTerranMech);
         });
 
         PrintSummary(
@@ -163,6 +166,13 @@ internal static class Program
                 || string.Equals(args[index], "protoss-none", StringComparison.OrdinalIgnoreCase));
     }
 
+    private static bool IsTerranMechInspection(string[] args, int index)
+    {
+        return args.Length > index
+            && (string.Equals(args[index], "terran-mech", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(args[index], "mech", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static int ParsePositiveInt(string[] args, int index, int defaultValue)
     {
         if (args.Length <= index || !int.TryParse(args[index], out var value) || value <= 0)
@@ -173,7 +183,11 @@ internal static class Program
         return value;
     }
 
-    private static async Task ProcessReplay(FileInfo file, ScanResult result, bool inspectBuildNone)
+    private static async Task ProcessReplay(
+        FileInfo file,
+        ScanResult result,
+        bool inspectBuildNone,
+        bool inspectTerranMech)
     {
         Interlocked.Increment(ref result.Attempted);
 
@@ -203,6 +217,11 @@ internal static class Program
             {
                 InspectBuildNone(file.Name, file.LastWriteTime, replayDto, details, result);
             }
+
+            if (inspectTerranMech)
+            {
+                InspectTerranMech(file.Name, file.LastWriteTime, replayDto, details, result);
+            }
         }
         catch (Exception ex)
         {
@@ -210,7 +229,11 @@ internal static class Program
         }
     }
 
-    private static void ProcessReplay(DatabaseReplayDto replay, ScanResult result, bool inspectBuildNone)
+    private static void ProcessReplay(
+        DatabaseReplayDto replay,
+        ScanResult result,
+        bool inspectBuildNone,
+        bool inspectTerranMech)
     {
         Interlocked.Increment(ref result.Attempted);
 
@@ -230,6 +253,11 @@ internal static class Program
             if (inspectBuildNone)
             {
                 InspectBuildNone(replay.DisplayName, replay.Replay.Gametime, replay.Replay, details, result);
+            }
+
+            if (inspectTerranMech)
+            {
+                InspectTerranMech(replay.DisplayName, replay.Replay.Gametime, replay.Replay, details, result);
             }
         }
         catch (Exception ex)
@@ -313,6 +341,46 @@ internal static class Program
             $"{replayName} | {replayTime:yyyy-MM-dd HH:mm:ss} | pos {buildInfo.GamePos} | {buildInfo.Commander} | {player?.Name ?? "(unknown)"} | {units}");
     }
 
+    private static void InspectTerranMech(
+        string replayName,
+        DateTime replayTime,
+        ReplayDto replayDto,
+        ReplayBuildDetails details,
+        ScanResult result)
+    {
+        foreach (var matchup in details.MatchupInfos)
+        {
+            InspectTerranMech(replayName, replayTime, replayDto, matchup.P1, matchup.P2, matchup.P1Won, result);
+            InspectTerranMech(replayName, replayTime, replayDto, matchup.P2, matchup.P1, matchup.P2Won, result);
+        }
+    }
+
+    private static void InspectTerranMech(
+        string replayName,
+        DateTime replayTime,
+        ReplayDto replayDto,
+        PlayerBuildInfo buildInfo,
+        PlayerBuildInfo opponentBuildInfo,
+        bool won,
+        ScanResult result)
+    {
+        if (buildInfo.Commander != Commander.Terran
+            || !string.Equals(buildInfo.BuildName, nameof(TerranBuild.Mech), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var player = replayDto.Players.FirstOrDefault(player => player.GamePos == buildInfo.GamePos);
+        var spawn = player?.Spawns.FirstOrDefault(spawn => spawn.Breakpoint == Breakpoint.Min5);
+        var signature = CreateTerranMechSignature(spawn);
+        var units = FormatUnits(spawn, Commander.Terran);
+        var resultText = won ? "W" : "L";
+
+        result.IncrementTerranMechSignature(signature, won);
+        result.TerranMechDetails.Add(
+            $"{replayName} | {replayTime:yyyy-MM-dd HH:mm:ss} | {resultText} | pos {buildInfo.GamePos} | {player?.Name ?? "(unknown)"} | vs {opponentBuildInfo.Commander}.{opponentBuildInfo.BuildName} | {signature} | {units}");
+    }
+
     private static void PrintSummary(
         string source,
         int discovered,
@@ -350,6 +418,72 @@ internal static class Program
                 Console.WriteLine($"  {detail}");
             }
         }
+
+        if (!result.TerranMechSignatureCounts.IsEmpty)
+        {
+            PrintCounts("Terran.Mech signatures", result.TerranMechSignatureCounts, includeTopOpponents: false);
+        }
+
+        if (!result.TerranMechDetails.IsEmpty)
+        {
+            Console.WriteLine("Terran.Mech details");
+            foreach (var detail in result.TerranMechDetails.OrderBy(detail => detail, StringComparer.OrdinalIgnoreCase))
+            {
+                Console.WriteLine($"  {detail}");
+            }
+        }
+    }
+
+    private static string FormatUnits(SpawnDto? spawn, Commander commander)
+    {
+        if (spawn is null || spawn.Units.Count == 0)
+        {
+            return "(no Min5 units)";
+        }
+
+        return string.Join(", ", spawn.Units
+            .Where(unit => unit.Count > 0)
+            .Select(unit => new
+            {
+                Name = UnitMap.GetNormalizedUnitName(unit.Name, commander),
+                unit.Count,
+            })
+            .OrderBy(unit => unit.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(unit => $"{unit.Name}:{unit.Count}"));
+    }
+
+    private static string CreateTerranMechSignature(SpawnDto? spawn)
+    {
+        if (spawn is null || spawn.Units.Count == 0)
+        {
+            return "(no mech signature)";
+        }
+
+        var signature = string.Join("+", spawn.Units
+            .Where(unit => unit.Count > 0)
+            .Select(unit => new
+            {
+                Name = UnitMap.GetNormalizedUnitName(unit.Name, Commander.Terran),
+                unit.Count,
+            })
+            .Where(unit => IsTerranMechUnit(unit.Name))
+            .OrderBy(unit => unit.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(unit => $"{unit.Name}:{unit.Count}"));
+
+        return string.IsNullOrEmpty(signature) ? "(no mech signature)" : signature;
+    }
+
+    private static bool IsTerranMechUnit(string normalizedName)
+    {
+        return normalizedName is "Raven"
+            or "Viking"
+            or "Thor"
+            or "Widow Mine"
+            or "Siege Tank"
+            or "Hellion"
+            or "Hellbat"
+            or "Banshee"
+            or "Cyclone";
     }
 
     private static DbContextOptions<DsstatsContext> CreateDbOptions(string connectionString)
@@ -531,8 +665,10 @@ internal static class Program
 
         public ConcurrentDictionary<string, BuildStats> PlayerBuildCounts { get; } = new(StringComparer.Ordinal);
         public ConcurrentDictionary<string, BuildStats> TeamBuildCounts { get; } = new(StringComparer.Ordinal);
+        public ConcurrentDictionary<string, BuildStats> TerranMechSignatureCounts { get; } = new(StringComparer.Ordinal);
         public ConcurrentBag<string> Failures { get; } = [];
         public ConcurrentBag<string> BuildNoneDetails { get; } = [];
+        public ConcurrentBag<string> TerranMechDetails { get; } = [];
 
         public void IncrementPlayerBuild(PlayerBuildInfo buildInfo, PlayerBuildInfo opponentBuildInfo, bool won)
         {
@@ -548,6 +684,13 @@ internal static class Program
         {
             TeamBuildCounts
                 .GetOrAdd(teamBuildName, static _ => new BuildStats(trackOpponents: false))
+                .Increment(won);
+        }
+
+        public void IncrementTerranMechSignature(string signature, bool won)
+        {
+            TerranMechSignatureCounts
+                .GetOrAdd(signature, static _ => new BuildStats(trackOpponents: false))
                 .Increment(won);
         }
 
