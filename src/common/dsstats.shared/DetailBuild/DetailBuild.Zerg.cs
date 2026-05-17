@@ -12,6 +12,8 @@ public static partial class DetailBuilds
         var roachCount = 0;
         var hasLurker = false;
         var hasMutalisk = false;
+        var ravagerCount = 0;
+        var hasSwarmHost = false;
         var hydraliskCount = 0;
         var hasUltralisk = false;
 
@@ -31,6 +33,9 @@ public static partial class DetailBuilds
                 case "Mutalisk":
                     hasMutalisk = true;
                     break;
+                case "Swarm Host":
+                    hasSwarmHost = true;
+                    break;
                 case "Hydralisk":
                     hydraliskCount += unit.Count;
                     break;
@@ -45,6 +50,9 @@ public static partial class DetailBuilds
                     break;
                 case "Roach":
                     roachCount += unit.Count;
+                    break;
+                case "Ravager":
+                    ravagerCount += unit.Count;
                     break;
                 case "Lurker":
                     hasLurker = true;
@@ -62,6 +70,11 @@ public static partial class DetailBuilds
             return ZergBuild.Mutas;
         }
 
+        if (hasSwarmHost)
+        {
+            return ZergBuild.SwarmHosts;
+        }
+
         if (roachCount >= 2 && queenCount >= 2 && hasLurker)
         {
             return ZergBuild.RoachQueenLurker;
@@ -70,6 +83,11 @@ public static partial class DetailBuilds
         if (queenCount >= 2 && hasLurker)
         {
             return ZergBuild.QueenLurker;
+        }
+
+        if (ravagerCount >= 2)
+        {
+            return ZergBuild.Ravagers;
         }
 
         if (roachCount >= 2 && queenCount >= 2)

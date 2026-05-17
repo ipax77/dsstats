@@ -167,6 +167,9 @@ public enum ProtossBuild
     ArchonsImmortals = 7,
     Templar = 8,
     Carriers = 9,
+    AirDisruptor = 10,
+    Adepts = 11,
+    Voidrays = 12,
 }
 
 public enum TerranBuild
@@ -191,6 +194,8 @@ public enum ZergBuild
     RoachQueenLurker = 8,
     QueenLurker = 9,
     Ultras = 10,
+    Ravagers = 11,
+    SwarmHosts = 12,
 }
 
 public enum TeamBuild

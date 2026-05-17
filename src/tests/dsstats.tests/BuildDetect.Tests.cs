@@ -137,6 +137,12 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "Immortal", Count = 1 });
         AssertProtossBuild(ProtossBuild.Templar, new UnitDto { Name = "HighTemplar", Count = 1 });
         AssertProtossBuild(ProtossBuild.Carriers, new UnitDto { Name = "Carrier", Count = 1 });
+        AssertProtossBuild(
+            ProtossBuild.AirDisruptor,
+            new UnitDto { Name = "VoidRay", Count = 1 },
+            new UnitDto { Name = "Disruptor", Count = 1 });
+        AssertProtossBuild(ProtossBuild.Adepts, new UnitDto { Name = "Adept", Count = 2 });
+        AssertProtossBuild(ProtossBuild.Voidrays, new UnitDto { Name = "VoidRay", Count = 2 });
     }
 
     [TestMethod]
@@ -159,6 +165,17 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "Archon", Count = 1 },
             new UnitDto { Name = "Immortal", Count = 1 },
             new UnitDto { Name = "Stalker", Count = 1 });
+
+        AssertProtossBuild(
+            ProtossBuild.AirDisruptor,
+            new UnitDto { Name = "Disruptor", Count = 1 },
+            new UnitDto { Name = "Oracle", Count = 1 },
+            new UnitDto { Name = "Adept", Count = 6 });
+
+        AssertProtossBuild(
+            ProtossBuild.AirDisruptor,
+            new UnitDto { Name = "Disruptor", Count = 2 },
+            new UnitDto { Name = "VoidRay", Count = 5 });
 
         AssertProtossBuild(
             ProtossBuild.AdeptStalker,
@@ -206,6 +223,8 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "Queen", Count = 2 },
             new UnitDto { Name = "LurkerMP", Count = 1 });
         AssertZergBuild(ZergBuild.Ultras, new UnitDto { Name = "Ultralisk", Count = 1 });
+        AssertZergBuild(ZergBuild.Ravagers, new UnitDto { Name = "Ravager", Count = 2 });
+        AssertZergBuild(ZergBuild.SwarmHosts, new UnitDto { Name = "SwarmHostMP", Count = 1 });
     }
 
     [TestMethod]
@@ -224,6 +243,12 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "Roach", Count = 1 });
 
         AssertZergBuild(
+            ZergBuild.SwarmHosts,
+            new UnitDto { Name = "SwarmHostMP", Count = 1 },
+            new UnitDto { Name = "Ravager", Count = 12 },
+            new UnitDto { Name = "Hydralisk", Count = 2 });
+
+        AssertZergBuild(
             ZergBuild.RoachQueenLurker,
             new UnitDto { Name = "Hydralisk", Count = 1 },
             new UnitDto { Name = "Roach", Count = 2 },
@@ -236,6 +261,12 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "Queen", Count = 2 },
             new UnitDto { Name = "LurkerMP", Count = 1 },
             new UnitDto { Name = "Baneling", Count = 1 });
+
+        AssertZergBuild(
+            ZergBuild.Ravagers,
+            new UnitDto { Name = "Ravager", Count = 12 },
+            new UnitDto { Name = "Hydralisk", Count = 1 },
+            new UnitDto { Name = "Roach", Count = 1 });
     }
 
     [TestMethod]
@@ -248,6 +279,7 @@ public sealed class BuildDetectTests
         AssertZergBuild(ZergBuild.None, new UnitDto { Name = "Queen", Count = 1 });
         AssertZergBuild(ZergBuild.None, new UnitDto { Name = "Roach", Count = 1 });
         AssertZergBuild(ZergBuild.None, new UnitDto { Name = "Hydralisk", Count = 1 });
+        AssertZergBuild(ZergBuild.None, new UnitDto { Name = "Ravager", Count = 1 });
     }
 
     [TestMethod]
@@ -261,6 +293,8 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "Roach", Count = 0 },
             new UnitDto { Name = "Queen", Count = 0 },
             new UnitDto { Name = "LurkerMP", Count = 0 },
+            new UnitDto { Name = "Ravager", Count = 0 },
+            new UnitDto { Name = "SwarmHostMP", Count = 0 },
             new UnitDto { Name = "ZerglingLightweight", Count = 0 });
     }
 
