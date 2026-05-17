@@ -43,7 +43,7 @@ namespace dsstats.maui
             builder.Logging.AddDebug();
 #endif
             var sqliteConnectionString = $"Data Source={Path.Combine(FileSystem.Current.AppDataDirectory, "dsstats4.db")}";
-            builder.Services.AddDbContext<DsstatsContext>(options => options
+            builder.Services.AddDbContextFactory<DsstatsContext>(options => options
                 .UseSqlite(sqliteConnectionString, sqlOptions =>
                 {
                     sqlOptions.MigrationsAssembly("dsstats.migrations.sqlite");
@@ -52,6 +52,7 @@ namespace dsstats.maui
             //.EnableDetailedErrors()
             //.EnableSensitiveDataLogging()
             );
+            builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<DsstatsContext>>().CreateDbContext());
 
             var apiUrl = "https://dsstats.pax77.org"; // "http://localhost:5279";
             builder.Services.AddHttpClient("api", httpClient =>
@@ -82,14 +83,14 @@ namespace dsstats.maui
             builder.Services.AddSingleton<SessionProgress>();
 
 
-            builder.Services.AddScoped<IRatingService, RatingsService>();
+            builder.Services.AddSingleton<IRatingService, RatingsService>();
             builder.Services.AddScoped<IPlayerService, apiServices.PlayerService>();
 
             builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
             builder.Services.AddKeyedScoped<IReplayRepository, apiServices.ReplayRepository>("api");
 
             var app = builder.Build();
-            using var scope = builder.Services.BuildServiceProvider().CreateScope();
+            using var scope = app.Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
             context.Database.Migrate();
 

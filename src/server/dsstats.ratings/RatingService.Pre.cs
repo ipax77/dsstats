@@ -1,7 +1,6 @@
 
 using dsstats.db;
 using dsstats.shared;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace dsstats.ratings;
@@ -13,8 +12,7 @@ public partial class RatingService
         await ratingLock.WaitAsync();
         try
         {
-            using var scope = scopeFactory.CreateAsyncScope();
-            using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            await using var context = await contextFactory.CreateDbContextAsync();
 
             var replays = await GetReplayCalcDtos(replayIds, context);
             var playerRatingsStore = await PlayerRatingsStore.LoadFromDatabaseAsync(replays, context);
@@ -51,8 +49,7 @@ public partial class RatingService
         await ratingLock.WaitAsync();
         try
         {
-            using var scope = scopeFactory.CreateAsyncScope();
-            using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            await using var context = await contextFactory.CreateDbContextAsync();
 
             var playerRatingsStore = await PlayerRatingsStore.LoadFromDatabaseAsync(replays, context);
             List<ReplayRating> replayRatingsToInsert = [];

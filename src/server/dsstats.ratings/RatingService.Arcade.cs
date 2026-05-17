@@ -1,7 +1,6 @@
 ﻿using dsstats.db;
 using dsstats.shared;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace dsstats.ratings;
@@ -21,8 +20,7 @@ public partial class RatingService
     public async Task FindSc2ArcadeMatches()
     {
 
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         DateTime startDate = new DateTime(2021, 2, 1);
         Dictionary<int, int> matchesDict = [];
@@ -97,8 +95,7 @@ public partial class RatingService
 
     public async Task MatchNewDsstatsReplays(DateTime? dsstatsImportedAfter = null)
     {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         // Default to last check time or last 24 hours
         dsstatsImportedAfter ??= DateTime.UtcNow.AddHours(-24);
@@ -145,8 +142,7 @@ public partial class RatingService
 
     public async Task MatchWithNewArcadeReplays(DateTime? arcadeImportedAfter = null)
     {
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         // Default to last check time or last 24 hours
         arcadeImportedAfter ??= DateTime.UtcNow.AddHours(-24);

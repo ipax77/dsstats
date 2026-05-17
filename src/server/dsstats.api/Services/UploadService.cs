@@ -1,18 +1,21 @@
 ﻿using dsstats.db;
 using dsstats.dbServices;
 using dsstats.shared.Upload;
+using Microsoft.EntityFrameworkCore;
 using System.Threading.Channels;
 
 namespace dsstats.api.Services;
 
-public partial class UploadService(IServiceScopeFactory serviceScopeFactory, ILogger<UploadService> logger)
+public partial class UploadService(
+    IDbContextFactory<DsstatsContext> contextFactory,
+    Channel<UploadJob> uploadChannel,
+    Channel<ReplayUploadJob> replaysChannel,
+    IImportService importService,
+    ILogger<UploadService> logger)
 {
     public async Task<bool> ProcessUploadAsync(UploadDto uploadDto)
     {
-        using var scope = serviceScopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-        var uploadChannel = scope.ServiceProvider.GetRequiredService<Channel<UploadJob>>();
-        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         try
         {
@@ -20,7 +23,7 @@ public partial class UploadService(IServiceScopeFactory serviceScopeFactory, ILo
             List<int> playerIds = [];
             foreach (var requestName in uploadDto.RequestNames)
             {
-                var playerId = importService.GetOrCreatePlayerId(requestName.Name, requestName.RegionId, requestName.RealmId, requestName.ToonId, context);
+                var playerId = importService.GetOrCreatePlayerId(requestName.Name, requestName.RegionId, requestName.RealmId, requestName.ToonId);
                 playerIds.Add(playerId);
             }
 
@@ -46,10 +49,7 @@ public partial class UploadService(IServiceScopeFactory serviceScopeFactory, ILo
 
     public async Task<bool> ProcessUploadAsync(UploadRequestDto request)
     {
-        using var scope = serviceScopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-        var uploadChannel = scope.ServiceProvider.GetRequiredService<Channel<UploadJob>>();
-        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         try
         {
@@ -57,7 +57,7 @@ public partial class UploadService(IServiceScopeFactory serviceScopeFactory, ILo
             List<int> playerIds = [];
             foreach (var requestName in request.RequestNames)
             {
-                var playerId = importService.GetOrCreatePlayerId(requestName.Name, requestName.RegionId, requestName.RealmId, requestName.ToonId, context);
+                var playerId = importService.GetOrCreatePlayerId(requestName.Name, requestName.RegionId, requestName.RealmId, requestName.ToonId);
                 playerIds.Add(playerId);
             }
 
@@ -91,9 +91,7 @@ public partial class UploadService(IServiceScopeFactory serviceScopeFactory, ILo
             };
         }
 
-        using var scope = serviceScopeFactory.CreateScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-        var replaysChannel = scope.ServiceProvider.GetRequiredService<Channel<ReplayUploadJob>>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         var queueCount = 1;
 

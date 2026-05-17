@@ -14,7 +14,7 @@ using Microsoft.Extensions.Options;
 namespace dsstats.api.InHouse;
 
 public sealed class InHouseAuthService(
-    DsstatsContext context,
+    IDbContextFactory<DsstatsContext> contextFactory,
     IFido2 fido2,
     IMemoryCache memoryCache,
     IInHouseAccountNotifier accountNotifier,
@@ -25,10 +25,11 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseAuthOptionsResponse> BeginRegistrationAsync(InHouseRegisterOptionsRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var displayName = NormalizeDisplayName(request.DisplayName);
         ValidateProfile(request.Profile);
 
-        if (await ProfileExistsAsync(request.Profile.ToonId, token))
+        if (await ProfileExistsAsync(context, request.Profile.ToonId, token))
         {
             throw new InvalidOperationException("This player profile is already linked to another InHouse user.");
         }
@@ -65,10 +66,11 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseSessionDto> CompleteRegistrationAsync(InHouseRegisterCompleteRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var pending = GetPending<PendingRegistration>(request.ChallengeId);
         await using var tx = await context.Database.BeginTransactionAsync(token);
 
-        if (await ProfileExistsAsync(pending.Profile.ToonId, token))
+        if (await ProfileExistsAsync(context, pending.Profile.ToonId, token))
         {
             throw new InvalidOperationException("This player profile is already linked to another InHouse user.");
         }
@@ -95,7 +97,7 @@ public sealed class InHouseAuthService(
         context.InHouseUsers.Add(user);
         await context.SaveChangesAsync(token);
 
-        var session = await CreateSessionAsync(user, token);
+        var session = await CreateSessionAsync(context, user, token);
         await tx.CommitAsync(token);
         memoryCache.Remove(ChallengeKey(request.ChallengeId));
         return session;
@@ -116,6 +118,7 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseSessionDto> CompleteLoginAsync(InHouseLoginCompleteRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var pending = GetPending<PendingAssertion>(request.ChallengeId);
         var assertion = DeserializeCredential<AuthenticatorAssertionRawResponse>(request.Credential);
         var credentialId = WebEncoders.Base64UrlEncode(assertion.RawId);
@@ -144,7 +147,7 @@ public sealed class InHouseAuthService(
         credential.LastUsedAt = DateTime.UtcNow;
         credential.User!.LastLoginAt = DateTime.UtcNow;
 
-        var session = await CreateSessionAsync(credential.User, token);
+        var session = await CreateSessionAsync(context, credential.User, token);
         await context.SaveChangesAsync(token);
         memoryCache.Remove(ChallengeKey(request.ChallengeId));
         return session;
@@ -152,6 +155,7 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseSessionDto> RefreshAsync(InHouseRefreshRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var refreshHash = HashToken(request.RefreshToken);
         var session = await context.InHouseSessions
             .Include(s => s.User)
@@ -167,13 +171,14 @@ public sealed class InHouseAuthService(
         }
 
         session.RevokedAt = DateTime.UtcNow;
-        var nextSession = await CreateSessionAsync(session.User!, token);
+        var nextSession = await CreateSessionAsync(context, session.User!, token);
         await context.SaveChangesAsync(token);
         return nextSession;
     }
 
     public async Task LogoutAsync(string? accessToken, InHouseRefreshRequest? request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var hashes = new List<string>();
         if (!string.IsNullOrWhiteSpace(accessToken))
         {
@@ -204,6 +209,7 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseUserDto?> GetCurrentUserAsync(int userId, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var user = await context.InHouseUsers
             .Include(u => u.Profiles)
             .Include(u => u.Passkeys)
@@ -214,6 +220,7 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseUserDto> AddProfileAsync(int userId, InHouseProfileDto profile, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         ValidateProfile(profile);
 
         var user = await context.InHouseUsers
@@ -227,7 +234,7 @@ public sealed class InHouseAuthService(
             throw new InvalidOperationException("This player profile is already linked to your account.");
         }
 
-        if (await ProfileExistsAsync(profile.ToonId, token))
+        if (await ProfileExistsAsync(context, profile.ToonId, token))
         {
             throw new InvalidOperationException("This player profile is already linked to another InHouse user.");
         }
@@ -240,6 +247,7 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseUserDto> RemoveProfileAsync(int userId, InHouseProfileDto profile, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var user = await context.InHouseUsers
             .Include(u => u.Profiles)
             .Include(u => u.Passkeys)
@@ -263,6 +271,7 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseUserDto> RemovePasskeyAsync(int userId, int passkeyId, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         await using var tx = await context.Database.BeginTransactionAsync(token);
 
         var user = await context.InHouseUsers
@@ -294,6 +303,7 @@ public sealed class InHouseAuthService(
 
     public async Task DeleteAccountAsync(int userId, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var user = await context.InHouseUsers.FirstOrDefaultAsync(u => u.InHouseUserId == userId, token)
             ?? throw new InvalidOperationException("Unknown InHouse user.");
 
@@ -303,6 +313,7 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseDeviceLinkOptionsResponse> CreateDeviceLinkCodeAsync(int userId, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var userExists = await context.InHouseUsers.AnyAsync(u => u.InHouseUserId == userId, token);
         if (!userExists)
         {
@@ -326,6 +337,7 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseAuthOptionsResponse> BeginDeviceLinkAsync(InHouseDeviceLinkOptionsRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var codeHash = HashToken(NormalizeCode(request.Code));
         var link = await context.InHouseDeviceLinkCodes
             .Include(l => l.User)
@@ -370,6 +382,7 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseSessionDto> CompleteDeviceLinkAsync(InHouseDeviceLinkCompleteRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var pending = GetPending<PendingRegistration>(request.ChallengeId);
         if (pending.DeviceLinkCodeId is null)
         {
@@ -403,7 +416,7 @@ public sealed class InHouseAuthService(
         link.UsedAt = DateTime.UtcNow;
         link.User.LastLoginAt = DateTime.UtcNow;
 
-        var session = await CreateSessionAsync(link.User, token);
+        var session = await CreateSessionAsync(context, link.User, token);
         await context.SaveChangesAsync(token);
         await tx.CommitAsync(token);
         memoryCache.Remove(ChallengeKey(request.ChallengeId));
@@ -413,6 +426,7 @@ public sealed class InHouseAuthService(
 
     public async Task<InHouseTokenValidationResult?> ValidateAccessTokenAsync(string accessToken, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var tokenHash = HashToken(accessToken);
         var now = DateTime.UtcNow;
         var session = await context.InHouseSessions
@@ -444,7 +458,7 @@ public sealed class InHouseAuthService(
             session.ExpiresAt);
     }
 
-    private async Task<InHouseSessionDto> CreateSessionAsync(InHouseUser user, CancellationToken token)
+    private async Task<InHouseSessionDto> CreateSessionAsync(DsstatsContext context, InHouseUser user, CancellationToken token)
     {
         var accessToken = CreateToken();
         var refreshToken = CreateToken();
@@ -498,7 +512,7 @@ public sealed class InHouseAuthService(
             CreatedAt = DateTime.UtcNow,
         };
 
-    private async Task<bool> ProfileExistsAsync(ToonIdDto toonId, CancellationToken token)
+    private static async Task<bool> ProfileExistsAsync(DsstatsContext context, ToonIdDto toonId, CancellationToken token)
         => await context.InHouseProfiles.AnyAsync(p =>
             p.ToonId.Region == toonId.Region
             && p.ToonId.Realm == toonId.Realm

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace dsstats.dbServices.Builds;
 
-public partial class BuildsService(DsstatsContext context, IMemoryCache memoryCache) : IBuildsService
+public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFactory, IMemoryCache memoryCache) : IBuildsService
 {
     public async Task<BuildsResponse> GetBuildResponse(BuildsRequest request, CancellationToken token = default)
     {
@@ -16,7 +16,8 @@ public partial class BuildsService(DsstatsContext context, IMemoryCache memoryCa
             return await memoryCache.GetOrCreateAsync(memKey, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
-                var response = await CreateBuildsResponse(request, token);
+                await using var context = await contextFactory.CreateDbContextAsync(token);
+                var response = await CreateBuildsResponse(request, context, token);
                 await SetBuildResponseLifeAndCost(response, request.Interest);
                 if (request.WithSpawnInfo)
                 {
@@ -31,7 +32,7 @@ public partial class BuildsService(DsstatsContext context, IMemoryCache memoryCa
         }
     }
 
-    private async Task<BuildsResponse> CreateBuildsResponse(BuildsRequest request, CancellationToken token)
+    private async Task<BuildsResponse> CreateBuildsResponse(BuildsRequest request, DsstatsContext context, CancellationToken token)
     {
         var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
         if (timeInfo is null)
@@ -70,7 +71,7 @@ public partial class BuildsService(DsstatsContext context, IMemoryCache memoryCa
             .OrderByDescending(o => o.UnitCount)
             .ToListAsync(token);
 
-        var buildStats = await CreateBuildStats(request, timeInfo, token);
+        var buildStats = await CreateBuildStats(request, timeInfo, context, token);
 
         var response = new BuildsResponse()
         {
@@ -84,7 +85,7 @@ public partial class BuildsService(DsstatsContext context, IMemoryCache memoryCa
         return response;
     }
 
-    private async Task<BuildStats> CreateBuildStats(BuildsRequest request, TimePeriodInfo timeInfo, CancellationToken token)
+    private async Task<BuildStats> CreateBuildStats(BuildsRequest request, TimePeriodInfo timeInfo, DsstatsContext context, CancellationToken token)
     {
         var playerIds = request.Players.Select(s => s.PlayerId).ToHashSet();
         var noPlayers = playerIds.Count == 0;

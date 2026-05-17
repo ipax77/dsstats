@@ -6,7 +6,12 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace dsstats.api.Services;
 
-public class TimedHostedService(IServiceScopeFactory scopeFactory, ILogger<TimedHostedService> logger) : BackgroundService
+public class TimedHostedService(
+    ArcadeJobService arcadeJobService,
+    IRatingService ratingService,
+    IInHouseGameSessionService sessionService,
+    IHubContext<InHouseHub> hubContext,
+    ILogger<TimedHostedService> logger) : BackgroundService
 {
     private static readonly TimeSpan InHouseInactivityLimit = TimeSpan.FromHours(12);
 
@@ -42,17 +47,13 @@ public class TimedHostedService(IServiceScopeFactory scopeFactory, ILogger<Timed
         {
             DateTime nowTime = DateTime.UtcNow;
 
-            using var scope = scopeFactory.CreateAsyncScope();
-
             if (nowTime.Hour == 3)
             {
-                var arcadeJobService = scope.ServiceProvider.GetRequiredService<ArcadeJobService>();
                 await arcadeJobService.RunAsync(token);
-                await CloseInactiveInHouseSessionsAsync(scope.ServiceProvider, token);
+                await CloseInactiveInHouseSessionsAsync(token);
             }
             else
             {
-                var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
                 await ratingService.ContinueRatings();
             }
         }
@@ -66,10 +67,8 @@ public class TimedHostedService(IServiceScopeFactory scopeFactory, ILogger<Timed
         }
     }
 
-    private static async Task CloseInactiveInHouseSessionsAsync(IServiceProvider serviceProvider, CancellationToken token)
+    private async Task CloseInactiveInHouseSessionsAsync(CancellationToken token)
     {
-        var sessionService = serviceProvider.GetRequiredService<IInHouseGameSessionService>();
-        var hubContext = serviceProvider.GetRequiredService<IHubContext<InHouseHub>>();
         var closed = await sessionService.CloseInactiveSessionsAsync(InHouseInactivityLimit, token);
         if (closed.Count == 0)
         {

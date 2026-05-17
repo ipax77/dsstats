@@ -20,12 +20,16 @@ public interface IImportService
     void ClearExistingArcadeReplayKeys();
     int GetPlayerId(ToonIdDto toonId);
     string GetPlayerName(ToonIdDto toonId);
-    int GetOrCreatePlayerId(string name, int region, int realm, int id, DsstatsContext context);
+    int GetOrCreatePlayerId(string name, int region, int realm, int id);
     Task CheckDuplicateCandidates();
     Task FixPlayerNames();
     Task CheckRealmDuplicateCandidates();
 }
-public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<ImportService> logger) : IImportService
+public partial class ImportService(
+    IDbContextFactory<DsstatsContext> contextFactory,
+    IServiceScopeFactory scopeFactory,
+    IRatingService ratingService,
+    ILogger<ImportService> logger) : IImportService
 {
     bool isInit;
     private Dictionary<ToonIdRec, PlayerInfo> toonIdPlayerIdDict = [];
@@ -44,8 +48,7 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
             {
                 return;
             }
-            using var scope = scopeFactory.CreateScope();
-            using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            using var context = contextFactory.CreateDbContext();
             toonIdPlayerIdDict = context.Players
                 .Select(s => new
                 {
@@ -66,8 +69,7 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
 
         try
         {
-            using var scope = scopeFactory.CreateScope();
-            using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            await using var context = await contextFactory.CreateDbContextAsync();
 
             if (!OperatingSystem.IsWindows())
             {
@@ -112,7 +114,6 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
             var replayCalcDto = replayEntity.ToReplayCalcDto();
             if (replayCalcDto != null)
             {
-                var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
                 await ratingService.PreRatings([replayCalcDto]);
             }
         }
@@ -144,7 +145,13 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
         return string.Empty;
     }
 
-    public int GetOrCreatePlayerId(
+    public int GetOrCreatePlayerId(string name, int region, int realm, int id)
+    {
+        using var context = contextFactory.CreateDbContext();
+        return GetOrCreatePlayerId(name, region, realm, id, context);
+    }
+
+    private int GetOrCreatePlayerId(
         string name,
         int region,
         int realm,
@@ -242,8 +249,7 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
 
         await CreatePlayerIds(players);
 
-        using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
         var dbReplays = new List<Replay>();
 
         foreach (var replay in replays)
@@ -308,7 +314,6 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
                 .ToList();
             if (replayCalcDtos.Count > 0)
             {
-                var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
                 await ratingService.PreRatings(replayCalcDtos);
             }
         }
@@ -354,8 +359,7 @@ public partial class ImportService(IServiceScopeFactory scopeFactory, ILogger<Im
                 return;
             }
 
-            using var scope = scopeFactory.CreateAsyncScope();
-            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            await using var context = await contextFactory.CreateDbContextAsync();
 
             // Insert new players
             if (playersToInsert.Count > 0)

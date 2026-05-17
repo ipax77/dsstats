@@ -6,7 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace dsstats.dbServices.Stats;
 
-public partial class DashboardStatsService(DsstatsContext context, IMemoryCache memoryCache) : IDashboardStatsService
+public partial class DashboardStatsService(IDbContextFactory<DsstatsContext> contextFactory, IMemoryCache memoryCache) : IDashboardStatsService
 {
     public async Task<DashboardStatsResponse> GetDashboardStatsAsync(CancellationToken token = default)
     {
@@ -20,6 +20,7 @@ public partial class DashboardStatsService(DsstatsContext context, IMemoryCache 
 
     private async Task<DashboardStatsResponse> GetDashboardStatsInternalAsync(CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var timeInfo = Data.GetTimePeriodInfo(TimePeriod.Last90Days);
 
         var arcadeCount = await context.ArcadeReplays

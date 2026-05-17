@@ -4,11 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace dsstats.api.Services;
 
-public class TransitionService(DsstatsContext context,
+public class TransitionService(IDbContextFactory<DsstatsContext> contextFactory,
                                ILogger<TransitionService> logger)
 {
     public async Task FixHashes()
     {
+        await using var context = await contextFactory.CreateDbContextAsync();
         var replayHashes = await context.Replays
             .OrderBy(o => o.Gametime)
             .Select(s => s.ReplayHash)

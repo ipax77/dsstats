@@ -4,6 +4,7 @@ using dsstats.dbServices.Extensions;
 using dsstats.ratings;
 using dsstats.shared;
 using dsstats.shared.Arcade;
+using dsstats.shared.Interfaces;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,10 +25,18 @@ public class ArcadeMatchDb
         localConnection.Open();
         connection = localConnection;
 
-        services.AddDbContext<DsstatsContext>(o => o.UseSqlite(localConnection, options =>
+        services.AddDbContextFactory<DsstatsContext>(o => o.UseSqlite(localConnection, options =>
         {
             options.MigrationsAssembly("dsstats.migrations.sqlite");
         }));
+        services.AddDbContextFactory<StagingDsstatsContext>(o => o.UseSqlite(localConnection, options =>
+        {
+            options.MigrationsAssembly("dsstats.migrations.sqlite");
+        }));
+        services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<DsstatsContext>>().CreateDbContext());
+        services.AddOptions<ImportOptions>();
+        services.AddSingleton<IRatingService, RatingService>();
+        services.AddSingleton<IImportService, ImportService>();
         services.AddLogging();
 
         var serviceProvider = services.BuildServiceProvider();
@@ -46,11 +55,8 @@ public class ArcadeMatchDb
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
         {
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            var logger = serviceProvider.GetRequiredService<ILogger<RatingService>>();
-            var importOptions = Options.Create(new ImportOptions());
-            var ratingService = new RatingService(scopeFactory, importOptions, logger);
-            var importService = new ImportService(scopeFactory, serviceProvider.GetRequiredService<ILogger<ImportService>>());
+            var ratingService = serviceProvider.GetRequiredService<IRatingService>();
+            var importService = serviceProvider.GetRequiredService<IImportService>();
 
             // Ensure schema is created
             using (var scope = serviceProvider.CreateScope())
@@ -100,11 +106,8 @@ public class ArcadeMatchDb
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
         {
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            var logger = serviceProvider.GetRequiredService<ILogger<RatingService>>();
-            var importOptions = Options.Create(new ImportOptions());
-            var ratingService = new RatingService(scopeFactory, importOptions, logger);
-            var importService = new ImportService(scopeFactory, serviceProvider.GetRequiredService<ILogger<ImportService>>());
+            var ratingService = serviceProvider.GetRequiredService<IRatingService>();
+            var importService = serviceProvider.GetRequiredService<IImportService>();
 
             var checkpoint = DateTime.UtcNow;
             await Task.Delay(100); // Ensure timestamp difference
@@ -180,11 +183,8 @@ public class ArcadeMatchDb
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
         {
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            var logger = serviceProvider.GetRequiredService<ILogger<RatingService>>();
-            var importOptions = Options.Create(new ImportOptions());
-            var ratingService = new RatingService(scopeFactory, importOptions, logger);
-            var importService = new ImportService(scopeFactory, serviceProvider.GetRequiredService<ILogger<ImportService>>());
+            var ratingService = serviceProvider.GetRequiredService<IRatingService>();
+            var importService = serviceProvider.GetRequiredService<IImportService>();
 
             // Arrange: Setup initial data with unmatched replays
             using (var scope = serviceProvider.CreateScope())
@@ -274,11 +274,8 @@ public class ArcadeMatchDb
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
         {
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            var logger = serviceProvider.GetRequiredService<ILogger<RatingService>>();
-            var importOptions = Options.Create(new ImportOptions());
-            var ratingService = new RatingService(scopeFactory, importOptions, logger);
-            var importService = new ImportService(scopeFactory, serviceProvider.GetRequiredService<ILogger<ImportService>>());
+            var ratingService = serviceProvider.GetRequiredService<IRatingService>();
+            var importService = serviceProvider.GetRequiredService<IImportService>();
 
             // Arrange: Initial state with some matches
             using (var scope = serviceProvider.CreateScope())
@@ -363,11 +360,8 @@ public class ArcadeMatchDb
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
         {
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            var logger = serviceProvider.GetRequiredService<ILogger<RatingService>>();
-            var importOptions = Options.Create(new ImportOptions());
-            var ratingService = new RatingService(scopeFactory, importOptions, logger);
-            var importService = new ImportService(scopeFactory, serviceProvider.GetRequiredService<ILogger<ImportService>>());
+            var ratingService = serviceProvider.GetRequiredService<IRatingService>();
+            var importService = serviceProvider.GetRequiredService<IImportService>();
 
             // Arrange: Two dsstats replays with same players, one arcade replay
             using (var scope = serviceProvider.CreateScope())
@@ -419,11 +413,8 @@ public class ArcadeMatchDb
         try
         {
             // --- ARRANGE ---
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            var logger = serviceProvider.GetRequiredService<ILogger<RatingService>>();
-            var importOptions = Options.Create(new ImportOptions());
-            var ratingService = new RatingService(scopeFactory, importOptions, logger);
-            var importService = new ImportService(scopeFactory, serviceProvider.GetRequiredService<ILogger<ImportService>>());
+            var ratingService = serviceProvider.GetRequiredService<IRatingService>();
+            var importService = serviceProvider.GetRequiredService<IImportService>();
 
             // Ensure schema is ready
             using (var scope = serviceProvider.CreateScope())
@@ -488,11 +479,8 @@ public class ArcadeMatchDb
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
         {
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            var logger = serviceProvider.GetRequiredService<ILogger<RatingService>>();
-            var importOptions = Options.Create(new ImportOptions());
-            var ratingService = new RatingService(scopeFactory, importOptions, logger);
-            var importService = new ImportService(scopeFactory, serviceProvider.GetRequiredService<ILogger<ImportService>>());
+            var ratingService = serviceProvider.GetRequiredService<IRatingService>();
+            var importService = serviceProvider.GetRequiredService<IImportService>();
 
             // --- ARRANGE: Ensure schema is ready ---
             using (var scope = serviceProvider.CreateScope())

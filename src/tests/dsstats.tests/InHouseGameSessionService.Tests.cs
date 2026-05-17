@@ -4,10 +4,12 @@ using dsstats.dbServices;
 using dsstats.dbServices.InHouse;
 using dsstats.shared;
 using dsstats.shared.InHouse;
+using dsstats.shared.Interfaces;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 
 namespace dsstats.tests;
 
@@ -893,7 +895,7 @@ public sealed class InHouseGameSessionServiceTests
         {
             this.connection = connection;
             this.serviceProvider = serviceProvider;
-            Context = serviceProvider.GetRequiredService<DsstatsContext>();
+            Context = serviceProvider.GetRequiredService<IDbContextFactory<DsstatsContext>>().CreateDbContext();
             Service = CreateService();
         }
 
@@ -903,10 +905,12 @@ public sealed class InHouseGameSessionServiceTests
         public InHouseGameSessionService CreateService()
         {
             var importService = new ImportService(
+                serviceProvider.GetRequiredService<IDbContextFactory<DsstatsContext>>(),
                 serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+                serviceProvider.GetRequiredService<IRatingService>(),
                 NullLogger<ImportService>.Instance);
             return new InHouseGameSessionService(
-                serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+                serviceProvider.GetRequiredService<IDbContextFactory<DsstatsContext>>(),
                 importService);
         }
 
@@ -915,9 +919,10 @@ public sealed class InHouseGameSessionServiceTests
             var connection = new SqliteConnection("Filename=:memory:");
             await connection.OpenAsync();
             var services = new ServiceCollection();
-            services.AddDbContext<DsstatsContext>(options => options.UseSqlite(connection));
+            services.AddDbContextFactory<DsstatsContext>(options => options.UseSqlite(connection));
+            services.AddSingleton(Mock.Of<IRatingService>());
             var provider = services.BuildServiceProvider();
-            var context = provider.GetRequiredService<DsstatsContext>();
+            var context = provider.GetRequiredService<IDbContextFactory<DsstatsContext>>().CreateDbContext();
             await context.Database.EnsureCreatedAsync();
             return new InHouseGameSessionFixture(connection, provider);
         }

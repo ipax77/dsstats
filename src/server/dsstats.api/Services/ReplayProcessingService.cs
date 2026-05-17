@@ -4,6 +4,7 @@ using dsstats.dbServices;
 using dsstats.parser;
 using dsstats.shared;
 using dsstats.shared.Upload;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using s2protocol.NET;
 using System.Threading.Channels;
@@ -12,7 +13,10 @@ namespace dsstats.api.Services;
 
 public class ReplayProcessingService(
     ILogger<ReplayProcessingService> logger,
-    IServiceScopeFactory scopeFactory
+    IDbContextFactory<DsstatsContext> contextFactory,
+    Channel<ReplayUploadJob> uploadChannel,
+    IImportService importService,
+    IHubContext<UploadHub> uploadHub
 ) : BackgroundService
 {
     private readonly ReplayDecoder replayDecoder = new();
@@ -30,12 +34,6 @@ public class ReplayProcessingService(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("ReplayProcessingService started");
-
-        var uploadChannel =
-            scopeFactory.CreateScope()
-                        .ServiceProvider
-                        .GetRequiredService<Channel<ReplayUploadJob>>();
-
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -65,9 +63,7 @@ public class ReplayProcessingService(
     {
         logger.LogInformation("Processing upload job {JobId}", job.ReplayUploadJobId);
 
-        using var scope = scopeFactory.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
+        await using var context = await contextFactory.CreateDbContextAsync(token);
 
         try
         {
@@ -137,9 +133,7 @@ public class ReplayProcessingService(
 
     private async Task NotifyHub(DecodeFinishedEventArgs e)
     {
-        using var scope = scopeFactory.CreateScope();
-        var hub = scope.ServiceProvider.GetRequiredService<IHubContext<UploadHub>>();
-        await hub
+        await uploadHub
         .Clients
         .Group(e.Guid.ToString())
         .SendAsync("DecodeResult", e);

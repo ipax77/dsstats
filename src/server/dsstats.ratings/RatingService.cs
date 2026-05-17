@@ -4,14 +4,17 @@ using dsstats.db.Extensions;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
 
 namespace dsstats.ratings;
 
-public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<ImportOptions> importOptions, ILogger<RatingService> logger) : IRatingService
+public partial class RatingService(
+    IDbContextFactory<DsstatsContext> contextFactory,
+    IDbContextFactory<StagingDsstatsContext> stagingContextFactory,
+    IOptions<ImportOptions> importOptions,
+    ILogger<RatingService> logger) : IRatingService
 {
     private readonly SemaphoreSlim ratingLock = new(1, 1);
     public async Task CreateRatings()
@@ -118,8 +121,7 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
 
     private async Task ClearRatings()
     {
-        using var scope = scopeFactory.CreateAsyncScope();
-        using var context = scope.ServiceProvider.GetRequiredService<StagingDsstatsContext>();
+        await using var context = await stagingContextFactory.CreateDbContextAsync();
 
 
         await context.Database.ExecuteSqlRawAsync(@"
@@ -139,8 +141,7 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
 
     private async Task SwapStagingTables()
     {
-        using var scope = scopeFactory.CreateAsyncScope();
-        using var context = scope.ServiceProvider.GetRequiredService<StagingDsstatsContext>();
+        await using var context = await stagingContextFactory.CreateDbContextAsync();
         var sql = @"
             RENAME TABLE 
                 ReplayPlayerRatings TO ReplayPlayerRatings_old,
@@ -162,8 +163,7 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
 
     private async Task SavePlayerRatings(Dictionary<int, Dictionary<RatingType, PlayerRatingCalcDto>> playerRatingsDict)
     {
-        using var scope = scopeFactory.CreateAsyncScope();
-        using var context = scope.ServiceProvider.GetRequiredService<StagingDsstatsContext>();
+        await using var context = await stagingContextFactory.CreateDbContextAsync();
         List<PlayerRating> playerRatings = [];
         foreach (var kvp in playerRatingsDict)
         {
@@ -204,16 +204,38 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
         {
             return;
         }
-        using var scope = scopeFactory.CreateAsyncScope();
-        using var context = scope.ServiceProvider.GetRequiredService<StagingDsstatsContext>();
+        await using var context = await stagingContextFactory.CreateDbContextAsync();
 
-        await context.Database.OpenConnectionAsync();
-        await context.Database.ExecuteSqlRawAsync("SET unique_checks=0;");
+        var connectionOpened = false;
+        var uniqueChecksDisabled = false;
 
-        await context.AddRangeAsync(replayRatings);
-        await context.SaveChangesAsync();
-        await context.Database.ExecuteSqlRawAsync("SET unique_checks=1;");
-        await context.Database.CloseConnectionAsync();
+        try
+        {
+            await context.Database.OpenConnectionAsync();
+            connectionOpened = true;
+            await context.Database.ExecuteSqlRawAsync("SET unique_checks=0;");
+            uniqueChecksDisabled = true;
+
+            await context.AddRangeAsync(replayRatings);
+            await context.SaveChangesAsync();
+        }
+        finally
+        {
+            try
+            {
+                if (uniqueChecksDisabled)
+                {
+                    await context.Database.ExecuteSqlRawAsync("SET unique_checks=1;");
+                }
+            }
+            finally
+            {
+                if (connectionOpened)
+                {
+                    await context.Database.CloseConnectionAsync();
+                }
+            }
+        }
     }
 
     public static HashSet<RatingType> GetRatingTypes(ReplayCalcDto replay)
@@ -241,8 +263,7 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
 
     private async Task<List<ReplayCalcDto>> GetContinueReplayCalcDtos(DateTime fromTime, int take)
     {
-        using var scope = scopeFactory.CreateAsyncScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
         bool noFromTime = fromTime == DateTime.MinValue;
 
         return await context.Replays
@@ -257,8 +278,7 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
 
     private async Task<List<ReplayCalcDto>> GetCombinedReplayCalcDtos(DateTime fromTime, HashSet<int> skipDsstatsReplayIds, HashSet<int> skipArcadeReplayIds, int take)
     {
-        using var scope = scopeFactory.CreateAsyncScope();
-        using var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
 
         var query = from r in context.CombinedReplays
                     where r.Gametime >= fromTime
@@ -324,8 +344,7 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
 
     private async Task<HashSet<int>> GetArcadeMatches()
     {
-        using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        await using var context = await contextFactory.CreateDbContextAsync();
         await MatchNewDsstatsReplays();
         var data = await context.ReplayArcadeMatches
             .Select(s => s.ArcadeReplayId)
@@ -335,10 +354,11 @@ public partial class RatingService(IServiceScopeFactory scopeFactory, IOptions<I
 
     private async Task BatchImportCombinedReplays()
     {
-        using var scope = scopeFactory.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
-        context.Database.SetCommandTimeout(TimeSpan.FromMinutes(20));
-        await context.Database.ExecuteSqlRawAsync("CALL BatchImportCombinedReplays();");
+        await using var context = await contextFactory.CreateDbContextAsync();
+        await context.Database.ExecuteWithCommandTimeoutAsync(TimeSpan.FromMinutes(20), async () =>
+        {
+            await context.Database.ExecuteSqlRawAsync("CALL BatchImportCombinedReplays();");
+        });
     }
 }
 

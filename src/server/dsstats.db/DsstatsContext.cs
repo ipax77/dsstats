@@ -8,13 +8,14 @@ namespace dsstats.db;
 
 public class StagingDsstatsContext : DsstatsContext
 {
-    public StagingDsstatsContext(DbContextOptions<DsstatsContext> options) : base(options) { }
+    public StagingDsstatsContext(DbContextOptions<StagingDsstatsContext> options) : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<PlayerRating>().ToTable("PlayerRatings_tmp");
         modelBuilder.Entity<ReplayRating>().ToTable("ReplayRatings_tmp");
         modelBuilder.Entity<ReplayPlayerRating>().ToTable("ReplayPlayerRatings_tmp");
+        modelBuilder.Entity<ArcadeReplayRating>().ToTable("ArcadeReplayRatings_tmp");
 
         base.OnModelCreating(modelBuilder);
     }
@@ -59,7 +60,7 @@ public class DsstatsContext : DbContext
 
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
 
-    public DsstatsContext(DbContextOptions<DsstatsContext> options) : base(options)
+    public DsstatsContext(DbContextOptions options) : base(options)
     {
     }
 

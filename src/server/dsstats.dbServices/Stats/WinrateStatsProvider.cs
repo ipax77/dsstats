@@ -5,7 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace dsstats.dbServices.Stats;
 
-public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCache) : StatsProviderBase<WinrateResponse>
+public class WinrateStatsProvider(IDbContextFactory<DsstatsContext> contextFactory, IMemoryCache memoryCache) : StatsProviderBase<WinrateResponse>
 {
     public override StatsType StatsType => StatsType.Winrate;
 
@@ -27,6 +27,7 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
 
     private async Task<List<WinrateEnt>> GetWinrateBaseData(StatsRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var f = StatsFilterResolver.Resolve(request);
 
         var query =
@@ -68,6 +69,7 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
 
     private async Task<List<WinrateEnt>> GetWinrateInterestData(StatsRequest request, CancellationToken token)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var f = StatsFilterResolver.Resolve(request);
 
         var query = from r in context.Replays
@@ -122,6 +124,7 @@ public class WinrateStatsProvider(DsstatsContext context, IMemoryCache memoryCac
 
     private async Task<List<WinrateEnt>> ProduceUserStatsAsync(StatsRequest request, ToonIdDto toonId, CancellationToken token = default)
     {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
         var f = StatsFilterResolver.Resolve(request);
 
         var playerId = await context.Players.Where(f => f.ToonId.Id == toonId.Id

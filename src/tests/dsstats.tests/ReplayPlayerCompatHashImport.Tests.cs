@@ -1,10 +1,12 @@
 using dsstats.db;
 using dsstats.dbServices;
 using dsstats.shared;
+using dsstats.shared.Interfaces;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Moq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -22,10 +24,7 @@ public sealed class ReplayPlayerCompatHashImportTests
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
         {
-            var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-            var importService = new ImportService(
-                scopeFactory,
-                serviceProvider.GetRequiredService<ILogger<ImportService>>());
+            var importService = serviceProvider.GetRequiredService<IImportService>();
 
             await importService.InsertReplays([CreateReplay(rawCompatHash, existingSha256)]);
 
@@ -55,10 +54,13 @@ public sealed class ReplayPlayerCompatHashImportTests
         localConnection.Open();
         connection = localConnection;
 
-        services.AddDbContext<DsstatsContext>(o => o.UseSqlite(localConnection, options =>
+        services.AddDbContextFactory<DsstatsContext>(o => o.UseSqlite(localConnection, options =>
         {
             options.MigrationsAssembly("dsstats.migrations.sqlite");
         }));
+        services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<DsstatsContext>>().CreateDbContext());
+        services.AddSingleton(Mock.Of<IRatingService>());
+        services.AddSingleton<IImportService, ImportService>();
         services.AddLogging();
 
         var serviceProvider = services.BuildServiceProvider();
