@@ -373,12 +373,13 @@ internal static class Program
         var player = replayDto.Players.FirstOrDefault(player => player.GamePos == buildInfo.GamePos);
         var spawn = player?.Spawns.FirstOrDefault(spawn => spawn.Breakpoint == Breakpoint.Min5);
         var signature = CreateTerranMechSignature(spawn);
+        var shares = FormatTerranWeightedShares(spawn);
         var units = FormatUnits(spawn, Commander.Terran);
         var resultText = won ? "W" : "L";
 
         result.IncrementTerranMechSignature(signature, won);
         result.TerranMechDetails.Add(
-            $"{replayName} | {replayTime:yyyy-MM-dd HH:mm:ss} | {resultText} | pos {buildInfo.GamePos} | {player?.Name ?? "(unknown)"} | vs {opponentBuildInfo.Commander}.{opponentBuildInfo.BuildName} | {signature} | {units}");
+            $"{replayName} | {replayTime:yyyy-MM-dd HH:mm:ss} | {resultText} | pos {buildInfo.GamePos} | {player?.Name ?? "(unknown)"} | vs {opponentBuildInfo.Commander}.{opponentBuildInfo.BuildName} | {signature} | {shares} | {units}");
     }
 
     private static void PrintSummary(
@@ -484,6 +485,108 @@ internal static class Program
             or "Hellbat"
             or "Banshee"
             or "Cyclone";
+    }
+
+    private static string FormatTerranWeightedShares(SpawnDto? spawn)
+    {
+        if (spawn is null || spawn.Units.Count == 0)
+        {
+            return "Bio 0.0%, Mech 0.0%, Banshee 0.0%, RavenViking 0.0%";
+        }
+
+        var shares = new TerranWeightedShares();
+
+        foreach (var unit in spawn.Units)
+        {
+            if (unit.Count <= 0)
+            {
+                continue;
+            }
+
+            var name = UnitMap.GetNormalizedUnitName(unit.Name, Commander.Terran);
+            shares.Add(name, unit.Count);
+        }
+
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"Bio {Percent(shares.BioWeight, shares.TotalWeight):0.0}%, Mech {Percent(shares.MechWeight, shares.TotalWeight):0.0}%, Banshee {Percent(shares.BansheeWeight, shares.TotalWeight):0.0}%, RavenViking {Percent(shares.RavenVikingWeight, shares.TotalWeight):0.0}%");
+    }
+
+    private static double Percent(int value, int total)
+    {
+        return total == 0 ? 0 : value * 100.0 / total;
+    }
+
+    private struct TerranWeightedShares
+    {
+        public int TotalWeight;
+        public int BioWeight;
+        public int MechWeight;
+        public int BansheeWeight;
+        public int RavenVikingWeight;
+
+        public void Add(string normalizedName, int count)
+        {
+            switch (normalizedName)
+            {
+                case "Marine":
+                case "Marauder":
+                case "Reaper":
+                case "Medivac":
+                case "Ghost":
+                    AddBio(count, 1);
+                    break;
+                case "Raven":
+                case "Viking":
+                    AddRavenViking(count, 2);
+                    break;
+                case "Widow Mine":
+                case "Siege Tank":
+                case "Hellion":
+                case "Hellbat":
+                case "Cyclone":
+                case "Liberator":
+                    AddMech(count, 2);
+                    break;
+                case "Banshee":
+                    AddBanshee(count, 2);
+                    break;
+                case "Thor":
+                case "Battlecruiser":
+                    AddMech(count, 4);
+                    break;
+            }
+        }
+
+        private void AddBio(int count, int weight)
+        {
+            var weightedCount = count * weight;
+            TotalWeight += weightedCount;
+            BioWeight += weightedCount;
+        }
+
+        private void AddMech(int count, int weight)
+        {
+            var weightedCount = count * weight;
+            TotalWeight += weightedCount;
+            MechWeight += weightedCount;
+        }
+
+        private void AddBanshee(int count, int weight)
+        {
+            var weightedCount = count * weight;
+            TotalWeight += weightedCount;
+            MechWeight += weightedCount;
+            BansheeWeight += weightedCount;
+        }
+
+        private void AddRavenViking(int count, int weight)
+        {
+            var weightedCount = count * weight;
+            TotalWeight += weightedCount;
+            MechWeight += weightedCount;
+            RavenVikingWeight += weightedCount;
+        }
     }
 
     private static DbContextOptions<DsstatsContext> CreateDbOptions(string connectionString)
@@ -702,7 +805,9 @@ internal static class Program
 
         private static string CreateBuildKey(PlayerBuildInfo buildInfo)
         {
-            return $"{buildInfo.Commander}.{buildInfo.BuildName}";
+            return buildInfo.GasFirst
+                ? $"{buildInfo.Commander}.{buildInfo.BuildName} GasFirst"
+                : $"{buildInfo.Commander}.{buildInfo.BuildName}";
         }
     }
 

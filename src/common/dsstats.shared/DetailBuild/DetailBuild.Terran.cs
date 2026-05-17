@@ -6,22 +6,12 @@ public static partial class DetailBuilds
 {
     private static TerranBuild DetectTerranBuild(SpawnDto spawnDto)
     {
-        const int BioSupportThreshold = 12;
         const int BansheeThreshold = 3;
         const int RavenVikingRavenThreshold = 2;
         const int RavenVikingVikingThreshold = 4;
+        const int DominantSharePercent = 60;
 
-        var bioCount = 0;
-        var bansheeCount = 0;
-        var cycloneCount = 0;
-        var hellbatCount = 0;
-        var hellionCount = 0;
-        var ravenCount = 0;
-        var siegeTankCount = 0;
-        var thorCount = 0;
-        var vikingCount = 0;
-        var hasSoftSupportTech = false;
-        var hasLibs = false;
+        var composition = new TerranComposition();
 
         foreach (var unit in spawnDto.Units)
         {
@@ -31,88 +21,153 @@ public static partial class DetailBuilds
             }
 
             var name = UnitMap.GetNormalizedUnitName(unit.Name, Commander.Terran);
-            switch (name)
+            if (TryGetTerranProfile(name, out var profile))
             {
-                case "Battlecruiser":
-                    return TerranBuild.BC;
-                case "Liberator":
-                    hasLibs = true;
-                    break;
-                case "Raven":
-                    ravenCount += unit.Count;
-                    hasSoftSupportTech = true;
-                    break;
-                case "Viking":
-                    vikingCount += unit.Count;
-                    hasSoftSupportTech = true;
-                    break;
-                case "Widow Mine":
-                    hasSoftSupportTech = true;
-                    break;
-                case "Banshee":
-                    bansheeCount += unit.Count;
-                    break;
-                case "Thor":
-                    thorCount += unit.Count;
-                    break;
-                case "Siege Tank":
-                    siegeTankCount += unit.Count;
-                    break;
-                case "Hellion":
-                    hellionCount += unit.Count;
-                    break;
-                case "Hellbat":
-                    hellbatCount += unit.Count;
-                    break;
-                case "Cyclone":
-                    cycloneCount += unit.Count;
-                    break;
-                case "Marine":
-                case "Marauder":
-                case "Medivac":
-                case "Ghost":
-                case "Reaper":
-                    bioCount += unit.Count;
-                    break;
+                composition.Add(profile, unit.Count);
             }
         }
 
-        if (hasLibs)
+        if (composition.HasBattlecruiser)
         {
+            return TerranBuild.BC;
+        }
+
+        if (composition.HasLiberator)
+        {
+            if (composition.BioCount >= 2
+                && IsAtLeastShare(composition.BioWeight, composition.TotalWeight, DominantSharePercent))
+            {
+                return TerranBuild.LibBio;
+            }
+
             return TerranBuild.Libs;
         }
 
-        if (bansheeCount >= BansheeThreshold)
+        if (composition.BansheeCount >= BansheeThreshold
+            && (IsAtLeastShare(composition.BansheeWeight, composition.TotalWeight, DominantSharePercent)
+                || composition.BansheeWeight > composition.BioWeight))
         {
             return TerranBuild.Banshees;
         }
 
-        if (ravenCount >= RavenVikingRavenThreshold && vikingCount >= RavenVikingVikingThreshold)
+        if (composition.RavenCount >= RavenVikingRavenThreshold
+            && composition.VikingCount >= RavenVikingVikingThreshold
+            && IsAtLeastShare(composition.RavenVikingWeight, composition.TotalWeight, DominantSharePercent))
         {
             return TerranBuild.RavenViking;
         }
 
-        if (bioCount >= BioSupportThreshold
-            && thorCount <= 1
-            && hellbatCount == 0
-            && siegeTankCount <= 2
-            && hellionCount <= 3
-            && cycloneCount <= 4)
+        if (composition.BioCount >= 2
+            && IsAtLeastShare(composition.BioWeight, composition.TotalWeight, DominantSharePercent))
         {
             return TerranBuild.Bio;
         }
 
-        if (thorCount > 0
-            || hellbatCount > 0
-            || siegeTankCount > 0
-            || hellionCount > 0
-            || cycloneCount > 0
-            || hasSoftSupportTech
-            || bansheeCount > 0)
+        if (IsAtLeastShare(composition.MechWeight, composition.TotalWeight, DominantSharePercent))
         {
             return TerranBuild.Mech;
         }
 
-        return bioCount >= 2 ? TerranBuild.Bio : TerranBuild.None;
+        return composition.BioCount >= 2 ? TerranBuild.Bio : TerranBuild.None;
+    }
+
+    private static bool IsAtLeastShare(int value, int total, int percent)
+    {
+        return total > 0 && value * 100 >= total * percent;
+    }
+
+    private static bool TryGetTerranProfile(string normalizedName, out TerranUnitProfile profile)
+    {
+        profile = normalizedName switch
+        {
+            "Marine" => new TerranUnitProfile(TerranUnitKind.Bio, 1),
+            "Marauder" => new TerranUnitProfile(TerranUnitKind.Bio, 1),
+            "Reaper" => new TerranUnitProfile(TerranUnitKind.Bio, 1),
+            "Medivac" => new TerranUnitProfile(TerranUnitKind.Bio, 1),
+            "Ghost" => new TerranUnitProfile(TerranUnitKind.Bio, 1),
+            "Raven" => new TerranUnitProfile(TerranUnitKind.Raven, 2),
+            "Viking" => new TerranUnitProfile(TerranUnitKind.Viking, 2),
+            "Widow Mine" => new TerranUnitProfile(TerranUnitKind.Mech, 2),
+            "Siege Tank" => new TerranUnitProfile(TerranUnitKind.Mech, 2),
+            "Hellion" => new TerranUnitProfile(TerranUnitKind.Mech, 2),
+            "Hellbat" => new TerranUnitProfile(TerranUnitKind.Mech, 2),
+            "Cyclone" => new TerranUnitProfile(TerranUnitKind.Mech, 2),
+            "Banshee" => new TerranUnitProfile(TerranUnitKind.Banshee, 2),
+            "Liberator" => new TerranUnitProfile(TerranUnitKind.Liberator, 2),
+            "Thor" => new TerranUnitProfile(TerranUnitKind.Mech, 4),
+            "Battlecruiser" => new TerranUnitProfile(TerranUnitKind.Battlecruiser, 4),
+            _ => default,
+        };
+
+        return profile.Kind != TerranUnitKind.Unknown;
+    }
+
+    private enum TerranUnitKind
+    {
+        Unknown,
+        Bio,
+        Mech,
+        Banshee,
+        Raven,
+        Viking,
+        Liberator,
+        Battlecruiser,
+    }
+
+    private readonly record struct TerranUnitProfile(TerranUnitKind Kind, int Weight);
+
+    private struct TerranComposition
+    {
+        public int TotalWeight;
+        public int BioWeight;
+        public int MechWeight;
+        public int BansheeWeight;
+        public int RavenVikingWeight;
+        public int BioCount;
+        public int BansheeCount;
+        public int RavenCount;
+        public int VikingCount;
+        public bool HasLiberator;
+        public bool HasBattlecruiser;
+
+        public void Add(TerranUnitProfile profile, int count)
+        {
+            var weight = profile.Weight * count;
+            TotalWeight += weight;
+
+            switch (profile.Kind)
+            {
+                case TerranUnitKind.Bio:
+                    BioCount += count;
+                    BioWeight += weight;
+                    break;
+                case TerranUnitKind.Banshee:
+                    BansheeCount += count;
+                    BansheeWeight += weight;
+                    MechWeight += weight;
+                    break;
+                case TerranUnitKind.Raven:
+                    RavenCount += count;
+                    RavenVikingWeight += weight;
+                    MechWeight += weight;
+                    break;
+                case TerranUnitKind.Viking:
+                    VikingCount += count;
+                    RavenVikingWeight += weight;
+                    MechWeight += weight;
+                    break;
+                case TerranUnitKind.Liberator:
+                    HasLiberator = true;
+                    MechWeight += weight;
+                    break;
+                case TerranUnitKind.Battlecruiser:
+                    HasBattlecruiser = true;
+                    MechWeight += weight;
+                    break;
+                case TerranUnitKind.Mech:
+                    MechWeight += weight;
+                    break;
+            }
+        }
     }
 }

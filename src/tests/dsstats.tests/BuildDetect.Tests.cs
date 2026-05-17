@@ -150,6 +150,11 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "Banshee", Count = 7 },
             new UnitDto { Name = "MarineLightweight", Count = 8 },
             new UnitDto { Name = "Raven", Count = 2 });
+
+        AssertTerranBuild(
+            TerranBuild.Banshees,
+            new UnitDto { Name = "Banshee", Count = 6 },
+            new UnitDto { Name = "Viking", Count = 5 });
     }
 
     [TestMethod]
@@ -184,29 +189,36 @@ public sealed class BuildDetectTests
 
         AssertTerranBuild(
             TerranBuild.Mech,
-            new UnitDto { Name = "SiegeTank", Count = 3 },
-            new UnitDto { Name = "MarineLightweight", Count = 12 });
+            new UnitDto { Name = "Cyclone", Count = 8 },
+            new UnitDto { Name = "Hellion", Count = 8 });
 
         AssertTerranBuild(
             TerranBuild.Mech,
-            new UnitDto { Name = "Hellion", Count = 4 },
-            new UnitDto { Name = "MarineLightweight", Count = 30 });
-
-        AssertTerranBuild(
-            TerranBuild.Mech,
-            new UnitDto { Name = "Cyclone", Count = 5 },
-            new UnitDto { Name = "MarineLightweight", Count = 30 });
-
-        AssertTerranBuild(
-            TerranBuild.Mech,
-            new UnitDto { Name = "ThorAP", Count = 2 },
-            new UnitDto { Name = "MarineLightweight", Count = 30 });
+            new UnitDto { Name = "MarineLightweight", Count = 10 },
+            new UnitDto { Name = "Cyclone", Count = 8 },
+            new UnitDto { Name = "Hellion", Count = 8 });
     }
 
     [TestMethod]
     public void CanDetectTerranLibs()
     {
         AssertTerranBuild(TerranBuild.Libs, new UnitDto { Name = "Liberator", Count = 1 });
+    }
+
+    [TestMethod]
+    public void CanDetectTerranLibBio()
+    {
+        AssertTerranBuild(
+            TerranBuild.LibBio,
+            new UnitDto { Name = "MarineLightweight", Count = 12 },
+            new UnitDto { Name = "Liberator", Count = 1 });
+
+        AssertTerranBuild(
+            TerranBuild.LibBio,
+            new UnitDto { Name = "MarineLightweight", Count = 26 },
+            new UnitDto { Name = "Marauder", Count = 3 },
+            new UnitDto { Name = "Liberator", Count = 1 },
+            new UnitDto { Name = "Hellion", Count = 3 });
     }
 
     [TestMethod]
@@ -225,23 +237,23 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "MarineLightweight", Count = 12 });
 
         AssertTerranBuild(
-            TerranBuild.Libs,
+            TerranBuild.LibBio,
             new UnitDto { Name = "Liberator", Count = 1 },
             new UnitDto { Name = "SiegeTank", Count = 1 },
             new UnitDto { Name = "MarineLightweight", Count = 12 });
 
         AssertTerranBuild(
             TerranBuild.Banshees,
-            new UnitDto { Name = "Banshee", Count = 3 },
+            new UnitDto { Name = "Banshee", Count = 6 },
             new UnitDto { Name = "SiegeTank", Count = 1 },
-            new UnitDto { Name = "MarineLightweight", Count = 12 });
+            new UnitDto { Name = "MarineLightweight", Count = 2 });
 
         AssertTerranBuild(
             TerranBuild.RavenViking,
-            new UnitDto { Name = "Raven", Count = 2 },
+            new UnitDto { Name = "Raven", Count = 4 },
             new UnitDto { Name = "Viking", Count = 4 },
             new UnitDto { Name = "SiegeTank", Count = 1 },
-            new UnitDto { Name = "MarineLightweight", Count = 12 });
+            new UnitDto { Name = "MarineLightweight", Count = 4 });
 
         AssertTerranBuild(
             TerranBuild.Bio,
@@ -258,6 +270,40 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "Liberator", Count = 0 },
             new UnitDto { Name = "SiegeTank", Count = 0 },
             new UnitDto { Name = "MarineLightweight", Count = 0 });
+    }
+
+    [TestMethod]
+    public void CanFlagGasFirstFromMin5SpawnGasCount()
+    {
+        var replayDto = CreateStandardReplayWithUnits(
+            Commander.Terran,
+            [new UnitDto { Name = "MarineLightweight", Count = 2 }]);
+
+        replayDto.Players[0].Spawns[0].GasCount = 1;
+
+        var details = DetailBuilds.DetectStandardBuild(replayDto);
+
+        Assert.IsNotNull(details);
+        var buildInfo = GetBuildInfo(details, 1);
+        Assert.AreEqual(TerranBuild.Bio.ToString(), buildInfo.BuildName);
+        Assert.IsTrue(buildInfo.GasFirst);
+    }
+
+    [TestMethod]
+    public void NoGasInMin5SpawnDoesNotFlagGasFirst()
+    {
+        var replayDto = CreateStandardReplayWithUnits(
+            Commander.Terran,
+            [new UnitDto { Name = "MarineLightweight", Count = 2 }]);
+
+        replayDto.Players[0].Refineries.Add(30);
+
+        var details = DetailBuilds.DetectStandardBuild(replayDto);
+
+        Assert.IsNotNull(details);
+        var buildInfo = GetBuildInfo(details, 1);
+        Assert.AreEqual(TerranBuild.Bio.ToString(), buildInfo.BuildName);
+        Assert.IsFalse(buildInfo.GasFirst);
     }
 
     [TestMethod]
@@ -326,6 +372,27 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "Adept", Count = 2 },
             new UnitDto { Name = "Zealot", Count = 2 },
             new UnitDto { Name = "Stalker", Count = 2 });
+    }
+
+    [TestMethod]
+    public void ProtossCheapBuildsRequireWeightedShare()
+    {
+        AssertProtossBuild(
+            ProtossBuild.None,
+            new UnitDto { Name = "Stalker", Count = 2 },
+            new UnitDto { Name = "Disruptor", Count = 2 });
+
+        AssertProtossBuild(
+            ProtossBuild.Adepts,
+            new UnitDto { Name = "Adept", Count = 12 },
+            new UnitDto { Name = "Disruptor", Count = 2 });
+
+        AssertProtossBuild(
+            ProtossBuild.Voidrays,
+            new UnitDto { Name = "Adept", Count = 5 },
+            new UnitDto { Name = "Oracle", Count = 2 },
+            new UnitDto { Name = "Phoenix", Count = 1 },
+            new UnitDto { Name = "VoidRay", Count = 5 });
     }
 
     [TestMethod]
@@ -411,6 +478,25 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "Ravager", Count = 12 },
             new UnitDto { Name = "Hydralisk", Count = 1 },
             new UnitDto { Name = "Roach", Count = 1 });
+    }
+
+    [TestMethod]
+    public void ZergCheapBuildsRequireWeightedShare()
+    {
+        AssertZergBuild(
+            ZergBuild.Roaches,
+            new UnitDto { Name = "ZerglingLightweight", Count = 2 },
+            new UnitDto { Name = "Roach", Count = 4 });
+
+        AssertZergBuild(
+            ZergBuild.Roaches,
+            new UnitDto { Name = "Hydralisk", Count = 2 },
+            new UnitDto { Name = "Roach", Count = 4 });
+
+        AssertZergBuild(
+            ZergBuild.Hydras,
+            new UnitDto { Name = "Hydralisk", Count = 8 },
+            new UnitDto { Name = "Roach", Count = 2 });
     }
 
     [TestMethod]
@@ -724,25 +810,27 @@ public sealed class BuildDetectTests
 
     private static void AssertBuild(ReplayBuildDetails details, int gamePos, Enum expectedBuild)
     {
-        PlayerBuildInfo? buildInfo = null;
+        var buildInfo = GetBuildInfo(details, gamePos);
+        Assert.AreEqual(Convert.ToInt32(expectedBuild), buildInfo.Build);
+        Assert.AreEqual(expectedBuild.ToString(), buildInfo.BuildName);
+    }
 
+    private static PlayerBuildInfo GetBuildInfo(ReplayBuildDetails details, int gamePos)
+    {
         foreach (var matchup in details.MatchupInfos)
         {
             if (matchup.P1.GamePos == gamePos)
             {
-                buildInfo = matchup.P1;
-                break;
+                return matchup.P1;
             }
 
             if (matchup.P2.GamePos == gamePos)
             {
-                buildInfo = matchup.P2;
-                break;
+                return matchup.P2;
             }
         }
 
-        Assert.IsNotNull(buildInfo);
-        Assert.AreEqual(Convert.ToInt32(expectedBuild), buildInfo.Build);
-        Assert.AreEqual(expectedBuild.ToString(), buildInfo.BuildName);
+        Assert.Fail($"Missing build info for game position {gamePos}.");
+        throw new InvalidOperationException();
     }
 }

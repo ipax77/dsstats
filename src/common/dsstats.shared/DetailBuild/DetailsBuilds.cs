@@ -60,21 +60,24 @@ public static partial class DetailBuilds
             return null;
         }
 
+        var gasFirst = spawn.GasCount > 0;
+
         return player.Race switch
         {
-            Commander.Protoss => CreateProtossBuildInfo(player, spawn),
-            Commander.Terran => CreateTerranBuildInfo(player, spawn),
-            Commander.Zerg => CreateZergBuildInfo(player, spawn),
+            Commander.Protoss => CreateProtossBuildInfo(player, spawn, gasFirst),
+            Commander.Terran => CreateTerranBuildInfo(player, spawn, gasFirst),
+            Commander.Zerg => CreateZergBuildInfo(player, spawn, gasFirst),
             _ => new PlayerBuildInfo(
                 player.GamePos,
                 player.Race,
                 0,
-                "None"
+                "None",
+                gasFirst
             )
         };
     }
 
-    private static PlayerBuildInfo CreateTerranBuildInfo(ReplayPlayerDto player, SpawnDto spawn)
+    private static PlayerBuildInfo CreateTerranBuildInfo(ReplayPlayerDto player, SpawnDto spawn, bool gasFirst)
     {
         var build = DetectTerranBuild(spawn);
 
@@ -82,11 +85,12 @@ public static partial class DetailBuilds
             player.GamePos,
             player.Race,
             (int)build,
-            build.ToString()
+            build.ToString(),
+            gasFirst
         );
     }
 
-    private static PlayerBuildInfo CreateProtossBuildInfo(ReplayPlayerDto player, SpawnDto spawn)
+    private static PlayerBuildInfo CreateProtossBuildInfo(ReplayPlayerDto player, SpawnDto spawn, bool gasFirst)
     {
         var build = DetectProtossBuild(spawn);
 
@@ -94,11 +98,12 @@ public static partial class DetailBuilds
             player.GamePos,
             player.Race,
             (int)build,
-            build.ToString()
+            build.ToString(),
+            gasFirst
         );
     }
 
-    private static PlayerBuildInfo CreateZergBuildInfo(ReplayPlayerDto player, SpawnDto spawn)
+    private static PlayerBuildInfo CreateZergBuildInfo(ReplayPlayerDto player, SpawnDto spawn, bool gasFirst)
     {
         var build = DetectZergBuild(spawn);
 
@@ -106,7 +111,8 @@ public static partial class DetailBuilds
             player.GamePos,
             player.Race,
             (int)build,
-            build.ToString()
+            build.ToString(),
+            gasFirst
         );
     }
 
@@ -136,7 +142,8 @@ public sealed record PlayerBuildInfo(
     int GamePos,
     Commander Commander,
     int Build,
-    string BuildName
+    string BuildName,
+    bool GasFirst
 );
 
 public sealed record MatchupInfo(
@@ -181,6 +188,7 @@ public enum TerranBuild
     BC = 4,
     Banshees = 5,
     RavenViking = 6,
+    LibBio = 7,
 }
 
 public enum ZergBuild
