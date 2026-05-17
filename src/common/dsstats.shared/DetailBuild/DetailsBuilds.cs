@@ -47,6 +47,8 @@ public static partial class DetailBuilds
             ));
         }
 
+        DetectTeamBuilds(details);
+
         return details;
     }
 
@@ -114,12 +116,19 @@ public static partial class DetailBuilds
 public sealed class ReplayBuildDetails
 {
     private readonly List<MatchupInfo> matchupInfos = [];
+    private readonly List<TeamBuildInfo> teamBuildInfos = [];
 
     public IReadOnlyList<MatchupInfo> MatchupInfos => matchupInfos;
+    public IReadOnlyList<TeamBuildInfo> TeamBuildInfos => teamBuildInfos;
 
     public void Add(MatchupInfo matchupInfo)
     {
         matchupInfos.Add(matchupInfo);
+    }
+
+    public void Add(TeamBuildInfo teamBuildInfo)
+    {
+        teamBuildInfos.Add(teamBuildInfo);
     }
 }
 
@@ -136,6 +145,14 @@ public sealed record MatchupInfo(
     PlayerBuildInfo P2,
     bool P1Won,
     bool P2Won
+);
+
+public sealed record TeamBuildInfo(
+    int TeamId,
+    int LeaderGamePos,
+    int FollowerGamePos,
+    TeamBuild TeamBuild,
+    string TeamBuildName
 );
 
 public enum ProtossBuild
@@ -174,4 +191,13 @@ public enum ZergBuild
     RoachQueenLurker = 8,
     QueenLurker = 9,
     Ultras = 10,
+}
+
+public enum TeamBuild
+{
+    None = 0,
+    PTStack = 1, // Protoss.Stalker followed by Terran.Bio
+    ZZStack = 2, // Zerg.RoachQueen followed by Zerg.Hydrasiks
+    PZStack = 3, // Protoss.Stalker followed by Zerg.Zerglings
+    TZStack = 4, // Terran.Libs followed by Zerg.Mutalisks
 }

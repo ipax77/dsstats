@@ -252,6 +252,129 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "ZerglingLightweight", Count = 0 });
     }
 
+    [TestMethod]
+    public void CanDetectTeamBuildPatterns()
+    {
+        AssertSingleTeamBuild(
+            TeamBuild.PTStack,
+            1,
+            1,
+            2,
+            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "MarineLightweight", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }));
+
+        AssertSingleTeamBuild(
+            TeamBuild.ZZStack,
+            1,
+            1,
+            2,
+            Player(Commander.Zerg, new UnitDto { Name = "Roach", Count = 1 }, new UnitDto { Name = "Queen", Count = 1 }),
+            Player(Commander.Zerg, new UnitDto { Name = "Hydralisk", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }));
+
+        AssertSingleTeamBuild(
+            TeamBuild.PZStack,
+            1,
+            1,
+            2,
+            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 1 }),
+            Player(Commander.Zerg, new UnitDto { Name = "ZerglingLightweight", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }));
+
+        AssertSingleTeamBuild(
+            TeamBuild.TZStack,
+            1,
+            1,
+            2,
+            Player(Commander.Terran, new UnitDto { Name = "Liberator", Count = 1 }),
+            Player(Commander.Zerg, new UnitDto { Name = "Mutalisk", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }));
+    }
+
+    [TestMethod]
+    public void CanDetectTeamBuildCircularWraps()
+    {
+        var replayDto = CreateStandardReplayWithPlayers(
+            Player(Commander.Terran, new UnitDto { Name = "MarineLightweight", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 1 }),
+            Player(Commander.Zerg, new UnitDto { Name = "Mutalisk", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "Liberator", Count = 1 }));
+
+        var details = DetailBuilds.DetectStandardBuild(replayDto);
+
+        Assert.IsNotNull(details);
+        Assert.HasCount(2, details.TeamBuildInfos);
+        AssertTeamBuild(details, 1, 3, 1, TeamBuild.PTStack);
+        AssertTeamBuild(details, 2, 6, 4, TeamBuild.TZStack);
+    }
+
+    [TestMethod]
+    public void DetectsFirstTeamBuildInCircularScanOrder()
+    {
+        AssertSingleTeamBuild(
+            TeamBuild.PZStack,
+            1,
+            2,
+            3,
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 1 }),
+            Player(Commander.Zerg, new UnitDto { Name = "ZerglingLightweight", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }));
+    }
+
+    [TestMethod]
+    public void NoTeamBuildMatchReturnsEmptyCollection()
+    {
+        var replayDto = CreateStandardReplayWithPlayers(
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Protoss, new UnitDto { Name = "Zealot", Count = 1 }),
+            Player(Commander.Zerg, new UnitDto { Name = "Queen", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "Battlecruiser", Count = 1 }));
+
+        var details = DetailBuilds.DetectStandardBuild(replayDto);
+
+        Assert.IsNotNull(details);
+        Assert.HasCount(0, details.TeamBuildInfos);
+    }
+
+    [TestMethod]
+    public void CanDetectTeamBuildsForBothTeams()
+    {
+        var replayDto = CreateStandardReplayWithPlayers(
+            Player(Commander.Protoss, new UnitDto { Name = "Stalker", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "MarineLightweight", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }),
+            Player(Commander.Zerg, new UnitDto { Name = "Roach", Count = 1 }, new UnitDto { Name = "Queen", Count = 1 }),
+            Player(Commander.Zerg, new UnitDto { Name = "Hydralisk", Count = 1 }),
+            Player(Commander.Terran, new UnitDto { Name = "SiegeTank", Count = 1 }));
+
+        var details = DetailBuilds.DetectStandardBuild(replayDto);
+
+        Assert.IsNotNull(details);
+        Assert.HasCount(2, details.TeamBuildInfos);
+        AssertTeamBuild(details, 1, 1, 2, TeamBuild.PTStack);
+        AssertTeamBuild(details, 2, 4, 5, TeamBuild.ZZStack);
+    }
+
     private static async Task<ReplayDto> GetReplayDto(string replayPath)
     {
         var sc2Replay = await DsstatsParser.GetSc2Replay(replayPath);
@@ -326,6 +449,88 @@ public sealed class BuildDetectTests
             Commander.Zerg => new UnitDto { Name = "ZerglingLightweight", Count = 1 },
             _ => new UnitDto { Name = "MarineLightweight", Count = 1 },
         };
+
+    private static (Commander Commander, UnitDto[] Units) Player(Commander commander, params UnitDto[] units) =>
+        (commander, units);
+
+    private static ReplayDto CreateStandardReplayWithPlayers(params (Commander Commander, UnitDto[] Units)[] players)
+    {
+        Assert.HasCount(6, players);
+
+        var replayDto = new ReplayDto
+        {
+            GameMode = GameMode.Standard,
+            WinnerTeam = 1,
+        };
+
+        for (int i = 0; i < players.Length; i++)
+        {
+            var gamePos = i + 1;
+            replayDto.Players.Add(new ReplayPlayerDto
+            {
+                Race = players[i].Commander,
+                TeamId = gamePos <= 3 ? 1 : 2,
+                GamePos = gamePos,
+                Result = gamePos <= 3 ? PlayerResult.Win : PlayerResult.Los,
+                Duration = 300,
+                Spawns =
+                [
+                    new SpawnDto
+                    {
+                        Breakpoint = Breakpoint.Min5,
+                        Units = players[i].Units.ToList()
+                    }
+                ]
+            });
+        }
+
+        return replayDto;
+    }
+
+    private static void AssertSingleTeamBuild(
+        TeamBuild expectedBuild,
+        int expectedTeamId,
+        int expectedLeaderGamePos,
+        int expectedFollowerGamePos,
+        params (Commander Commander, UnitDto[] Units)[] players)
+    {
+        var replayDto = CreateStandardReplayWithPlayers(players);
+        var details = DetailBuilds.DetectStandardBuild(replayDto);
+
+        Assert.IsNotNull(details);
+        Assert.HasCount(1, details.TeamBuildInfos);
+        AssertTeamBuild(
+            details,
+            expectedTeamId,
+            expectedLeaderGamePos,
+            expectedFollowerGamePos,
+            expectedBuild);
+    }
+
+    private static void AssertTeamBuild(
+        ReplayBuildDetails details,
+        int expectedTeamId,
+        int expectedLeaderGamePos,
+        int expectedFollowerGamePos,
+        TeamBuild expectedBuild)
+    {
+        TeamBuildInfo? teamBuildInfo = null;
+
+        foreach (var info in details.TeamBuildInfos)
+        {
+            if (info.TeamId == expectedTeamId
+                && info.LeaderGamePos == expectedLeaderGamePos
+                && info.FollowerGamePos == expectedFollowerGamePos)
+            {
+                teamBuildInfo = info;
+                break;
+            }
+        }
+
+        Assert.IsNotNull(teamBuildInfo);
+        Assert.AreEqual(expectedBuild, teamBuildInfo.TeamBuild);
+        Assert.AreEqual(expectedBuild.ToString(), teamBuildInfo.TeamBuildName);
+    }
 
     private static void AssertBuild(ReplayBuildDetails details, int gamePos, Enum expectedBuild)
     {
