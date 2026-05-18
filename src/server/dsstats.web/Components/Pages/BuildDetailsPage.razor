@@ -1,0 +1,100 @@
+@page "/builddetails"
+@using System.Collections.Frozen
+@using dsstats.shared
+@using dsstats.shared.Extensions
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+<PageTitle>dsstats - build details</PageTitle>
+
+<dsstats.weblib.BuildDetails.BuildDetailsComponent Request="Request" OnRequestChanged="RequestChanged" />
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Tp { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Cmdr { get; set; }
+
+    [SupplyParameterFromQuery]
+    public int? Fr { get; set; }
+
+    [SupplyParameterFromQuery]
+    public int? Tr { get; set; }
+
+    [SupplyParameterFromQuery]
+    public bool? L { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Gas { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Te { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Player { get; set; }
+
+    private const int RatingStep = 50;
+    private BuildDetailsRequest Request = new();
+
+    private static readonly FrozenDictionary<string, string> paramMap = new Dictionary<string, string>
+    {
+        { nameof(BuildDetailsRequest.TimePeriod), "Tp" },
+        { nameof(BuildDetailsRequest.Commander), "Cmdr" },
+        { nameof(BuildDetailsRequest.FromRating), "Fr" },
+        { nameof(BuildDetailsRequest.ToRating), "Tr" },
+        { nameof(BuildDetailsRequest.WithLeavers), "L" },
+        { nameof(BuildDetailsRequest.GasFilter), "Gas" },
+        { nameof(BuildDetailsRequest.TeFilter), "Te" },
+        { nameof(BuildDetailsRequest.Player), "Player" },
+    }.ToFrozenDictionary();
+
+    protected override void OnInitialized()
+    {
+        Request = new BuildDetailsRequest
+        {
+            RatingType = RatingType.All,
+            TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last12Months),
+            Commander = EnumExtensions.ParseEnumOrDefault(Cmdr, Commander.None),
+            FromRating = NormalizeRating(Fr, Data.MinBuildRating),
+            ToRating = NormalizeRating(Tr, Data.MaxBuildRating),
+            WithLeavers = L ?? false,
+            GasFilter = EnumExtensions.ParseEnumOrDefault(Gas, BuildDetailsGasFilter.Any),
+            TeFilter = EnumExtensions.ParseEnumOrDefault(Te, BuildDetailsTeFilter.All),
+            Player = DecodePlayer(Player),
+        };
+
+        if (Request.FromRating > Request.ToRating)
+        {
+            (Request.FromRating, Request.ToRating) = (Request.ToRating, Request.FromRating);
+        }
+    }
+
+    private static int NormalizeRating(int? value, int defaultValue)
+    {
+        if (!value.HasValue)
+        {
+            return defaultValue;
+        }
+
+        var clamped = Math.Clamp(value.Value, Data.MinBuildRating, Data.MaxBuildRating);
+        return ((clamped - Data.MinBuildRating) / RatingStep) * RatingStep + Data.MinBuildRating;
+    }
+
+    private static PlayerDto? DecodePlayer(string? player)
+    {
+        if (string.IsNullOrEmpty(player))
+        {
+            return null;
+        }
+
+        return Data.DecodePlayersFromBase64(player).FirstOrDefault();
+    }
+
+    private void RequestChanged(BuildDetailsRequest request)
+    {
+        NavigationManager.NavigateTo(
+            NavigationManager.GetUriWithQueryParameters(
+                new Dictionary<string, object?>(request.BuildQueryParams(paramMap))));
+    }
+}

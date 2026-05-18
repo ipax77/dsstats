@@ -23,11 +23,11 @@ public class BuildsService(IHttpClientFactory httpClientFactory) : IBuildsServic
         }
     }
 
-    public async Task<List<BuildUpgradeTimingDto>> GetUpgradeTimings(BuildsRequest request, CancellationToken token = default)
+    public async Task<List<BuildUpgradeTimingDto>> GetUpgradeTimings(BuildsRequest request, bool includeAnecdotal = false, CancellationToken token = default)
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("api10/Builds/upgrades/timing", request, token);
+            var response = await _httpClient.PostAsJsonAsync($"api10/Builds/upgrades/timing?includeAnecdotal={includeAnecdotal}", request, token);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<List<BuildUpgradeTimingDto>>(cancellationToken: token) ?? [];
         }
@@ -37,11 +37,11 @@ public class BuildsService(IHttpClientFactory httpClientFactory) : IBuildsServic
         }
     }
 
-    public async Task<List<BuildGasTimingDto>> GetGasTimings(BuildsRequest request, CancellationToken token = default)
+    public async Task<List<BuildGasTimingDto>> GetGasTimings(BuildsRequest request, bool includeAnecdotal = false, CancellationToken token = default)
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("api10/Builds/gas/timing", request, token);
+            var response = await _httpClient.PostAsJsonAsync($"api10/Builds/gas/timing?includeAnecdotal={includeAnecdotal}", request, token);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<List<BuildGasTimingDto>>(cancellationToken: token) ?? [];
         }

@@ -34,6 +34,7 @@ builder.Services.AddScoped<IPlayerService, PlayerService>();
 
 builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IBuildsService, BuildsService>();
+builder.Services.AddScoped<IBuildDetailsService, BuildDetailsService>();
 builder.Services.AddScoped<IDashboardStatsService, DashboardStatsService>();
 builder.Services.AddScoped<IInHouseClosedGameSessionService, InHouseClosedGameSessionService>();
 

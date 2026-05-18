@@ -1,0 +1,303 @@
+@using dsstats.shared
+@using dsstats.shared.DetailBuild
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Players
+@using dsstats.weblib.Replays
+@inject IBuildDetailsService BuildDetailsService
+@inject IReplayRepository ReplayRepository
+@implements IDisposable
+
+<div class="row g-2">
+    <div class="col-xxl-6 col-xl-6 col-lg-12">
+        <div class="bgchart border rounded p-2 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4 class="mb-0">Team Builds</h4>
+                @if (overviewLoading)
+                {
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                }
+            </div>
+            <div class="table-responsive" style="max-height: 67vh; overflow-y: auto;">
+                <table class="tptable">
+                    <CascadingValue Value="overviewOrders">
+                        <thead class="user-select-none">
+                            <tr>
+                                <th class="pointer" style="width: 160px;" @onclick="e => SortOverview(nameof(BuildDetailsTeamBuildOverviewRow.TeamBuild))">
+                                    <SortArrow Column="@nameof(BuildDetailsTeamBuildOverviewRow.TeamBuild)">Team Build</SortArrow>
+                                </th>
+                                <th class="pointer text-end" style="width: 90px;" @onclick="e => SortOverview(nameof(BuildDetailsTeamBuildOverviewRow.AverageRatingGain))">
+                                    <SortArrow Column="@nameof(BuildDetailsTeamBuildOverviewRow.AverageRatingGain)">Avg Gain</SortArrow>
+                                </th>
+                                <th class="pointer text-end" style="width: 80px;" @onclick="e => SortOverview(nameof(BuildDetailsTeamBuildOverviewRow.Winrate))">
+                                    <SortArrow Column="@nameof(BuildDetailsTeamBuildOverviewRow.Winrate)">Winrate</SortArrow>
+                                </th>
+                                <th class="pointer text-end" style="width: 80px;" @onclick="e => SortOverview(nameof(BuildDetailsTeamBuildOverviewRow.Games))">
+                                    <SortArrow Column="@nameof(BuildDetailsTeamBuildOverviewRow.Games)">Count</SortArrow>
+                                </th>
+                                <th class="text-end" style="width: 90px;">Confidence</th>
+                            </tr>
+                        </thead>
+                    </CascadingValue>
+                    <tbody class="text-nowrap">
+                        @if (overviewRows.Count == 0 && !overviewLoading)
+                        {
+                            <tr>
+                                <td colspan="100">No team build details found.</td>
+                            </tr>
+                        }
+                        @foreach (var row in SortedOverviewRows)
+                        {
+                            <tr class="pointer @(IsSelectedOverview(row) ? "table-active" : "")" @onclick="() => SelectOverview(row)">
+                                <td class="text-warning">@row.TeamBuild</td>
+                                <td class="text-end @GetGainClass(row.AverageRatingGain)">@row.AverageRatingGain.ToString("N2")</td>
+                                <td class="text-end">@row.Winrate.ToString("N1")%</td>
+                                <td class="text-end">@row.Games.ToString("N0")</td>
+                                <td class="text-end">@GetConfidenceLabel(row.Games)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="small text-muted mt-2">
+                Avg Gain is the average rating gain of the leader and follower.
+                Confidence: Very Low &lt; 5 games, Low 5-19, Medium 20-99, High 100+.
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xxl-6 col-xl-6 col-lg-12">
+        <div class="bgchart border rounded p-2 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <h4 class="mb-0">Sample Replays</h4>
+                    @if (selectedOverview is not null)
+                    {
+                        <div class="small text-muted">@selectedOverview.TeamBuild</div>
+                    }
+                </div>
+                @if (samplesLoading)
+                {
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                }
+            </div>
+            <div class="table-responsive" style="max-height: 67vh; overflow-y: auto;">
+                <table class="tptable">
+                    <thead>
+                        <tr>
+                            <th style="width: 24px;"></th>
+                            <th style="width: 100px;">Date</th>
+                            <th style="width: 80px;" class="text-end">Gain</th>
+                            <th style="width: 80px;" class="text-end">Rating</th>
+                            <th style="width: 180px;">Leader</th>
+                            <th style="width: 180px;">Follower</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-nowrap">
+                        @if (sampleRows.Count == 0 && !samplesLoading)
+                        {
+                            <tr>
+                                <td colspan="100">Select a team build.</td>
+                            </tr>
+                        }
+                        @foreach (var sample in sampleRows)
+                        {
+                            <tr class="pointer" @onclick="() => LoadReplayCompare(sample)">
+                                <td @onclick:stopPropagation>
+                                    <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" title="Open full replay"
+                                            @onclick="() => LoadReplayDetails(sample.Replay.ReplayHash)">
+                                        <span class="bi bi-window-fullscreen text-primary"></span>
+                                        <span class="visually-hidden">Open full replay</span>
+                                    </button>
+                                </td>
+                                <td>@sample.Replay.Gametime.ToString("yyyy-MM-dd")</td>
+                                <td class="text-end @GetGainClass(sample.Replay.PlayerGain)">@sample.Replay.PlayerGain.ToString("N2")</td>
+                                <td class="text-end">@sample.Replay.AvgRating</td>
+                                <td>@sample.LeaderCommander @sample.GetLeaderBuildName()</td>
+                                <td>@sample.FollowerCommander @sample.GetFollowerBuildName()</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
+<TeamBuildReplayModal @ref="teamBuildReplayModal" OnFullReplayRequest="ShowReplayDetails" OnClose="CloseReplay" />
+<PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(replayDetails!)" />
+
+@code {
+    [Parameter, EditorRequired]
+    public BuildDetailsRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public int RequestVersion { get; set; }
+
+    private readonly CancellationTokenSource cts = new();
+    private readonly List<TableOrder> overviewOrders = [new() { Column = nameof(BuildDetailsTeamBuildOverviewRow.AverageRatingGain), Ascending = false }];
+    private List<BuildDetailsTeamBuildOverviewRow> overviewRows = [];
+    private List<BuildDetailsTeamBuildSampleReplay> sampleRows = [];
+    private BuildDetailsTeamBuildOverviewRow? selectedOverview;
+    private ReplayModal? replayModal;
+    private TeamBuildReplayModal? teamBuildReplayModal;
+    private PlayerModal? playerModal;
+    private ReplayDetails? replayDetails;
+    private bool overviewLoading;
+    private bool samplesLoading;
+    private int loadedRequestVersion = -1;
+
+    private IEnumerable<BuildDetailsTeamBuildOverviewRow> SortedOverviewRows => overviewOrders[0].Column switch
+    {
+        nameof(BuildDetailsTeamBuildOverviewRow.TeamBuild) => ApplyOverviewDirection(overviewRows.OrderBy(x => x.TeamBuild)),
+        nameof(BuildDetailsTeamBuildOverviewRow.Winrate) => ApplyOverviewDirection(overviewRows.OrderBy(x => x.Winrate).ThenByDescending(x => x.Games)),
+        nameof(BuildDetailsTeamBuildOverviewRow.Games) => ApplyOverviewDirection(overviewRows.OrderBy(x => x.Games).ThenBy(x => x.TeamBuild)),
+        _ => ApplyOverviewDirection(overviewRows.OrderBy(x => x.AverageRatingGain).ThenBy(x => x.Games)),
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (loadedRequestVersion != RequestVersion)
+        {
+            loadedRequestVersion = RequestVersion;
+            await LoadOverview();
+        }
+    }
+
+    private async Task LoadOverview()
+    {
+        overviewLoading = true;
+        samplesLoading = true;
+        sampleRows = [];
+        selectedOverview = null;
+        await InvokeAsync(StateHasChanged);
+
+        overviewRows = await BuildDetailsService.GetTeamBuildOverview(Request, cts.Token);
+        selectedOverview = SortedOverviewRows.FirstOrDefault();
+        overviewLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+        if (selectedOverview is not null)
+        {
+            await LoadSamples(selectedOverview);
+        }
+        else
+        {
+            samplesLoading = false;
+        }
+    }
+
+    private async Task SelectOverview(BuildDetailsTeamBuildOverviewRow row)
+    {
+        selectedOverview = row;
+        await LoadSamples(row);
+    }
+
+    private async Task LoadSamples(BuildDetailsTeamBuildOverviewRow row)
+    {
+        samplesLoading = true;
+        sampleRows = [];
+        await InvokeAsync(StateHasChanged);
+
+        sampleRows = await BuildDetailsService.GetTeamBuildSampleReplays(CreateSamplesRequest(row), cts.Token);
+        samplesLoading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private BuildDetailsTeamBuildSamplesRequest CreateSamplesRequest(BuildDetailsTeamBuildOverviewRow row)
+    {
+        return new()
+        {
+            RatingType = Request.RatingType,
+            TimePeriod = Request.TimePeriod,
+            Commander = Request.Commander,
+            FromRating = Request.FromRating,
+            ToRating = Request.ToRating,
+            WithLeavers = Request.WithLeavers,
+            GasFilter = Request.GasFilter,
+            TeFilter = Request.TeFilter,
+            Player = Request.Player,
+            SelectedTeamBuild = row.TeamBuild,
+            Count = 10,
+        };
+    }
+
+    private void SortOverview(string column)
+    {
+        var order = overviewOrders[0];
+        if (order.Column == column)
+        {
+            order.Ascending = !order.Ascending;
+        }
+        else
+        {
+            order.Column = column;
+            order.Ascending = column is nameof(BuildDetailsTeamBuildOverviewRow.TeamBuild);
+        }
+    }
+
+    private IEnumerable<BuildDetailsTeamBuildOverviewRow> ApplyOverviewDirection(IOrderedEnumerable<BuildDetailsTeamBuildOverviewRow> rows)
+    {
+        return overviewOrders[0].Ascending ? rows : rows.Reverse();
+    }
+
+    private bool IsSelectedOverview(BuildDetailsTeamBuildOverviewRow row)
+    {
+        return selectedOverview is not null && selectedOverview.TeamBuild == row.TeamBuild;
+    }
+
+    private async Task LoadReplayDetails(string replayHash)
+    {
+        replayDetails = await ReplayRepository.GetReplayDetails(replayHash);
+        if (replayDetails is not null)
+        {
+            ShowReplayDetails(replayDetails);
+        }
+    }
+
+    private async Task LoadReplayCompare(BuildDetailsTeamBuildSampleReplay sample)
+    {
+        replayDetails = await ReplayRepository.GetReplayDetails(sample.Replay.ReplayHash);
+        if (replayDetails is not null && teamBuildReplayModal is not null)
+        {
+            await teamBuildReplayModal.Show(replayDetails, sample);
+        }
+    }
+
+    private void ShowReplayDetails(ReplayDetails details)
+    {
+        replayDetails = details;
+        replayModal?.Show(details);
+    }
+
+    private void CloseReplay()
+    {
+        replayDetails = null;
+    }
+
+    private static string GetGainClass(double gain)
+    {
+        return gain < 0 ? "text-danger" : "text-success";
+    }
+
+    private static string GetConfidenceLabel(int games)
+    {
+        return games switch
+        {
+            < 5 => "Very Low",
+            < 20 => "Low",
+            < 100 => "Medium",
+            _ => "High",
+        };
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

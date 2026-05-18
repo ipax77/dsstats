@@ -25,7 +25,9 @@ public sealed class BuildsServiceTests
                 allUpgradeSpent: i < 5 ? 400 : 500,
                 min5GasCount: i < 5 ? 1 : 2,
                 allGasCount: 3,
-                refineries: [i < 5 ? 100 : 200, i < 5 ? 200 : 280, 400],
+                refineries: i < 9
+                    ? [i < 5 ? 100 : 200, i < 5 ? 200 : 280, 290]
+                    : [200, 280, 400],
                 upgrades:
                 [
                     ("BlinkTech", i < 5 ? 100 : 200),
@@ -53,7 +55,9 @@ public sealed class BuildsServiceTests
         var request = CreateRequest(Breakpoint.Min5);
         var response = await fixture.Service.GetBuildResponse(request);
         var timings = await fixture.Service.GetUpgradeTimings(request);
+        var anecdotalTimings = await fixture.Service.GetUpgradeTimings(request, includeAnecdotal: true);
         var gasTimings = await fixture.Service.GetGasTimings(request);
+        var anecdotalGasTimings = await fixture.Service.GetGasTimings(request, includeAnecdotal: true);
 
         Assert.AreEqual(1.5, response.Stats.Gas, 0.0001);
         Assert.AreEqual(200.0, response.Stats.Upgrades, 0.0001);
@@ -71,6 +75,11 @@ public sealed class BuildsServiceTests
         Assert.IsFalse(timings.Any(x => x.Upgrade == "VanadiumPlatingController"));
         Assert.IsFalse(timings.Any(x => x.Upgrade == "LateUpgrade"));
         Assert.IsFalse(timings.Any(x => x.Upgrade == "RareUpgrade"));
+        Assert.AreEqual(3, anecdotalTimings.Count);
+        Assert.AreEqual(9, anecdotalTimings.Single(x => x.Upgrade == "RareUpgrade").Count);
+        Assert.IsFalse(anecdotalTimings.Any(x => x.Upgrade.StartsWith("PlayerState")));
+        Assert.IsFalse(anecdotalTimings.Any(x => x.Upgrade == "VanadiumPlatingController"));
+        Assert.IsFalse(anecdotalTimings.Any(x => x.Upgrade == "LateUpgrade"));
 
         var allTimings = await fixture.Service.GetUpgradeTimings(CreateRequest(Breakpoint.All));
         Assert.IsTrue(allTimings.Any(x => x.Upgrade == "LateUpgrade"));
@@ -80,6 +89,9 @@ public sealed class BuildsServiceTests
         Assert.AreEqual(240.0, gasTimings.Single(x => x.Gas == 2).AverageTimeSeconds, 0.0001);
         Assert.AreEqual(10, gasTimings.Single(x => x.Gas == 1).Count);
         Assert.IsFalse(gasTimings.Any(x => x.Gas == 3));
+        Assert.AreEqual(3, anecdotalGasTimings.Count);
+        Assert.AreEqual(9, anecdotalGasTimings.Single(x => x.Gas == 3).Count);
+        Assert.AreEqual(290.0, anecdotalGasTimings.Single(x => x.Gas == 3).AverageTimeSeconds, 0.0001);
 
         var allGasTimings = await fixture.Service.GetGasTimings(CreateRequest(Breakpoint.All));
         Assert.IsTrue(allGasTimings.Any(x => x.Gas == 3));
@@ -138,27 +150,39 @@ public sealed class BuildsServiceTests
         request.Players = [CreatePlayerDto(201)];
 
         var timings = await fixture.Service.GetUpgradeTimings(request);
+        var anecdotalTimings = await fixture.Service.GetUpgradeTimings(request, includeAnecdotal: true);
         var gasTimings = await fixture.Service.GetGasTimings(request);
+        var anecdotalGasTimings = await fixture.Service.GetGasTimings(request, includeAnecdotal: true);
 
         Assert.AreEqual(1, timings.Count);
         Assert.AreEqual("IncludedUpgrade", timings[0].Upgrade);
         Assert.AreEqual(10, timings[0].Count);
         Assert.AreEqual(100.0, timings[0].UsagePercent, 0.0001);
+        Assert.AreEqual(1, anecdotalTimings.Count);
+        Assert.AreEqual("IncludedUpgrade", anecdotalTimings[0].Upgrade);
         Assert.AreEqual(1, gasTimings.Count);
         Assert.AreEqual(1, gasTimings[0].Gas);
         Assert.AreEqual(10, gasTimings[0].Count);
+        Assert.AreEqual(1, anecdotalGasTimings.Count);
+        Assert.AreEqual(1, anecdotalGasTimings[0].Gas);
 
         var ratingRequest = CreateRequest(Breakpoint.Min5);
         ratingRequest.FromRating = 1500;
         ratingRequest.ToRating = 2000;
 
         var ratingFilteredTimings = await fixture.Service.GetUpgradeTimings(ratingRequest);
+        var anecdotalRatingFilteredTimings = await fixture.Service.GetUpgradeTimings(ratingRequest, includeAnecdotal: true);
         var ratingFilteredGasTimings = await fixture.Service.GetGasTimings(ratingRequest);
+        var anecdotalRatingFilteredGasTimings = await fixture.Service.GetGasTimings(ratingRequest, includeAnecdotal: true);
 
         Assert.AreEqual(1, ratingFilteredTimings.Count);
         Assert.AreEqual("IncludedUpgrade", ratingFilteredTimings[0].Upgrade);
+        Assert.AreEqual(1, anecdotalRatingFilteredTimings.Count);
+        Assert.AreEqual("IncludedUpgrade", anecdotalRatingFilteredTimings[0].Upgrade);
         Assert.AreEqual(1, ratingFilteredGasTimings.Count);
         Assert.AreEqual(1, ratingFilteredGasTimings[0].Gas);
+        Assert.AreEqual(1, anecdotalRatingFilteredGasTimings.Count);
+        Assert.AreEqual(1, anecdotalRatingFilteredGasTimings[0].Gas);
     }
 
     private static BuildsRequest CreateRequest(Breakpoint breakpoint)

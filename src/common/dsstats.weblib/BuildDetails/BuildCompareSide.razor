@@ -1,0 +1,76 @@
+@using Microsoft.JSInterop
+@using dsstats.shared
+@using dsstats.weblib.Replays
+
+<div class="col-xl-6">
+    <div class="bgchart2 border rounded p-2 h-100">
+        <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge @(Side.IsWinner ? "text-bg-success" : "text-bg-danger")">@Side.Label</span>
+                    <span class="preload-@(Side.Player.Race.ToString().ToLower())" alt="@Side.Player.Race" style="width: 25px; height: 25px;"></span>
+                    <span class="fw-bold text-truncate" style="max-width: 240px;">#@Side.Player.GamePos @Side.Player.Name</span>
+                </div>
+                <div class="small text-muted mt-1">
+                    @Side.Player.Race - Team @Side.Player.TeamId @(Side.IsWinner ? "Winner" : "Defeat")
+                </div>
+            </div>
+            <div class="text-end small">
+                <div class="@GetGainClass(Side.Rating?.RatingDelta)">
+                    @(Side.Rating is null ? string.Empty : Side.Rating.RatingDelta.ToString("N1"))
+                </div>
+                <div class="text-warning">@(Side.Rating is null ? string.Empty : Side.Rating.RatingBefore.ToString("N0"))</div>
+            </div>
+        </div>
+
+        <div class="row g-2 small mb-2">
+            <div class="col-6 col-md-3">
+                <div class="text-muted">Gas</div>
+                <div>@(Side.GasFirst ? "First" : "No")</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-muted">Income</div>
+                <div>@ReplayHelper.GetNumberString(Side.Min5Spawn?.Income)</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-muted">Army</div>
+                <div>@ReplayHelper.GetNumberString(Side.Min5Spawn?.ArmyValue)</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="text-muted">Kills</div>
+                <div>@ReplayHelper.GetNumberString(Side.Min5Spawn?.KilledValue)</div>
+            </div>
+        </div>
+
+        <div class="bgchart border rounded" style="height: 430px; min-height: 320px;">
+            @if (Side.Min5Spawn is not null)
+            {
+                <BuildChart Spawn="Side.Min5Spawn" Team="Side.Player.TeamId" Cmdr="Side.Player.Race" moduleTask="moduleTask" />
+            }
+            else
+            {
+                <div class="h-100 d-flex align-items-center justify-content-center text-warning p-3 text-center">
+                    No 5:00 build chart data is available for this player.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public BuildDetailsReplayModal.BuildCompareSideModel Side { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
+
+    private static string GetGainClass(double? gain)
+    {
+        if (gain is null)
+        {
+            return string.Empty;
+        }
+
+        return gain < 0 ? "text-danger" : "text-success";
+    }
+}

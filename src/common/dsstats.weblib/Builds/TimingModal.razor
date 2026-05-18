@@ -6,10 +6,17 @@
 	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
 		<div class="modal-content">
 			<div class="modal-header bgchart2">
-				<h5 class="modal-title">
-					@Title
-					<span class="badge text-bg-secondary ms-2" title="@BadgeTitle">&sum; &gt; 9</span>
-				</h5>
+				<h5 class="modal-title mb-0">@Title</h5>
+				<div class="form-check form-switch mb-0 ms-auto me-3">
+					<input class="form-check-input"
+						   type="checkbox"
+						   role="switch"
+						   id="@AnecdotalToggleId"
+						   checked="@showAnecdotalResults"
+						   disabled="@isLoading"
+						   @onchange="ToggleAnecdotalResults" />
+					<label class="form-check-label" for="@AnecdotalToggleId">Show anecdotal results</label>
+				</div>
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body bgchart">
@@ -96,28 +103,90 @@
 	[Parameter, EditorRequired]
 	public string EmptyText { get; set; } = default!;
 
-	[Parameter, EditorRequired]
-	public string BadgeTitle { get; set; } = default!;
-
 	[Parameter]
 	public bool HighlightTopUsageRows { get; set; }
 
 	List<TimingModalRow> timings = [];
+	List<TimingModalRow>? filteredTimings;
+	List<TimingModalRow>? anecdotalTimings;
 	HashSet<string> highlightedTimings = new(StringComparer.OrdinalIgnoreCase);
+	Func<bool, CancellationToken, Task<List<TimingModalRow>>>? loadTimings;
+	CancellationToken loadToken;
 	bool isLoading;
+	bool showAnecdotalResults;
 	string sortColumn = nameof(TimingModalRow.AverageTimeSeconds);
 	bool sortAscending = true;
 
-	public async Task Show(Func<CancellationToken, Task<List<TimingModalRow>>> loadTimings, CancellationToken token = default)
+	private string AnecdotalToggleId => $"{ModalId}-anecdotal-toggle";
+
+	public async Task Show(Func<bool, CancellationToken, Task<List<TimingModalRow>>> loadTimings, CancellationToken token = default)
 	{
+		this.loadTimings = loadTimings;
+		loadToken = token;
 		timings = [];
+		filteredTimings = null;
+		anecdotalTimings = null;
 		highlightedTimings.Clear();
-		isLoading = true;
+		showAnecdotalResults = false;
+		isLoading = false;
 		await InvokeAsync(StateHasChanged);
 		await JSRuntime.InvokeVoidAsync("openModalById", ModalId);
+		await LoadTimings(false, token);
+	}
+
+	public void Clear()
+	{
+		timings = [];
+		filteredTimings = null;
+		anecdotalTimings = null;
+		loadTimings = null;
+		highlightedTimings.Clear();
+		showAnecdotalResults = false;
+		isLoading = false;
+	}
+
+	private async Task ToggleAnecdotalResults(ChangeEventArgs args)
+	{
+		var includeAnecdotal = args.Value is bool value && value;
+		if (includeAnecdotal == showAnecdotalResults)
+		{
+			return;
+		}
+
+		showAnecdotalResults = includeAnecdotal;
+		await LoadTimings(includeAnecdotal, loadToken);
+	}
+
+	private async Task LoadTimings(bool includeAnecdotal, CancellationToken token)
+	{
+		var cachedTimings = includeAnecdotal ? anecdotalTimings : filteredTimings;
+		if (cachedTimings is not null)
+		{
+			SetTimings(cachedTimings);
+			await InvokeAsync(StateHasChanged);
+			return;
+		}
+
+		if (loadTimings is null)
+		{
+			return;
+		}
+
+		isLoading = true;
+		await InvokeAsync(StateHasChanged);
 		try
 		{
-			SetTimings(await loadTimings(token));
+			var loadedTimings = await loadTimings(includeAnecdotal, token);
+			if (includeAnecdotal)
+			{
+				anecdotalTimings = loadedTimings;
+			}
+			else
+			{
+				filteredTimings = loadedTimings;
+			}
+
+			SetTimings(loadedTimings);
 		}
 		catch (OperationCanceledException)
 		{
@@ -129,13 +198,6 @@
 			isLoading = false;
 			await InvokeAsync(StateHasChanged);
 		}
-	}
-
-	public void Clear()
-	{
-		timings = [];
-		highlightedTimings.Clear();
-		isLoading = false;
 	}
 
 	private string GetTableClass()

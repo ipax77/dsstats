@@ -10,6 +10,7 @@ namespace dsstats.dbServices.Builds;
 public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFactory, IMemoryCache memoryCache) : IBuildsService
 {
     private const string VanadiumPlatingControllerUpgrade = "VanadiumPlatingController";
+    private const int AnecdotalTimingThreshold = 10;
 
     public async Task<BuildsResponse> GetBuildResponse(BuildsRequest request, CancellationToken token = default)
     {
@@ -35,9 +36,9 @@ public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFact
         }
     }
 
-    public async Task<List<BuildUpgradeTimingDto>> GetUpgradeTimings(BuildsRequest request, CancellationToken token = default)
+    public async Task<List<BuildUpgradeTimingDto>> GetUpgradeTimings(BuildsRequest request, bool includeAnecdotal = false, CancellationToken token = default)
     {
-        var memKey = $"{request.GetMemKey()}_upgrade_timing";
+        var memKey = $"{request.GetMemKey()}_upgrade_timing_{includeAnecdotal}";
         try
         {
             return await memoryCache.GetOrCreateAsync(memKey, async entry =>
@@ -50,7 +51,7 @@ public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFact
                     return [];
                 }
 
-                return await CreateUpgradeTimings(request, timeInfo, context, token);
+                return await CreateUpgradeTimings(request, timeInfo, includeAnecdotal, context, token);
             }) ?? [];
         }
         catch (OperationCanceledException)
@@ -59,9 +60,9 @@ public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFact
         }
     }
 
-    public async Task<List<BuildGasTimingDto>> GetGasTimings(BuildsRequest request, CancellationToken token = default)
+    public async Task<List<BuildGasTimingDto>> GetGasTimings(BuildsRequest request, bool includeAnecdotal = false, CancellationToken token = default)
     {
-        var memKey = $"{request.GetMemKey()}_gas_timing";
+        var memKey = $"{request.GetMemKey()}_gas_timing_{includeAnecdotal}";
         try
         {
             return await memoryCache.GetOrCreateAsync(memKey, async entry =>
@@ -74,7 +75,7 @@ public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFact
                     return [];
                 }
 
-                return await CreateGasTimings(request, timeInfo, context, token);
+                return await CreateGasTimings(request, timeInfo, includeAnecdotal, context, token);
             }) ?? [];
         }
         catch (OperationCanceledException)
@@ -175,6 +176,7 @@ public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFact
     private static async Task<List<BuildUpgradeTimingDto>> CreateUpgradeTimings(
         BuildsRequest request,
         TimePeriodInfo timeInfo,
+        bool includeAnecdotal,
         DsstatsContext context,
         CancellationToken token)
     {
@@ -186,21 +188,34 @@ public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFact
         }
 
         var maxUpgradeSecond = GetBreakpointSeconds(request.Breakpoint);
-        var query = from rp in matchingReplayPlayers
-                    from upgrade in rp.Upgrades
-                    where upgrade.Gameloop <= maxUpgradeSecond
-                    && !upgrade.Upgrade!.Name.StartsWith("PlayerState")
-                    && upgrade.Upgrade.Name != VanadiumPlatingControllerUpgrade
-                    group upgrade by upgrade.Upgrade!.Name into g
-                    where g.Count() >= 10
-                    orderby g.Average(x => x.Gameloop), g.Count() descending
-                    select new BuildUpgradeTimingDto()
-                    {
-                        Upgrade = g.Key,
-                        AverageTimeSeconds = Math.Round(g.Average(x => x.Gameloop), 2),
-                        Count = g.Count(),
-                        UsagePercent = Math.Round(100.0 * g.Count() / cmdrCount, 2)
-                    };
+        var groupedQuery = from rp in matchingReplayPlayers
+                           from upgrade in rp.Upgrades
+                           where upgrade.Gameloop <= maxUpgradeSecond
+                           && !upgrade.Upgrade!.Name.StartsWith("PlayerState")
+                           && upgrade.Upgrade.Name != VanadiumPlatingControllerUpgrade
+                           group upgrade by upgrade.Upgrade!.Name into g
+                           select new
+                           {
+                               Upgrade = g.Key,
+                               AverageTimeSeconds = Math.Round(g.Average(x => x.Gameloop), 2),
+                               Count = g.Count()
+                           };
+
+        if (!includeAnecdotal)
+        {
+            groupedQuery = groupedQuery.Where(x => x.Count >= AnecdotalTimingThreshold);
+        }
+
+        var query = groupedQuery
+            .OrderBy(x => x.AverageTimeSeconds)
+            .ThenByDescending(x => x.Count)
+            .Select(x => new BuildUpgradeTimingDto()
+            {
+                Upgrade = x.Upgrade,
+                AverageTimeSeconds = x.AverageTimeSeconds,
+                Count = x.Count,
+                UsagePercent = Math.Round(100.0 * x.Count / cmdrCount, 2)
+            });
 
         return await query.ToListAsync(token);
     }
@@ -208,6 +223,7 @@ public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFact
     private static async Task<List<BuildGasTimingDto>> CreateGasTimings(
         BuildsRequest request,
         TimePeriodInfo timeInfo,
+        bool includeAnecdotal,
         DsstatsContext context,
         CancellationToken token)
     {
@@ -242,7 +258,7 @@ public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFact
         }
 
         return timings
-            .Where(x => x.Value.Count >= 10)
+            .Where(x => includeAnecdotal || x.Value.Count >= AnecdotalTimingThreshold)
             .OrderBy(x => x.Key)
             .Select(x => new BuildGasTimingDto()
             {

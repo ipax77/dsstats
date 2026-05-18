@@ -97,6 +97,37 @@ public static class RequestExtensions
         return queryDic;
     }
 
+    public static Dictionary<string, object?> BuildQueryParams(this BuildDetailsRequest request, FrozenDictionary<string, string> paramMap)
+    {
+        var queryDic = new Dictionary<string, object?>();
+
+        queryDic[paramMap[nameof(BuildDetailsRequest.TimePeriod)]] =
+            request.TimePeriod != TimePeriod.Last12Months ? (int)request.TimePeriod : null;
+
+        queryDic[paramMap[nameof(BuildDetailsRequest.Commander)]] =
+            request.Commander != Commander.None ? request.Commander.ToString() : null;
+
+        queryDic[paramMap[nameof(BuildDetailsRequest.FromRating)]] =
+            request.FromRating != Data.MinBuildRating ? request.FromRating : null;
+
+        queryDic[paramMap[nameof(BuildDetailsRequest.ToRating)]] =
+            request.ToRating != Data.MaxBuildRating ? request.ToRating : null;
+
+        queryDic[paramMap[nameof(BuildDetailsRequest.WithLeavers)]] =
+            request.WithLeavers ? true : null;
+
+        queryDic[paramMap[nameof(BuildDetailsRequest.GasFilter)]] =
+            request.GasFilter != BuildDetailsGasFilter.Any ? (int)request.GasFilter : null;
+
+        queryDic[paramMap[nameof(BuildDetailsRequest.TeFilter)]] =
+            request.TeFilter != BuildDetailsTeFilter.All ? (int)request.TeFilter : null;
+
+        queryDic[paramMap[nameof(BuildDetailsRequest.Player)]] =
+            request.Player is not null ? Data.EncodePlayersToBase64([request.Player]) : null;
+
+        return queryDic;
+    }
+
     public static Dictionary<string, object?> BuildQueryParams(this StatsRequest request, FrozenDictionary<string, string> paramMap)
     {
         var queryDic = new Dictionary<string, object?>();

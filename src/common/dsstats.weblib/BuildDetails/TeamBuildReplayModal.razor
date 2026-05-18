@@ -1,0 +1,203 @@
+@using Microsoft.JSInterop
+@using dsstats.shared
+@using dsstats.weblib.Replays
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@($"{modalId}Label")" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bgchart2">
+                <div>
+                    <h5 class="modal-title" id="@($"{modalId}Label")">Team Build</h5>
+                    @if (ReplayDetails is not null && Sample is not null)
+                    {
+                        <div class="small text-muted">
+                            @Sample.TeamBuild
+                            <span class="mx-1">-</span>
+                            @ReplayDetails.Replay.Gametime.ToString("yyyy-MM-dd")
+                            <span class="mx-1">-</span>
+                            @TimeSpan.FromSeconds(ReplayDetails.Replay.Duration).ToString(@"hh\:mm\:ss")
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="OpenFullReplay">
+                    <span class="bi bi-window-fullscreen me-1"></span>
+                    Full Replay
+                </button>
+                <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="Close"></button>
+            </div>
+            <div class="modal-body bgchart">
+                @if (compareModel?.Error is not null)
+                {
+                    <div class="alert alert-warning mb-0">
+                        @compareModel.Error
+                    </div>
+                }
+                else if (compareModel is not null)
+                {
+                    <div class="row g-3">
+                        <BuildCompareSide @key="compareModel.Left.Key" Side="compareModel.Left" moduleTask="moduleTask" />
+                        <BuildCompareSide @key="compareModel.Right.Key" Side="compareModel.Right" moduleTask="moduleTask" />
+                    </div>
+                }
+            </div>
+            <div class="modal-footer bgchart2">
+                <button type="button" class="btn btn-sm btn-outline-light" @onclick="OpenFullReplay">
+                    <span class="bi bi-window-fullscreen me-1"></span>
+                    Full Replay
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" @onclick="Close">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private const string modalId = "teamBuildReplayModal";
+    private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+    private TeamBuildCompareModel? compareModel;
+
+    private ReplayDetails? ReplayDetails { get; set; }
+    private BuildDetailsTeamBuildSampleReplay? Sample { get; set; }
+
+    [Parameter]
+    public EventCallback<ReplayDetails> OnFullReplayRequest { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    protected override void OnInitialized()
+    {
+        moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/dsstats.weblib/js/annotationChart.js?v=0.6").AsTask());
+    }
+
+    public async Task Show(ReplayDetails replayDetails, BuildDetailsTeamBuildSampleReplay sample)
+    {
+        ReplayDetails = replayDetails;
+        Sample = sample;
+        compareModel = CreateCompareModel(replayDetails, sample);
+        await InvokeAsync(StateHasChanged);
+        await JSRuntime.InvokeVoidAsync("openModalById", modalId);
+    }
+
+    private async Task Close()
+    {
+        await JSRuntime.InvokeVoidAsync("closeModalById", modalId);
+        Clear();
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task OpenFullReplay()
+    {
+        if (ReplayDetails is null)
+        {
+            return;
+        }
+
+        var replayDetails = ReplayDetails;
+        await JSRuntime.InvokeVoidAsync("closeModalById", modalId);
+        Clear();
+        await OnFullReplayRequest.InvokeAsync(replayDetails);
+    }
+
+    private void Clear()
+    {
+        ReplayDetails = null;
+        Sample = null;
+        compareModel = null;
+    }
+
+    private static TeamBuildCompareModel CreateCompareModel(ReplayDetails replayDetails, BuildDetailsTeamBuildSampleReplay sample)
+    {
+        var leaderPlayer = replayDetails.Replay.Players.FirstOrDefault(p => p.GamePos == sample.LeaderGamePos);
+        var followerPlayer = replayDetails.Replay.Players.FirstOrDefault(p => p.GamePos == sample.FollowerGamePos);
+
+        if (leaderPlayer is null || followerPlayer is null)
+        {
+            return TeamBuildCompareModel.WithError("The exact team build players could not be found in the replay details.");
+        }
+
+        var ratingType = GetReplayRatingType(replayDetails);
+        var leaderSide = CreateSide(
+            replayDetails,
+            leaderPlayer,
+            $"Leader: {sample.GetLeaderBuildName()}",
+            sample.LeaderGasFirst,
+            ratingType);
+        var followerSide = CreateSide(
+            replayDetails,
+            followerPlayer,
+            $"Follower: {sample.GetFollowerBuildName()}",
+            sample.FollowerGasFirst,
+            ratingType);
+
+        return new() { Left = leaderSide, Right = followerSide };
+    }
+
+    private static BuildDetailsReplayModal.BuildCompareSideModel CreateSide(
+        ReplayDetails replayDetails,
+        ReplayPlayerDto player,
+        string buildName,
+        bool gasFirst,
+        RatingType ratingType)
+    {
+        var min5Spawn = player.Spawns.FirstOrDefault(s => s.Breakpoint == Breakpoint.Min5);
+        var rating = replayDetails.ReplayRatings
+            .Where(r => r.RatingType == ratingType)
+            .SelectMany(r => r.ReplayPlayerRatings)
+            .FirstOrDefault(r => r.ToonId == player.Player.ToonId);
+
+        return new()
+        {
+            Key = $"{replayDetails.ReplayHash}_{player.GamePos}_{buildName}_{(int)Breakpoint.Min5}",
+            Label = buildName,
+            Player = player,
+            Min5Spawn = min5Spawn,
+            BuildName = buildName,
+            GasFirst = gasFirst,
+            Rating = rating,
+            IsWinner = replayDetails.Replay.WinnerTeam == player.TeamId,
+        };
+    }
+
+    private static RatingType GetReplayRatingType(ReplayDetails replayDetails)
+    {
+        var preferred = replayDetails.Replay.Title.Contains("TE") ? RatingType.StandardTE : RatingType.Standard;
+        if (replayDetails.ReplayRatings.Any(r => r.RatingType == preferred))
+        {
+            return preferred;
+        }
+
+        return replayDetails.ReplayRatings.FirstOrDefault()?.RatingType ?? RatingType.All;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (moduleTask.IsValueCreated)
+        {
+            try
+            {
+                var module = await moduleTask.Value.ConfigureAwait(false);
+                await module.DisposeAsync();
+            }
+            catch (JSDisconnectedException) { }
+            catch (TaskCanceledException) { }
+        }
+
+        GC.SuppressFinalize(this);
+    }
+
+    private sealed class TeamBuildCompareModel
+    {
+        public BuildDetailsReplayModal.BuildCompareSideModel Left { get; init; } = new();
+        public BuildDetailsReplayModal.BuildCompareSideModel Right { get; init; } = new();
+        public string? Error { get; init; }
+
+        public static TeamBuildCompareModel WithError(string error)
+        {
+            return new() { Error = error };
+        }
+    }
+}
