@@ -294,8 +294,7 @@
 			 Title="@($"Average Gas Timing for {Request.Interest}")"
 			 NameColumn="Gas"
 			 LoadingText="Loading gas timings..."
-			 EmptyText="No gas timing data available for the selected criteria."
-			 BadgeTitle="Only gas timings with count greater than 9 are shown" />
+			 EmptyText="No gas timing data available for the selected criteria." />
 
 <TimingModal @ref="upgradeTimingModal"
 			 ModalId="@upgradeTimingModalId"
@@ -303,7 +302,6 @@
 			 NameColumn="Upgrade"
 			 LoadingText="Loading upgrade timings..."
 			 EmptyText="No upgrade timing data available for the selected criteria."
-			 BadgeTitle="Only upgrades with count greater than 9 are shown"
 			 HighlightTopUsageRows="true" />
 
 <ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
@@ -424,9 +422,9 @@
 			return;
 		}
 
-		await upgradeTimingModal.Show(async token =>
+		await upgradeTimingModal.Show(async (includeAnecdotal, token) =>
 		{
-			var timings = await BuildsService.GetUpgradeTimings(Request, token);
+			var timings = await BuildsService.GetUpgradeTimings(Request, includeAnecdotal, token);
 			return timings
 				.Select(timing => new TimingModalRow(timing.Upgrade, timing.AverageTimeSeconds, timing.Count, timing.UsagePercent))
 				.ToList();
@@ -440,9 +438,9 @@
 			return;
 		}
 
-		await gasTimingModal.Show(async token =>
+		await gasTimingModal.Show(async (includeAnecdotal, token) =>
 		{
-			var timings = await BuildsService.GetGasTimings(Request, token);
+			var timings = await BuildsService.GetGasTimings(Request, includeAnecdotal, token);
 			return timings
 				.Select(timing => new TimingModalRow($"Gas {timing.Gas}", timing.AverageTimeSeconds, timing.Count, timing.UsagePercent))
 				.ToList();

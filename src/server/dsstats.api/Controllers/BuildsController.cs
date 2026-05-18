@@ -18,16 +18,22 @@ public class BuildsController(IBuildsService buildsService) : Controller
     }
 
     [HttpPost("upgrades/timing")]
-    public async Task<ActionResult<List<BuildUpgradeTimingDto>>> GetUpgradeTimings([FromBody] BuildsRequest request, CancellationToken token = default)
+    public async Task<ActionResult<List<BuildUpgradeTimingDto>>> GetUpgradeTimings(
+        [FromBody] BuildsRequest request,
+        [FromQuery] bool includeAnecdotal = false,
+        CancellationToken token = default)
     {
-        var timings = await buildsService.GetUpgradeTimings(request, token);
+        var timings = await buildsService.GetUpgradeTimings(request, includeAnecdotal, token);
         return Ok(timings);
     }
 
     [HttpPost("gas/timing")]
-    public async Task<ActionResult<List<BuildGasTimingDto>>> GetGasTimings([FromBody] BuildsRequest request, CancellationToken token = default)
+    public async Task<ActionResult<List<BuildGasTimingDto>>> GetGasTimings(
+        [FromBody] BuildsRequest request,
+        [FromQuery] bool includeAnecdotal = false,
+        CancellationToken token = default)
     {
-        var timings = await buildsService.GetGasTimings(request, token);
+        var timings = await buildsService.GetGasTimings(request, includeAnecdotal, token);
         return Ok(timings);
     }
 
