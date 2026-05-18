@@ -12,6 +12,26 @@ public sealed class BuildDetailGenerationService(
 {
     public const int CurrentDetectionVersion = 1;
     public const int DefaultBatchSize = 500;
+    private readonly SemaphoreSlim processingLock = new(1, 1);
+
+    public bool IsRunning => processingLock.CurrentCount == 0;
+
+    public bool TryStartFullRun(int batchSize = DefaultBatchSize)
+    {
+        if (batchSize <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(batchSize), batchSize, "Batch size must be greater than zero.");
+        }
+
+        if (!processingLock.Wait(0))
+        {
+            logger.LogWarning("Build detail generation is already running - ignoring full run trigger.");
+            return false;
+        }
+
+        _ = RunFullRunAsync(batchSize, CancellationToken.None);
+        return true;
+    }
 
     public async Task<BuildDetailGenerationResult> ProcessPendingBatchAsync(
         int batchSize = DefaultBatchSize,
@@ -22,6 +42,92 @@ public sealed class BuildDetailGenerationService(
             throw new ArgumentOutOfRangeException(nameof(batchSize), batchSize, "Batch size must be greater than zero.");
         }
 
+        await processingLock.WaitAsync(token);
+        try
+        {
+            return await ProcessPendingBatchCoreAsync(batchSize, token);
+        }
+        finally
+        {
+            processingLock.Release();
+        }
+    }
+
+    private async Task RunFullRunAsync(int batchSize, CancellationToken token)
+    {
+        var totalCandidates = 0;
+        var totalDetected = 0;
+        var totalNotDetectable = 0;
+        var totalFailed = 0;
+
+        try
+        {
+            logger.LogInformation("Full build detail generation started.");
+
+            while (true)
+            {
+                var result = await ProcessPendingBatchCoreAsync(batchSize, token);
+                if (result.Candidates == 0)
+                {
+                    break;
+                }
+
+                totalCandidates += result.Candidates;
+                totalDetected += result.Detected;
+                totalNotDetectable += result.NotDetectable;
+                totalFailed += result.Failed;
+
+                logger.LogInformation(
+                    "Generated replay build detail batch: {Detected} detected, {NotDetectable} not detectable, {Failed} failed from {Candidates} candidates.",
+                    result.Detected,
+                    result.NotDetectable,
+                    result.Failed,
+                    result.Candidates);
+
+                if (result.Detected + result.NotDetectable == 0)
+                {
+                    logger.LogWarning(
+                        "Full build detail generation stopped because the latest batch made no progress. Failed candidates will remain pending for a later retry.");
+                    break;
+                }
+            }
+
+            logger.LogInformation(
+                "Full build detail generation completed: {Detected} detected, {NotDetectable} not detectable, {Failed} failed from {Candidates} candidates.",
+                totalDetected,
+                totalNotDetectable,
+                totalFailed,
+                totalCandidates);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            logger.LogInformation(
+                "Full build detail generation was cancelled: {Detected} detected, {NotDetectable} not detectable, {Failed} failed from {Candidates} candidates.",
+                totalDetected,
+                totalNotDetectable,
+                totalFailed,
+                totalCandidates);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Full build detail generation failed: {Detected} detected, {NotDetectable} not detectable, {Failed} failed from {Candidates} candidates.",
+                totalDetected,
+                totalNotDetectable,
+                totalFailed,
+                totalCandidates);
+        }
+        finally
+        {
+            processingLock.Release();
+        }
+    }
+
+    private async Task<BuildDetailGenerationResult> ProcessPendingBatchCoreAsync(
+        int batchSize,
+        CancellationToken token)
+    {
         await using var context = await contextFactory.CreateDbContextAsync(token);
         var replayRows = await GetCandidateReplays(context, batchSize, token);
         if (replayRows.Count == 0)
@@ -166,7 +272,8 @@ public sealed class BuildDetailGenerationService(
                 p.TeamId,
                 p.GamePos,
                 p.Duration,
-                p.Result))
+                p.Result,
+                p.Refineries))
             .ToListAsync(token);
     }
 
@@ -234,6 +341,7 @@ public sealed class BuildDetailGenerationService(
             GamePos = player.GamePos,
             Duration = player.Duration,
             Result = player.Result,
+            Refineries = player.Refineries.ToList(),
             Player = new()
             {
                 PlayerId = player.PlayerId
@@ -364,7 +472,8 @@ public sealed class BuildDetailGenerationService(
         int TeamId,
         int GamePos,
         int Duration,
-        PlayerResult Result);
+        PlayerResult Result,
+        int[] Refineries);
 
     private sealed record Min5SpawnRow(int SpawnId, int ReplayPlayerId, int GasCount);
 

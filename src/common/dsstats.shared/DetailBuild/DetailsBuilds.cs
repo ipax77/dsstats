@@ -60,7 +60,8 @@ public static partial class DetailBuilds
             return null;
         }
 
-        var gasFirst = spawn.GasCount > 0;
+        var firstGasTiming = player.Refineries.Count == 0 ? (int?)null : player.Refineries.Min();
+        var gasFirst = firstGasTiming is < 60;
 
         return player.Race switch
         {

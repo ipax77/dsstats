@@ -233,10 +233,8 @@ public sealed class BuildDetailsService(IDbContextFactory<DsstatsContext> contex
 
         return request.GasFilter switch
         {
-            BuildDetailsGasFilter.SelectedSide => query.Where(x => x.GasFirst),
-            BuildDetailsGasFilter.OpponentSide => query.Where(x => x.OpponentGasFirst),
-            BuildDetailsGasFilter.EitherSide => query.Where(x => x.GasFirst || x.OpponentGasFirst),
-            BuildDetailsGasFilter.BothSides => query.Where(x => x.GasFirst && x.OpponentGasFirst),
+            BuildDetailsGasFilter.WithGas => query.Where(x => x.GasFirst),
+            BuildDetailsGasFilter.WithoutGas => query.Where(x => !x.GasFirst),
             _ => query,
         };
     }

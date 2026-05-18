@@ -58,18 +58,16 @@ public sealed class BuildDetailsServiceTests
         await fixture.SeedReplayAsync(2, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: true, opponentGasFirst: false, won: false, ratingDelta: -4);
         await fixture.SeedReplayAsync(3, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: true, opponentGasFirst: true, won: true, ratingDelta: 2);
 
-        var selectedSide = await fixture.Service.GetMatchups(CreateMatchupRequest(BuildDetailsGasFilter.SelectedSide));
-        var opponentSide = await fixture.Service.GetMatchups(CreateMatchupRequest(BuildDetailsGasFilter.OpponentSide));
-        var eitherSide = await fixture.Service.GetMatchups(CreateMatchupRequest(BuildDetailsGasFilter.EitherSide));
-        var bothSides = await fixture.Service.GetMatchups(CreateMatchupRequest(BuildDetailsGasFilter.BothSides));
+        var anyGas = await fixture.Service.GetMatchups(CreateMatchupRequest(BuildDetailsGasFilter.Any));
+        var withGas = await fixture.Service.GetMatchups(CreateMatchupRequest(BuildDetailsGasFilter.WithGas));
+        var withoutGas = await fixture.Service.GetMatchups(CreateMatchupRequest(BuildDetailsGasFilter.WithoutGas));
 
-        Assert.AreEqual(2, selectedSide.Single().Games);
-        Assert.AreEqual(-1.0, selectedSide.Single().AverageRatingGain, 0.001);
-        Assert.AreEqual(2, opponentSide.Single().Games);
-        Assert.AreEqual(6.0, opponentSide.Single().AverageRatingGain, 0.001);
-        Assert.AreEqual(3, eitherSide.Single().Games);
-        Assert.AreEqual(1, bothSides.Single().Games);
-        Assert.AreEqual(2.0, bothSides.Single().AverageRatingGain, 0.001);
+        Assert.AreEqual(3, anyGas.Single().Games);
+        Assert.AreEqual(2.67, anyGas.Single().AverageRatingGain, 0.001);
+        Assert.AreEqual(2, withGas.Single().Games);
+        Assert.AreEqual(-1.0, withGas.Single().AverageRatingGain, 0.001);
+        Assert.AreEqual(1, withoutGas.Single().Games);
+        Assert.AreEqual(10.0, withoutGas.Single().AverageRatingGain, 0.001);
     }
 
     [TestMethod]

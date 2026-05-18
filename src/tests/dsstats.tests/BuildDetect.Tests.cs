@@ -273,13 +273,13 @@ public sealed class BuildDetectTests
     }
 
     [TestMethod]
-    public void CanFlagGasFirstFromMin5SpawnGasCount()
+    public void FirstGasBeforeOneMinuteFlagsGasFirst()
     {
         var replayDto = CreateStandardReplayWithUnits(
             Commander.Terran,
             [new UnitDto { Name = "MarineLightweight", Count = 2 }]);
 
-        replayDto.Players[0].Spawns[0].GasCount = 1;
+        replayDto.Players[0].Refineries.Add(59);
 
         var details = DetailBuilds.DetectStandardBuild(replayDto);
 
@@ -290,13 +290,46 @@ public sealed class BuildDetectTests
     }
 
     [TestMethod]
-    public void NoGasInMin5SpawnDoesNotFlagGasFirst()
+    public void FirstGasAtOneMinuteDoesNotFlagGasFirst()
     {
         var replayDto = CreateStandardReplayWithUnits(
             Commander.Terran,
             [new UnitDto { Name = "MarineLightweight", Count = 2 }]);
 
-        replayDto.Players[0].Refineries.Add(30);
+        replayDto.Players[0].Refineries.Add(60);
+
+        var details = DetailBuilds.DetectStandardBuild(replayDto);
+
+        Assert.IsNotNull(details);
+        var buildInfo = GetBuildInfo(details, 1);
+        Assert.AreEqual(TerranBuild.Bio.ToString(), buildInfo.BuildName);
+        Assert.IsFalse(buildInfo.GasFirst);
+    }
+
+    [TestMethod]
+    public void Min5GasCountWithoutEarlyRefineryDoesNotFlagGasFirst()
+    {
+        var replayDto = CreateStandardReplayWithUnits(
+            Commander.Terran,
+            [new UnitDto { Name = "MarineLightweight", Count = 2 }]);
+
+        replayDto.Players[0].Spawns[0].GasCount = 1;
+        replayDto.Players[0].Refineries.Add(120);
+
+        var details = DetailBuilds.DetectStandardBuild(replayDto);
+
+        Assert.IsNotNull(details);
+        var buildInfo = GetBuildInfo(details, 1);
+        Assert.AreEqual(TerranBuild.Bio.ToString(), buildInfo.BuildName);
+        Assert.IsFalse(buildInfo.GasFirst);
+    }
+
+    [TestMethod]
+    public void NoRefineryDoesNotFlagGasFirst()
+    {
+        var replayDto = CreateStandardReplayWithUnits(
+            Commander.Terran,
+            [new UnitDto { Name = "MarineLightweight", Count = 2 }]);
 
         var details = DetailBuilds.DetectStandardBuild(replayDto);
 

@@ -6,10 +6,8 @@ namespace dsstats.shared;
 public enum BuildDetailsGasFilter
 {
     Any = 0,
-    SelectedSide = 1,
-    OpponentSide = 2,
-    EitherSide = 3,
-    BothSides = 4,
+    WithGas = 1,
+    WithoutGas = 2,
 }
 
 public enum BuildDetailsTeFilter

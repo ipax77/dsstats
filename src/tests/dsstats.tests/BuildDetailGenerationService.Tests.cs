@@ -41,6 +41,10 @@ public sealed class BuildDetailGenerationServiceTests
         Assert.AreEqual(1, protoss.Lane);
         Assert.IsTrue(protoss.Won);
         Assert.IsFalse(protoss.GasFirst);
+        Assert.IsFalse(protoss.OppGasFirst);
+
+        var earlyGasTerran = detail.PlayerBuilds.Single(x => x.GamePos == 2);
+        Assert.IsTrue(earlyGasTerran.GasFirst);
 
         var teamBuild = detail.TeamBuilds.Single();
         Assert.AreEqual(1, teamBuild.TeamId);
@@ -238,6 +242,12 @@ public sealed class BuildDetailGenerationServiceTests
                 GamePos = gamePos,
                 Duration = 900,
                 Result = result,
+                Refineries = gamePos switch
+                {
+                    2 => [59],
+                    4 => [60],
+                    _ => []
+                },
                 Player = player
             };
 
@@ -246,7 +256,7 @@ public sealed class BuildDetailGenerationServiceTests
                 replayPlayer.Spawns.Add(new Spawn
                 {
                     Breakpoint = Breakpoint.Min5,
-                    GasCount = gamePos == 2 ? 1 : 0,
+                    GasCount = gamePos is 2 or 4 ? 1 : 0,
                     Units = units.Select(x => new SpawnUnit
                     {
                         Unit = GetOrAddUnit(x.Unit),
