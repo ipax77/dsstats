@@ -39,7 +39,7 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 </details>
 
-<details open="open"><summary>v3.0.6</summary>
+<details><summary>v3.0.6</summary>
 
 >- Update MAUI session progress
 
