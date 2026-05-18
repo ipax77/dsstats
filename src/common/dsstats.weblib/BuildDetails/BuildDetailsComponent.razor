@@ -544,6 +544,7 @@
         }
 
         activeTab = tab;
+        await ReloadCurrentTab(true);
         await OnActiveTabChanged.InvokeAsync(tab);
     }
 
