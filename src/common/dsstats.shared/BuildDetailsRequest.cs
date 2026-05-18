@@ -43,6 +43,12 @@ public sealed class BuildDetailsSamplesRequest : BuildDetailsMatchupRequest
     public int Count { get; set; } = 10;
 }
 
+public sealed class BuildDetailsTeamBuildSamplesRequest : BuildDetailsRequest
+{
+    public TeamBuild SelectedTeamBuild { get; set; }
+    public int Count { get; set; } = 10;
+}
+
 public sealed class BuildDetailsOverviewRow
 {
     public Commander Commander { get; set; }
@@ -82,6 +88,32 @@ public sealed class BuildDetailsSampleReplay
     public bool OpponentGasFirst { get; set; }
 }
 
+public sealed class BuildDetailsTeamBuildOverviewRow
+{
+    public TeamBuild TeamBuild { get; set; }
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public double AverageRatingGain { get; set; }
+    public double Winrate { get; set; }
+    public double AverageRating { get; set; }
+}
+
+public sealed class BuildDetailsTeamBuildSampleReplay
+{
+    public ReplayListDto Replay { get; set; } = new();
+    public TeamBuild TeamBuild { get; set; }
+    public int LeaderGamePos { get; set; }
+    public Commander LeaderCommander { get; set; }
+    public int LeaderBuild { get; set; }
+    public bool LeaderGasFirst { get; set; }
+    public double LeaderGain { get; set; }
+    public int FollowerGamePos { get; set; }
+    public Commander FollowerCommander { get; set; }
+    public int FollowerBuild { get; set; }
+    public bool FollowerGasFirst { get; set; }
+    public double FollowerGain { get; set; }
+}
+
 public static class BuildDetailsRequestExtensions
 {
     public static string GetMemKey(this BuildDetailsRequest request)
@@ -100,6 +132,11 @@ public static class BuildDetailsRequestExtensions
         return $"{((BuildDetailsMatchupRequest)request).GetMemKey()}_{request.OpponentCommander}_{request.OpponentBuild}_{request.Count}";
     }
 
+    public static string GetMemKey(this BuildDetailsTeamBuildSamplesRequest request)
+    {
+        return $"{((BuildDetailsRequest)request).GetMemKey()}_{request.SelectedTeamBuild}_{request.Count}";
+    }
+
     public static string GetBuildName(this BuildDetailsOverviewRow row)
     {
         return GetBuildName(row.Commander, row.Build);
@@ -113,6 +150,16 @@ public static class BuildDetailsRequestExtensions
     public static string GetOpponentBuildName(this BuildDetailsMatchupRow row)
     {
         return GetBuildName(row.OpponentCommander, row.OpponentBuild);
+    }
+
+    public static string GetLeaderBuildName(this BuildDetailsTeamBuildSampleReplay row)
+    {
+        return GetBuildName(row.LeaderCommander, row.LeaderBuild);
+    }
+
+    public static string GetFollowerBuildName(this BuildDetailsTeamBuildSampleReplay row)
+    {
+        return GetBuildName(row.FollowerCommander, row.FollowerBuild);
     }
 
     public static string GetBuildName(Commander commander, int build)
@@ -135,6 +182,17 @@ public static class BuildDetailsRequestExtensions
         if (request.Player is not null)
         {
             sb.Append($"&ToonIds={Uri.EscapeDataString(Data.GetToonIdString(request.Player.ToonId))}");
+        }
+        return sb.ToString();
+    }
+
+    public static string GetReplayLink(this BuildDetailsTeamBuildSamplesRequest request)
+    {
+        var sb = new StringBuilder();
+        sb.Append("replays?");
+        if (request.Player is not null)
+        {
+            sb.Append($"ToonIds={Uri.EscapeDataString(Data.GetToonIdString(request.Player.ToonId))}");
         }
         return sb.ToString();
     }

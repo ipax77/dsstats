@@ -12,9 +12,29 @@
 
 <div class="container-fluid">
     <div class="mb-2 bgchart border rounded p-2">
-        <h4 class="mb-1">Build Details</h4>
-        <div class="text-muted">
-            Detected Standard build openings, using unit composition at the 5 minute mark.
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+            <div>
+                <h4 class="mb-1">Build Details</h4>
+                <div class="text-muted">
+                    Detected Standard build openings, using unit composition at the 5 minute mark.
+                </div>
+            </div>
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <button type="button"
+                            class="nav-link @(activeTab == BuildDetailsTab.BuildDetails ? "active" : "")"
+                            @onclick="() => SetActiveTab(BuildDetailsTab.BuildDetails)">
+                        Build Details
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button type="button"
+                            class="nav-link @(activeTab == BuildDetailsTab.TeamBuilds ? "active" : "")"
+                            @onclick="() => SetActiveTab(BuildDetailsTab.TeamBuilds)">
+                        Team Builds
+                    </button>
+                </li>
+            </ul>
         </div>
     </div>
 
@@ -105,6 +125,8 @@
         </EditForm>
     </div>
 
+    @if (activeTab == BuildDetailsTab.BuildDetails)
+    {
     <div class="row g-2">
         <div class="col-xxl-5 col-xl-6 col-lg-12">
             <div class="bgchart border rounded p-2 h-100">
@@ -326,6 +348,11 @@
             </div>
         </div>
     </div>
+    }
+    else
+    {
+        <TeamBuildDetailsComponent Request="Request" RequestVersion="requestVersion" />
+    }
 </div>
 
 <ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
@@ -357,6 +384,8 @@
     private bool samplesLoading;
     private bool showOverviewAnecdotalResults;
     private bool showMatchupAnecdotalResults;
+    private int requestVersion;
+    private BuildDetailsTab activeTab = BuildDetailsTab.BuildDetails;
     private readonly List<TableOrder> overviewOrders = [new() { Column = nameof(BuildDetailsOverviewRow.AverageRatingGain), Ascending = false }];
     private readonly List<TableOrder> matchupOrders = [new() { Column = nameof(BuildDetailsMatchupRow.AverageRatingGain), Ascending = false }];
     private const int AdjustedGainK = 20;
@@ -411,7 +440,7 @@
     {
         editContext = new(Request);
         editContext.OnFieldChanged += FieldChanged;
-        await LoadOverview(true);
+        await ReloadCurrentTab(true);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -425,13 +454,26 @@
     private async void FieldChanged(object? sender, FieldChangedEventArgs e)
     {
         NormalizeRatingRange();
-        await LoadOverview();
+        await ReloadCurrentTab();
     }
 
     private async Task SetRating()
     {
         NormalizeRatingRange();
-        await LoadOverview();
+        await ReloadCurrentTab();
+    }
+
+    private async Task ReloadCurrentTab(bool dry = false)
+    {
+        requestVersion++;
+        if (activeTab == BuildDetailsTab.BuildDetails)
+        {
+            await LoadOverview(dry);
+        }
+        else if (!dry)
+        {
+            await OnRequestChanged.InvokeAsync(Request);
+        }
     }
 
     private async Task LoadOverview(bool dry = false)
@@ -463,6 +505,11 @@
         {
             await OnRequestChanged.InvokeAsync(Request);
         }
+    }
+
+    private void SetActiveTab(BuildDetailsTab tab)
+    {
+        activeTab = tab;
     }
 
     private async Task LoadMatchups(BuildDetailsOverviewRow row)
@@ -676,13 +723,13 @@
 
     private async Task PlayerFilterChanged()
     {
-        await LoadOverview();
+        await ReloadCurrentTab();
     }
 
     private async Task RemovePlayerFilter()
     {
         Request.Player = null;
-        await LoadOverview();
+        await ReloadCurrentTab();
     }
 
     private static double GetAdjustedGain(BuildDetailsMatchupRow row)
@@ -780,5 +827,11 @@
         editContext.OnFieldChanged -= FieldChanged;
         cts.Cancel();
         cts.Dispose();
+    }
+
+    private enum BuildDetailsTab
+    {
+        BuildDetails,
+        TeamBuilds,
     }
 }

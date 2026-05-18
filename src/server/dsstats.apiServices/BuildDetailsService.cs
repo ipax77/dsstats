@@ -49,4 +49,32 @@ public sealed class BuildDetailsService(IHttpClientFactory httpClientFactory) : 
             return [];
         }
     }
+
+    public async Task<List<BuildDetailsTeamBuildOverviewRow>> GetTeamBuildOverview(BuildDetailsRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api10/BuildDetails/team-builds/overview", request, token);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<List<BuildDetailsTeamBuildOverviewRow>>(cancellationToken: token) ?? [];
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+    }
+
+    public async Task<List<BuildDetailsTeamBuildSampleReplay>> GetTeamBuildSampleReplays(BuildDetailsTeamBuildSamplesRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api10/BuildDetails/team-builds/samples", request, token);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<List<BuildDetailsTeamBuildSampleReplay>>(cancellationToken: token) ?? [];
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+    }
 }

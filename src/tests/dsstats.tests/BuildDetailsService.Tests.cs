@@ -224,6 +224,94 @@ public sealed class BuildDetailsServiceTests
         Assert.AreNotEqual(CreateRequest().GetMemKey(), request.GetMemKey());
     }
 
+    [TestMethod]
+    public async Task GetTeamBuildOverview_AggregatesTeamAverageGainAndWinrate()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedTeamBuildReplayAsync(1, won: true, leaderDelta: 10, followerDelta: 6);
+        await fixture.SeedTeamBuildReplayAsync(2, won: false, leaderDelta: -4, followerDelta: -2);
+
+        var rows = await fixture.Service.GetTeamBuildOverview(CreateRequest());
+        var row = rows.Single(x => x.TeamBuild == TeamBuild.PTStack);
+
+        Assert.AreEqual(2, row.Games);
+        Assert.AreEqual(1, row.Wins);
+        Assert.AreEqual(2.5, row.AverageRatingGain, 0.001);
+        Assert.AreEqual(50.0, row.Winrate, 0.001);
+    }
+
+    [TestMethod]
+    public async Task GetTeamBuildOverview_FiltersCommanderAndPlayerAcrossLeaderAndFollower()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedTeamBuildReplayAsync(1, won: true, leaderDelta: 10, followerDelta: 6, followerPlayerId: 42);
+        await fixture.SeedTeamBuildReplayAsync(2, won: true, leaderDelta: 8, followerDelta: 4, followerPlayerId: 99);
+
+        var commanderRequest = CreateRequest();
+        commanderRequest.Commander = Commander.Terran;
+        var commanderRows = await fixture.Service.GetTeamBuildOverview(commanderRequest);
+
+        var playerRequest = CreateRequest();
+        playerRequest.Player = CreatePlayer(42);
+        var playerRows = await fixture.Service.GetTeamBuildOverview(playerRequest);
+
+        Assert.AreEqual(2, commanderRows.Single().Games);
+        Assert.AreEqual(1, playerRows.Single().Games);
+        Assert.AreEqual(8.0, playerRows.Single().AverageRatingGain, 0.001);
+    }
+
+    [TestMethod]
+    public async Task GetTeamBuildOverview_AppliesTeAndLeaverFilters()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedTeamBuildReplayAsync(1, won: true, leaderDelta: 10, followerDelta: 6, te: true);
+        await fixture.SeedTeamBuildReplayAsync(2, won: true, leaderDelta: 8, followerDelta: 4, te: false);
+        await fixture.SeedTeamBuildReplayAsync(3, won: true, leaderDelta: 20, followerDelta: 10, leaverType: LeaverType.OneLeaver);
+
+        var all = await fixture.Service.GetTeamBuildOverview(CreateRequest(BuildDetailsTeFilter.All));
+        var te = await fixture.Service.GetTeamBuildOverview(CreateRequest(BuildDetailsTeFilter.TE));
+        var nonTe = await fixture.Service.GetTeamBuildOverview(CreateRequest(BuildDetailsTeFilter.NonTE));
+        var withLeaversRequest = CreateRequest();
+        withLeaversRequest.WithLeavers = true;
+        var withLeavers = await fixture.Service.GetTeamBuildOverview(withLeaversRequest);
+
+        Assert.AreEqual(2, all.Single().Games);
+        Assert.AreEqual(1, te.Single().Games);
+        Assert.AreEqual(1, nonTe.Single().Games);
+        Assert.AreEqual(3, withLeavers.Single().Games);
+    }
+
+    [TestMethod]
+    public async Task GetTeamBuildSampleReplays_ReturnsNewestDistinctReplayMetadata()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedTeamBuildReplayAsync(1, won: true, leaderDelta: 10, followerDelta: 6);
+        await fixture.SeedTeamBuildReplayAsync(2, won: false, leaderDelta: -4, followerDelta: -2);
+        await fixture.SeedTeamBuildReplayAsync(3, won: true, leaderDelta: 8, followerDelta: 4);
+
+        var rows = await fixture.Service.GetTeamBuildSampleReplays(new BuildDetailsTeamBuildSamplesRequest
+        {
+            RatingType = RatingType.All,
+            TimePeriod = TimePeriod.AllTime,
+            Commander = Commander.Protoss,
+            FromRating = Data.MinBuildRating,
+            ToRating = Data.MaxBuildRating,
+            SelectedTeamBuild = TeamBuild.PTStack,
+            Count = 2,
+        });
+
+        Assert.AreEqual(2, rows.Count);
+        Assert.AreEqual("team-hash-3", rows[0].Replay.ReplayHash);
+        Assert.AreEqual("team-hash-2", rows[1].Replay.ReplayHash);
+        Assert.AreEqual(1, rows[0].LeaderGamePos);
+        Assert.AreEqual(2, rows[0].FollowerGamePos);
+        Assert.AreEqual(Commander.Protoss, rows[0].LeaderCommander);
+        Assert.AreEqual(Commander.Terran, rows[0].FollowerCommander);
+        Assert.AreEqual(6.0, rows[0].Replay.PlayerGain, 0.001);
+        Assert.IsTrue(rows[0].Replay.CommandersTeam1.Contains(Commander.Protoss));
+        Assert.IsTrue(rows[0].Replay.CommandersTeam1.Contains(Commander.Terran));
+    }
+
     private static BuildDetailsRequest CreateRequest(BuildDetailsTeFilter teFilter = BuildDetailsTeFilter.All)
     {
         return new()
@@ -447,6 +535,161 @@ public sealed class BuildDetailsServiceTests
                         Won = !won,
                         ReplayPlayerId = opponentReplayPlayerId,
                         OppReplayPlayerId = selectedReplayPlayerId
+                    }
+                ]
+            });
+
+            await Context.SaveChangesAsync();
+        }
+
+        public async Task SeedTeamBuildReplayAsync(
+            int replayId,
+            bool won,
+            double leaderDelta,
+            double followerDelta,
+            LeaverType leaverType = LeaverType.None,
+            bool te = true,
+            int? leaderPlayerId = null,
+            int? followerPlayerId = null)
+        {
+            var ratingType = te ? RatingType.StandardTE : RatingType.Standard;
+            var gametime = new DateTime(2026, 2, 1).AddDays(replayId);
+            var leaderReplayPlayerId = replayId * 100 + 1;
+            var followerReplayPlayerId = replayId * 100 + 2;
+            var leaderPersistentPlayerId = leaderPlayerId ?? leaderReplayPlayerId;
+            var followerPersistentPlayerId = followerPlayerId ?? followerReplayPlayerId;
+            var replayRatingId = replayId * 1000 + 50;
+            var detailId = replayId * 10000 + 50;
+
+            await AddPlayerIfMissing(leaderPersistentPlayerId, $"Leader{leaderPersistentPlayerId}");
+            await AddPlayerIfMissing(followerPersistentPlayerId, $"Follower{followerPersistentPlayerId}");
+
+            Context.Replays.Add(new Replay
+            {
+                ReplayId = replayId,
+                FileName = $"TeamReplay-{replayId}.SC2Replay",
+                Title = $"Team Replay {replayId}",
+                Version = "1.0",
+                GameMode = GameMode.Standard,
+                RegionId = 1,
+                TE = te,
+                PlayerCount = 6,
+                Gametime = gametime,
+                Duration = 900,
+                WinnerTeam = won ? 1 : 2,
+                ReplayHash = $"team-hash-{replayId}",
+                CompatHash = $"team-compat-{replayId}",
+                Imported = gametime.AddMinutes(1),
+                Uploaded = true
+            });
+
+            Context.ReplayPlayers.AddRange(
+                new ReplayPlayer
+                {
+                    ReplayPlayerId = leaderReplayPlayerId,
+                    ReplayId = replayId,
+                    PlayerId = leaderPersistentPlayerId,
+                    Name = $"Leader{replayId}",
+                    Race = Commander.Protoss,
+                    SelectedRace = Commander.Protoss,
+                    TeamId = 1,
+                    GamePos = 1,
+                    Duration = 900,
+                    Result = won ? PlayerResult.Win : PlayerResult.Los
+                },
+                new ReplayPlayer
+                {
+                    ReplayPlayerId = followerReplayPlayerId,
+                    ReplayId = replayId,
+                    PlayerId = followerPersistentPlayerId,
+                    Name = $"Follower{replayId}",
+                    Race = Commander.Terran,
+                    SelectedRace = Commander.Terran,
+                    TeamId = 1,
+                    GamePos = 2,
+                    Duration = 900,
+                    Result = won ? PlayerResult.Win : PlayerResult.Los
+                });
+
+            Context.ReplayRatings.Add(new ReplayRating
+            {
+                ReplayRatingId = replayRatingId,
+                RatingType = ratingType,
+                LeaverType = leaverType,
+                ExpectedWinProbability = 0.5,
+                AvgRating = 1800 + replayId,
+                ReplayId = replayId
+            });
+
+            Context.ReplayPlayerRatings.AddRange(
+                new ReplayPlayerRating
+                {
+                    ReplayPlayerRatingId = replayId * 100000 + 1,
+                    RatingType = ratingType,
+                    RatingBefore = 1800,
+                    RatingDelta = leaderDelta,
+                    ExpectedDelta = 0,
+                    Games = 10,
+                    ReplayRatingId = replayRatingId,
+                    ReplayPlayerId = leaderReplayPlayerId,
+                    PlayerId = leaderPersistentPlayerId
+                },
+                new ReplayPlayerRating
+                {
+                    ReplayPlayerRatingId = replayId * 100000 + 2,
+                    RatingType = ratingType,
+                    RatingBefore = 1800,
+                    RatingDelta = followerDelta,
+                    ExpectedDelta = 0,
+                    Games = 10,
+                    ReplayRatingId = replayRatingId,
+                    ReplayPlayerId = followerReplayPlayerId,
+                    PlayerId = followerPersistentPlayerId
+                });
+
+            Context.ReplayBuildDetails.Add(new ReplayBuildDetail
+            {
+                ReplayBuildDetailId = detailId,
+                ReplayId = replayId,
+                DetectionVersion = 1,
+                Status = ReplayBuildDetailStatus.Detected,
+                CreatedAt = gametime,
+                UpdatedAt = gametime,
+                PlayerBuilds =
+                [
+                    new ReplayPlayerBuildDetail
+                    {
+                        GamePos = 1,
+                        TeamId = 1,
+                        Commander = Commander.Protoss,
+                        Build = (int)ProtossBuild.Stalker,
+                        GasFirst = false,
+                        Lane = 1,
+                        Won = won,
+                        ReplayPlayerId = leaderReplayPlayerId,
+                        OppReplayPlayerId = followerReplayPlayerId
+                    },
+                    new ReplayPlayerBuildDetail
+                    {
+                        GamePos = 2,
+                        TeamId = 1,
+                        Commander = Commander.Terran,
+                        Build = (int)TerranBuild.Bio,
+                        GasFirst = true,
+                        Lane = 2,
+                        Won = won,
+                        ReplayPlayerId = followerReplayPlayerId,
+                        OppReplayPlayerId = leaderReplayPlayerId
+                    }
+                ],
+                TeamBuilds =
+                [
+                    new ReplayTeamBuildDetail
+                    {
+                        TeamId = 1,
+                        TeamBuild = TeamBuild.PTStack,
+                        LeaderReplayPlayerId = leaderReplayPlayerId,
+                        FollowerReplayPlayerId = followerReplayPlayerId
                     }
                 ]
             });

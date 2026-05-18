@@ -34,4 +34,22 @@ public sealed class BuildDetailsController(IBuildDetailsService buildDetailsServ
         var rows = await buildDetailsService.GetSampleReplays(request, token);
         return Ok(rows);
     }
+
+    [HttpPost("team-builds/overview")]
+    public async Task<ActionResult<List<BuildDetailsTeamBuildOverviewRow>>> GetTeamBuildOverview(
+        [FromBody] BuildDetailsRequest request,
+        CancellationToken token = default)
+    {
+        var rows = await buildDetailsService.GetTeamBuildOverview(request, token);
+        return Ok(rows);
+    }
+
+    [HttpPost("team-builds/samples")]
+    public async Task<ActionResult<List<BuildDetailsTeamBuildSampleReplay>>> GetTeamBuildSampleReplays(
+        [FromBody] BuildDetailsTeamBuildSamplesRequest request,
+        CancellationToken token = default)
+    {
+        var rows = await buildDetailsService.GetTeamBuildSampleReplays(request, token);
+        return Ok(rows);
+    }
 }
