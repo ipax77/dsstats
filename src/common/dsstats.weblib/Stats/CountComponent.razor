@@ -1,6 +1,8 @@
 ﻿@using dsstats.shared
 @using dsstats.shared.Interfaces
 
+@implements IDisposable
+
 @inject IStatsService StatsService
 
 <div class="mb-1" style="max-width: 1000px;">
@@ -128,6 +130,8 @@
     CountChart? countChart;
     StatsRequestComponent? statsRequestComponent;
     bool isLoading = true;
+    private readonly CancellationTokenSource cts = new();
+    private bool disposed;
 
     private string? currentSortColumn = null;
     private bool isDescending = true;
@@ -161,33 +165,64 @@
 
     private async Task LoadData()
     {
+        var token = cts.Token;
         try
         {
-            response = await StatsService.GetStatsAsync<CountResponse>(StatsType.Count, StatsRequest);
+            response = await StatsService.GetStatsAsync<CountResponse>(StatsType.Count, StatsRequest, token);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
         }
         catch
         {
         }
         finally
         {
-            isLoading = false;
-            await InvokeAsync(StateHasChanged);
-            if (response != null)
+            if (!disposed && !token.IsCancellationRequested)
             {
-                countChart?.PrepareData(response, StatsRequest);
+                isLoading = false;
+                await InvokeAsync(StateHasChanged);
+                if (!disposed && response != null)
+                {
+                    countChart?.PrepareData(response, StatsRequest);
+                }
             }
         }
     }
 
     private async Task Update()
     {
+        if (disposed)
+        {
+            return;
+        }
+
+        var token = cts.Token;
         isLoading = true;
         await InvokeAsync(StateHasChanged);
-        response = await StatsService.GetStatsAsync<CountResponse>(StatsType.Count, StatsRequest);
-        countChart?.PrepareData(response, StatsRequest);
-        isLoading = false;
-        await InvokeAsync(StateHasChanged);
-        await OnRequestChanged.InvokeAsync(StatsRequest);
+        try
+        {
+            response = await StatsService.GetStatsAsync<CountResponse>(StatsType.Count, StatsRequest, token);
+            if (disposed || token.IsCancellationRequested)
+            {
+                return;
+            }
+
+            countChart?.PrepareData(response, StatsRequest);
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+            await OnRequestChanged.InvokeAsync(StatsRequest);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        disposed = true;
+        cts.Cancel();
+        cts.Dispose();
     }
 
     private bool IsStrongPlayerFilter => StatsRequest.Filter != null &&

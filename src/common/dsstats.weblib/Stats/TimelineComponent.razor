@@ -1,6 +1,7 @@
 ﻿@using Microsoft.Extensions.Logging
 @using dsstats.shared
 @using dsstats.shared.Interfaces
+@implements IDisposable
 @inject ILogger<TimelineComponent> logger
 
 @inject IStatsService StatsService
@@ -113,6 +114,8 @@
     Commander previousInterest = Commander.None;
     HashSet<Commander> selectedCommanders = [];
     TimelineChart? timelineChart;
+    private readonly CancellationTokenSource cts = new();
+    private bool disposed;
     private int currentSortColumn = 0;
     private bool isDescending = false;
 
@@ -127,10 +130,19 @@
 
     private async Task LoadData()
     {
+        var token = cts.Token;
         try
         {
-            response = await StatsService.GetStatsAsync<TimelineResponse>(StatsType.Timeline, StatsRequest);
+            response = await StatsService.GetStatsAsync<TimelineResponse>(StatsType.Timeline, StatsRequest, token);
+            if (disposed || token.IsCancellationRequested)
+            {
+                return;
+            }
+
             ApplyDefaultSelection(forceReset: true);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
         }
         catch (Exception ex)
         {
@@ -138,17 +150,26 @@
         }
         finally
         {
-            isLoading = false;
-            await InvokeAsync(StateHasChanged);
-            if (response != null)
+            if (!disposed && !token.IsCancellationRequested)
             {
-                timelineChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+                isLoading = false;
+                await InvokeAsync(StateHasChanged);
+                if (!disposed && response != null)
+                {
+                    timelineChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+                }
             }
         }
     }
 
     private async Task Update()
     {
+        if (disposed)
+        {
+            return;
+        }
+
+        var token = cts.Token;
         isLoading = true;
         await InvokeAsync(StateHasChanged);
 
@@ -158,13 +179,31 @@
             hasManualSelection = false;
         }
 
-        response = await StatsService.GetStatsAsync<TimelineResponse>(StatsType.Timeline, StatsRequest);
-        previousInterest = StatsRequest.Interest;
-        ApplyDefaultSelection(forceReset: interestChanged);
-        timelineChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
-        isLoading = false;
-        await InvokeAsync(StateHasChanged);
-        await OnRequestChanged.InvokeAsync(StatsRequest);
+        try
+        {
+            response = await StatsService.GetStatsAsync<TimelineResponse>(StatsType.Timeline, StatsRequest, token);
+            if (disposed || token.IsCancellationRequested)
+            {
+                return;
+            }
+
+            previousInterest = StatsRequest.Interest;
+            ApplyDefaultSelection(forceReset: interestChanged);
+            timelineChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+            await OnRequestChanged.InvokeAsync(StatsRequest);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        disposed = true;
+        cts.Cancel();
+        cts.Dispose();
     }
 
     private void ApplyDefaultSelection(bool forceReset)

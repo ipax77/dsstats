@@ -1,6 +1,8 @@
 ﻿@using dsstats.shared
 @using dsstats.shared.Interfaces
 
+@implements IDisposable
+
 @inject IStatsService StatsService
 
 <div class="mb-1" style="max-width: 1000px;">
@@ -102,6 +104,8 @@
     StatsRequestComponent? statsRequestComponent;
     bool isLoading = true;
     bool showSampleSizeWarning = false;
+    private readonly CancellationTokenSource cts = new();
+    private bool disposed;
 
     private string? currentSortColumn = null;
     private bool isDescending = true;
@@ -141,34 +145,65 @@
 
     private async Task LoadData()
     {
+        var token = cts.Token;
         try
         {
-            response = await StatsService.GetStatsAsync<WinrateResponse>(StatsType.Winrate, StatsRequest);
+            response = await StatsService.GetStatsAsync<WinrateResponse>(StatsType.Winrate, StatsRequest, token);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
         }
         catch
         {
         }
         finally
         {
-            isLoading = false;
-            await InvokeAsync(StateHasChanged);
-            if (response != null)
+            if (!disposed && !token.IsCancellationRequested)
             {
-                winrateChart?.PrepareData(response, StatsRequest);
+                isLoading = false;
+                await InvokeAsync(StateHasChanged);
+                if (!disposed && response != null)
+                {
+                    winrateChart?.PrepareData(response, StatsRequest);
+                }
             }
         }
     }
 
     private async Task Update()
     {
+        if (disposed)
+        {
+            return;
+        }
+
+        var token = cts.Token;
         isLoading = true;
         await InvokeAsync(StateHasChanged);
-        response = await StatsService.GetStatsAsync<WinrateResponse>(StatsType.Winrate, StatsRequest);
-        winrateChart?.PrepareData(response, StatsRequest);
-        isLoading = false;
-        showSampleSizeWarning = response.WinrateEnts.Any(a => a.Count < 100);
-        await InvokeAsync(StateHasChanged);
-        await OnRequestChanged.InvokeAsync(StatsRequest);
+        try
+        {
+            response = await StatsService.GetStatsAsync<WinrateResponse>(StatsType.Winrate, StatsRequest, token);
+            if (disposed || token.IsCancellationRequested)
+            {
+                return;
+            }
+
+            winrateChart?.PrepareData(response, StatsRequest);
+            isLoading = false;
+            showSampleSizeWarning = response.WinrateEnts.Any(a => a.Count < 100);
+            await InvokeAsync(StateHasChanged);
+            await OnRequestChanged.InvokeAsync(StatsRequest);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        disposed = true;
+        cts.Cancel();
+        cts.Dispose();
     }
 
     private bool IsStrongPlayerFilter => StatsRequest.Filter != null &&
