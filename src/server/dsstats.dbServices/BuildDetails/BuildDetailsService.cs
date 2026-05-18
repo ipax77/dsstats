@@ -176,6 +176,8 @@ public sealed class BuildDetailsService(IDbContextFactory<DsstatsContext> contex
         var noMinRating = request.FromRating <= Data.MinBuildRating;
         var noMaxRating = request.ToRating >= Data.MaxBuildRating;
         var anyCommander = request.Commander == Commander.None;
+        var playerId = request.Player?.PlayerId ?? 0;
+        var noPlayer = playerId <= 0;
 
         var query = from build in context.ReplayPlayerBuildDetails.AsNoTracking()
                     join detail in context.ReplayBuildDetails.AsNoTracking()
@@ -205,6 +207,7 @@ public sealed class BuildDetailsService(IDbContextFactory<DsstatsContext> contex
                         && (noMinRating || rating.RatingBefore >= request.FromRating)
                         && (noMaxRating || rating.RatingBefore <= request.ToRating)
                         && (anyCommander || build.Commander == request.Commander)
+                        && (noPlayer || rating.PlayerId == playerId)
                     select new BuildDetailsQueryRow
                     {
                         ReplayId = replay.ReplayId,

@@ -70,6 +70,12 @@
                     <button type="button" class="btn btn-sm btn-outline-warning mb-2" @onclick="SetRating">
                         Set Rating
                     </button>
+                    @if (playerSelectModal is not null)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-light mb-2" @onclick="() => playerSelectModal.Show(Request)">
+                            Player Builds
+                        </button>
+                    }
                 </div>
                 <div class="col-auto">
                     <div class="form-check mb-2">
@@ -77,6 +83,16 @@
                         <label for="buildDetailsWithLeavers" class="form-check-label">With Leavers</label>
                     </div>
                 </div>
+                @if (Request.Player is not null)
+                {
+                    <div class="col-auto mb-2">
+                        <span class="badge bg-primary">
+                            @Request.Player.Name
+                            <span class="text-warning">@Data.GetRegionString(Request.Player.ToonId.Region)</span>
+                            <i class="bi bi-x-lg text-danger pointer" @onclick="RemovePlayerFilter"></i>
+                        </span>
+                    </div>
+                }
             </div>
         </EditForm>
     </div>
@@ -147,12 +163,19 @@
             <div class="bgchart border rounded p-2 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h4 class="mb-0">@SelectedBuildTitle</h4>
-                    @if (matchupsLoading)
-                    {
-                        <div class="spinner-border spinner-border-sm" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="form-check form-switch mb-0">
+                            <input id="buildDetailsShowAnecdotal" type="checkbox" class="form-check-input"
+                                   checked="@showAnecdotalResults" @onchange="ShowAnecdotalChanged" />
+                            <label for="buildDetailsShowAnecdotal" class="form-check-label small">Show anecdotal results</label>
                         </div>
-                    }
+                        @if (matchupsLoading)
+                        {
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        }
+                    </div>
                 </div>
                 <div class="table-responsive" style="max-height: 67vh; overflow-y: auto;">
                     <table class="tptable">
@@ -166,7 +189,7 @@
                                         <SortArrow Column="@nameof(BuildDetailsMatchupRow.OpponentBuild)">Build</SortArrow>
                                     </th>
                                     <th class="pointer text-end" style="width: 90px;" @onclick="e => SortMatchups(nameof(BuildDetailsMatchupRow.AverageRatingGain))">
-                                        <SortArrow Column="@nameof(BuildDetailsMatchupRow.AverageRatingGain)">Avg Gain</SortArrow>
+                                        <SortArrow Column="@nameof(BuildDetailsMatchupRow.AverageRatingGain)">Adj Gain</SortArrow>
                                     </th>
                                     <th class="pointer text-end" style="width: 80px;" @onclick="e => SortMatchups(nameof(BuildDetailsMatchupRow.Winrate))">
                                         <SortArrow Column="@nameof(BuildDetailsMatchupRow.Winrate)">Winrate</SortArrow>
@@ -174,7 +197,7 @@
                                     <th class="pointer text-end" style="width: 80px;" @onclick="e => SortMatchups(nameof(BuildDetailsMatchupRow.Games))">
                                         <SortArrow Column="@nameof(BuildDetailsMatchupRow.Games)">Games</SortArrow>
                                     </th>
-                                    <th class="text-end" style="width: 80px;">Gas</th>
+                                    <th class="text-end" style="width: 90px;">Confidence</th>
                                 </tr>
                             </thead>
                         </CascadingValue>
@@ -185,19 +208,30 @@
                                     <td colspan="100">No matchup details found.</td>
                                 </tr>
                             }
+                            else if (VisibleMatchupCount == 0 && !matchupsLoading)
+                            {
+                                <tr>
+                                    <td colspan="100">Only anecdotal results found. Enable "Show anecdotal results" to view them.</td>
+                                </tr>
+                            }
                             @foreach (var row in SortedMatchupRows)
                             {
                                 <tr class="pointer @(IsSelectedMatchup(row) ? "table-active" : "")" @onclick="() => SelectMatchup(row)">
                                     <td class="text-warning">@row.OpponentCommander</td>
                                     <td>@row.GetOpponentBuildName()</td>
-                                    <td class="text-end @GetGainClass(row.AverageRatingGain)">@row.AverageRatingGain.ToString("N2")</td>
-                                    <td class="text-end">@row.Winrate.ToString("N1")%</td>
+                                    <td class="text-end @GetGainClass(GetAdjustedGain(row))">@GetAdjustedGain(row).ToString("N2")</td>
+                                    <td class="text-end" title="@GetWinrateTitle(row)">@row.Winrate.ToString("N1")%</td>
                                     <td class="text-end">@row.Games.ToString("N0")</td>
-                                    <td class="text-end">@row.SelectedGasFirstGames.ToString("N0")/@row.OpponentGasFirstGames.ToString("N0")</td>
+                                    <td class="text-end">@GetConfidenceLabel(row.Games)</td>
                                 </tr>
                             }
                         </tbody>
                     </table>
+                </div>
+                <div class="small text-muted mt-2">
+                    Confidence: Very Low &lt; 5 games, Low 5-19, Medium 20-99, High 100+.
+                    Adj Gain = Avg Gain x Games / (Games + 20).
+                    Winrate shows raw WR; tooltip shows smoothed WR = (Wins + 10) / (Games + 20).
                 </div>
             </div>
         </div>
@@ -276,6 +310,7 @@
 <ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
 <BuildDetailsReplayModal @ref="buildDetailsReplayModal" OnFullReplayRequest="ShowReplayDetails" OnClose="CloseReplay" />
 <PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(replayDetails!)" />
+<BuildDetailsPlayerSelectModal @ref="playerSelectModal" OnChanged="PlayerFilterChanged" />
 
 @code {
     [Parameter, EditorRequired]
@@ -294,12 +329,18 @@
     private ReplayModal? replayModal;
     private BuildDetailsReplayModal? buildDetailsReplayModal;
     private PlayerModal? playerModal;
+    private BuildDetailsPlayerSelectModal? playerSelectModal;
     private ReplayDetails? replayDetails;
     private bool overviewLoading;
     private bool matchupsLoading;
     private bool samplesLoading;
+    private bool showAnecdotalResults;
     private readonly List<TableOrder> overviewOrders = [new() { Column = nameof(BuildDetailsOverviewRow.AverageRatingGain), Ascending = false }];
     private readonly List<TableOrder> matchupOrders = [new() { Column = nameof(BuildDetailsMatchupRow.AverageRatingGain), Ascending = false }];
+    private const int AdjustedGainK = 20;
+    private const int AnecdotalGameThreshold = 5;
+    private const int WinratePriorWins = 10;
+    private const int WinratePriorGames = 20;
 
     private string SelectedBuildTitle => selectedOverview is null
         ? "Matchups"
@@ -319,13 +360,21 @@
         _ => ApplyOverviewDirection(overviewRows.OrderBy(x => x.AverageRatingGain).ThenBy(x => x.Games)),
     };
 
+    private int VisibleMatchupCount => showAnecdotalResults
+        ? matchupRows.Count
+        : matchupRows.Count(x => x.Games >= AnecdotalGameThreshold);
+
+    private IEnumerable<BuildDetailsMatchupRow> VisibleMatchupRows => showAnecdotalResults
+        ? matchupRows
+        : matchupRows.Where(x => x.Games >= AnecdotalGameThreshold);
+
     private IEnumerable<BuildDetailsMatchupRow> SortedMatchupRows => matchupOrders[0].Column switch
     {
-        nameof(BuildDetailsMatchupRow.OpponentCommander) => ApplyMatchupDirection(matchupRows.OrderBy(x => x.OpponentCommander).ThenBy(x => x.OpponentBuild)),
-        nameof(BuildDetailsMatchupRow.OpponentBuild) => ApplyMatchupDirection(matchupRows.OrderBy(x => x.GetOpponentBuildName()).ThenBy(x => x.OpponentCommander)),
-        nameof(BuildDetailsMatchupRow.Winrate) => ApplyMatchupDirection(matchupRows.OrderBy(x => x.Winrate).ThenByDescending(x => x.Games)),
-        nameof(BuildDetailsMatchupRow.Games) => ApplyMatchupDirection(matchupRows.OrderBy(x => x.Games).ThenBy(x => x.OpponentCommander)),
-        _ => ApplyMatchupDirection(matchupRows.OrderBy(x => x.AverageRatingGain).ThenBy(x => x.Games)),
+        nameof(BuildDetailsMatchupRow.OpponentCommander) => ApplyMatchupDirection(VisibleMatchupRows.OrderBy(x => x.OpponentCommander).ThenBy(x => x.OpponentBuild)),
+        nameof(BuildDetailsMatchupRow.OpponentBuild) => ApplyMatchupDirection(VisibleMatchupRows.OrderBy(x => x.GetOpponentBuildName()).ThenBy(x => x.OpponentCommander)),
+        nameof(BuildDetailsMatchupRow.Winrate) => ApplyMatchupDirection(VisibleMatchupRows.OrderBy(x => x.Winrate).ThenByDescending(x => x.Games)),
+        nameof(BuildDetailsMatchupRow.Games) => ApplyMatchupDirection(VisibleMatchupRows.OrderBy(x => x.Games).ThenBy(x => x.OpponentCommander)),
+        _ => ApplyMatchupDirection(VisibleMatchupRows.OrderBy(x => GetAdjustedGain(x)).ThenBy(x => x.Games)),
     };
 
     protected override async Task OnInitializedAsync()
@@ -389,7 +438,7 @@
 
         var request = CreateMatchupRequest(row);
         matchupRows = await BuildDetailsService.GetMatchups(request, cts.Token);
-        selectedMatchup = matchupRows.FirstOrDefault();
+        selectedMatchup = SortedMatchupRows.FirstOrDefault();
         matchupsLoading = false;
         await InvokeAsync(StateHasChanged);
 
@@ -431,6 +480,31 @@
         await LoadSamples(selectedOverview, row);
     }
 
+    private async Task ShowAnecdotalChanged(ChangeEventArgs e)
+    {
+        showAnecdotalResults = e.Value is bool value && value;
+
+        if (selectedOverview is null)
+        {
+            return;
+        }
+
+        if (selectedMatchup is null || !IsMatchupVisible(selectedMatchup))
+        {
+            selectedMatchup = SortedMatchupRows.FirstOrDefault();
+            sampleRows = [];
+
+            if (selectedMatchup is not null)
+            {
+                await LoadSamples(selectedOverview, selectedMatchup);
+            }
+            else
+            {
+                samplesLoading = false;
+            }
+        }
+    }
+
     private BuildDetailsMatchupRequest CreateMatchupRequest(BuildDetailsOverviewRow row)
     {
         return new()
@@ -443,6 +517,7 @@
             WithLeavers = Request.WithLeavers,
             GasFilter = Request.GasFilter,
             TeFilter = Request.TeFilter,
+            Player = Request.Player,
             SelectedCommander = row.Commander,
             SelectedBuild = row.Build,
         };
@@ -460,6 +535,7 @@
             WithLeavers = Request.WithLeavers,
             GasFilter = Request.GasFilter,
             TeFilter = Request.TeFilter,
+            Player = Request.Player,
             SelectedCommander = overview.Commander,
             SelectedBuild = overview.Build,
             OpponentCommander = matchup.OpponentCommander,
@@ -523,6 +599,48 @@
         return selectedMatchup is not null
             && row.OpponentCommander == selectedMatchup.OpponentCommander
             && row.OpponentBuild == selectedMatchup.OpponentBuild;
+    }
+
+    private bool IsMatchupVisible(BuildDetailsMatchupRow row)
+    {
+        return showAnecdotalResults || row.Games >= AnecdotalGameThreshold;
+    }
+
+    private async Task PlayerFilterChanged()
+    {
+        await LoadOverview();
+    }
+
+    private async Task RemovePlayerFilter()
+    {
+        Request.Player = null;
+        await LoadOverview();
+    }
+
+    private static double GetAdjustedGain(BuildDetailsMatchupRow row)
+    {
+        return row.AverageRatingGain * row.Games / (row.Games + AdjustedGainK);
+    }
+
+    private static double GetSmoothedWinrate(BuildDetailsMatchupRow row)
+    {
+        return 100.0 * (row.Wins + WinratePriorWins) / (row.Games + WinratePriorGames);
+    }
+
+    private static string GetWinrateTitle(BuildDetailsMatchupRow row)
+    {
+        return $"Smoothed WR: {GetSmoothedWinrate(row):N1}%";
+    }
+
+    private static string GetConfidenceLabel(int games)
+    {
+        return games switch
+        {
+            < 5 => "Very Low",
+            < 20 => "Low",
+            < 100 => "Medium",
+            _ => "High",
+        };
     }
 
     private void NormalizeRatingRange()

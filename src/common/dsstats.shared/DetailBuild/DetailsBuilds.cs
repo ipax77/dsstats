@@ -206,6 +206,7 @@ public enum ZergBuild
     Ultras = 10,
     Ravagers = 11,
     SwarmHosts = 12,
+    HydraliskLings = 13,
 }
 
 public enum TeamBuild

@@ -122,6 +122,9 @@ public static class RequestExtensions
         queryDic[paramMap[nameof(BuildDetailsRequest.TeFilter)]] =
             request.TeFilter != BuildDetailsTeFilter.All ? (int)request.TeFilter : null;
 
+        queryDic[paramMap[nameof(BuildDetailsRequest.Player)]] =
+            request.Player is not null ? Data.EncodePlayersToBase64([request.Player]) : null;
+
         return queryDic;
     }
 

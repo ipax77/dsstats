@@ -29,6 +29,7 @@ public class BuildDetailsRequest
     public bool WithLeavers { get; set; }
     public BuildDetailsGasFilter GasFilter { get; set; } = BuildDetailsGasFilter.Any;
     public BuildDetailsTeFilter TeFilter { get; set; } = BuildDetailsTeFilter.All;
+    public PlayerDto? Player { get; set; }
 }
 
 public class BuildDetailsMatchupRequest : BuildDetailsRequest
@@ -87,7 +88,8 @@ public static class BuildDetailsRequestExtensions
 {
     public static string GetMemKey(this BuildDetailsRequest request)
     {
-        return $"builddetails_{request.RatingType}_{request.TimePeriod}_{request.Commander}_{request.FromRating}_{request.ToRating}_{request.WithLeavers}_{request.GasFilter}_{request.TeFilter}";
+        var playerKey = request.Player?.PlayerId ?? 0;
+        return $"builddetails_{request.RatingType}_{request.TimePeriod}_{request.Commander}_{request.FromRating}_{request.ToRating}_{request.WithLeavers}_{request.GasFilter}_{request.TeFilter}_{playerKey}";
     }
 
     public static string GetMemKey(this BuildDetailsMatchupRequest request)
@@ -132,6 +134,10 @@ public static class BuildDetailsRequestExtensions
         sb.Append("replays?");
         sb.Append($"PlayerCmdr={Uri.EscapeDataString(request.SelectedCommander.ToString())}");
         sb.Append($"&OppCmdr={Uri.EscapeDataString(request.OpponentCommander.ToString())}");
+        if (request.Player is not null)
+        {
+            sb.Append($"&ToonIds={Uri.EscapeDataString(Data.GetToonIdString(request.Player.ToonId))}");
+        }
         return sb.ToString();
     }
 }

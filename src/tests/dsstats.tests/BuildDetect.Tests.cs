@@ -474,6 +474,10 @@ public sealed class BuildDetectTests
         AssertZergBuild(ZergBuild.Ultras, new UnitDto { Name = "Ultralisk", Count = 1 });
         AssertZergBuild(ZergBuild.Ravagers, new UnitDto { Name = "Ravager", Count = 2 });
         AssertZergBuild(ZergBuild.SwarmHosts, new UnitDto { Name = "SwarmHostMP", Count = 1 });
+        AssertZergBuild(
+            ZergBuild.HydraliskLings,
+            new UnitDto { Name = "ZerglingLightweight", Count = 23 },
+            new UnitDto { Name = "Hydralisk", Count = 16 });
     }
 
     [TestMethod]

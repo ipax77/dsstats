@@ -73,6 +73,13 @@ public static partial class DetailBuilds
             return ZergBuild.Hydras;
         }
 
+        if (composition.HydraliskCount >= 2
+            && composition.ZerglingCount >= 2
+            && IsAtLeastShare(composition.HydraliskWeight + composition.ZerglingWeight, composition.TotalWeight, DominantSharePercent))
+        {
+            return ZergBuild.HydraliskLings;
+        }
+
         if (composition.RoachCount >= 2
             && IsAtLeastShare(composition.RoachWeight, composition.TotalWeight, DominantSharePercent))
         {

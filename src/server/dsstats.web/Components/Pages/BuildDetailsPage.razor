@@ -31,6 +31,9 @@
     [SupplyParameterFromQuery]
     public string? Te { get; set; }
 
+    [SupplyParameterFromQuery]
+    public string? Player { get; set; }
+
     private const int RatingStep = 50;
     private BuildDetailsRequest Request = new();
 
@@ -43,6 +46,7 @@
         { nameof(BuildDetailsRequest.WithLeavers), "L" },
         { nameof(BuildDetailsRequest.GasFilter), "Gas" },
         { nameof(BuildDetailsRequest.TeFilter), "Te" },
+        { nameof(BuildDetailsRequest.Player), "Player" },
     }.ToFrozenDictionary();
 
     protected override void OnInitialized()
@@ -57,6 +61,7 @@
             WithLeavers = L ?? false,
             GasFilter = EnumExtensions.ParseEnumOrDefault(Gas, BuildDetailsGasFilter.Any),
             TeFilter = EnumExtensions.ParseEnumOrDefault(Te, BuildDetailsTeFilter.All),
+            Player = DecodePlayer(Player),
         };
 
         if (Request.FromRating > Request.ToRating)
@@ -74,6 +79,16 @@
 
         var clamped = Math.Clamp(value.Value, Data.MinBuildRating, Data.MaxBuildRating);
         return ((clamped - Data.MinBuildRating) / RatingStep) * RatingStep + Data.MinBuildRating;
+    }
+
+    private static PlayerDto? DecodePlayer(string? player)
+    {
+        if (string.IsNullOrEmpty(player))
+        {
+            return null;
+        }
+
+        return Data.DecodePlayersFromBase64(player).FirstOrDefault();
     }
 
     private void RequestChanged(BuildDetailsRequest request)

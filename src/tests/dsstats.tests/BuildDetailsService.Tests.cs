@@ -139,6 +139,93 @@ public sealed class BuildDetailsServiceTests
         Assert.AreEqual(-4.0, nonTe.Single().AverageRatingGain, 0.001);
     }
 
+    [TestMethod]
+    public async Task GetOverview_FiltersToSelectedPlayerAsBuildOwner()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedReplayAsync(1, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: false, opponentGasFirst: false, won: true, ratingDelta: 10, selectedPlayerId: 42);
+        await fixture.SeedReplayAsync(2, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: false, opponentGasFirst: false, won: false, ratingDelta: -4, selectedPlayerId: 99);
+        await fixture.SeedReplayAsync(3, ProtossBuild.Zealots, TerranBuild.Mech, selectedGasFirst: true, opponentGasFirst: false, won: true, ratingDelta: 6, selectedPlayerId: 42);
+
+        var request = CreateRequest();
+        request.Player = CreatePlayer(42);
+        var rows = await fixture.Service.GetOverview(request);
+
+        Assert.AreEqual(2, rows.Count);
+        var stalker = rows.Single(x => x.Build == (int)ProtossBuild.Stalker);
+        var zealots = rows.Single(x => x.Build == (int)ProtossBuild.Zealots);
+        Assert.AreEqual(1, stalker.Games);
+        Assert.AreEqual(10.0, stalker.AverageRatingGain, 0.001);
+        Assert.AreEqual(1, zealots.Games);
+        Assert.AreEqual(6.0, zealots.AverageRatingGain, 0.001);
+    }
+
+    [TestMethod]
+    public async Task GetMatchups_FiltersToSelectedPlayerAsBuildOwner()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedReplayAsync(1, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: false, opponentGasFirst: true, won: true, ratingDelta: 10, selectedPlayerId: 42);
+        await fixture.SeedReplayAsync(2, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: true, opponentGasFirst: false, won: false, ratingDelta: -4, selectedPlayerId: 42);
+        await fixture.SeedReplayAsync(3, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: false, opponentGasFirst: false, won: true, ratingDelta: 20, selectedPlayerId: 99);
+        await fixture.SeedReplayAsync(4, ProtossBuild.Stalker, TerranBuild.Mech, selectedGasFirst: false, opponentGasFirst: false, won: true, ratingDelta: 8, selectedPlayerId: 42);
+
+        var request = CreateMatchupRequest();
+        request.Player = CreatePlayer(42);
+        var rows = await fixture.Service.GetMatchups(request);
+
+        Assert.AreEqual(2, rows.Count);
+        var bio = rows.Single(x => x.OpponentBuild == (int)TerranBuild.Bio);
+        var mech = rows.Single(x => x.OpponentBuild == (int)TerranBuild.Mech);
+        Assert.AreEqual(2, bio.Games);
+        Assert.AreEqual(3.0, bio.AverageRatingGain, 0.001);
+        Assert.AreEqual(1, mech.Games);
+        Assert.AreEqual(8.0, mech.AverageRatingGain, 0.001);
+    }
+
+    [TestMethod]
+    public async Task GetSampleReplays_FiltersToSelectedPlayerAsBuildOwner()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedReplayAsync(1, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: false, opponentGasFirst: true, won: true, ratingDelta: 10, selectedPlayerId: 42);
+        await fixture.SeedReplayAsync(2, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: true, opponentGasFirst: false, won: false, ratingDelta: -4, selectedPlayerId: 99);
+        await fixture.SeedReplayAsync(3, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: true, opponentGasFirst: true, won: true, ratingDelta: 2, selectedPlayerId: 42);
+
+        var rows = await fixture.Service.GetSampleReplays(new BuildDetailsSamplesRequest
+        {
+            RatingType = RatingType.All,
+            TimePeriod = TimePeriod.AllTime,
+            Commander = Commander.Protoss,
+            FromRating = Data.MinBuildRating,
+            ToRating = Data.MaxBuildRating,
+            Player = CreatePlayer(42),
+            SelectedCommander = Commander.Protoss,
+            SelectedBuild = (int)ProtossBuild.Stalker,
+            OpponentCommander = Commander.Terran,
+            OpponentBuild = (int)TerranBuild.Bio,
+            Count = 10,
+        });
+
+        CollectionAssert.AreEqual(new[] { "hash-3", "hash-1" }, rows.Select(x => x.Replay.ReplayHash).ToArray());
+        Assert.IsTrue(rows.All(x => x.Replay.PlayerPos is 1));
+    }
+
+    [TestMethod]
+    public async Task GetOverview_UsesSeparateCacheEntriesForPlayerFilteredRequests()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedReplayAsync(1, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: false, opponentGasFirst: false, won: true, ratingDelta: 10, selectedPlayerId: 42);
+        await fixture.SeedReplayAsync(2, ProtossBuild.Stalker, TerranBuild.Bio, selectedGasFirst: false, opponentGasFirst: false, won: false, ratingDelta: -4, selectedPlayerId: 99);
+
+        var globalRows = await fixture.Service.GetOverview(CreateRequest());
+        var request = CreateRequest();
+        request.Player = CreatePlayer(42);
+        var playerRows = await fixture.Service.GetOverview(request);
+
+        Assert.AreEqual(2, globalRows.Single().Games);
+        Assert.AreEqual(1, playerRows.Single().Games);
+        Assert.AreNotEqual(CreateRequest().GetMemKey(), request.GetMemKey());
+    }
+
     private static BuildDetailsRequest CreateRequest(BuildDetailsTeFilter teFilter = BuildDetailsTeFilter.All)
     {
         return new()
@@ -164,6 +251,16 @@ public sealed class BuildDetailsServiceTests
             GasFilter = gasFilter,
             SelectedCommander = Commander.Protoss,
             SelectedBuild = (int)ProtossBuild.Stalker,
+        };
+    }
+
+    private static PlayerDto CreatePlayer(int playerId)
+    {
+        return new()
+        {
+            PlayerId = playerId,
+            Name = $"Player{playerId}",
+            ToonId = new ToonIdDto { Region = 1, Realm = 1, Id = playerId }
         };
     }
 
@@ -210,28 +307,21 @@ public sealed class BuildDetailsServiceTests
             bool won,
             double ratingDelta,
             LeaverType leaverType = LeaverType.None,
-            bool te = true)
+            bool te = true,
+            int? selectedPlayerId = null,
+            int? opponentPlayerId = null)
         {
             var ratingType = te ? RatingType.StandardTE : RatingType.Standard;
             var gametime = new DateTime(2026, 1, 1).AddDays(replayId);
             var selectedReplayPlayerId = replayId * 10 + 1;
             var opponentReplayPlayerId = replayId * 10 + 4;
+            var selectedPersistentPlayerId = selectedPlayerId ?? selectedReplayPlayerId;
+            var opponentPersistentPlayerId = opponentPlayerId ?? opponentReplayPlayerId;
             var replayRatingId = replayId * 100;
             var detailId = replayId * 1000;
 
-            Context.Players.AddRange(
-                new Player
-                {
-                    PlayerId = selectedReplayPlayerId,
-                    Name = $"Protoss{replayId}",
-                    ToonId = new ToonId { Region = 1, Realm = 1, Id = selectedReplayPlayerId }
-                },
-                new Player
-                {
-                    PlayerId = opponentReplayPlayerId,
-                    Name = $"Terran{replayId}",
-                    ToonId = new ToonId { Region = 1, Realm = 1, Id = opponentReplayPlayerId }
-                });
+            await AddPlayerIfMissing(selectedPersistentPlayerId, $"Protoss{selectedPersistentPlayerId}");
+            await AddPlayerIfMissing(opponentPersistentPlayerId, $"Terran{opponentPersistentPlayerId}");
 
             Context.Replays.Add(new Replay
             {
@@ -257,7 +347,7 @@ public sealed class BuildDetailsServiceTests
                 {
                     ReplayPlayerId = selectedReplayPlayerId,
                     ReplayId = replayId,
-                    PlayerId = selectedReplayPlayerId,
+                    PlayerId = selectedPersistentPlayerId,
                     Name = $"Protoss{replayId}",
                     Race = Commander.Protoss,
                     SelectedRace = Commander.Protoss,
@@ -271,7 +361,7 @@ public sealed class BuildDetailsServiceTests
                 {
                     ReplayPlayerId = opponentReplayPlayerId,
                     ReplayId = replayId,
-                    PlayerId = opponentReplayPlayerId,
+                    PlayerId = opponentPersistentPlayerId,
                     Name = $"Terran{replayId}",
                     Race = Commander.Terran,
                     SelectedRace = Commander.Terran,
@@ -303,7 +393,7 @@ public sealed class BuildDetailsServiceTests
                     Games = 10,
                     ReplayRatingId = replayRatingId,
                     ReplayPlayerId = selectedReplayPlayerId,
-                    PlayerId = selectedReplayPlayerId
+                    PlayerId = selectedPersistentPlayerId
                 },
                 new ReplayPlayerRating
                 {
@@ -315,7 +405,7 @@ public sealed class BuildDetailsServiceTests
                     Games = 10,
                     ReplayRatingId = replayRatingId,
                     ReplayPlayerId = opponentReplayPlayerId,
-                    PlayerId = opponentReplayPlayerId
+                    PlayerId = opponentPersistentPlayerId
                 });
 
             Context.ReplayBuildDetails.Add(new ReplayBuildDetail
@@ -364,6 +454,22 @@ public sealed class BuildDetailsServiceTests
             });
 
             await Context.SaveChangesAsync();
+        }
+
+        private async Task AddPlayerIfMissing(int playerId, string name)
+        {
+            if (Context.Players.Local.Any(x => x.PlayerId == playerId)
+                || await Context.Players.AnyAsync(x => x.PlayerId == playerId))
+            {
+                return;
+            }
+
+            Context.Players.Add(new Player
+            {
+                PlayerId = playerId,
+                Name = name,
+                ToonId = new ToonId { Region = 1, Realm = 1, Id = playerId }
+            });
         }
 
         public async ValueTask DisposeAsync()
