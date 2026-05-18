@@ -1,0 +1,19 @@
+@using dsstats.shared
+
+<span class="d-inline-flex align-items-center gap-1" title="@BuildDetailsRequestExtensions.GetRosterName(Race1, Race2, Race3)">
+    <span class="preload-@(Race1.ToString().ToLowerInvariant())" style="width: 24px; height: 24px;"></span>
+    <span class="preload-@(Race2.ToString().ToLowerInvariant())" style="width: 24px; height: 24px;"></span>
+    <span class="preload-@(Race3.ToString().ToLowerInvariant())" style="width: 24px; height: 24px;"></span>
+    <span class="visually-hidden">@BuildDetailsRequestExtensions.GetRosterName(Race1, Race2, Race3)</span>
+</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public Commander Race1 { get; set; }
+
+    [Parameter, EditorRequired]
+    public Commander Race2 { get; set; }
+
+    [Parameter, EditorRequired]
+    public Commander Race3 { get; set; }
+}
