@@ -312,6 +312,120 @@ public sealed class BuildDetailsServiceTests
         Assert.IsTrue(rows[0].Replay.CommandersTeam1.Contains(Commander.Terran));
     }
 
+    [TestMethod]
+    public async Task GetRaceRosterOverview_AggregatesOrderedRosterAverageGainAndWinrate()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedRaceRosterReplayAsync(1, winnerTeam: 1, team1Deltas: [9, 6, 3], team2Deltas: [-3, -6, -9]);
+        await fixture.SeedRaceRosterReplayAsync(2, winnerTeam: 2, team1Deltas: [-3, -6, -9], team2Deltas: [3, 6, 9]);
+
+        var rows = await fixture.Service.GetRaceRosterOverview(CreateRaceRosterRequest());
+        var row = rows.Single(x => x.Race1 == Commander.Protoss && x.Race2 == Commander.Terran && x.Race3 == Commander.Zerg);
+
+        Assert.AreEqual(2, row.Games);
+        Assert.AreEqual(1, row.Wins);
+        Assert.AreEqual(0.0, row.AverageRatingGain, 0.001);
+        Assert.AreEqual(50.0, row.Winrate, 0.001);
+    }
+
+    [TestMethod]
+    public async Task GetRaceRosterOverview_KeepsRosterOrderDistinct()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedRaceRosterReplayAsync(1, team1Races: [Commander.Protoss, Commander.Terran, Commander.Zerg]);
+        await fixture.SeedRaceRosterReplayAsync(2, team1Races: [Commander.Terran, Commander.Protoss, Commander.Zerg]);
+
+        var rows = await fixture.Service.GetRaceRosterOverview(CreateRaceRosterRequest());
+
+        Assert.IsTrue(rows.Any(x => x.Race1 == Commander.Protoss && x.Race2 == Commander.Terran && x.Race3 == Commander.Zerg));
+        Assert.IsTrue(rows.Any(x => x.Race1 == Commander.Terran && x.Race2 == Commander.Protoss && x.Race3 == Commander.Zerg));
+    }
+
+    [TestMethod]
+    public async Task GetRaceRosterMatchups_AggregatesSelectedRosterVersusOpponentRoster()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedRaceRosterReplayAsync(1, winnerTeam: 1, team1Deltas: [9, 6, 3], team2Races: [Commander.Terran, Commander.Terran, Commander.Terran]);
+        await fixture.SeedRaceRosterReplayAsync(2, winnerTeam: 2, team1Deltas: [-3, -6, -9], team2Races: [Commander.Terran, Commander.Terran, Commander.Terran]);
+        await fixture.SeedRaceRosterReplayAsync(3, winnerTeam: 1, team2Races: [Commander.Zerg, Commander.Zerg, Commander.Zerg]);
+
+        var rows = await fixture.Service.GetRaceRosterMatchups(new BuildDetailsRaceRosterMatchupRequest
+        {
+            RatingType = RatingType.All,
+            TimePeriod = TimePeriod.AllTime,
+            Commander = Commander.None,
+            FromRating = Data.MinBuildRating,
+            ToRating = Data.MaxBuildRating,
+            Race1 = Commander.Protoss,
+            Race2 = Commander.Terran,
+            Race3 = Commander.Zerg,
+        });
+        var row = rows.Single(x => x.OpponentRace1 == Commander.Terran && x.OpponentRace2 == Commander.Terran && x.OpponentRace3 == Commander.Terran);
+
+        Assert.AreEqual(2, row.Games);
+        Assert.AreEqual(1, row.Wins);
+        Assert.AreEqual(0.0, row.AverageRatingGain, 0.001);
+        Assert.AreEqual(50.0, row.Winrate, 0.001);
+    }
+
+    [TestMethod]
+    public async Task GetRaceRosterOverview_FiltersCommanderPlayerTeLeaversRatingAndStandardOnly()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedRaceRosterReplayAsync(1, te: true, team1PlayerIds: [42, 11, 12], team1Ratings: [1800, 1800, 1800]);
+        await fixture.SeedRaceRosterReplayAsync(2, te: false, team1PlayerIds: [42, 21, 22], team1Ratings: [1800, 1800, 1800]);
+        await fixture.SeedRaceRosterReplayAsync(3, leaverType: LeaverType.OneLeaver, team1PlayerIds: [42, 31, 32], team1Ratings: [1800, 1800, 1800]);
+        await fixture.SeedRaceRosterReplayAsync(4, team1PlayerIds: [99, 41, 42], team1Ratings: [1300, 1300, 1300]);
+        await fixture.SeedRaceRosterReplayAsync(5, gameMode: GameMode.Commanders);
+        await fixture.SeedRaceRosterReplayAsync(6, playerCount: 4);
+        await fixture.SeedRaceRosterReplayAsync(7, winnerTeam: 0);
+        await fixture.SeedRaceRosterReplayAsync(8, team1Races: [Commander.Protoss, Commander.Abathur, Commander.Zerg]);
+
+        var request = CreateRaceRosterRequest(BuildDetailsTeFilter.TE);
+        request.Commander = Commander.Terran;
+        request.Player = CreatePlayer(42);
+        request.FromRating = 1500;
+        var rows = await fixture.Service.GetRaceRosterOverview(request);
+
+        Assert.AreEqual(1, rows.Single(x => x.Race1 == Commander.Protoss && x.Race2 == Commander.Terran && x.Race3 == Commander.Zerg).Games);
+
+        request.Commander = Commander.Abathur;
+        var nonStandardRows = await fixture.Service.GetRaceRosterOverview(request);
+        Assert.AreEqual(0, nonStandardRows.Count);
+    }
+
+    [TestMethod]
+    public async Task GetRaceRosterSampleReplays_ReturnsNewestDistinctReplayMetadata()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedRaceRosterReplayAsync(1);
+        await fixture.SeedRaceRosterReplayAsync(2);
+        await fixture.SeedRaceRosterReplayAsync(3);
+
+        var rows = await fixture.Service.GetRaceRosterSampleReplays(new BuildDetailsRaceRosterSamplesRequest
+        {
+            RatingType = RatingType.All,
+            TimePeriod = TimePeriod.AllTime,
+            Commander = Commander.None,
+            FromRating = Data.MinBuildRating,
+            ToRating = Data.MaxBuildRating,
+            Race1 = Commander.Protoss,
+            Race2 = Commander.Terran,
+            Race3 = Commander.Zerg,
+            OpponentRace1 = Commander.Terran,
+            OpponentRace2 = Commander.Terran,
+            OpponentRace3 = Commander.Terran,
+            Count = 2,
+        });
+
+        Assert.AreEqual(2, rows.Count);
+        Assert.AreEqual("race-hash-3", rows[0].Replay.ReplayHash);
+        Assert.AreEqual("race-hash-2", rows[1].Replay.ReplayHash);
+        Assert.AreEqual(1, rows[0].Replay.PlayerPos);
+        CollectionAssert.AreEqual(new[] { Commander.Protoss, Commander.Terran, Commander.Zerg }, rows[0].Replay.CommandersTeam1);
+        CollectionAssert.AreEqual(new[] { Commander.Terran, Commander.Terran, Commander.Terran }, rows[0].Replay.CommandersTeam2);
+    }
+
     private static BuildDetailsRequest CreateRequest(BuildDetailsTeFilter teFilter = BuildDetailsTeFilter.All)
     {
         return new()
@@ -319,6 +433,19 @@ public sealed class BuildDetailsServiceTests
             RatingType = RatingType.All,
             TimePeriod = TimePeriod.AllTime,
             Commander = Commander.Protoss,
+            FromRating = Data.MinBuildRating,
+            ToRating = Data.MaxBuildRating,
+            TeFilter = teFilter,
+        };
+    }
+
+    private static BuildDetailsRequest CreateRaceRosterRequest(BuildDetailsTeFilter teFilter = BuildDetailsTeFilter.All)
+    {
+        return new()
+        {
+            RatingType = RatingType.All,
+            TimePeriod = TimePeriod.AllTime,
+            Commander = Commander.None,
             FromRating = Data.MinBuildRating,
             ToRating = Data.MaxBuildRating,
             TeFilter = teFilter,
@@ -692,6 +819,133 @@ public sealed class BuildDetailsServiceTests
                         FollowerReplayPlayerId = followerReplayPlayerId
                     }
                 ]
+            });
+
+            await Context.SaveChangesAsync();
+        }
+
+        public async Task SeedRaceRosterReplayAsync(
+            int replayId,
+            Commander[]? team1Races = null,
+            Commander[]? team2Races = null,
+            int winnerTeam = 1,
+            double[]? team1Deltas = null,
+            double[]? team2Deltas = null,
+            double[]? team1Ratings = null,
+            double[]? team2Ratings = null,
+            int[]? team1PlayerIds = null,
+            int[]? team2PlayerIds = null,
+            LeaverType leaverType = LeaverType.None,
+            bool te = true,
+            int playerCount = 6,
+            GameMode gameMode = GameMode.Standard)
+        {
+            team1Races ??= [Commander.Protoss, Commander.Terran, Commander.Zerg];
+            team2Races ??= [Commander.Terran, Commander.Terran, Commander.Terran];
+            team1Deltas ??= [6.0, 6.0, 6.0];
+            team2Deltas ??= [-6.0, -6.0, -6.0];
+            team1Ratings ??= [1800.0, 1800.0, 1800.0];
+            team2Ratings ??= [1800.0, 1800.0, 1800.0];
+            team1PlayerIds ??= [replayId * 1000 + 1, replayId * 1000 + 2, replayId * 1000 + 3];
+            team2PlayerIds ??= [replayId * 1000 + 4, replayId * 1000 + 5, replayId * 1000 + 6];
+
+            var ratingType = te ? RatingType.StandardTE : RatingType.Standard;
+            var gametime = new DateTime(2026, 3, 1).AddDays(replayId);
+            var replayRatingId = replayId * 1000 + 500;
+
+            for (var i = 0; i < 3; i++)
+            {
+                await AddPlayerIfMissing(team1PlayerIds[i], $"RaceTeam1Player{team1PlayerIds[i]}");
+                await AddPlayerIfMissing(team2PlayerIds[i], $"RaceTeam2Player{team2PlayerIds[i]}");
+            }
+
+            Context.Replays.Add(new Replay
+            {
+                ReplayId = replayId,
+                FileName = $"RaceReplay-{replayId}.SC2Replay",
+                Title = $"Race Replay {replayId}",
+                Version = "1.0",
+                GameMode = gameMode,
+                RegionId = 1,
+                TE = te,
+                PlayerCount = playerCount,
+                Gametime = gametime,
+                Duration = 900,
+                WinnerTeam = winnerTeam,
+                ReplayHash = $"race-hash-{replayId}",
+                CompatHash = $"race-compat-{replayId}",
+                Imported = gametime.AddMinutes(1),
+                Uploaded = true
+            });
+
+            for (var i = 0; i < 3; i++)
+            {
+                var team1ReplayPlayerId = replayId * 10000 + i + 1;
+                var team2ReplayPlayerId = replayId * 10000 + i + 4;
+
+                Context.ReplayPlayers.AddRange(
+                    new ReplayPlayer
+                    {
+                        ReplayPlayerId = team1ReplayPlayerId,
+                        ReplayId = replayId,
+                        PlayerId = team1PlayerIds[i],
+                        Name = $"RaceTeam1Player{replayId}-{i}",
+                        Race = team1Races[i],
+                        SelectedRace = team1Races[i],
+                        TeamId = 1,
+                        GamePos = i + 1,
+                        Duration = 900,
+                        Result = winnerTeam == 1 ? PlayerResult.Win : PlayerResult.Los
+                    },
+                    new ReplayPlayer
+                    {
+                        ReplayPlayerId = team2ReplayPlayerId,
+                        ReplayId = replayId,
+                        PlayerId = team2PlayerIds[i],
+                        Name = $"RaceTeam2Player{replayId}-{i}",
+                        Race = team2Races[i],
+                        SelectedRace = team2Races[i],
+                        TeamId = 2,
+                        GamePos = i + 4,
+                        Duration = 900,
+                        Result = winnerTeam == 2 ? PlayerResult.Win : PlayerResult.Los
+                    });
+
+                Context.ReplayPlayerRatings.AddRange(
+                    new ReplayPlayerRating
+                    {
+                        ReplayPlayerRatingId = replayId * 100000 + i + 1,
+                        RatingType = ratingType,
+                        RatingBefore = team1Ratings[i],
+                        RatingDelta = team1Deltas[i],
+                        ExpectedDelta = 0,
+                        Games = 10,
+                        ReplayRatingId = replayRatingId,
+                        ReplayPlayerId = team1ReplayPlayerId,
+                        PlayerId = team1PlayerIds[i]
+                    },
+                    new ReplayPlayerRating
+                    {
+                        ReplayPlayerRatingId = replayId * 100000 + i + 4,
+                        RatingType = ratingType,
+                        RatingBefore = team2Ratings[i],
+                        RatingDelta = team2Deltas[i],
+                        ExpectedDelta = 0,
+                        Games = 10,
+                        ReplayRatingId = replayRatingId,
+                        ReplayPlayerId = team2ReplayPlayerId,
+                        PlayerId = team2PlayerIds[i]
+                    });
+            }
+
+            Context.ReplayRatings.Add(new ReplayRating
+            {
+                ReplayRatingId = replayRatingId,
+                RatingType = ratingType,
+                LeaverType = leaverType,
+                ExpectedWinProbability = 0.5,
+                AvgRating = 1800 + replayId,
+                ReplayId = replayId
             });
 
             await Context.SaveChangesAsync();

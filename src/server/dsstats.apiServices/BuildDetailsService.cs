@@ -77,4 +77,46 @@ public sealed class BuildDetailsService(IHttpClientFactory httpClientFactory) : 
             return [];
         }
     }
+
+    public async Task<List<BuildDetailsRaceRosterOverviewRow>> GetRaceRosterOverview(BuildDetailsRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api10/BuildDetails/race-rosters/overview", request, token);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<List<BuildDetailsRaceRosterOverviewRow>>(cancellationToken: token) ?? [];
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+    }
+
+    public async Task<List<BuildDetailsRaceRosterMatchupRow>> GetRaceRosterMatchups(BuildDetailsRaceRosterMatchupRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api10/BuildDetails/race-rosters/matchups", request, token);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<List<BuildDetailsRaceRosterMatchupRow>>(cancellationToken: token) ?? [];
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+    }
+
+    public async Task<List<BuildDetailsRaceRosterSampleReplay>> GetRaceRosterSampleReplays(BuildDetailsRaceRosterSamplesRequest request, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api10/BuildDetails/race-rosters/samples", request, token);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<List<BuildDetailsRaceRosterSampleReplay>>(cancellationToken: token) ?? [];
+        }
+        catch (Exception)
+        {
+            return [];
+        }
+    }
 }

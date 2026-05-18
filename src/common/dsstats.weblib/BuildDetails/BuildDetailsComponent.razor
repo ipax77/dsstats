@@ -34,6 +34,13 @@
                         Team Builds
                     </button>
                 </li>
+                <li class="nav-item">
+                    <button type="button"
+                            class="nav-link @(activeTab == BuildDetailsTab.RaceRosters ? "active" : "")"
+                            @onclick="() => SetActiveTab(BuildDetailsTab.RaceRosters)">
+                        Race Rosters
+                    </button>
+                </li>
             </ul>
         </div>
     </div>
@@ -349,9 +356,13 @@
         </div>
     </div>
     }
-    else
+    else if (activeTab == BuildDetailsTab.TeamBuilds)
     {
         <TeamBuildDetailsComponent Request="Request" RequestVersion="requestVersion" />
+    }
+    else
+    {
+        <RaceRosterDetailsComponent Request="Request" RequestVersion="requestVersion" />
     }
 </div>
 
@@ -366,6 +377,12 @@
 
     [Parameter]
     public EventCallback<BuildDetailsRequest> OnRequestChanged { get; set; }
+
+    [Parameter]
+    public BuildDetailsTab ActiveTab { get; set; } = BuildDetailsTab.BuildDetails;
+
+    [Parameter]
+    public EventCallback<BuildDetailsTab> OnActiveTabChanged { get; set; }
 
     private EditContext editContext = null!;
     private readonly CancellationTokenSource cts = new();
@@ -386,6 +403,7 @@
     private bool showMatchupAnecdotalResults;
     private int requestVersion;
     private BuildDetailsTab activeTab = BuildDetailsTab.BuildDetails;
+    private bool initialized;
     private readonly List<TableOrder> overviewOrders = [new() { Column = nameof(BuildDetailsOverviewRow.AverageRatingGain), Ascending = false }];
     private readonly List<TableOrder> matchupOrders = [new() { Column = nameof(BuildDetailsMatchupRow.AverageRatingGain), Ascending = false }];
     private const int AdjustedGainK = 20;
@@ -440,7 +458,18 @@
     {
         editContext = new(Request);
         editContext.OnFieldChanged += FieldChanged;
+        activeTab = ActiveTab;
+        initialized = true;
         await ReloadCurrentTab(true);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (initialized && activeTab != ActiveTab)
+        {
+            activeTab = ActiveTab;
+            await ReloadCurrentTab(true);
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -507,9 +536,15 @@
         }
     }
 
-    private void SetActiveTab(BuildDetailsTab tab)
+    private async Task SetActiveTab(BuildDetailsTab tab)
     {
+        if (activeTab == tab)
+        {
+            return;
+        }
+
         activeTab = tab;
+        await OnActiveTabChanged.InvokeAsync(tab);
     }
 
     private async Task LoadMatchups(BuildDetailsOverviewRow row)
@@ -827,11 +862,5 @@
         editContext.OnFieldChanged -= FieldChanged;
         cts.Cancel();
         cts.Dispose();
-    }
-
-    private enum BuildDetailsTab
-    {
-        BuildDetails,
-        TeamBuilds,
     }
 }

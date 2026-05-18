@@ -17,6 +17,13 @@ public enum BuildDetailsTeFilter
     NonTE = 2,
 }
 
+public enum BuildDetailsTab
+{
+    BuildDetails = 0,
+    TeamBuilds = 1,
+    RaceRosters = 2,
+}
+
 public class BuildDetailsRequest
 {
     public RatingType RatingType { get; set; } = RatingType.All;
@@ -46,6 +53,21 @@ public sealed class BuildDetailsSamplesRequest : BuildDetailsMatchupRequest
 public sealed class BuildDetailsTeamBuildSamplesRequest : BuildDetailsRequest
 {
     public TeamBuild SelectedTeamBuild { get; set; }
+    public int Count { get; set; } = 10;
+}
+
+public class BuildDetailsRaceRosterMatchupRequest : BuildDetailsRequest
+{
+    public Commander Race1 { get; set; }
+    public Commander Race2 { get; set; }
+    public Commander Race3 { get; set; }
+}
+
+public sealed class BuildDetailsRaceRosterSamplesRequest : BuildDetailsRaceRosterMatchupRequest
+{
+    public Commander OpponentRace1 { get; set; }
+    public Commander OpponentRace2 { get; set; }
+    public Commander OpponentRace3 { get; set; }
     public int Count { get; set; } = 10;
 }
 
@@ -114,6 +136,44 @@ public sealed class BuildDetailsTeamBuildSampleReplay
     public double FollowerGain { get; set; }
 }
 
+public sealed class BuildDetailsRaceRosterOverviewRow
+{
+    public Commander Race1 { get; set; }
+    public Commander Race2 { get; set; }
+    public Commander Race3 { get; set; }
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public double AverageRatingGain { get; set; }
+    public double Winrate { get; set; }
+    public double AverageRating { get; set; }
+}
+
+public sealed class BuildDetailsRaceRosterMatchupRow
+{
+    public Commander Race1 { get; set; }
+    public Commander Race2 { get; set; }
+    public Commander Race3 { get; set; }
+    public Commander OpponentRace1 { get; set; }
+    public Commander OpponentRace2 { get; set; }
+    public Commander OpponentRace3 { get; set; }
+    public int Games { get; set; }
+    public int Wins { get; set; }
+    public double AverageRatingGain { get; set; }
+    public double Winrate { get; set; }
+    public double AverageRating { get; set; }
+}
+
+public sealed class BuildDetailsRaceRosterSampleReplay
+{
+    public ReplayListDto Replay { get; set; } = new();
+    public Commander Race1 { get; set; }
+    public Commander Race2 { get; set; }
+    public Commander Race3 { get; set; }
+    public Commander OpponentRace1 { get; set; }
+    public Commander OpponentRace2 { get; set; }
+    public Commander OpponentRace3 { get; set; }
+}
+
 public static class BuildDetailsRequestExtensions
 {
     public static string GetMemKey(this BuildDetailsRequest request)
@@ -135,6 +195,16 @@ public static class BuildDetailsRequestExtensions
     public static string GetMemKey(this BuildDetailsTeamBuildSamplesRequest request)
     {
         return $"{((BuildDetailsRequest)request).GetMemKey()}_{request.SelectedTeamBuild}_{request.Count}";
+    }
+
+    public static string GetMemKey(this BuildDetailsRaceRosterMatchupRequest request)
+    {
+        return $"{((BuildDetailsRequest)request).GetMemKey()}_{request.Race1}_{request.Race2}_{request.Race3}";
+    }
+
+    public static string GetMemKey(this BuildDetailsRaceRosterSamplesRequest request)
+    {
+        return $"{((BuildDetailsRaceRosterMatchupRequest)request).GetMemKey()}_{request.OpponentRace1}_{request.OpponentRace2}_{request.OpponentRace3}_{request.Count}";
     }
 
     public static string GetBuildName(this BuildDetailsOverviewRow row)
@@ -162,6 +232,36 @@ public static class BuildDetailsRequestExtensions
         return GetBuildName(row.FollowerCommander, row.FollowerBuild);
     }
 
+    public static string GetRosterName(this BuildDetailsRaceRosterOverviewRow row)
+    {
+        return GetRosterName(row.Race1, row.Race2, row.Race3);
+    }
+
+    public static string GetRosterName(this BuildDetailsRaceRosterMatchupRow row)
+    {
+        return GetRosterName(row.Race1, row.Race2, row.Race3);
+    }
+
+    public static string GetOpponentRosterName(this BuildDetailsRaceRosterMatchupRow row)
+    {
+        return GetRosterName(row.OpponentRace1, row.OpponentRace2, row.OpponentRace3);
+    }
+
+    public static string GetRosterName(this BuildDetailsRaceRosterSampleReplay row)
+    {
+        return GetRosterName(row.Race1, row.Race2, row.Race3);
+    }
+
+    public static string GetOpponentRosterName(this BuildDetailsRaceRosterSampleReplay row)
+    {
+        return GetRosterName(row.OpponentRace1, row.OpponentRace2, row.OpponentRace3);
+    }
+
+    public static string GetRosterName(Commander race1, Commander race2, Commander race3)
+    {
+        return $"{race1}, {race2}, {race3}";
+    }
+
     public static string GetBuildName(Commander commander, int build)
     {
         return commander switch
@@ -187,6 +287,17 @@ public static class BuildDetailsRequestExtensions
     }
 
     public static string GetReplayLink(this BuildDetailsTeamBuildSamplesRequest request)
+    {
+        var sb = new StringBuilder();
+        sb.Append("replays?");
+        if (request.Player is not null)
+        {
+            sb.Append($"ToonIds={Uri.EscapeDataString(Data.GetToonIdString(request.Player.ToonId))}");
+        }
+        return sb.ToString();
+    }
+
+    public static string GetReplayLink(this BuildDetailsRaceRosterSamplesRequest request)
     {
         var sb = new StringBuilder();
         sb.Append("replays?");

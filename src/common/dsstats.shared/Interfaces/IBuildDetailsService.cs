@@ -7,4 +7,7 @@ public interface IBuildDetailsService
     Task<List<BuildDetailsSampleReplay>> GetSampleReplays(BuildDetailsSamplesRequest request, CancellationToken token = default);
     Task<List<BuildDetailsTeamBuildOverviewRow>> GetTeamBuildOverview(BuildDetailsRequest request, CancellationToken token = default);
     Task<List<BuildDetailsTeamBuildSampleReplay>> GetTeamBuildSampleReplays(BuildDetailsTeamBuildSamplesRequest request, CancellationToken token = default);
+    Task<List<BuildDetailsRaceRosterOverviewRow>> GetRaceRosterOverview(BuildDetailsRequest request, CancellationToken token = default);
+    Task<List<BuildDetailsRaceRosterMatchupRow>> GetRaceRosterMatchups(BuildDetailsRaceRosterMatchupRequest request, CancellationToken token = default);
+    Task<List<BuildDetailsRaceRosterSampleReplay>> GetRaceRosterSampleReplays(BuildDetailsRaceRosterSamplesRequest request, CancellationToken token = default);
 }

@@ -1,0 +1,575 @@
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Players
+@using dsstats.weblib.Replays
+@inject IBuildDetailsService BuildDetailsService
+@inject IReplayRepository ReplayRepository
+@implements IDisposable
+
+<div class="row g-2">
+    <div class="col-xxl-4 col-xl-6 col-lg-12">
+        <div class="bgchart border rounded p-2 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4 class="mb-0">Race Rosters</h4>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="form-check form-switch mb-0">
+                        <input id="raceRosterShowAnecdotalOverview" type="checkbox" class="form-check-input"
+                               checked="@showOverviewAnecdotalResults" @onchange="ShowOverviewAnecdotalChanged" />
+                        <label for="raceRosterShowAnecdotalOverview" class="form-check-label small">Show anecdotal results</label>
+                    </div>
+                    @if (overviewLoading)
+                    {
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="table-responsive" style="max-height: 67vh; overflow-y: auto;">
+                <table class="tptable">
+                    <CascadingValue Value="overviewOrders">
+                        <thead class="user-select-none">
+                            <tr>
+                                <th class="pointer" style="width: 190px;" @onclick="e => SortOverview(nameof(BuildDetailsRaceRosterOverviewRow.Race1))">
+                                    <SortArrow Column="@nameof(BuildDetailsRaceRosterOverviewRow.Race1)">Roster</SortArrow>
+                                </th>
+                                <th class="pointer text-end" style="width: 90px;" @onclick="e => SortOverview(nameof(BuildDetailsRaceRosterOverviewRow.AverageRatingGain))">
+                                    <SortArrow Column="@nameof(BuildDetailsRaceRosterOverviewRow.AverageRatingGain)">Avg Gain</SortArrow>
+                                </th>
+                                <th class="pointer text-end" style="width: 80px;" @onclick="e => SortOverview(nameof(BuildDetailsRaceRosterOverviewRow.Winrate))">
+                                    <SortArrow Column="@nameof(BuildDetailsRaceRosterOverviewRow.Winrate)">Winrate</SortArrow>
+                                </th>
+                                <th class="pointer text-end" style="width: 80px;" @onclick="e => SortOverview(nameof(BuildDetailsRaceRosterOverviewRow.Games))">
+                                    <SortArrow Column="@nameof(BuildDetailsRaceRosterOverviewRow.Games)">Count</SortArrow>
+                                </th>
+                                <th class="text-end" style="width: 90px;">Confidence</th>
+                            </tr>
+                        </thead>
+                    </CascadingValue>
+                    <tbody class="text-nowrap">
+                        @if (overviewRows.Count == 0 && !overviewLoading)
+                        {
+                            <tr>
+                                <td colspan="100">No race roster details found.</td>
+                            </tr>
+                        }
+                        else if (VisibleOverviewCount == 0 && !overviewLoading)
+                        {
+                            <tr>
+                                <td colspan="100">Only anecdotal results found. Enable "Show anecdotal results" to view them.</td>
+                            </tr>
+                        }
+                        @foreach (var row in SortedOverviewRows)
+                        {
+                            <tr class="pointer @(IsSelectedOverview(row) ? "table-active" : "")" @onclick="() => SelectOverview(row)">
+                                <td>
+                                    <RaceRosterIcons Race1="row.Race1" Race2="row.Race2" Race3="row.Race3" />
+                                </td>
+                                <td class="text-end @GetGainClass(row.AverageRatingGain)">@row.AverageRatingGain.ToString("N2")</td>
+                                <td class="text-end">@row.Winrate.ToString("N1")%</td>
+                                <td class="text-end">@row.Games.ToString("N0")</td>
+                                <td class="text-end">@GetConfidenceLabel(row.Games)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="small text-muted mt-2">
+                Rosters are ordered by spawn position. Avg Gain is the average rating gain of the three team players.
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xxl-4 col-xl-6 col-lg-12">
+        <div class="bgchart border rounded p-2 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <h4 class="mb-0">
+                        @if (selectedOverview is null)
+                        {
+                            <span>Roster Matchups</span>
+                        }
+                        else
+                        {
+                            <RaceRosterIcons Race1="selectedOverview.Race1" Race2="selectedOverview.Race2" Race3="selectedOverview.Race3" />
+                        }
+                    </h4>
+                    <div class="small text-muted">Success vs other team roster</div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="form-check form-switch mb-0">
+                        <input id="raceRosterShowAnecdotalMatchups" type="checkbox" class="form-check-input"
+                               checked="@showMatchupAnecdotalResults" @onchange="ShowMatchupAnecdotalChanged" />
+                        <label for="raceRosterShowAnecdotalMatchups" class="form-check-label small">Show anecdotal results</label>
+                    </div>
+                    @if (matchupsLoading)
+                    {
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="table-responsive" style="max-height: 67vh; overflow-y: auto;">
+                <table class="tptable">
+                    <CascadingValue Value="matchupOrders">
+                        <thead class="user-select-none">
+                            <tr>
+                                <th class="pointer" style="width: 190px;" @onclick="e => SortMatchups(nameof(BuildDetailsRaceRosterMatchupRow.OpponentRace1))">
+                                    <SortArrow Column="@nameof(BuildDetailsRaceRosterMatchupRow.OpponentRace1)">Vs Roster</SortArrow>
+                                </th>
+                                <th class="pointer text-end" style="width: 90px;" @onclick="e => SortMatchups(nameof(BuildDetailsRaceRosterMatchupRow.AverageRatingGain))">
+                                    <SortArrow Column="@nameof(BuildDetailsRaceRosterMatchupRow.AverageRatingGain)">Avg Gain</SortArrow>
+                                </th>
+                                <th class="pointer text-end" style="width: 80px;" @onclick="e => SortMatchups(nameof(BuildDetailsRaceRosterMatchupRow.Winrate))">
+                                    <SortArrow Column="@nameof(BuildDetailsRaceRosterMatchupRow.Winrate)">Winrate</SortArrow>
+                                </th>
+                                <th class="pointer text-end" style="width: 80px;" @onclick="e => SortMatchups(nameof(BuildDetailsRaceRosterMatchupRow.Games))">
+                                    <SortArrow Column="@nameof(BuildDetailsRaceRosterMatchupRow.Games)">Count</SortArrow>
+                                </th>
+                                <th class="text-end" style="width: 90px;">Confidence</th>
+                            </tr>
+                        </thead>
+                    </CascadingValue>
+                    <tbody class="text-nowrap">
+                        @if (matchupRows.Count == 0 && !matchupsLoading)
+                        {
+                            <tr>
+                                <td colspan="100">No race roster matchup details found.</td>
+                            </tr>
+                        }
+                        else if (VisibleMatchupCount == 0 && !matchupsLoading)
+                        {
+                            <tr>
+                                <td colspan="100">Only anecdotal results found. Enable "Show anecdotal results" to view them.</td>
+                            </tr>
+                        }
+                        @foreach (var row in SortedMatchupRows)
+                        {
+                            <tr class="pointer @(IsSelectedMatchup(row) ? "table-active" : "")" @onclick="() => SelectMatchup(row)">
+                                <td>
+                                    <RaceRosterIcons Race1="row.OpponentRace1" Race2="row.OpponentRace2" Race3="row.OpponentRace3" />
+                                </td>
+                                <td class="text-end @GetGainClass(row.AverageRatingGain)">@row.AverageRatingGain.ToString("N2")</td>
+                                <td class="text-end">@row.Winrate.ToString("N1")%</td>
+                                <td class="text-end">@row.Games.ToString("N0")</td>
+                                <td class="text-end">@GetConfidenceLabel(row.Games)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="small text-muted mt-2">
+                Confidence: Very Low &lt; 5 games, Low 5-19, Medium 20-99, High 100+.
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xxl-4 col-xl-12">
+        <div class="bgchart border rounded p-2 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <h4 class="mb-0">Sample Replays</h4>
+                    @if (selectedMatchup is not null)
+                    {
+                        <div class="small text-muted">
+                            <RaceRosterIcons Race1="selectedMatchup.Race1" Race2="selectedMatchup.Race2" Race3="selectedMatchup.Race3" />
+                            <span class="text-danger"> vs </span>
+                            <RaceRosterIcons Race1="selectedMatchup.OpponentRace1" Race2="selectedMatchup.OpponentRace2" Race3="selectedMatchup.OpponentRace3" />
+                        </div>
+                    }
+                </div>
+                @if (samplesLoading)
+                {
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                }
+            </div>
+            <div class="table-responsive" style="max-height: 67vh; overflow-y: auto;">
+                <table class="tptable">
+                    <thead>
+                        <tr>
+                            <th style="width: 24px;"></th>
+                            <th style="width: 100px;">Date</th>
+                            <th style="width: 80px;" class="text-end">Gain</th>
+                            <th style="width: 80px;" class="text-end">Rating</th>
+                            <th style="width: 190px;">Roster</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-nowrap">
+                        @if (sampleRows.Count == 0 && !samplesLoading)
+                        {
+                            <tr>
+                                <td colspan="100">Select a roster matchup.</td>
+                            </tr>
+                        }
+                        @foreach (var sample in sampleRows)
+                        {
+                            <tr class="pointer" @onclick="() => LoadReplayDetails(sample.Replay.ReplayHash)">
+                                <td>
+                                    <span class="bi bi-window-fullscreen text-primary"></span>
+                                </td>
+                                <td>@sample.Replay.Gametime.ToString("yyyy-MM-dd")</td>
+                                <td class="text-end @GetGainClass(sample.Replay.PlayerGain)">@sample.Replay.PlayerGain.ToString("N2")</td>
+                                <td class="text-end">@sample.Replay.AvgRating</td>
+                                <td>
+                                    <RaceRosterIcons Race1="sample.Race1" Race2="sample.Race2" Race3="sample.Race3" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    @if (SelectedSamplesRequest is not null && sampleRows.Count > 0)
+                    {
+                        <tfoot>
+                            <tr>
+                                <td colspan="100" class="text-end"><a class="text-decoration-none" href="@SelectedSamplesRequest.GetReplayLink()">View replays</a></td>
+                            </tr>
+                        </tfoot>
+                    }
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
+<PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(replayDetails!)" />
+
+@code {
+    [Parameter, EditorRequired]
+    public BuildDetailsRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public int RequestVersion { get; set; }
+
+    private readonly CancellationTokenSource cts = new();
+    private readonly List<TableOrder> overviewOrders = [new() { Column = nameof(BuildDetailsRaceRosterOverviewRow.AverageRatingGain), Ascending = false }];
+    private readonly List<TableOrder> matchupOrders = [new() { Column = nameof(BuildDetailsRaceRosterMatchupRow.AverageRatingGain), Ascending = false }];
+    private List<BuildDetailsRaceRosterOverviewRow> overviewRows = [];
+    private List<BuildDetailsRaceRosterMatchupRow> matchupRows = [];
+    private List<BuildDetailsRaceRosterSampleReplay> sampleRows = [];
+    private BuildDetailsRaceRosterOverviewRow? selectedOverview;
+    private BuildDetailsRaceRosterMatchupRow? selectedMatchup;
+    private ReplayModal? replayModal;
+    private PlayerModal? playerModal;
+    private ReplayDetails? replayDetails;
+    private bool overviewLoading;
+    private bool matchupsLoading;
+    private bool samplesLoading;
+    private bool showOverviewAnecdotalResults;
+    private bool showMatchupAnecdotalResults;
+    private int loadedRequestVersion = -1;
+    private const int AnecdotalGameThreshold = 5;
+
+    private BuildDetailsRaceRosterSamplesRequest? SelectedSamplesRequest => selectedOverview is null || selectedMatchup is null
+        ? null
+        : CreateSamplesRequest(selectedOverview, selectedMatchup);
+
+    private int VisibleOverviewCount => showOverviewAnecdotalResults
+        ? overviewRows.Count
+        : overviewRows.Count(x => x.Games >= AnecdotalGameThreshold);
+
+    private IEnumerable<BuildDetailsRaceRosterOverviewRow> VisibleOverviewRows => showOverviewAnecdotalResults
+        ? overviewRows
+        : overviewRows.Where(x => x.Games >= AnecdotalGameThreshold);
+
+    private IEnumerable<BuildDetailsRaceRosterOverviewRow> SortedOverviewRows => overviewOrders[0].Column switch
+    {
+        nameof(BuildDetailsRaceRosterOverviewRow.Race1) => ApplyOverviewDirection(VisibleOverviewRows.OrderBy(x => x.GetRosterName())),
+        nameof(BuildDetailsRaceRosterOverviewRow.Winrate) => ApplyOverviewDirection(VisibleOverviewRows.OrderBy(x => x.Winrate).ThenByDescending(x => x.Games)),
+        nameof(BuildDetailsRaceRosterOverviewRow.Games) => ApplyOverviewDirection(VisibleOverviewRows.OrderBy(x => x.Games).ThenBy(x => x.GetRosterName())),
+        _ => ApplyOverviewDirection(VisibleOverviewRows.OrderBy(x => x.AverageRatingGain).ThenBy(x => x.Games)),
+    };
+
+    private int VisibleMatchupCount => showMatchupAnecdotalResults
+        ? matchupRows.Count
+        : matchupRows.Count(x => x.Games >= AnecdotalGameThreshold);
+
+    private IEnumerable<BuildDetailsRaceRosterMatchupRow> VisibleMatchupRows => showMatchupAnecdotalResults
+        ? matchupRows
+        : matchupRows.Where(x => x.Games >= AnecdotalGameThreshold);
+
+    private IEnumerable<BuildDetailsRaceRosterMatchupRow> SortedMatchupRows => matchupOrders[0].Column switch
+    {
+        nameof(BuildDetailsRaceRosterMatchupRow.OpponentRace1) => ApplyMatchupDirection(VisibleMatchupRows.OrderBy(x => x.GetOpponentRosterName())),
+        nameof(BuildDetailsRaceRosterMatchupRow.Winrate) => ApplyMatchupDirection(VisibleMatchupRows.OrderBy(x => x.Winrate).ThenByDescending(x => x.Games)),
+        nameof(BuildDetailsRaceRosterMatchupRow.Games) => ApplyMatchupDirection(VisibleMatchupRows.OrderBy(x => x.Games).ThenBy(x => x.GetOpponentRosterName())),
+        _ => ApplyMatchupDirection(VisibleMatchupRows.OrderBy(x => x.AverageRatingGain).ThenBy(x => x.Games)),
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (loadedRequestVersion != RequestVersion)
+        {
+            loadedRequestVersion = RequestVersion;
+            await LoadOverview();
+        }
+    }
+
+    private async Task LoadOverview()
+    {
+        overviewLoading = true;
+        matchupsLoading = true;
+        samplesLoading = true;
+        matchupRows = [];
+        sampleRows = [];
+        selectedOverview = null;
+        selectedMatchup = null;
+        await InvokeAsync(StateHasChanged);
+
+        overviewRows = await BuildDetailsService.GetRaceRosterOverview(Request, cts.Token);
+        selectedOverview = SortedOverviewRows.FirstOrDefault();
+        overviewLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+        if (selectedOverview is not null)
+        {
+            await LoadMatchups(selectedOverview);
+        }
+        else
+        {
+            matchupsLoading = false;
+            samplesLoading = false;
+        }
+    }
+
+    private async Task LoadMatchups(BuildDetailsRaceRosterOverviewRow row)
+    {
+        matchupsLoading = true;
+        samplesLoading = true;
+        matchupRows = [];
+        sampleRows = [];
+        selectedMatchup = null;
+        await InvokeAsync(StateHasChanged);
+
+        matchupRows = await BuildDetailsService.GetRaceRosterMatchups(CreateMatchupRequest(row), cts.Token);
+        selectedMatchup = SortedMatchupRows.FirstOrDefault();
+        matchupsLoading = false;
+        await InvokeAsync(StateHasChanged);
+
+        if (selectedMatchup is not null)
+        {
+            await LoadSamples(row, selectedMatchup);
+        }
+        else
+        {
+            samplesLoading = false;
+        }
+    }
+
+    private async Task LoadSamples(BuildDetailsRaceRosterOverviewRow overview, BuildDetailsRaceRosterMatchupRow matchup)
+    {
+        samplesLoading = true;
+        sampleRows = [];
+        await InvokeAsync(StateHasChanged);
+
+        sampleRows = await BuildDetailsService.GetRaceRosterSampleReplays(CreateSamplesRequest(overview, matchup), cts.Token);
+        samplesLoading = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SelectOverview(BuildDetailsRaceRosterOverviewRow row)
+    {
+        selectedOverview = row;
+        await LoadMatchups(row);
+    }
+
+    private async Task SelectMatchup(BuildDetailsRaceRosterMatchupRow row)
+    {
+        if (selectedOverview is null)
+        {
+            return;
+        }
+
+        selectedMatchup = row;
+        await LoadSamples(selectedOverview, row);
+    }
+
+    private async Task ShowOverviewAnecdotalChanged(ChangeEventArgs e)
+    {
+        showOverviewAnecdotalResults = e.Value is bool value && value;
+
+        if (selectedOverview is null || !IsOverviewVisible(selectedOverview))
+        {
+            selectedOverview = SortedOverviewRows.FirstOrDefault();
+            matchupRows = [];
+            sampleRows = [];
+            selectedMatchup = null;
+
+            if (selectedOverview is not null)
+            {
+                await LoadMatchups(selectedOverview);
+            }
+            else
+            {
+                matchupsLoading = false;
+                samplesLoading = false;
+            }
+        }
+    }
+
+    private async Task ShowMatchupAnecdotalChanged(ChangeEventArgs e)
+    {
+        showMatchupAnecdotalResults = e.Value is bool value && value;
+
+        if (selectedOverview is null)
+        {
+            return;
+        }
+
+        if (selectedMatchup is null || !IsMatchupVisible(selectedMatchup))
+        {
+            selectedMatchup = SortedMatchupRows.FirstOrDefault();
+            sampleRows = [];
+
+            if (selectedMatchup is not null)
+            {
+                await LoadSamples(selectedOverview, selectedMatchup);
+            }
+            else
+            {
+                samplesLoading = false;
+            }
+        }
+    }
+
+    private BuildDetailsRaceRosterMatchupRequest CreateMatchupRequest(BuildDetailsRaceRosterOverviewRow row)
+    {
+        return new()
+        {
+            RatingType = Request.RatingType,
+            TimePeriod = Request.TimePeriod,
+            Commander = Request.Commander,
+            FromRating = Request.FromRating,
+            ToRating = Request.ToRating,
+            WithLeavers = Request.WithLeavers,
+            GasFilter = Request.GasFilter,
+            TeFilter = Request.TeFilter,
+            Player = Request.Player,
+            Race1 = row.Race1,
+            Race2 = row.Race2,
+            Race3 = row.Race3,
+        };
+    }
+
+    private BuildDetailsRaceRosterSamplesRequest CreateSamplesRequest(BuildDetailsRaceRosterOverviewRow overview, BuildDetailsRaceRosterMatchupRow matchup)
+    {
+        return new()
+        {
+            RatingType = Request.RatingType,
+            TimePeriod = Request.TimePeriod,
+            Commander = Request.Commander,
+            FromRating = Request.FromRating,
+            ToRating = Request.ToRating,
+            WithLeavers = Request.WithLeavers,
+            GasFilter = Request.GasFilter,
+            TeFilter = Request.TeFilter,
+            Player = Request.Player,
+            Race1 = overview.Race1,
+            Race2 = overview.Race2,
+            Race3 = overview.Race3,
+            OpponentRace1 = matchup.OpponentRace1,
+            OpponentRace2 = matchup.OpponentRace2,
+            OpponentRace3 = matchup.OpponentRace3,
+            Count = 10,
+        };
+    }
+
+    private void SortOverview(string column)
+    {
+        ToggleSort(overviewOrders, column);
+    }
+
+    private void SortMatchups(string column)
+    {
+        ToggleSort(matchupOrders, column);
+    }
+
+    private static void ToggleSort(List<TableOrder> orders, string column)
+    {
+        var order = orders[0];
+        if (order.Column == column)
+        {
+            order.Ascending = !order.Ascending;
+        }
+        else
+        {
+            order.Column = column;
+            order.Ascending = column is nameof(BuildDetailsRaceRosterOverviewRow.Race1)
+                or nameof(BuildDetailsRaceRosterMatchupRow.OpponentRace1);
+        }
+    }
+
+    private IEnumerable<BuildDetailsRaceRosterOverviewRow> ApplyOverviewDirection(IOrderedEnumerable<BuildDetailsRaceRosterOverviewRow> rows)
+    {
+        return overviewOrders[0].Ascending ? rows : rows.Reverse();
+    }
+
+    private IEnumerable<BuildDetailsRaceRosterMatchupRow> ApplyMatchupDirection(IOrderedEnumerable<BuildDetailsRaceRosterMatchupRow> rows)
+    {
+        return matchupOrders[0].Ascending ? rows : rows.Reverse();
+    }
+
+    private bool IsSelectedOverview(BuildDetailsRaceRosterOverviewRow row)
+    {
+        return selectedOverview is not null
+            && row.Race1 == selectedOverview.Race1
+            && row.Race2 == selectedOverview.Race2
+            && row.Race3 == selectedOverview.Race3;
+    }
+
+    private bool IsSelectedMatchup(BuildDetailsRaceRosterMatchupRow row)
+    {
+        return selectedMatchup is not null
+            && row.OpponentRace1 == selectedMatchup.OpponentRace1
+            && row.OpponentRace2 == selectedMatchup.OpponentRace2
+            && row.OpponentRace3 == selectedMatchup.OpponentRace3;
+    }
+
+    private bool IsOverviewVisible(BuildDetailsRaceRosterOverviewRow row)
+    {
+        return showOverviewAnecdotalResults || row.Games >= AnecdotalGameThreshold;
+    }
+
+    private bool IsMatchupVisible(BuildDetailsRaceRosterMatchupRow row)
+    {
+        return showMatchupAnecdotalResults || row.Games >= AnecdotalGameThreshold;
+    }
+
+    private async Task LoadReplayDetails(string replayHash)
+    {
+        replayDetails = await ReplayRepository.GetReplayDetails(replayHash);
+        if (replayDetails is not null)
+        {
+            replayModal?.Show(replayDetails);
+        }
+    }
+
+    private void CloseReplay()
+    {
+        replayDetails = null;
+    }
+
+    private static string GetGainClass(double gain)
+    {
+        return gain < 0 ? "text-danger" : "text-success";
+    }
+
+    private static string GetConfidenceLabel(int games)
+    {
+        return games switch
+        {
+            < 5 => "Very Low",
+            < 20 => "Low",
+            < 100 => "Medium",
+            _ => "High",
+        };
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
+    }
+}

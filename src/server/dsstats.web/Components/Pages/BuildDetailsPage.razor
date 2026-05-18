@@ -7,7 +7,7 @@
 
 <PageTitle>dsstats - build details</PageTitle>
 
-<dsstats.weblib.BuildDetails.BuildDetailsComponent Request="Request" OnRequestChanged="RequestChanged" />
+<dsstats.weblib.BuildDetails.BuildDetailsComponent Request="Request" ActiveTab="CurrentTab" OnRequestChanged="RequestChanged" OnActiveTabChanged="TabChanged" />
 
 @code {
     [SupplyParameterFromQuery]
@@ -34,8 +34,12 @@
     [SupplyParameterFromQuery]
     public string? Player { get; set; }
 
+    [SupplyParameterFromQuery]
+    public string? Tab { get; set; }
+
     private const int RatingStep = 50;
     private BuildDetailsRequest Request = new();
+    private BuildDetailsTab CurrentTab = BuildDetailsTab.BuildDetails;
 
     private static readonly FrozenDictionary<string, string> paramMap = new Dictionary<string, string>
     {
@@ -63,6 +67,7 @@
             TeFilter = EnumExtensions.ParseEnumOrDefault(Te, BuildDetailsTeFilter.All),
             Player = DecodePlayer(Player),
         };
+        CurrentTab = EnumExtensions.ParseEnumOrDefault(Tab, BuildDetailsTab.BuildDetails);
 
         if (Request.FromRating > Request.ToRating)
         {
@@ -93,8 +98,23 @@
 
     private void RequestChanged(BuildDetailsRequest request)
     {
+        NavigateToRequest(request, CurrentTab);
+    }
+
+    private void TabChanged(BuildDetailsTab tab)
+    {
+        CurrentTab = tab;
+        NavigateToRequest(Request, CurrentTab);
+    }
+
+    private void NavigateToRequest(BuildDetailsRequest request, BuildDetailsTab tab)
+    {
+        var query = new Dictionary<string, object?>(request.BuildQueryParams(paramMap))
+        {
+            ["Tab"] = tab.ToString(),
+        };
+
         NavigationManager.NavigateTo(
-            NavigationManager.GetUriWithQueryParameters(
-                new Dictionary<string, object?>(request.BuildQueryParams(paramMap))));
+            NavigationManager.GetUriWithQueryParameters(query));
     }
 }

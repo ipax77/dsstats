@@ -52,4 +52,31 @@ public sealed class BuildDetailsController(IBuildDetailsService buildDetailsServ
         var rows = await buildDetailsService.GetTeamBuildSampleReplays(request, token);
         return Ok(rows);
     }
+
+    [HttpPost("race-rosters/overview")]
+    public async Task<ActionResult<List<BuildDetailsRaceRosterOverviewRow>>> GetRaceRosterOverview(
+        [FromBody] BuildDetailsRequest request,
+        CancellationToken token = default)
+    {
+        var rows = await buildDetailsService.GetRaceRosterOverview(request, token);
+        return Ok(rows);
+    }
+
+    [HttpPost("race-rosters/matchups")]
+    public async Task<ActionResult<List<BuildDetailsRaceRosterMatchupRow>>> GetRaceRosterMatchups(
+        [FromBody] BuildDetailsRaceRosterMatchupRequest request,
+        CancellationToken token = default)
+    {
+        var rows = await buildDetailsService.GetRaceRosterMatchups(request, token);
+        return Ok(rows);
+    }
+
+    [HttpPost("race-rosters/samples")]
+    public async Task<ActionResult<List<BuildDetailsRaceRosterSampleReplay>>> GetRaceRosterSampleReplays(
+        [FromBody] BuildDetailsRaceRosterSamplesRequest request,
+        CancellationToken token = default)
+    {
+        var rows = await buildDetailsService.GetRaceRosterSampleReplays(request, token);
+        return Ok(rows);
+    }
 }
