@@ -102,7 +102,7 @@ public static class RequestExtensions
         var queryDic = new Dictionary<string, object?>();
 
         queryDic[paramMap[nameof(BuildDetailsRequest.TimePeriod)]] =
-            request.TimePeriod != TimePeriod.Last90Days ? (int)request.TimePeriod : null;
+            request.TimePeriod != TimePeriod.Last12Months ? (int)request.TimePeriod : null;
 
         queryDic[paramMap[nameof(BuildDetailsRequest.Commander)]] =
             request.Commander != Commander.None ? request.Commander.ToString() : null;

@@ -12,7 +12,7 @@
     <div class="mb-2 bgchart border rounded p-2">
         <h4 class="mb-1">Build Details</h4>
         <div class="text-muted">
-            Detected Standard build openings from Breakpoint Min5, using unit composition at the 5 minute mark. Builds are ranked by average rating gain; winrate and game count add context, and selected matchups show sample replays for closer inspection.
+            Detected Standard build openings, using unit composition at the 5 minute mark.
         </div>
     </div>
 
@@ -93,7 +93,7 @@
                         </div>
                     }
                 </div>
-                <div class="table-responsive" style="max-height: 74vh; overflow-y: auto;">
+                <div class="table-responsive" style="max-height: 67vh; overflow-y: auto;">
                     <table class="tptable">
                         <CascadingValue Value="overviewOrders">
                             <thead class="user-select-none">
@@ -154,7 +154,7 @@
                         </div>
                     }
                 </div>
-                <div class="table-responsive" style="max-height: 74vh; overflow-y: auto;">
+                <div class="table-responsive" style="max-height: 67vh; overflow-y: auto;">
                     <table class="tptable">
                         <CascadingValue Value="matchupOrders">
                             <thead class="user-select-none">
@@ -223,7 +223,7 @@
                         </div>
                     }
                 </div>
-                <div class="table-responsive">
+                <div class="table-responsive" style="max-height: 67vh; overflow-y: auto;">
                     <table class="tptable">
                         <thead>
                             <tr>
@@ -243,8 +243,14 @@
                             }
                             @foreach (var sample in sampleRows)
                             {
-                                <tr class="pointer" @onclick="() => LoadReplayDetails(sample.Replay.ReplayHash)">
-                                    <td><i class="bi bi-list-ul text-primary"></i></td>
+                                <tr class="pointer" @onclick="() => LoadReplayCompare(sample)">
+                                    <td @onclick:stopPropagation>
+                                        <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" title="Open full replay"
+                                                @onclick="() => LoadReplayDetails(sample.Replay.ReplayHash)">
+                                            <span class="bi bi-window-fullscreen text-primary"></span>
+                                            <span class="visually-hidden">Open full replay</span>
+                                        </button>
+                                    </td>
                                     <td>@sample.Replay.Gametime.ToString("yyyy-MM-dd")</td>
                                     <td class="text-end @GetGainClass(sample.Replay.PlayerGain)">@sample.Replay.PlayerGain.ToString("N2")</td>
                                     <td class="text-end">@sample.Replay.AvgRating</td>
@@ -268,6 +274,7 @@
 </div>
 
 <ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
+<BuildDetailsReplayModal @ref="buildDetailsReplayModal" OnFullReplayRequest="ShowReplayDetails" OnClose="CloseReplay" />
 <PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(replayDetails!)" />
 
 @code {
@@ -285,6 +292,7 @@
     private BuildDetailsOverviewRow? selectedOverview;
     private BuildDetailsMatchupRow? selectedMatchup;
     private ReplayModal? replayModal;
+    private BuildDetailsReplayModal? buildDetailsReplayModal;
     private PlayerModal? playerModal;
     private ReplayDetails? replayDetails;
     private bool overviewLoading;
@@ -532,8 +540,23 @@
         replayDetails = await ReplayRepository.GetReplayDetails(replayHash);
         if (replayDetails is not null)
         {
-            replayModal?.Show(replayDetails);
+            ShowReplayDetails(replayDetails);
         }
+    }
+
+    private async Task LoadReplayCompare(BuildDetailsSampleReplay sample)
+    {
+        replayDetails = await ReplayRepository.GetReplayDetails(sample.Replay.ReplayHash);
+        if (replayDetails is not null && buildDetailsReplayModal is not null)
+        {
+            await buildDetailsReplayModal.Show(replayDetails, sample);
+        }
+    }
+
+    private void ShowReplayDetails(ReplayDetails details)
+    {
+        replayDetails = details;
+        replayModal?.Show(details);
     }
 
     private void CloseReplay()

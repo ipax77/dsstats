@@ -22,7 +22,7 @@ public enum BuildDetailsTeFilter
 public class BuildDetailsRequest
 {
     public RatingType RatingType { get; set; } = RatingType.All;
-    public TimePeriod TimePeriod { get; set; } = TimePeriod.Last90Days;
+    public TimePeriod TimePeriod { get; set; } = TimePeriod.Last12Months;
     public Commander Commander { get; set; } = Commander.None;
     public int FromRating { get; set; } = Data.MinBuildRating;
     public int ToRating { get; set; } = Data.MaxBuildRating;

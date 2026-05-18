@@ -358,12 +358,6 @@ public sealed class BuildDetectTests
 
         AssertProtossBuild(
             ProtossBuild.AirDisruptor,
-            new UnitDto { Name = "Disruptor", Count = 1 },
-            new UnitDto { Name = "Oracle", Count = 1 },
-            new UnitDto { Name = "Adept", Count = 6 });
-
-        AssertProtossBuild(
-            ProtossBuild.AirDisruptor,
             new UnitDto { Name = "Disruptor", Count = 2 },
             new UnitDto { Name = "VoidRay", Count = 5 });
 
@@ -372,6 +366,50 @@ public sealed class BuildDetectTests
             new UnitDto { Name = "Adept", Count = 2 },
             new UnitDto { Name = "Zealot", Count = 2 },
             new UnitDto { Name = "Stalker", Count = 2 });
+    }
+
+    [TestMethod]
+    public void SingleOracleDoesNotQualifyAsProtossAirDisruptor()
+    {
+        AssertProtossBuild(
+            ProtossBuild.None,
+            new UnitDto { Name = "Oracle", Count = 1 },
+            new UnitDto { Name = "Disruptor", Count = 1 });
+
+        AssertProtossBuild(
+            ProtossBuild.None,
+            new UnitDto { Name = "Disruptor", Count = 1 },
+            new UnitDto { Name = "Oracle", Count = 1 },
+            new UnitDto { Name = "Adept", Count = 6 });
+
+        AssertProtossBuild(
+            ProtossBuild.None,
+            new UnitDto { Name = "Oracle", Count = 1 },
+            new UnitDto { Name = "Disruptor", Count = 2 });
+    }
+
+    [TestMethod]
+    public void MultipleOraclesQualifyAsProtossAirDisruptor()
+    {
+        AssertProtossBuild(
+            ProtossBuild.AirDisruptor,
+            new UnitDto { Name = "Oracle", Count = 2 },
+            new UnitDto { Name = "Disruptor", Count = 1 });
+    }
+
+    [TestMethod]
+    public void ProtossAirUnitsStillQualifyAsAirDisruptor()
+    {
+        AssertProtossBuild(
+            ProtossBuild.AirDisruptor,
+            new UnitDto { Name = "Phoenix", Count = 1 },
+            new UnitDto { Name = "Oracle", Count = 1 },
+            new UnitDto { Name = "Disruptor", Count = 1 });
+
+        AssertProtossBuild(
+            ProtossBuild.AirDisruptor,
+            new UnitDto { Name = "Tempest", Count = 1 },
+            new UnitDto { Name = "Disruptor", Count = 1 });
     }
 
     [TestMethod]

@@ -50,7 +50,7 @@
         Request = new BuildDetailsRequest
         {
             RatingType = RatingType.All,
-            TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days),
+            TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last12Months),
             Commander = EnumExtensions.ParseEnumOrDefault(Cmdr, Commander.None),
             FromRating = NormalizeRating(Fr, Data.MinBuildRating),
             ToRating = NormalizeRating(Tr, Data.MaxBuildRating),

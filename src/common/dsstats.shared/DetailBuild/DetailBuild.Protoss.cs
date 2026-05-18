@@ -35,7 +35,7 @@ public static partial class DetailBuilds
             return ProtossBuild.Templar;
         }
 
-        if (composition.HasAir
+        if (composition.HasAirDisruptorAir
             && composition.HasDisruptor
             && (IsAtLeastShare(composition.AirDisruptorWeight, composition.TotalWeight, TechCompositeSharePercent)
                 || composition.DisruptorCount >= 2
@@ -106,7 +106,7 @@ public static partial class DetailBuilds
             "Stalker" => new ProtossUnitProfile(ProtossUnitKind.Stalker, 1),
             "Adept" => new ProtossUnitProfile(ProtossUnitKind.Adept, 1),
             "Sentry" => new ProtossUnitProfile(ProtossUnitKind.Support, 1),
-            "Oracle" => new ProtossUnitProfile(ProtossUnitKind.Air, 2),
+            "Oracle" => new ProtossUnitProfile(ProtossUnitKind.Oracle, 2),
             "Phoenix" => new ProtossUnitProfile(ProtossUnitKind.Air, 2),
             "Void Ray" => new ProtossUnitProfile(ProtossUnitKind.Voidray, 2),
             "Tempest" => new ProtossUnitProfile(ProtossUnitKind.Air, 3),
@@ -129,6 +129,7 @@ public static partial class DetailBuilds
         Stalker,
         Adept,
         Support,
+        Oracle,
         Air,
         Voidray,
         Disruptor,
@@ -152,9 +153,11 @@ public static partial class DetailBuilds
         public int ZealotCount;
         public int StalkerCount;
         public int AdeptCount;
+        public int OracleCount;
         public int VoidrayCount;
         public int DisruptorCount;
         public bool HasAir;
+        public bool HasAirDisruptorAir;
         public bool HasDisruptor;
         public bool HasArchon;
         public bool HasImmortal;
@@ -180,13 +183,22 @@ public static partial class DetailBuilds
                     AdeptCount += count;
                     AdeptWeight += weight;
                     break;
+                case ProtossUnitKind.Oracle:
+                    HasAir = true;
+                    OracleCount += count;
+                    AirWeight += weight;
+                    AirDisruptorWeight += weight;
+                    HasAirDisruptorAir |= OracleCount >= 2;
+                    break;
                 case ProtossUnitKind.Air:
                     HasAir = true;
+                    HasAirDisruptorAir = true;
                     AirWeight += weight;
                     AirDisruptorWeight += weight;
                     break;
                 case ProtossUnitKind.Voidray:
                     HasAir = true;
+                    HasAirDisruptorAir = true;
                     VoidrayCount += count;
                     AirWeight += weight;
                     VoidrayWeight += weight;
