@@ -33,6 +33,12 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
+<details open="open"><summary>v3.0.7</summary>
+
+>- Add Build Details feature. Thanks to TOMage for the suggestion.
+
+</details>
+
 <details open="open"><summary>v3.0.6</summary>
 
 >- Update MAUI session progress
