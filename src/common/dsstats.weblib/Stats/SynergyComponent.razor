@@ -1,6 +1,8 @@
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 
+@implements IDisposable
+
 @inject IStatsService StatsService
 
 <div class="mb-1" style="max-width: 1000px;">
@@ -206,6 +208,8 @@
     bool hasManualSelection;
     Commander previousInterest = Commander.None;
     HashSet<Commander> selectedCommanders = [];
+    private readonly CancellationTokenSource cts = new();
+    private bool disposed;
 
     private string? currentSortColumn = nameof(SynergyEnt.AvgGain);
     private bool isDescending = true;
@@ -261,27 +265,45 @@
 
     private async Task LoadData()
     {
+        var token = cts.Token;
         try
         {
-            response = await StatsService.GetStatsAsync<SynergyResponse>(StatsType.Synergy, StatsRequest);
+            response = await StatsService.GetStatsAsync<SynergyResponse>(StatsType.Synergy, StatsRequest, token);
+            if (disposed || token.IsCancellationRequested)
+            {
+                return;
+            }
+
             ApplyDefaultSelection(forceReset: true);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
         }
         catch
         {
         }
         finally
         {
-            isLoading = false;
-            await InvokeAsync(StateHasChanged);
-            if (response != null)
+            if (!disposed && !token.IsCancellationRequested)
             {
-                synergyChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+                isLoading = false;
+                await InvokeAsync(StateHasChanged);
+                if (!disposed && response != null)
+                {
+                    synergyChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+                }
             }
         }
     }
 
     private async Task Update()
     {
+        if (disposed)
+        {
+            return;
+        }
+
+        var token = cts.Token;
         isLoading = true;
         await InvokeAsync(StateHasChanged);
 
@@ -291,13 +313,31 @@
             hasManualSelection = false;
         }
 
-        response = await StatsService.GetStatsAsync<SynergyResponse>(StatsType.Synergy, StatsRequest);
-        previousInterest = StatsRequest.Interest;
-        ApplyDefaultSelection(forceReset: interestChanged);
-        synergyChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
-        isLoading = false;
-        await InvokeAsync(StateHasChanged);
-        await OnRequestChanged.InvokeAsync(StatsRequest);
+        try
+        {
+            response = await StatsService.GetStatsAsync<SynergyResponse>(StatsType.Synergy, StatsRequest, token);
+            if (disposed || token.IsCancellationRequested)
+            {
+                return;
+            }
+
+            previousInterest = StatsRequest.Interest;
+            ApplyDefaultSelection(forceReset: interestChanged);
+            synergyChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+            await OnRequestChanged.InvokeAsync(StatsRequest);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        disposed = true;
+        cts.Cancel();
+        cts.Dispose();
     }
 
     private void ApplyDefaultSelection(bool forceReset)
