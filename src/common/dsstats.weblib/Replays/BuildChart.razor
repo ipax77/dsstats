@@ -5,7 +5,6 @@
 @using System.Globalization
 @using dsstats.shared.Units
 @using pax.BlazorChartJs
-@inject IJSRuntime JSRuntime
 @inject ILogger<BuildChart> Logger
 
 <ChartComponent @ref="chartComponent" ChartJsConfig="chartConfig" OnEventTriggered="ChartEventTriggered" />
@@ -129,7 +128,6 @@
         {
             chartConfig.AddDatasets(datasets);
             var module = await moduleTask.Value;
-            await module.InvokeVoidAsync("setChartTooltips", chartConfig.ChartJsConfigGuid);
             await module.InvokeVoidAsync("drawChartBorder", chartConfig.ChartJsConfigGuid);
         }
         catch (TaskCanceledException) { }
@@ -234,6 +232,13 @@
                             BoxWidth = 20,
                         },
                         OnHoverEvent = true
+                    },
+                    Tooltip = new Tooltip()
+                    {
+                        Callbacks = new TooltipCallbacks()
+                        {
+                            Label = ChartJsFunction.FromName("buildUnitTooltipLabel")
+                        }
                     }
                 },
                 Scales = new ChartJsOptionsScales()

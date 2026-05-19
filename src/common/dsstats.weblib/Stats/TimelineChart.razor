@@ -1,7 +1,5 @@
-﻿@using Microsoft.JSInterop
-@using dsstats.shared
+﻿@using dsstats.shared
 @using pax.BlazorChartJs
-@inject IJSRuntime JSRuntime
 
 <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="EventTriggered" />
 
@@ -62,38 +60,31 @@
         }
 
         List<ChartJsDataset> datasets = [];
-        List<List<object>> tooltipData = [];
 
         foreach (var commander in selected.OrderBy(c => c))
         {
-            var (dataset, tooltipPoints) = GetDataset(commander, response);
+            var dataset = GetDataset(commander, response);
             if (dataset != null)
             {
                 datasets.Add(dataset);
-                tooltipData.Add(tooltipPoints);
             }
         }
         if (datasets.Count > 0)
         {
             chartJsConfig.AddDatasets(datasets);
-            JSRuntime.InvokeVoidAsync("setTimelineTooltips", chartJsConfig.ChartJsConfigGuid, tooltipData);
-        }
-        else
-        {
-            JSRuntime.InvokeVoidAsync("setTimelineTooltips", chartJsConfig.ChartJsConfigGuid, new List<object>());
         }
     }
 
-    private (ChartJsDataset?, List<object>) GetDataset(Commander commander, TimelineResponse response)
+    private ChartJsDataset? GetDataset(Commander commander, TimelineResponse response)
     {
         var timelineEnt = response.TimelineEnts.FirstOrDefault(e => e.Commander == commander);
         if (timelineEnt == null)
         {
-            return (null, []);
+            return null;
         }
 
         List<object> data = [];
-        List<object> tooltipPoints = [];
+        List<TimelineTooltipPoint> tooltipPoints = [];
 
         for (int i = 0; i < 11; i++)
         {
@@ -102,18 +93,19 @@
 
             data.Add(step?.AvgGain ?? 0);
 
-            tooltipPoints.Add(new
+            tooltipPoints.Add(new()
             {
-                avgGain = step?.AvgGain ?? 0,
-                winrate = step == null || step.Count == 0 ? 0 : (step.Wins / (double)step.Count),
-                games = step?.Count ?? 0,
+                AvgGain = step?.AvgGain ?? 0,
+                Winrate = step == null || step.Count == 0 ? 0 : (step.Wins / (double)step.Count),
+                Games = step?.Count ?? 0,
             });
         }
 
-        var dataset = new LineDataset()
+        var dataset = new TimelineTooltipDataset()
         {
             Label = commander == Commander.None ? "Player" : commander.ToString(),
             Data = data,
+            TooltipPoints = tooltipPoints,
             BorderColor = Data.CmdrColor[commander],
             BackgroundColor = $"{Data.CmdrColor[commander]}1A",
             BorderWidth = 2,
@@ -122,7 +114,7 @@
             Tension = 0.1
         };
 
-        return (dataset, tooltipPoints);
+        return dataset;
     }
 
     private string GetTimeInfo(StatsRequest request)
@@ -164,6 +156,13 @@
                         Labels = new Labels()
                         {
                             Color = "#f2f2f2",
+                        }
+                    },
+                    Tooltip = new Tooltip()
+                    {
+                        Callbacks = new TooltipCallbacks()
+                        {
+                            Label = ChartJsFunction.FromName("timelineTooltipLabel")
                         }
                     }
                 },
@@ -228,5 +227,17 @@
                 }
             }
         };
+    }
+
+    private sealed record TimelineTooltipDataset : LineDataset
+    {
+        public List<TimelineTooltipPoint> TooltipPoints { get; set; } = [];
+    }
+
+    private sealed class TimelineTooltipPoint
+    {
+        public double AvgGain { get; set; }
+        public double Winrate { get; set; }
+        public int Games { get; set; }
     }
 }

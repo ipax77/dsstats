@@ -1,7 +1,5 @@
-@using Microsoft.JSInterop
 @using dsstats.shared
 @using pax.BlazorChartJs
-@inject IJSRuntime JSRuntime
 
 <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="EventTriggered" />
 
@@ -52,20 +50,19 @@
             chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
         }
 
-        var entsByPair = response.SynergyEnts
-            .SelectMany(e =>
-                e.Commander == e.Teammate
-                    ? new[] { ((e.Commander, e.Teammate), e) } // only once
-                    : new[]
-                    {
-                ((e.Commander, e.Teammate), e),
-                ((e.Teammate, e.Commander), e)
-                    })
-            .ToDictionary(x => x.Item1, x => x.e);
+        var entsByPair = new Dictionary<(Commander, Commander), SynergyEnt>(response.SynergyEnts.Count);
+        var commandersWithData = new HashSet<Commander>();
+        var teammateSet = new HashSet<Commander>();
 
-        var teammateLabels = response.SynergyEnts
-            .SelectMany(e => new[] { e.Commander, e.Teammate })
-            .Distinct()
+        foreach (var ent in response.SynergyEnts)
+        {
+            entsByPair.Add(GetPairKey(ent.Commander, ent.Teammate), ent);
+            commandersWithData.Add(ent.Commander);
+            teammateSet.Add(ent.Commander);
+            teammateSet.Add(ent.Teammate);
+        }
+
+        var teammateLabels = teammateSet
             .OrderBy(c => c)
             .ToList();
 
@@ -80,7 +77,6 @@
 
         if (response.SynergyEnts.Count == 0 || selected.Count == 0 || teammateLabels.Count == 0)
         {
-            _ = JSRuntime.InvokeVoidAsync("setSynergyTooltips", chartJsConfig.ChartJsConfigGuid, new List<object>());
             return;
         }
 
@@ -88,11 +84,10 @@
         var maxAvgGain = response.SynergyEnts.Max(e => e.AvgGain);
 
         List<ChartJsDataset> datasets = [];
-        List<List<SynergyTooltipPoint>> tooltipPoints = [];
 
         foreach (var commander in selected.OrderBy(c => c))
         {
-            if (!response.SynergyEnts.Any(e => e.Commander == commander))
+            if (!commandersWithData.Contains(commander))
             {
                 continue;
             }
@@ -132,10 +127,11 @@
                 }
             }
 
-            datasets.Add(new LineDataset()
+            datasets.Add(new SynergyTooltipDataset()
             {
                 Label = commander == Commander.None ? "Player" : commander.ToString(),
                 Data = normalizedValues,
+                TooltipPoints = commanderTooltip,
                 BorderColor = Data.CmdrColor[commander],
                 BackgroundColor = $"{Data.CmdrColor[commander]}33",
                 BorderWidth = 2,
@@ -143,17 +139,19 @@
                 Fill = true,
                 Tension = 0.1
             });
-            tooltipPoints.Add(commanderTooltip);
         }
 
         chartJsConfig.AddDatasets(datasets);
-        _ = JSRuntime.InvokeVoidAsync("setSynergyTooltips", chartJsConfig.ChartJsConfigGuid, tooltipPoints);
     }
 
     SynergyEnt? GetEnt(Commander a, Commander b, Dictionary<(Commander, Commander), SynergyEnt> entsByPair)
     {
-        var key = (a < b) ? (a, b) : (b, a);
-        return entsByPair.TryGetValue(key, out var ent) ? ent : null;
+        return entsByPair.TryGetValue(GetPairKey(a, b), out var ent) ? ent : null;
+    }
+
+    private static (Commander, Commander) GetPairKey(Commander a, Commander b)
+    {
+        return a < b ? (a, b) : (b, a);
     }
 
     private static double Normalize(double value, double min, double max)
@@ -207,6 +205,13 @@
                         {
                             Color = "#f2f2f2",
                         }
+                    },
+                    Tooltip = new Tooltip()
+                    {
+                        Callbacks = new TooltipCallbacks()
+                        {
+                            Label = ChartJsFunction.FromName("synergyTooltipLabel")
+                        }
                     }
                 },
                 Scales = new ChartJsOptionsScales()
@@ -257,6 +262,11 @@
                 }
             }
         };
+    }
+
+    private sealed record SynergyTooltipDataset : LineDataset
+    {
+        public List<SynergyTooltipPoint> TooltipPoints { get; set; } = [];
     }
 
     private sealed class SynergyTooltipPoint
