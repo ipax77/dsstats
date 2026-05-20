@@ -288,7 +288,7 @@ public partial class ReplayMiddleChart : ComponentBase, IDisposable
                         : (rp.GamePos <= 3 ? "#e74c3c" : "#00bc8c"),
                     BorderRadius = 10,
                     Content = $"#{rp.GamePos} Tier{i + 2} {rp.Race}",
-                    Font = new() { Size = 12 }
+                    Font = new Font() { Size = 12 }
                 });
             },
             resetThreshold: 150000,
@@ -316,7 +316,7 @@ public partial class ReplayMiddleChart : ComponentBase, IDisposable
                         : (rp.GamePos <= 3 ? "#e74c3c" : "#00bc8c"),
                     BorderRadius = 10,
                     Content = $"#{rp.GamePos} Gas{i + 1} {rp.Race}",
-                    Font = new() { Size = 10 }
+                    Font = new Font() { Size = 10 }
                 });
             },
             resetThreshold: 125000,
@@ -344,7 +344,7 @@ public partial class ReplayMiddleChart : ComponentBase, IDisposable
                     BackgroundColor = "#BF40BF",
                     BorderRadius = 10,
                     Content = $"#{rp.GamePos} left",
-                    Font = new() { Size = 12 }
+                    Font = new Font() { Size = 12 }
                 }
                 };
             },

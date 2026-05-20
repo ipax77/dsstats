@@ -38,16 +38,11 @@
     {
         Response = response;
         Request = request;
-        selectedCommanders = selected;
+        selectedCommanders = [.. selected];
 
         if (!chartReady)
         {
             return;
-        }
-
-        if (chartJsConfig.Data.Datasets.Count > 0)
-        {
-            chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
         }
 
         var entsByPair = new Dictionary<(Commander, Commander), SynergyEnt>(response.SynergyEnts.Count);
@@ -66,87 +61,91 @@
             .OrderBy(c => c)
             .ToList();
 
-        chartJsConfig.SetLabels(teammateLabels.Select(t => t.ToString()).ToList());
-
         if (chartJsConfig.Options?.Plugins?.Title != null)
         {
             chartJsConfig.Options.Plugins.Title.Text = new IndexableOption<string>(
                 $"Synergy AvgGain (normalized 0-1) - {GetTimeInfo(request)}");
-            chartJsConfig.UpdateChartOptions();
         }
 
-        if (response.SynergyEnts.Count == 0 || selected.Count == 0 || teammateLabels.Count == 0)
+        var desiredCommanders = selectedCommanders
+            .Where(commandersWithData.Contains)
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+
+        var labels = teammateLabels.Select(t => t.ToString()).ToList();
+
+        if (response.SynergyEnts.Count == 0 || desiredCommanders.Count == 0 || teammateLabels.Count == 0)
         {
+            chartJsConfig.SetDatasetsSmooth([], labels, updateOptions: true);
             return;
         }
 
         var minAvgGain = response.SynergyEnts.Min(e => e.AvgGain);
         var maxAvgGain = response.SynergyEnts.Max(e => e.AvgGain);
 
-        List<ChartJsDataset> datasets = [];
+        List<ChartJsDataset> datasets = new(desiredCommanders.Count);
 
-        foreach (var commander in selected.OrderBy(c => c))
+        foreach (var commander in desiredCommanders)
         {
-            if (!commandersWithData.Contains(commander))
-            {
-                continue;
-            }
+            datasets.Add(CreateDataset(commander, teammateLabels, entsByPair, minAvgGain, maxAvgGain));
+        }
 
-            List<object> normalizedValues = [];
-            List<SynergyTooltipPoint> commanderTooltip = [];
+        chartJsConfig.SetDatasetsSmooth(datasets, labels, updateOptions: true);
+    }
 
-            foreach (var teammate in teammateLabels)
-            {
-                var ent = GetEnt(commander, teammate, entsByPair);
-                if (ent != null)
-                {
-                    var normalized = Normalize(ent.AvgGain, minAvgGain, maxAvgGain);
-                    normalizedValues.Add(normalized);
-                    commanderTooltip.Add(new()
-                    {
-                        Commander = commander.ToString(),
-                        Teammate = teammate.ToString(),
-                        Normalized = normalized,
-                        AvgGain = ent.AvgGain,
-                        Winrate = ent.Winrate,
-                        Games = ent.Games
-                    });
-                }
-                else
-                {
-                    normalizedValues.Add(0d);
-                    commanderTooltip.Add(new()
-                    {
-                        Commander = commander.ToString(),
-                        Teammate = teammate.ToString(),
-                        Normalized = 0,
-                        AvgGain = 0,
-                        Winrate = 0,
-                        Games = 0
-                    });
-                }
-            }
+    private SynergyTooltipDataset CreateDataset(
+        Commander commander,
+        IReadOnlyList<Commander> teammateLabels,
+        Dictionary<(Commander, Commander), SynergyEnt> entsByPair,
+        double minAvgGain,
+        double maxAvgGain)
+    {
+        List<object> normalizedValues = new(teammateLabels.Count);
+        List<SynergyTooltipPoint> commanderTooltip = new(teammateLabels.Count);
 
-            datasets.Add(new SynergyTooltipDataset()
+        var commanderName = commander.ToString();
+
+        foreach (var teammate in teammateLabels)
+        {
+            var ent = GetEnt(commander, teammate, entsByPair);
+            var normalized = ent == null ? 0d : Normalize(ent.AvgGain, minAvgGain, maxAvgGain);
+
+            normalizedValues.Add(normalized);
+            commanderTooltip.Add(new()
             {
-                Label = commander == Commander.None ? "Player" : commander.ToString(),
-                Data = normalizedValues,
-                TooltipPoints = commanderTooltip,
-                BorderColor = Data.CmdrColor[commander],
-                BackgroundColor = $"{Data.CmdrColor[commander]}33",
-                BorderWidth = 2,
-                PointRadius = 3,
-                Fill = true,
-                Tension = 0.1
+                Commander = commanderName,
+                Teammate = teammate.ToString(),
+                Normalized = normalized,
+                AvgGain = ent?.AvgGain ?? 0,
+                Winrate = ent?.Winrate ?? 0,
+                Games = ent?.Games ?? 0
             });
         }
 
-        chartJsConfig.AddDatasets(datasets);
+        return new SynergyTooltipDataset()
+        {
+            Id = GetDatasetId(commander),
+            Label = commander == Commander.None ? "Player" : commanderName,
+            Data = normalizedValues,
+            TooltipPoints = commanderTooltip,
+            BorderColor = Data.CmdrColor[commander],
+            BackgroundColor = $"{Data.CmdrColor[commander]}33",
+            BorderWidth = 2,
+            PointRadius = 3,
+            Fill = true,
+            Tension = 0.1
+        };
     }
 
     SynergyEnt? GetEnt(Commander a, Commander b, Dictionary<(Commander, Commander), SynergyEnt> entsByPair)
     {
         return entsByPair.TryGetValue(GetPairKey(a, b), out var ent) ? ent : null;
+    }
+
+    private static string GetDatasetId(Commander commander)
+    {
+        return $"synergy-{commander}";
     }
 
     private static (Commander, Commander) GetPairKey(Commander a, Commander b)
@@ -251,7 +250,7 @@
                             Display = true,
                             Color = "#666",
                             BackdropColor = "transparent",
-                            Font = new()
+                            Font = new Font()
                             {
                                 Size = 10
                             },
