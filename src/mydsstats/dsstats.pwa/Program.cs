@@ -60,6 +60,7 @@ builder.Services.AddChartJs(options =>
     var version = "4.5.1";
     options.ChartJsLocation = $"/_content/dsstats.weblib/js/chart.umd.min.js?v={version}";
     options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.weblib/js/chartjs-plugin-annotation.min.js";
+    options.ChartJsCallbacksModuleLocation = "/_content/dsstats.weblib/js/chartJsCallbacks.js?v=0.1";
 });
 
 

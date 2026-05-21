@@ -73,6 +73,7 @@ namespace dsstats.maui
                 var version = "4.5.1";
                 options.ChartJsLocation = $"/_content/dsstats.weblib/js/chart.umd.min.js?v={version}";
                 options.ChartJsPluginDatalabelsLocation = "/_content/dsstats.weblib/js/chartjs-plugin-datalabels.min.js";
+                options.ChartJsCallbacksModuleLocation = "/_content/dsstats.weblib/js/chartJsCallbacks.js?v=0.1";
             });
             builder.Services.AddMemoryCache();
 

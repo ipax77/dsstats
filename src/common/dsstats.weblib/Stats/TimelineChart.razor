@@ -1,7 +1,5 @@
-﻿@using Microsoft.JSInterop
-@using dsstats.shared
+﻿@using dsstats.shared
 @using pax.BlazorChartJs
-@inject IJSRuntime JSRuntime
 
 <ChartComponent @ref="chartComponent" ChartJsConfig="chartJsConfig" OnEventTriggered="EventTriggered" />
 
@@ -47,53 +45,35 @@
             return;
         }
 
-        if (chartJsConfig.Data.Datasets.Count > 0)
-        {
-            chartJsConfig.RemoveDatasets(chartJsConfig.Data.Datasets);
-        }
-
-        chartJsConfig.SetLabels(["5-8 min", "8-11 min", "11-14 min", "14-17 min", "17-20 min", "20-23 min", "23-26 min", "26-29 min", "29-32 min", "32-35 min", "35+"]);
-
         if (chartJsConfig.Options?.Plugins?.Title != null)
         {
             chartJsConfig.Options.Plugins.Title.Text = new IndexableOption<string>(
                 $"Timeline AvgGain - {GetTimeInfo(request)}");
-            chartJsConfig.UpdateChartOptions();
         }
 
-        List<ChartJsDataset> datasets = [];
-        List<List<object>> tooltipData = [];
-
-        foreach (var commander in selected.OrderBy(c => c))
+        Dictionary<Commander, TimelineEnt> timelineEntsByCommander = new(response.TimelineEnts.Count);
+        foreach (var timelineEnt in response.TimelineEnts)
         {
-            var (dataset, tooltipPoints) = GetDataset(commander, response);
-            if (dataset != null)
+            timelineEntsByCommander.TryAdd(timelineEnt.Commander, timelineEnt);
+        }
+
+        List<ChartJsDataset> datasets = new(timelineEntsByCommander.Count);
+
+        foreach (var commander in selectedCommanders.Distinct().OrderBy(c => c))
+        {
+            if (timelineEntsByCommander.TryGetValue(commander, out var timelineEnt))
             {
-                datasets.Add(dataset);
-                tooltipData.Add(tooltipPoints);
+                datasets.Add(GetDataset(commander, timelineEnt));
             }
         }
-        if (datasets.Count > 0)
-        {
-            chartJsConfig.AddDatasets(datasets);
-            JSRuntime.InvokeVoidAsync("setTimelineTooltips", chartJsConfig.ChartJsConfigGuid, tooltipData);
-        }
-        else
-        {
-            JSRuntime.InvokeVoidAsync("setTimelineTooltips", chartJsConfig.ChartJsConfigGuid, new List<object>());
-        }
+
+        chartJsConfig.SetDatasetsSmooth(datasets, TimelineLabels, updateOptions: true);
     }
 
-    private (ChartJsDataset?, List<object>) GetDataset(Commander commander, TimelineResponse response)
+    private ChartJsDataset GetDataset(Commander commander, TimelineEnt timelineEnt)
     {
-        var timelineEnt = response.TimelineEnts.FirstOrDefault(e => e.Commander == commander);
-        if (timelineEnt == null)
-        {
-            return (null, []);
-        }
-
-        List<object> data = [];
-        List<object> tooltipPoints = [];
+        List<object> data = new(11);
+        List<TimelineTooltipPoint> tooltipPoints = new(11);
 
         for (int i = 0; i < 11; i++)
         {
@@ -102,18 +82,20 @@
 
             data.Add(step?.AvgGain ?? 0);
 
-            tooltipPoints.Add(new
+            tooltipPoints.Add(new()
             {
-                avgGain = step?.AvgGain ?? 0,
-                winrate = step == null || step.Count == 0 ? 0 : (step.Wins / (double)step.Count),
-                games = step?.Count ?? 0,
+                AvgGain = step?.AvgGain ?? 0,
+                Winrate = step == null || step.Count == 0 ? 0 : (step.Wins / (double)step.Count),
+                Games = step?.Count ?? 0,
             });
         }
 
-        var dataset = new LineDataset()
+        var dataset = new TimelineTooltipDataset()
         {
+            Id = GetDatasetId(commander),
             Label = commander == Commander.None ? "Player" : commander.ToString(),
             Data = data,
+            TooltipPoints = tooltipPoints,
             BorderColor = Data.CmdrColor[commander],
             BackgroundColor = $"{Data.CmdrColor[commander]}1A",
             BorderWidth = 2,
@@ -122,7 +104,14 @@
             Tension = 0.1
         };
 
-        return (dataset, tooltipPoints);
+        return dataset;
+    }
+
+    private static readonly string[] TimelineLabels = ["5-8 min", "8-11 min", "11-14 min", "14-17 min", "17-20 min", "20-23 min", "23-26 min", "26-29 min", "29-32 min", "32-35 min", "35+"];
+
+    private static string GetDatasetId(Commander commander)
+    {
+        return $"timeline-{commander}";
     }
 
     private string GetTimeInfo(StatsRequest request)
@@ -165,6 +154,13 @@
                         {
                             Color = "#f2f2f2",
                         }
+                    },
+                    Tooltip = new Tooltip()
+                    {
+                        Callbacks = new TooltipCallbacks()
+                        {
+                            Label = ChartJsFunction.FromName("timelineTooltipLabel")
+                        }
                     }
                 },
                 Scales = new()
@@ -176,7 +172,7 @@
                             Display = true,
                             Text = "Game Duration",
                             Color = "white",
-                            Font = new()
+                            Font = new Font()
                             {
                                 Size = 14
                             }
@@ -228,5 +224,17 @@
                 }
             }
         };
+    }
+
+    private sealed record TimelineTooltipDataset : LineDataset
+    {
+        public List<TimelineTooltipPoint> TooltipPoints { get; set; } = [];
+    }
+
+    private sealed class TimelineTooltipPoint
+    {
+        public double AvgGain { get; set; }
+        public double Winrate { get; set; }
+        public int Games { get; set; }
     }
 }

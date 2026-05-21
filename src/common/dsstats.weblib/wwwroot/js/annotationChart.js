@@ -11,22 +11,6 @@ export async function registerChartWithPlugin() {
     Chart.register(annotationPlugin);
 }
 
-export function setChartTooltips(chartId) {
-    const chart = Chart.getChart(chartId);
-
-    if (chart == undefined) {
-        return;
-    }
-
-    chart.options.plugins.tooltip.callbacks.label = (tooltipItem) => {
-        if (tooltipItem == undefined) {
-            return "";
-        } else {
-            return tooltipItem.raw.label;
-        }
-    };
-}
-
 export function setDatasetPointsActive(chartId, datasetIndex) {
     const chart = Chart.getChart(chartId);
 
