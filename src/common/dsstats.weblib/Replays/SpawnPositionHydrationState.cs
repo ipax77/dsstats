@@ -32,7 +32,7 @@ public sealed class SpawnPositionHydrationState
             }
 
             hydrationReplayHash = replayDetails.ReplayHash;
-            hydrationTask = Hydrate(replayDetails, replayRepository, token);
+            hydrationTask = Hydrate(replayDetails, replayRepository, token, GetOrLoadSidecar(replayDetails.ReplayHash, replayRepository, token));
             return hydrationTask;
         }
     }
@@ -52,15 +52,23 @@ public sealed class SpawnPositionHydrationState
 
         lock (hydrationLock)
         {
-            if (sidecarReplayHash == replayDetails.ReplayHash && sidecarTask is not null)
-            {
-                return sidecarTask;
-            }
+            return GetOrLoadSidecar(replayDetails.ReplayHash, replayRepository, token);
+        }
+    }
 
-            sidecarReplayHash = replayDetails.ReplayHash;
-            sidecarTask = LoadSidecar(replayDetails.ReplayHash, replayRepository, token);
+    private Task<SpawnPlaybackSidecarDto?> GetOrLoadSidecar(
+        string replayHash,
+        IReplayRepository replayRepository,
+        CancellationToken token)
+    {
+        if (sidecarReplayHash == replayHash && sidecarTask is not null)
+        {
             return sidecarTask;
         }
+
+        sidecarReplayHash = replayHash;
+        sidecarTask = LoadSidecar(replayHash, replayRepository, token);
+        return sidecarTask;
     }
 
     public static bool NeedsHydration(ReplayDto replay)
@@ -79,9 +87,10 @@ public sealed class SpawnPositionHydrationState
     private static async Task<bool> Hydrate(
         ReplayDetails replayDetails,
         IReplayRepository replayRepository,
-        CancellationToken token)
+        CancellationToken token,
+        Task<SpawnPlaybackSidecarDto?> sidecarTask)
     {
-        var sidecar = await LoadSidecar(replayDetails.ReplayHash, replayRepository, token);
+        var sidecar = await sidecarTask;
         if (sidecar is not null)
         {
             SpawnPlaybackBreakpointProjector.ApplyToReplay(replayDetails.Replay, sidecar);

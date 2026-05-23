@@ -12,96 +12,142 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
     public async Task<ReplayDetails?> GetReplayDetails(string replayHash)
     {
         await using var context = await contextFactory.CreateDbContextAsync();
-        var replay = await context.Replays
+        var replayEntity = await context.Replays
             .AsNoTracking()
             .Where(f => f.ReplayHash == replayHash)
-            .Select(r => new ReplayDetails
-            {
-                ReplayHash = r.ReplayHash,
-                Replay = new ReplayDto
-                {
-                    Title = r.Title,
-                    FileName = r.FileName ?? string.Empty,
-                    Version = r.Version,
-                    GameMode = r.GameMode,
-                    Gametime = r.Gametime,
-                    RegionId = r.RegionId,
-                    BaseBuild = r.BaseBuild,
-                    Duration = r.Duration,
-                    Cannon = r.Cannon,
-                    Bunker = r.Bunker,
-                    WinnerTeam = r.WinnerTeam,
-                    MiddleChanges = r.MiddleChanges.ToList(),
-                    CompatHash = r.CompatHash,
-                    Players = r.Players
-                        .OrderBy(p => p.GamePos)
-                        .Select(p => new ReplayPlayerDto
-                        {
-                            CompatHash = p.CompatHash,
-                            Name = p.Name,
-                            Clan = p.Clan,
-                            Race = p.Race,
-                            SelectedRace = p.SelectedRace,
-                            GamePos = p.GamePos,
-                            TeamId = p.TeamId,
-                            Result = p.Result,
-                            Duration = p.Duration,
-                            Apm = p.Apm,
-                            Messages = p.Messages,
-                            Pings = p.Pings,
-                            IsMvp = p.IsMvp,
-                            IsUploader = p.IsUploader,
-                            Spawns = p.Spawns
-                                .OrderBy(s => s.Breakpoint)
-                                .Select(s => new SpawnDto
-                                {
-                                    Breakpoint = s.Breakpoint,
-                                    GasCount = s.GasCount,
-                                    Income = s.Income,
-                                    ArmyValue = s.ArmyValue,
-                                    KilledValue = s.KilledValue,
-                                    UpgradeSpent = s.UpgradeSpent,
-                                    Units = s.Units
-                                        .Select(u => new UnitDto
-                                        {
-                                            Count = u.Count,
-                                            Name = u.Unit!.Name,
-                                            Positions = null
-                                        })
-                                        .ToList()
-                                })
-                                .ToList(),
-                            TierUpgrades = p.TierUpgrades.ToList(),
-                            Refineries = p.Refineries.ToList(),
-                            Upgrades = p.Upgrades
-                                .Select(u => new UpgradeDto
-                                {
-                                    Gameloop = u.Gameloop,
-                                    Name = u.Upgrade!.Name
-                                })
-                                .ToList(),
-                            Player = new PlayerDto
-                            {
-                                PlayerId = p.Player!.PlayerId,
-                                Name = p.Player.Name,
-                                ToonId = new ToonIdDto
-                                {
-                                    Region = p.Player.ToonId.Region,
-                                    Realm = p.Player.ToonId.Realm,
-                                    Id = p.Player.ToonId.Id
-                                }
-                            }
-                        })
-                        .ToList()
-                }
-            })
-            .AsSplitQuery()
             .FirstOrDefaultAsync();
 
-        if (replay is null)
+        if (replayEntity is null)
         {
             return null;
         }
+
+        var replay = new ReplayDetails
+        {
+            ReplayHash = replayEntity.ReplayHash,
+            Replay = new ReplayDto
+            {
+                Title = replayEntity.Title,
+                FileName = replayEntity.FileName ?? string.Empty,
+                Version = replayEntity.Version,
+                GameMode = replayEntity.GameMode,
+                Gametime = replayEntity.Gametime,
+                RegionId = replayEntity.RegionId,
+                BaseBuild = replayEntity.BaseBuild,
+                Duration = replayEntity.Duration,
+                Cannon = replayEntity.Cannon,
+                Bunker = replayEntity.Bunker,
+                WinnerTeam = replayEntity.WinnerTeam,
+                MiddleChanges = replayEntity.MiddleChanges.ToList(),
+                CompatHash = replayEntity.CompatHash,
+            }
+        };
+
+        var players = await context.ReplayPlayers
+            .AsNoTracking()
+            .Where(p => p.ReplayId == replayEntity.ReplayId)
+            .Include(p => p.Player)
+            .OrderBy(p => p.GamePos)
+            .ToListAsync();
+
+        var playerIds = players.Select(p => p.ReplayPlayerId).ToList();
+        var spawns = await (
+            from spawn in context.Spawns.AsNoTracking()
+            where playerIds.Contains(spawn.ReplayPlayerId)
+            select new ReplayDetailSpawnRow(
+                spawn.ReplayPlayerId,
+                spawn.SpawnId,
+                spawn.Breakpoint,
+                spawn.GasCount,
+                spawn.Income,
+                spawn.ArmyValue,
+                spawn.KilledValue,
+                spawn.UpgradeSpent))
+            .ToListAsync();
+
+        var spawnIds = spawns.Select(s => s.SpawnId).ToList();
+        var units = await (
+            from spawnUnit in context.SpawnUnits.AsNoTracking()
+            where spawnIds.Contains(spawnUnit.SpawnId)
+            select new ReplayDetailUnitRow(
+                spawnUnit.SpawnId,
+                spawnUnit.Count,
+                spawnUnit.Unit!.Name))
+            .ToListAsync();
+
+        var upgrades = await (
+            from upgrade in context.PlayerUpgrades.AsNoTracking()
+            let replayPlayerId = EF.Property<int?>(upgrade, "ReplayPlayerId")
+            where replayPlayerId.HasValue && playerIds.Contains(replayPlayerId.Value)
+            select new ReplayDetailUpgradeRow(
+                replayPlayerId.Value,
+                upgrade.Gameloop,
+                upgrade.Upgrade!.Name))
+            .ToListAsync();
+
+        var spawnsByPlayerId = spawns.ToLookup(spawn => spawn.ReplayPlayerId);
+        var unitsBySpawnId = units.ToLookup(unit => unit.SpawnId);
+        var upgradesByPlayerId = upgrades.ToLookup(upgrade => upgrade.ReplayPlayerId);
+
+        replay.Replay.Players = players
+            .Select(player => new ReplayPlayerDto
+            {
+                CompatHash = player.CompatHash,
+                Name = player.Name,
+                Clan = player.Clan,
+                Race = player.Race,
+                SelectedRace = player.SelectedRace,
+                GamePos = player.GamePos,
+                TeamId = player.TeamId,
+                Result = player.Result,
+                Duration = player.Duration,
+                Apm = player.Apm,
+                Messages = player.Messages,
+                Pings = player.Pings,
+                IsMvp = player.IsMvp,
+                IsUploader = player.IsUploader,
+                Spawns = spawnsByPlayerId[player.ReplayPlayerId]
+                    .OrderBy(spawn => spawn.Breakpoint)
+                    .Select(spawn => new SpawnDto
+                    {
+                        Breakpoint = spawn.Breakpoint,
+                        GasCount = spawn.GasCount,
+                        Income = spawn.Income,
+                        ArmyValue = spawn.ArmyValue,
+                        KilledValue = spawn.KilledValue,
+                        UpgradeSpent = spawn.UpgradeSpent,
+                        Units = unitsBySpawnId[spawn.SpawnId]
+                            .Select(unit => new UnitDto
+                            {
+                                Count = unit.Count,
+                                Name = unit.UnitName,
+                                Positions = null
+                            })
+                            .ToList()
+                    })
+                    .ToList(),
+                TierUpgrades = player.TierUpgrades.ToList(),
+                Refineries = player.Refineries.ToList(),
+                Upgrades = upgradesByPlayerId[player.ReplayPlayerId]
+                    .Select(upgrade => new UpgradeDto
+                    {
+                        Gameloop = upgrade.Gameloop,
+                        Name = upgrade.Name
+                    })
+                    .ToList(),
+                Player = new PlayerDto
+                {
+                    PlayerId = player.Player!.PlayerId,
+                    Name = player.Player.Name,
+                    ToonId = new ToonIdDto
+                    {
+                        Region = player.Player.ToonId.Region,
+                        Realm = player.Player.ToonId.Realm,
+                        Id = player.Player.ToonId.Id
+                    }
+                }
+            })
+            .ToList();
 
         var replayRatings = await context.ReplayRatings
             .Where(x => x.Replay!.ReplayHash == replayHash)
@@ -679,3 +725,22 @@ internal sealed record SpawnPositionRow(
     string UnitName,
     int[] Positions);
 
+internal sealed record ReplayDetailSpawnRow(
+    int ReplayPlayerId,
+    int SpawnId,
+    Breakpoint Breakpoint,
+    int GasCount,
+    int Income,
+    int ArmyValue,
+    int KilledValue,
+    int UpgradeSpent);
+
+internal sealed record ReplayDetailUnitRow(
+    int SpawnId,
+    int Count,
+    string UnitName);
+
+internal sealed record ReplayDetailUpgradeRow(
+    int ReplayPlayerId,
+    int Gameloop,
+    string Name);

@@ -16,6 +16,9 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
     public IPlayerService PlayerService { get; set; } = null!;
 
     [Inject]
+    public IReplayRepository ReplayRepository { get; set; } = null!;
+
+    [Inject]
     public IOptions<HostOptions> HostOptions { get; set; } = null!;
 
     [Parameter, EditorRequired]
@@ -44,19 +47,49 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
     bool showRefineries;
     bool showLeavers;
     private Lazy<Task<IJSObjectReference>> moduleTask = null!;
+    private string? currentReplayHash;
+    private ReplayDto? currentReplay;
+    private bool showSpawnPlayback;
+    private bool loadingSpawnPlayback;
+    private bool spawnPlaybackLoadFailed;
+    private SpawnPlaybackSidecarDto? spawnPlaybackSidecar;
 
     protected override void OnInitialized()
     {
         moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
        "import", "./_content/dsstats.weblib/js/annotationChart.js?v=0.6").AsTask());
-        _replayHelper = new ReplayHelper(ReplayDetails);
         base.OnInitialized();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_replayHelper is null || currentReplayHash != ReplayDetails.ReplayHash || ReplayHashIsMissingAndReplayChanged())
+        {
+            SetReplayDetails(ReplayDetails);
+        }
     }
 
     public void Update(ReplayDetails replayDetails)
     {
+        SetReplayDetails(replayDetails);
+    }
+
+    private void SetReplayDetails(ReplayDetails replayDetails)
+    {
         ReplayDetails = replayDetails;
+        currentReplayHash = replayDetails.ReplayHash;
+        currentReplay = replayDetails.Replay;
         _replayHelper = new ReplayHelper(ReplayDetails);
+        showSpawnPlayback = false;
+        loadingSpawnPlayback = false;
+        spawnPlaybackLoadFailed = false;
+        spawnPlaybackSidecar = null;
+    }
+
+    private bool ReplayHashIsMissingAndReplayChanged()
+    {
+        return string.IsNullOrEmpty(ReplayDetails.ReplayHash)
+            && !ReferenceEquals(currentReplay, ReplayDetails.Replay);
     }
 
     public void Scroll(bool left)
@@ -74,6 +107,40 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
         };
         var stats = await PlayerService.GetPlayerStats(request);
         await OnPlayerRequest.InvokeAsync(stats);
+    }
+
+    private bool HasSpawnPlayback => ReplayDetails.Replay.SpawnPlayback?.Available == true;
+
+    private async Task ToggleSpawnPlayback()
+    {
+        if (!HasSpawnPlayback)
+        {
+            return;
+        }
+
+        if (showSpawnPlayback)
+        {
+            showSpawnPlayback = false;
+            return;
+        }
+
+        showSpawnPlayback = true;
+        spawnPlaybackLoadFailed = false;
+        if (spawnPlaybackSidecar is not null)
+        {
+            return;
+        }
+
+        loadingSpawnPlayback = true;
+        try
+        {
+            spawnPlaybackSidecar = await _replayHelper.GetSpawnPlaybackSidecarAsync(ReplayRepository);
+            spawnPlaybackLoadFailed = spawnPlaybackSidecar is null;
+        }
+        finally
+        {
+            loadingSpawnPlayback = false;
+        }
     }
 
     public void Close()
