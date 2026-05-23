@@ -216,6 +216,50 @@ public sealed class SpawnPlaybackFactoryTests
     }
 
     [TestMethod]
+    public void Create_PlacesDefaultLandmarksAtFixedObjectivePositions()
+    {
+        var replay = new DirectStrikeReplay
+        {
+            Duration = TimeSpan.FromSeconds(1),
+            Players = new ReadOnlyCollection<DirectStrikePlayer>([])
+        };
+
+        var playback = SpawnPlaybackFactory.Create(replay);
+
+        AssertLandmarksAreAtFixedObjectivePositions(playback.Landmarks);
+    }
+
+    [TestMethod]
+    public void CreateFromReplayDto_PlacesLandmarksAtFixedObjectivePositions()
+    {
+        var replay = new dsstats.shared.ReplayDto
+        {
+            Players =
+            [
+                new()
+                {
+                    Name = "Team 1",
+                    GamePos = 1,
+                    TeamId = 1,
+                    Race = dsstats.shared.Commander.Terran
+                },
+                new()
+                {
+                    Name = "Team 2",
+                    GamePos = 4,
+                    TeamId = 2,
+                    Race = dsstats.shared.Commander.Terran
+                }
+            ]
+        };
+        var sidecar = new dsstats.shared.SpawnPlaybackSidecarDto(1, 112, [], []);
+
+        var playback = SpawnPlaybackFactory.Create(replay, sidecar);
+
+        AssertLandmarksAreAtFixedObjectivePositions(playback.Landmarks);
+    }
+
+    [TestMethod]
     public void Create_PreservesProvidedUnitKillGameloops()
     {
         var replay = new DirectStrikeReplay
@@ -490,5 +534,30 @@ public sealed class SpawnPlaybackFactoryTests
                 }
             ])
         };
+    }
+
+    private static void AssertLandmarksAreAtFixedObjectivePositions(IReadOnlyList<SpawnPlaybackLandmark> landmarks)
+    {
+        var nexus = landmarks.Single(landmark => landmark.Name == "Nexus");
+        var planetary = landmarks.Single(landmark => landmark.Name == "Planetary");
+        var bunker = landmarks.Single(landmark => landmark.Name == "Bunker");
+        var cannon = landmarks.Single(landmark => landmark.Name == "Cannon");
+
+        Assert.AreEqual(1, planetary.TeamId);
+        Assert.AreEqual(160, planetary.X);
+        Assert.AreEqual(152, planetary.Y);
+        Assert.AreEqual(1, bunker.TeamId);
+        Assert.AreEqual(146, bunker.X);
+        Assert.AreEqual(138, bunker.Y);
+        Assert.AreEqual(2, nexus.TeamId);
+        Assert.AreEqual(96, nexus.X);
+        Assert.AreEqual(88, nexus.Y);
+        Assert.AreEqual(2, cannon.TeamId);
+        Assert.AreEqual(110, cannon.X);
+        Assert.AreEqual(102, cannon.Y);
+        Assert.AreEqual(SpawnPlaybackFactory.MapWidth - planetary.X, nexus.X);
+        Assert.AreEqual(SpawnPlaybackFactory.MapHeight - planetary.Y, nexus.Y);
+        Assert.AreEqual(SpawnPlaybackFactory.MapWidth - bunker.X, cannon.X);
+        Assert.AreEqual(SpawnPlaybackFactory.MapHeight - bunker.Y, cannon.Y);
     }
 }

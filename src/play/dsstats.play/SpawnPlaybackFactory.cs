@@ -11,13 +11,21 @@ public static class SpawnPlaybackFactory
     public const int MapWidth = 256;
     public const int MapHeight = 240;
     private const int SpawnPairWindowGameloops = 112;
+    private const int PlanetaryX = 160;
+    private const int PlanetaryY = 152;
+    private const int BunkerX = 146;
+    private const int BunkerY = 138;
+    private const int NexusX = 96;
+    private const int NexusY = 88;
+    private const int CannonX = 110;
+    private const int CannonY = 102;
 
     private static readonly SpawnPlaybackLandmark[] DefaultLandmarks =
     [
-        new("Nexus", "Base", 1, 190, 184, 14, "#5DADEC", 0),
-        new("Cannon", "Defense", 1, 151, 141, 9, "#F8D34A", 0),
-        new("Bunker", "Defense", 2, 105, 99, 9, "#F59E0B", 0),
-        new("Planetary", "Base", 2, 66, 56, 14, "#F87171", 0),
+        new("Planetary", "Base", 1, PlanetaryX, PlanetaryY, 14, "#5DADEC", 0),
+        new("Bunker", "Defense", 1, BunkerX, BunkerY, 9, "#F8D34A", 0),
+        new("Cannon", "Defense", 2, CannonX, CannonY, 9, "#F59E0B", 0),
+        new("Nexus", "Base", 2, NexusX, NexusY, 14, "#F87171", 0),
     ];
 
     public static SpawnPlaybackReplay Create(
@@ -309,10 +317,10 @@ public static class SpawnPlaybackFactory
     {
         return
         [
-            new("Nexus", "Base", 1, 190, 184, 14, "#5DADEC", 0),
-            new("Cannon", "Defense", 1, 151, 141, 9, "#F8D34A", 0, ToGameloopOrNull(replay.Cannon)),
-            new("Bunker", "Defense", 2, 105, 99, 9, "#F59E0B", 0, ToGameloopOrNull(replay.Bunker)),
-            new("Planetary", "Base", 2, 66, 56, 14, "#F87171", 0),
+            new("Planetary", "Base", 1, PlanetaryX, PlanetaryY, 14, "#5DADEC", 0),
+            new("Bunker", "Defense", 1, BunkerX, BunkerY, 9, "#F8D34A", 0, ToGameloopOrNull(replay.Bunker)),
+            new("Cannon", "Defense", 2, CannonX, CannonY, 9, "#F59E0B", 0, ToGameloopOrNull(replay.Cannon)),
+            new("Nexus", "Base", 2, NexusX, NexusY, 14, "#F87171", 0),
         ];
     }
 

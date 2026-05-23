@@ -30,8 +30,7 @@ const TEAM_SPAWN_AREAS = [
         teamId: 2,
         label: "Team 2",
         color: "#F87171",
-        labelSegment: [0, 1],
-        labelSide: -1,
+        labelSegment: [2, 3],
         points: [
             { x: 84, y: 93 },
             { x: 101, y: 76 },

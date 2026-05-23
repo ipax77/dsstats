@@ -12,6 +12,13 @@ The current focus is the spawn playback canvas used from `/te/play`.
   - Team 1/top right: `(165,174) -> (182,157) -> (171,146) -> (154,163)`
   - Team 2/bottom left: `(84,93) -> (101,76) -> (90,65) -> (73,82)`
 - Team 1 is the top-right side on the canvas; Team 2 is the bottom-left side.
+- Fixed objective landmark positions come from zero-gameloop tracker born events and are stable across replays:
+  - Team 1/top right: Planetary `(160,152)`, Bunker `(146,138)`
+  - Team 2/bottom left: Nexus `(96,88)`, Cannon `(110,102)`
+- The objective pairs mirror around the map bounds:
+  - Planetary `(160,152)` mirrors to Nexus `(96,88)` using `256 - x`, `240 - y`.
+  - Bunker `(146,138)` mirrors to Cannon `(110,102)` using `256 - x`, `240 - y`.
+- Canvas spawn-area labels are drawn from configured polygon edge segments. Team 2 uses segment `[2,3]` so its label sits on the opposite long edge from Team 1.
 
 ## Playback Data Facts
 
@@ -22,6 +29,7 @@ The current focus is the spawn playback canvas used from `/te/play`.
   - The first `MiddleChanges` value is when `FirstMiddleControlTeam` takes mid.
   - Later values alternate control between teams.
 - Objective landmarks can disappear when the source objective born event has a matching death gameloop.
+- `SpawnPlaybackSidecarDto` projection/cell constants are for compressing and decoding spawn-unit positions only. They are not objective landmark storage, and removing them would break sidecar position decoding.
 
 ## Newly Measured Timing Facts
 
@@ -79,7 +87,7 @@ Scan a replay directory with a limit:
 dotnet run --project src/cli/dsstats.spawnscan.cli/dsstats.spawnscan.cli.csproj -- "C:\path\to\Replays\Multiplayer" 10
 ```
 
-The scanner reports decode time, parse time, spawn intervals, spawn windows, first-spawn timings, first-middle speed estimates, and unit lifetime/disappear summaries.
+The scanner reports decode time, parse time, spawn intervals, spawn windows, first-spawn timings, first-middle speed estimates, and unit lifetime/disappear summaries. For ad hoc geometry verification, inspect zero-gameloop `Objective*` born events from the parser; those are the source of the fixed objective landmark coordinates listed above.
 
 ## Open Questions
 
