@@ -1072,6 +1072,39 @@ namespace dsstats.migrations.mysql.Migrations
                     b.ToTable("ReplayRatings");
                 });
 
+            modelBuilder.Entity("dsstats.db.ReplaySpawnPlayback", b =>
+                {
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompressedLength")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("Compression")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<ushort>("FormatVersion")
+                        .HasColumnType("smallint unsigned");
+
+                    b.Property<byte[]>("Payload")
+                        .IsRequired()
+                        .HasColumnType("longblob");
+
+                    b.Property<int>("UncompressedLength")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UnitCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReplayId");
+
+                    b.ToTable("ReplaySpawnPlaybacks");
+                });
+
             modelBuilder.Entity("dsstats.db.ReplayTeamBuildDetail", b =>
                 {
                     b.Property<int>("ReplayTeamBuildDetailId")
@@ -1848,6 +1881,17 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Navigation("Replay");
                 });
 
+            modelBuilder.Entity("dsstats.db.ReplaySpawnPlayback", b =>
+                {
+                    b.HasOne("dsstats.db.Replay", "Replay")
+                        .WithOne("SpawnPlayback")
+                        .HasForeignKey("dsstats.db.ReplaySpawnPlayback", "ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
+                });
+
             modelBuilder.Entity("dsstats.db.ReplayTeamBuildDetail", b =>
                 {
                     b.HasOne("dsstats.db.ReplayPlayer", "FollowerReplayPlayer")
@@ -2010,6 +2054,8 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Navigation("Players");
 
                     b.Navigation("Ratings");
+
+                    b.Navigation("SpawnPlayback");
                 });
 
             modelBuilder.Entity("dsstats.db.ReplayBuildDetail", b =>

@@ -19,6 +19,16 @@ public class ReplayDto
     public int WinnerTeam { get; set; }
     public List<int> MiddleChanges { get; set; } = [];
     public List<ReplayPlayerDto> Players { get; set; } = [];
+    public SpawnPlaybackInfoDto? SpawnPlayback { get; set; }
+}
+
+public sealed class SpawnPlaybackInfoDto
+{
+    public bool Available { get; set; }
+    public ushort FormatVersion { get; set; }
+    public int CompressedLength { get; set; }
+    public int UncompressedLength { get; set; }
+    public int UnitCount { get; set; }
 }
 
 public class ReplayPlayerDto

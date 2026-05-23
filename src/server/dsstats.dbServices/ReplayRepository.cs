@@ -56,12 +56,36 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
             .ToListAsync();
 
 
+        var replayDto = replay.ToDto();
+        replayDto.SpawnPlayback = await context.ReplaySpawnPlaybacks
+            .AsNoTracking()
+            .Where(x => x.ReplayId == replay.ReplayId)
+            .Select(x => new SpawnPlaybackInfoDto
+            {
+                Available = true,
+                FormatVersion = x.FormatVersion,
+                CompressedLength = x.CompressedLength,
+                UncompressedLength = x.UncompressedLength,
+                UnitCount = x.UnitCount
+            })
+            .FirstOrDefaultAsync();
+
         return new()
         {
             ReplayHash = replay.ReplayHash,
-            Replay = replay.ToDto(),
+            Replay = replayDto,
             ReplayRatings = replayRatings,
         };
+    }
+
+    public async Task<byte[]?> GetReplaySpawnPlayback(string replayHash, CancellationToken token = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(token);
+        return await context.ReplaySpawnPlaybacks
+            .AsNoTracking()
+            .Where(x => x.Replay!.ReplayHash == replayHash)
+            .Select(x => x.Payload)
+            .FirstOrDefaultAsync(token);
     }
 
     public async Task<ReplayDetails?> GetNextReplay(bool after, string replayHash)

@@ -22,6 +22,19 @@ public class ReplaysController(IReplayRepository replayRepository) : Controller
     }
 
     [EnableRateLimiting("fixed")]
+    [HttpGet("{replayHash}/spawn-playback")]
+    public async Task<IActionResult> GetReplaySpawnPlayback(string replayHash, CancellationToken token)
+    {
+        var payload = await replayRepository.GetReplaySpawnPlayback(replayHash, token);
+        if (payload is null || payload.Length == 0)
+        {
+            return NotFound();
+        }
+
+        return File(payload, "application/octet-stream");
+    }
+
+    [EnableRateLimiting("fixed")]
     [HttpGet("rating/{replayHash}")]
     public async Task<IActionResult> GetReplayRating(string replayHash)
     {

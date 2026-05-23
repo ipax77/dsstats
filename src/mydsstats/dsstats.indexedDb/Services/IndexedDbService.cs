@@ -45,6 +45,18 @@ public class IndexedDbService
         return await module.InvokeAsync<ReplayDto?>($"getReplayByHash", replayHash);
     }
 
+    public async Task SaveReplaySpawnPlaybackAsync(string replayHash, byte[] payload)
+    {
+        var module = await _moduleTask;
+        await module.InvokeVoidAsync("saveReplaySpawnPlayback", replayHash, payload);
+    }
+
+    public async Task<byte[]?> GetReplaySpawnPlaybackAsync(string replayHash)
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<byte[]?>("getReplaySpawnPlayback", replayHash);
+    }
+
     public async Task SaveReplayRatingAsync(string replayHash, ReplayRatingDto rating)
     {
         var module = await _moduleTask;

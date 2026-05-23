@@ -61,6 +61,7 @@ public class DsstatsContext : DbContext
     public DbSet<InHouseGameSessionSimplified> InHouseGameSessions { get; set; }
     public DbSet<InHouseGameSessionStateSnapshot> InHouseGameSessionStateSnapshots { get; set; }
     public DbSet<ReplayObservers> ReplayObservers { get; set; }
+    public DbSet<ReplaySpawnPlayback> ReplaySpawnPlaybacks { get; set; }
 
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
 
@@ -190,6 +191,16 @@ public class DsstatsContext : DbContext
             entity.HasOne(i => i.Replay)
                 .WithMany()
                 .HasForeignKey(i => i.ReplayId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReplaySpawnPlayback>(entity =>
+        {
+            entity.HasKey(i => i.ReplayId);
+            entity.Property(i => i.Payload).IsRequired();
+            entity.HasOne(i => i.Replay)
+                .WithOne(i => i.SpawnPlayback)
+                .HasForeignKey<ReplaySpawnPlayback>(i => i.ReplayId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

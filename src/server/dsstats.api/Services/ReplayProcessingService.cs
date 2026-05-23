@@ -71,11 +71,14 @@ public class ReplayProcessingService(
             var sc2Replay = await replayDecoder.DecodeAsync(job.BlobFilePath, replayDecoderOptions, token);
             ArgumentNullException.ThrowIfNull(sc2Replay, "decoding replay failed.");
 
+            var directStrikeReplay = DsstatsParser.ParseDirectStrikeReplay(sc2Replay);
+            var spawnPlaybackSidecar = SpawnPlaybackSidecarFactory.Create(sc2Replay, directStrikeReplay);
             var replay = DsstatsParser.ParseReplay(sc2Replay);
             ArgumentNullException.ThrowIfNull(replay, "parsing replay failed.");
 
             // 2. Insert into DB
             await importService.InsertReplays([replay]);
+            await SaveSpawnPlayback(replay.ComputeHash(), spawnPlaybackSidecar, token);
 
             // 3. Update job metadata
             var dbJob = await context.ReplayUploadJobs.FindAsync(job.ReplayUploadJobId, token);
@@ -129,6 +132,51 @@ public class ReplayProcessingService(
                 Error = ex.Message,
             });
         }
+    }
+
+    private async Task SaveSpawnPlayback(string replayHash, SpawnPlaybackSidecarDto sidecar, CancellationToken token)
+    {
+        var replayId = await contextFactory.CreateDbContextAsync(token);
+        await using var context = replayId;
+        int dbReplayId = await context.Replays
+            .Where(x => x.ReplayHash == replayHash)
+            .Select(x => x.ReplayId)
+            .FirstOrDefaultAsync(token);
+        if (dbReplayId == 0)
+        {
+            logger.LogWarning("Replay {ReplayHash} was imported but not found for spawn playback sidecar save", replayHash);
+            return;
+        }
+
+        var encoded = SpawnPlaybackSidecarCodec.EncodeWithMetadata(sidecar);
+
+        var existing = await context.ReplaySpawnPlaybacks.FindAsync([dbReplayId], token);
+        if (existing is null)
+        {
+            context.ReplaySpawnPlaybacks.Add(new()
+            {
+                ReplayId = dbReplayId,
+                FormatVersion = SpawnPlaybackSidecarCodec.FormatVersion,
+                Compression = SpawnPlaybackSidecarCodec.Compression,
+                CompressedLength = encoded.CompressedLength,
+                UncompressedLength = encoded.UncompressedLength,
+                UnitCount = encoded.UnitCount,
+                Payload = encoded.Payload,
+                CreatedAt = DateTime.UtcNow,
+            });
+        }
+        else
+        {
+            existing.FormatVersion = SpawnPlaybackSidecarCodec.FormatVersion;
+            existing.Compression = SpawnPlaybackSidecarCodec.Compression;
+            existing.CompressedLength = encoded.CompressedLength;
+            existing.UncompressedLength = encoded.UncompressedLength;
+            existing.UnitCount = encoded.UnitCount;
+            existing.Payload = encoded.Payload;
+            existing.CreatedAt = DateTime.UtcNow;
+        }
+
+        await context.SaveChangesAsync(token);
     }
 
     private async Task NotifyHub(DecodeFinishedEventArgs e)

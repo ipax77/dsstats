@@ -33,6 +33,11 @@ public class ReplayRepository(IndexedDbService dbService, ILogger<ReplayReposito
         return [];
     }
 
+    public async Task<byte[]?> GetReplaySpawnPlayback(string replayHash, CancellationToken token = default)
+    {
+        return await dbService.GetReplaySpawnPlaybackAsync(replayHash);
+    }
+
 
     public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
     {

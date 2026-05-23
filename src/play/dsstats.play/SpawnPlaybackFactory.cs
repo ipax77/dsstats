@@ -118,6 +118,104 @@ public static class SpawnPlaybackFactory
             players);
     }
 
+    public static SpawnPlaybackReplay Create(
+        dsstats.shared.ReplayDto replay,
+        dsstats.shared.SpawnPlaybackSidecarDto sidecar)
+    {
+        ArgumentNullException.ThrowIfNull(replay);
+        ArgumentNullException.ThrowIfNull(sidecar);
+
+        Dictionary<(SharedCommander Commander, string UnitName), (double Radius, string Color)> displayCache = [];
+        Dictionary<int, dsstats.shared.ReplayPlayerDto> replayPlayersByGamePos = replay.Players
+            .ToDictionary(player => player.GamePos);
+        List<SpawnPlaybackPlayer> players = new(sidecar.Players.Count);
+        int unitsWithDiedEvent = 0;
+        int unitsWithDiedPosition = 0;
+        List<(int Gameloop, int Delta)> spawnEvents = [];
+
+        foreach (var sidecarPlayer in sidecar.Players.OrderBy(player => player.GamePos))
+        {
+            if (!replayPlayersByGamePos.TryGetValue(sidecarPlayer.GamePos, out var replayPlayer))
+            {
+                continue;
+            }
+
+            var commander = replayPlayer.Race;
+            List<SpawnPlaybackUnit> units = new(sidecarPlayer.Units.Count);
+            foreach (var sidecarUnit in sidecarPlayer.Units)
+            {
+                if (sidecarUnit.DiedGameloop is not null)
+                {
+                    unitsWithDiedEvent++;
+                }
+                if (sidecarUnit.DiedX is not null && sidecarUnit.DiedY is not null)
+                {
+                    unitsWithDiedPosition++;
+                }
+
+                var displayInfo = GetDisplayInfo(displayCache, commander, sidecarUnit.Name);
+                var target = GetTarget(sidecarUnit.SpawnX, sidecarUnit.SpawnY, sidecarUnit.DiedX, sidecarUnit.DiedY);
+                var unitInfo = UnitMap.GetUnitInfo(sidecarUnit.Name, commander);
+                units.Add(new(
+                    sidecarUnit.UnitIndex,
+                    unitInfo.Name,
+                    sidecarUnit.SpawnNumber,
+                    sidecarUnit.SpawnGameloop,
+                    sidecarUnit.SpawnX,
+                    sidecarUnit.SpawnY,
+                    sidecarUnit.DiedGameloop,
+                    sidecarUnit.DiedX,
+                    sidecarUnit.DiedY,
+                    target.X,
+                    target.Y,
+                    displayInfo.Radius,
+                    displayInfo.Color,
+                    sidecarUnit.KillGameloops));
+            }
+
+            foreach (var spawn in units
+                .GroupBy(unit => unit.SpawnNumber)
+                .Select(group => new
+                {
+                    Start = group.Min(unit => unit.SpawnGameloop),
+                    End = group.Max(unit => unit.DiedGameloop ?? unit.SpawnGameloop)
+                }))
+            {
+                spawnEvents.Add((spawn.Start, 1));
+                spawnEvents.Add((spawn.End, -1));
+            }
+
+            players.Add(new(
+                replayPlayer.Name,
+                replayPlayer.TeamId,
+                replayPlayer.GamePos,
+                commander.ToString(),
+                replayPlayer.Refineries.Select(ToGameloop).ToArray(),
+                units));
+        }
+
+        var landmarks = GetReplayDtoLandmarks(replay);
+        return new(
+            Math.Max(1, sidecar.DurationGameloop),
+            Math.Max(1, sidecar.StepGameloops),
+            GetBounds(players, landmarks),
+            new(
+                players.Count,
+                sidecar.Snapshots.Count,
+                players.Sum(player => player.Units.Count),
+                unitsWithDiedEvent,
+                unitsWithDiedPosition,
+                GetMaxSimultaneousActiveSpawns(spawnEvents)),
+            GetMiddleControl(replay),
+            landmarks,
+            [],
+            sidecar.Snapshots.Select(snapshot => new SpawnPlaybackSnapshot(
+                snapshot.SpawnNumber,
+                snapshot.StartGameloop,
+                snapshot.EndGameloop)).ToArray(),
+            players);
+    }
+
     public static SpawnPlaybackUnitKey GetUnitKey(
         int unitIndex,
         int spawnGameloop,
@@ -189,6 +287,33 @@ public static class SpawnPlaybackFactory
         }
 
         return new(replay.FirstMiddleControlTeam, changeGameloops);
+    }
+
+    private static SpawnPlaybackMiddleControl GetMiddleControl(dsstats.shared.ReplayDto replay)
+    {
+        if (replay.MiddleChanges.Count < 2 || replay.MiddleChanges[0] is not (1 or 2))
+        {
+            return new(0, []);
+        }
+
+        int[] changeGameloops = new int[replay.MiddleChanges.Count - 1];
+        for (int i = 1; i < replay.MiddleChanges.Count; i++)
+        {
+            changeGameloops[i - 1] = ToGameloop(replay.MiddleChanges[i]);
+        }
+
+        return new(replay.MiddleChanges[0], changeGameloops);
+    }
+
+    private static SpawnPlaybackLandmark[] GetReplayDtoLandmarks(dsstats.shared.ReplayDto replay)
+    {
+        return
+        [
+            new("Nexus", "Base", 1, 190, 184, 14, "#5DADEC", 0),
+            new("Cannon", "Defense", 1, 151, 141, 9, "#F8D34A", 0, ToGameloopOrNull(replay.Cannon)),
+            new("Bunker", "Defense", 2, 105, 99, 9, "#F59E0B", 0, ToGameloopOrNull(replay.Bunker)),
+            new("Planetary", "Base", 2, 66, 56, 14, "#F87171", 0),
+        ];
     }
 
     private static int[] GetRefineryGameloops(TimeSpan[] refineryTimes)
@@ -398,5 +523,17 @@ public static class SpawnPlaybackFactory
         return value <= TimeSpan.Zero
             ? 0
             : (int)Math.Round(value.TotalSeconds * GameloopsPerSecond);
+    }
+
+    private static int ToGameloop(int seconds)
+    {
+        return seconds <= 0
+            ? 0
+            : (int)Math.Round(seconds * GameloopsPerSecond);
+    }
+
+    private static int? ToGameloopOrNull(int seconds)
+    {
+        return seconds <= 0 ? null : ToGameloop(seconds);
     }
 }

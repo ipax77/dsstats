@@ -109,6 +109,28 @@ export async function getReplayByHash(hash: string): Promise<ReplayDto | undefin
     });
 }
 
+export async function saveReplaySpawnPlayback(replayHash: string, payload: Uint8Array): Promise<void> {
+    const database = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.spawnPlayback, "readwrite");
+        tx.objectStore(STORES.spawnPlayback).put({ replayHash, payload });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+export async function getReplaySpawnPlayback(replayHash: string): Promise<Uint8Array | undefined> {
+    const database = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction(STORES.spawnPlayback, "readonly");
+        const request = tx.objectStore(STORES.spawnPlayback).get(replayHash);
+        request.onsuccess = () => resolve(request.result?.payload as Uint8Array | undefined);
+        request.onerror = () => reject(request.error);
+    });
+}
+
 /**
  * Get the latest N unuploaded replays and return their hashes + gzipped data.
  */
