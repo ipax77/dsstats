@@ -35,6 +35,61 @@ public sealed class SpawnPlaybackImportServiceTests
     }
 
     [TestMethod]
+    public async Task InsertReplayImports_NewReplayWithSidecar_StoresNullSpawnUnitPositions()
+    {
+        using var serviceProvider = BuildServiceProvider(out var connection);
+        try
+        {
+            var importService = serviceProvider.GetRequiredService<IImportService>();
+
+            await importService.InsertReplayImports([new(CreateReplayWithSpawnPositions("Direct Strike", 900), CreateSidecar("Marine"))]);
+
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            var spawnUnit = await context.SpawnUnits.SingleAsync();
+
+            Assert.IsNull(spawnUnit.Positions);
+
+            var replay = await context.Replays
+                .Include(r => r.Players)
+                    .ThenInclude(p => p.Player)
+                .Include(r => r.Players)
+                    .ThenInclude(p => p.Spawns)
+                        .ThenInclude(s => s.Units)
+                            .ThenInclude(u => u.Unit)
+                .SingleAsync();
+            Assert.IsNull(replay.ToDto().Players[0].Spawns[0].Units[0].Positions);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [TestMethod]
+    public async Task InsertReplayImports_NewReplayWithoutSidecar_KeepsSpawnUnitPositions()
+    {
+        using var serviceProvider = BuildServiceProvider(out var connection);
+        try
+        {
+            var importService = serviceProvider.GetRequiredService<IImportService>();
+
+            await importService.InsertReplayImports([new(CreateReplayWithSpawnPositions("Direct Strike", 900), null)]);
+
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            var spawnUnit = await context.SpawnUnits.SingleAsync();
+
+            Assert.IsNotNull(spawnUnit.Positions);
+            CollectionAssert.AreEqual(new[] { 165, 174, 166, 173 }, spawnUnit.Positions!);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [TestMethod]
     public async Task InsertReplayImports_DuplicateKeptWithExistingSidecar_DoesNotOverwrite()
     {
         using var serviceProvider = BuildServiceProvider(out var connection);
@@ -182,6 +237,26 @@ public sealed class SpawnPlaybackImportServiceTests
                 CreatePlayer(4)
             ]
         };
+    }
+
+    private static ReplayDto CreateReplayWithSpawnPositions(string title, int duration)
+    {
+        var replay = CreateReplay(title, duration);
+        replay.Players[0].Spawns.Add(new()
+        {
+            Breakpoint = Breakpoint.Min5,
+            GasCount = 1,
+            Units =
+            [
+                new()
+                {
+                    Name = "Marine",
+                    Count = 2,
+                    Positions = [165, 174, 166, 173]
+                }
+            ]
+        });
+        return replay;
     }
 
     private static ReplayPlayerDto CreatePlayer(int gamePos)

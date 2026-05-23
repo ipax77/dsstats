@@ -84,6 +84,29 @@ public class UnitDto
 {
     public string Name { get; set; } = string.Empty;
     public int Count { get; set; }
+    public List<int>? Positions { get; set; }
+}
+
+public sealed class ReplaySpawnPositionsDto
+{
+    public List<ReplayPlayerSpawnPositionsDto> Players { get; set; } = [];
+}
+
+public sealed class ReplayPlayerSpawnPositionsDto
+{
+    public int GamePos { get; set; }
+    public List<SpawnPositionsDto> Spawns { get; set; } = [];
+}
+
+public sealed class SpawnPositionsDto
+{
+    public Breakpoint Breakpoint { get; set; }
+    public List<UnitPositionsDto> Units { get; set; } = [];
+}
+
+public sealed class UnitPositionsDto
+{
+    public string Name { get; set; } = string.Empty;
     public List<int> Positions { get; set; } = [];
 }
 

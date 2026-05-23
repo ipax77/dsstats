@@ -38,6 +38,7 @@
     bool isLoading;
 
     ReplayDetails? replayDetails;
+    private readonly SpawnPositionHydrationState spawnPositionHydration = new();
     BuildSpawn buildSpawn = new()
     {
         SpawnInfos = [
@@ -79,6 +80,10 @@
             isLoading = true;
             await InvokeAsync(StateHasChanged);
             replayDetails = await ReplayRepository.GetReplayDetails(ReplayHash);
+            if (replayDetails is not null)
+            {
+                await spawnPositionHydration.EnsureHydrated(replayDetails, ReplayRepository);
+            }
             var mybuildSpawn = GetBuildSpawn(replayDetails);
             buildSpawn.Update(mybuildSpawn);
         }

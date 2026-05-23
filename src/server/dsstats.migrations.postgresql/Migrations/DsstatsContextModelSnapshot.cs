@@ -1258,7 +1258,6 @@ namespace dsstats.migrations.postgresql.Migrations
                         .HasColumnType("integer");
 
                     b.PrimitiveCollection<int[]>("Positions")
-                        .IsRequired()
                         .HasColumnType("integer[]");
 
                     b.Property<int>("SpawnId")

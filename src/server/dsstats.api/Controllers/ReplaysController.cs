@@ -35,6 +35,19 @@ public class ReplaysController(IReplayRepository replayRepository) : Controller
     }
 
     [EnableRateLimiting("fixed")]
+    [HttpGet("{replayHash}/spawn-positions")]
+    public async Task<IActionResult> GetReplaySpawnPositions(string replayHash, CancellationToken token)
+    {
+        var positions = await replayRepository.GetReplaySpawnPositions(replayHash, token);
+        if (positions is null || positions.Players.Count == 0)
+        {
+            return NotFound();
+        }
+
+        return Ok(positions);
+    }
+
+    [EnableRateLimiting("fixed")]
     [HttpGet("rating/{replayHash}")]
     public async Task<IActionResult> GetReplayRating(string replayHash)
     {

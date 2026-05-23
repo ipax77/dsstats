@@ -1258,7 +1258,6 @@ namespace dsstats.migrations.mysql.Migrations
                         .HasColumnType("int");
 
                     b.PrimitiveCollection<string>("Positions")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<int>("SpawnId")

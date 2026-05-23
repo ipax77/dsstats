@@ -19,6 +19,12 @@ if (args.Length > 0 && string.Equals(args[0], "import-te-sidecars", StringCompar
     return;
 }
 
+if (args.Length > 0 && string.Equals(args[0], "trim-spawnunit-positions", StringComparison.OrdinalIgnoreCase))
+{
+    await RunTrimSpawnUnitPositions(args[1..]);
+    return;
+}
+
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration(cfg =>
     {
@@ -182,13 +188,15 @@ static async Task RunImportTeSidecars(string[] args)
         }
     }
 
+    string filePattern = options.AllReplays ? "*.SC2Replay" : "Direct Strike TE*.SC2Replay";
     var files = new DirectoryInfo(options.Path)
-        .GetFiles("Direct Strike TE*.SC2Replay", SearchOption.TopDirectoryOnly)
+        .GetFiles(filePattern, SearchOption.TopDirectoryOnly)
         .OrderByDescending(file => file.LastWriteTime)
         .Take(options.Take)
         .ToList();
 
-    Console.WriteLine($"Selected TE replay files: {files.Count}");
+    Console.WriteLine($"Selected replay files: {files.Count}");
+    Console.WriteLine($"Filter: {(options.AllReplays ? "all .SC2Replay files" : "Direct Strike TE only")}");
     Console.WriteLine($"Dry run: {options.DryRun}");
     Console.WriteLine($"Brotli level: {options.CompressionLevel}");
     Console.WriteLine();
@@ -229,7 +237,7 @@ static async Task RunImportTeSidecars(string[] args)
 
             var directStrikeReplay = DsstatsParser.ParseDirectStrikeReplay(sc2Replay);
             var replay = DsstatsParser.ParseReplay(sc2Replay);
-            if (!replay.Title.EndsWith("TE", StringComparison.Ordinal))
+            if (!options.AllReplays && !replay.Title.EndsWith("TE", StringComparison.Ordinal))
             {
                 errors.Add($"{file.Name}: decoded title is '{replay.Title}', not TE");
                 Console.WriteLine($"{file.Name}: skipped, decoded title is '{replay.Title}'");
@@ -295,6 +303,86 @@ static async Task RunImportTeSidecars(string[] args)
     }
 }
 
+static async Task RunTrimSpawnUnitPositions(string[] args)
+{
+    var options = TrimSpawnUnitPositionsOptions.Parse(args);
+    using var host = BuildLocalDevHost(args);
+
+    await using var context = await host.Services
+        .GetRequiredService<IDbContextFactory<DsstatsContext>>()
+        .CreateDbContextAsync();
+
+    await context.Database.MigrateAsync();
+
+    var before = await GetSpawnUnitPositionTrimStats(context);
+    Console.WriteLine("Trim SpawnUnit Positions");
+    Console.WriteLine($"Dry run: {!options.Execute}");
+    Console.WriteLine($"Rows with sidecar-backed positions: {before.AffectedRows:N0}");
+    Console.WriteLine($"Estimated serialized position bytes: {before.PositionBytes:N0} ({ToKiB(before.PositionBytes):N1} KiB)");
+
+    if (!options.Execute || before.AffectedRows == 0)
+    {
+        return;
+    }
+
+    var sw = Stopwatch.StartNew();
+    int updated = await context.Database.ExecuteSqlRawAsync("""
+        UPDATE SpawnUnits su
+        JOIN Spawns s ON s.SpawnId = su.SpawnId
+        JOIN ReplayPlayers rp ON rp.ReplayPlayerId = s.ReplayPlayerId
+        JOIN ReplaySpawnPlaybacks rsp ON rsp.ReplayId = rp.ReplayId
+        SET su.Positions = NULL
+        WHERE su.Positions IS NOT NULL
+        """);
+    sw.Stop();
+
+    var after = await GetSpawnUnitPositionTrimStats(context);
+    Console.WriteLine($"Updated rows: {updated:N0}");
+    Console.WriteLine($"Remaining rows with sidecar-backed positions: {after.AffectedRows:N0}");
+    Console.WriteLine($"Remaining serialized position bytes: {after.PositionBytes:N0} ({ToKiB(after.PositionBytes):N1} KiB)");
+    Console.WriteLine($"Elapsed: {sw.Elapsed}");
+}
+
+static IHost BuildLocalDevHost(string[] args)
+{
+    return Host.CreateDefaultBuilder(args)
+        .ConfigureAppConfiguration(cfg =>
+        {
+            cfg.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.json"), optional: true, reloadOnChange: false);
+        })
+        .ConfigureServices((ctx, services) =>
+        {
+            var connectionString = ctx.Configuration["DevConnectionString"]
+                ?? throw new InvalidOperationException("DevConnectionString is not configured in appsettings.json.");
+
+            var serverVersion = new MySqlServerVersion(new Version(8, 4, 7));
+            services.AddDbContextFactory<DsstatsContext>(opt =>
+                opt.UseMySql(connectionString, serverVersion, o =>
+                {
+                    o.MigrationsAssembly("dsstats.migrations.mysql");
+                    o.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery);
+                }));
+            services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<DsstatsContext>>().CreateDbContext());
+            services.AddSingleton<IRatingService, NoOpRatingService>();
+            services.AddSingleton<IImportService, ImportService>();
+        })
+        .Build();
+}
+
+static async Task<SpawnUnitPositionTrimStats> GetSpawnUnitPositionTrimStats(DsstatsContext context)
+{
+    return await context.Database.SqlQueryRaw<SpawnUnitPositionTrimStats>("""
+        SELECT
+            COUNT(*) AS AffectedRows,
+            CAST(COALESCE(SUM(CHAR_LENGTH(su.Positions)), 0) AS SIGNED) AS PositionBytes
+        FROM SpawnUnits su
+        JOIN Spawns s ON s.SpawnId = su.SpawnId
+        JOIN ReplayPlayers rp ON rp.ReplayPlayerId = s.ReplayPlayerId
+        JOIN ReplaySpawnPlaybacks rsp ON rsp.ReplayId = rp.ReplayId
+        WHERE su.Positions IS NOT NULL
+        """).SingleAsync();
+}
+
 static void PrintSummary(
     IReadOnlyList<ReplayImportMetric> metrics,
     IReadOnlyList<string> errors,
@@ -315,7 +403,7 @@ static void PrintSummary(
 
     Console.WriteLine();
     Console.WriteLine("Summary");
-    Console.WriteLine($"Decoded TE replays: {metrics.Count}");
+    Console.WriteLine($"Decoded replays: {metrics.Count}");
     Console.WriteLine($"Skipped/errors: {errors.Count}");
     Console.WriteLine($"Replay file bytes: total={ToKiB(totalFileBytes):N1} KiB, avg={ToKiB(GetAverage(totalFileBytes, metrics.Count)):N1} KiB");
     Console.WriteLine($"Units: total={totalUnits:N0}, avg={GetAverage(totalUnits, metrics.Count):N1}");
@@ -393,6 +481,7 @@ sealed class ImportTeOptions
     public int Take { get; private init; } = 100;
     public bool DryRun { get; private init; }
     public bool ResetSidecars { get; private init; }
+    public bool AllReplays { get; private init; }
     public CompressionLevel CompressionLevel { get; private init; } = CompressionLevel.Optimal;
 
     public static ImportTeOptions Parse(string[] args)
@@ -401,6 +490,7 @@ sealed class ImportTeOptions
         int take = 100;
         bool dryRun = false;
         bool resetSidecars = false;
+        bool allReplays = false;
         CompressionLevel compressionLevel = CompressionLevel.Optimal;
 
         for (int i = 0; i < args.Length; i++)
@@ -420,6 +510,10 @@ sealed class ImportTeOptions
                 case "--reset-sidecars":
                     resetSidecars = true;
                     break;
+                case "--all":
+                case "--no-te-filter":
+                    allReplays = true;
+                    break;
                 case "--compression" when i + 1 < args.Length:
                     compressionLevel = string.Equals(args[++i], "fastest", StringComparison.OrdinalIgnoreCase)
                         ? CompressionLevel.Fastest
@@ -434,9 +528,27 @@ sealed class ImportTeOptions
             Take = take,
             DryRun = dryRun,
             ResetSidecars = resetSidecars,
+            AllReplays = allReplays,
             CompressionLevel = compressionLevel
         };
     }
+}
+
+sealed class TrimSpawnUnitPositionsOptions
+{
+    public bool Execute { get; private init; }
+
+    public static TrimSpawnUnitPositionsOptions Parse(string[] args)
+    {
+        bool execute = args.Any(arg => string.Equals(arg, "--execute", StringComparison.OrdinalIgnoreCase));
+        return new() { Execute = execute };
+    }
+}
+
+sealed class SpawnUnitPositionTrimStats
+{
+    public long AffectedRows { get; set; }
+    public long PositionBytes { get; set; }
 }
 
 sealed class NoOpRatingService : IRatingService

@@ -224,6 +224,136 @@ public class SpawnPlaybackSidecarCodecTests
         Assert.IsTrue(SpawnPlaybackSidecarCodec.GetUncompressedLength(source) > payload.Length);
     }
 
+    [TestMethod]
+    public void BreakpointProjector_ProjectsMinBreakpointsAndAll()
+    {
+        var sidecar = new SpawnPlaybackSidecarDto(
+            22_000,
+            112,
+            [
+                new(1,
+                [
+                    new(1, "Marine", 1, 6_300, 165, 174, null, null, null, []),
+                    new(2, "Marine", 1, 6_301, 166, 173, null, null, null, []),
+                    new(3, "Marauder", 2, 13_000, 167, 172, null, null, null, []),
+                    new(4, "Tank", 3, 19_800, 168, 171, null, null, null, []),
+                    new(5, "Thor", 4, 21_000, 169, 170, null, null, null, [])
+                ])
+            ],
+            []);
+
+        var projected = SpawnPlaybackBreakpointProjector.Project(sidecar);
+
+        CollectionAssert.AreEqual(
+            new[] { 165, 174, 166, 173 },
+            projected[new(1, Breakpoint.Min5)].Single(unit => unit.Name == "Marine").Positions.ToArray());
+        CollectionAssert.AreEqual(
+            new[] { 167, 172 },
+            projected[new(1, Breakpoint.Min10)].Single(unit => unit.Name == "Marauder").Positions.ToArray());
+        CollectionAssert.AreEqual(
+            new[] { 168, 171 },
+            projected[new(1, Breakpoint.Min15)].Single(unit => unit.Name == "Tank").Positions.ToArray());
+        CollectionAssert.AreEqual(
+            new[] { 169, 170 },
+            projected[new(1, Breakpoint.All)].Single(unit => unit.Name == "Thor").Positions.ToArray());
+    }
+
+    [TestMethod]
+    public void BreakpointProjector_AppliesPositionsToExistingReplaySpawns()
+    {
+        var replay = new ReplayDto
+        {
+            Players =
+            [
+                new()
+                {
+                    GamePos = 1,
+                    Spawns =
+                    [
+                        new()
+                        {
+                            Breakpoint = Breakpoint.Min5,
+                            Units =
+                            [
+                                new() { Name = "Marine", Count = 2 }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        var sidecar = new SpawnPlaybackSidecarDto(
+            10_000,
+            112,
+            [
+                new(1,
+                [
+                    new(1, "Marine", 1, 6_300, 165, 174, null, null, null, []),
+                    new(2, "Marine", 1, 6_301, 166, 173, null, null, null, [])
+                ])
+            ],
+            []);
+
+        SpawnPlaybackBreakpointProjector.ApplyToReplay(replay, sidecar);
+
+        CollectionAssert.AreEqual(
+            new[] { 165, 174, 166, 173 },
+            replay.Players[0].Spawns[0].Units[0].Positions);
+    }
+
+    [TestMethod]
+    public void BreakpointProjector_AppliesDatabaseLoadedPositionsToExistingReplaySpawns()
+    {
+        var replay = new ReplayDto
+        {
+            Players =
+            [
+                new()
+                {
+                    GamePos = 1,
+                    Spawns =
+                    [
+                        new()
+                        {
+                            Breakpoint = Breakpoint.Min5,
+                            Units =
+                            [
+                                new() { Name = "Marine", Count = 2 }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+        var positions = new ReplaySpawnPositionsDto
+        {
+            Players =
+            [
+                new()
+                {
+                    GamePos = 1,
+                    Spawns =
+                    [
+                        new()
+                        {
+                            Breakpoint = Breakpoint.Min5,
+                            Units =
+                            [
+                                new() { Name = "Marine", Positions = [165, 174, 166, 173] }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        SpawnPlaybackBreakpointProjector.ApplyToReplay(replay, positions);
+
+        CollectionAssert.AreEqual(
+            new[] { 165, 174, 166, 173 },
+            replay.Players[0].Spawns[0].Units[0].Positions);
+    }
+
     private static int GetPlayerCandidateCount(SpawnPlaybackCodecStats? stats)
     {
         Assert.IsNotNull(stats);

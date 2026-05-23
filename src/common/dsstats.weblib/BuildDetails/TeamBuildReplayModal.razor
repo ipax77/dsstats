@@ -1,7 +1,9 @@
 @using Microsoft.JSInterop
 @using dsstats.shared
+@using dsstats.shared.Interfaces
 @using dsstats.weblib.Replays
 @inject IJSRuntime JSRuntime
+@inject IReplayRepository ReplayRepository
 @implements IAsyncDisposable
 
 <div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@($"{modalId}Label")" tabindex="-1">
@@ -57,6 +59,7 @@
     private const string modalId = "teamBuildReplayModal";
     private Lazy<Task<IJSObjectReference>> moduleTask = null!;
     private TeamBuildCompareModel? compareModel;
+    private readonly SpawnPositionHydrationState spawnPositionHydration = new();
 
     private ReplayDetails? ReplayDetails { get; set; }
     private BuildDetailsTeamBuildSampleReplay? Sample { get; set; }
@@ -77,6 +80,7 @@
     {
         ReplayDetails = replayDetails;
         Sample = sample;
+        await spawnPositionHydration.EnsureHydrated(replayDetails, ReplayRepository);
         compareModel = CreateCompareModel(replayDetails, sample);
         await InvokeAsync(StateHasChanged);
         await JSRuntime.InvokeVoidAsync("openModalById", modalId);

@@ -288,7 +288,8 @@ public partial class ImportService(
                 AdjustReplayResult(replay);
             }
 
-            var dbReplay = replay.ToEntity();
+            var replayHash = replay.ComputeHash();
+            var dbReplay = replay.ToEntity(sidecarsByReplayHash.ContainsKey(replayHash));
 
             foreach (var player in dbReplay.Players)
             {

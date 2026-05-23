@@ -1199,7 +1199,6 @@ namespace dsstats.migrations.sqlite.Migrations
                         .HasColumnType("INTEGER");
 
                     b.PrimitiveCollection<string>("Positions")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("SpawnId")
