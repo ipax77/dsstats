@@ -61,6 +61,10 @@ Measurements came from `src/cli/dsstats.spawnscan.cli`.
 - Paired snapshots are only created when the two spawn starts are close in time, currently within `112` gameloops.
 - If paired players' actual spawn starts are far apart, their spawns must remain separate one-sided snapshots. Do not pair by spawn number alone.
 - Unit-born gameloops are preserved; only the render time is snapped.
+- Units with a recorded death position move toward that death position as their primary target.
+- Units without a recorded death position use the mirrored map position as the fallback target.
+- Units with no recorded death expire after `2096` gameloops; real death gameloops are preserved and are not clamped.
+- Tutorial/one-player parser shapes are not treated as real-world production replay cases.
 - Alive-unit tables group by team and unit name, not by individual unit.
 - Current kills are time-aware and count `KillGameloops <= renderGameloop`.
 
@@ -71,6 +75,8 @@ Measurements came from `src/cli/dsstats.spawnscan.cli`.
 - Snapshot metadata is built once while creating `SpawnPlaybackReplay`.
 - Alive table rows should only be rebuilt when the effective render gameloop changes.
 - Avoid per-frame LINQ-heavy table generation and avoid allocating new canvas geometry on every draw.
+- Playback creation should avoid proximity precompute while playback movement uses direct target interpolation.
+- Canvas movement is one interpolation per visible unit, using the precomputed target and expiry gameloop.
 - If playback loading feels slow, measure decode/parse/metadata separately before optimizing the canvas path.
 
 ## Scanner CLI
@@ -89,8 +95,8 @@ dotnet run --project src/cli/dsstats.spawnscan.cli/dsstats.spawnscan.cli.csproj 
 
 The scanner reports decode time, parse time, spawn intervals, spawn windows, first-spawn timings, first-middle speed estimates, and unit lifetime/disappear summaries. For ad hoc geometry verification, inspect zero-gameloop `Objective*` born events from the parser; those are the source of the fixed objective landmark coordinates listed above.
 
-## Open Questions
+## Resolved Playback Decisions
 
-- Whether playback should model positions from a constant movement speed after spawn completion instead of interpolating to death position.
-- Whether the general Direct Strike max unit lifetime is `2096` gameloops, with the tutorial observer's `1936` gameloops being a special case.
-- Whether the tutorial replay's one-player parser shape is expected for tutorial maps or needs special handling.
+- Death positions are the primary playback target when present; mirrored map positions are only the fallback for units without death positions.
+- `2096` gameloops is the general max lifetime for units without real death events.
+- One-player tutorial replay shapes are treated as non-production data.

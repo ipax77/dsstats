@@ -31,6 +31,7 @@ public sealed record SpawnPlaybackUnit(
     double? DiedY,
     double TargetX,
     double TargetY,
+    int ExpiresGameloop,
     double Radius,
     string Color,
     IReadOnlyList<int> KillGameloops);

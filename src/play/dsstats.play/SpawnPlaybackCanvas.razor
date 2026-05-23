@@ -426,7 +426,7 @@
                 }
 
                 currentSpawnNumber = Math.Max(currentSpawnNumber, unit.SpawnNumber);
-                if (unit.DiedGameloop is int diedGameloop && diedGameloop <= renderGameloop)
+                if (unit.ExpiresGameloop <= renderGameloop)
                 {
                     continue;
                 }

@@ -84,6 +84,7 @@ public sealed class SpawnPlaybackFactoryTests
         Assert.AreEqual(120, unit.DiedY);
         Assert.AreEqual(130, unit.TargetX);
         Assert.AreEqual(120, unit.TargetY);
+        Assert.AreEqual(190, unit.ExpiresGameloop);
         Assert.AreEqual(0, unit.KillGameloops.Count);
         Assert.IsTrue(unit.Radius > 0);
         StringAssert.StartsWith(unit.Color, "#");
@@ -131,6 +132,7 @@ public sealed class SpawnPlaybackFactoryTests
 
         var unit = playback.Players[0].Units.Single();
         Assert.IsNull(unit.DiedGameloop);
+        Assert.AreEqual(20 + SpawnPlaybackFactory.MaxUnitLifetimeGameloops, unit.ExpiresGameloop);
         Assert.AreEqual(0, playback.Stats.UnitsWithDiedEvent);
         Assert.AreEqual(0, playback.Stats.UnitsWithDiedPosition);
         Assert.AreEqual(SpawnPlaybackFactory.MapWidth - 40, unit.TargetX);

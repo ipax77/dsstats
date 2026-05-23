@@ -9,6 +9,7 @@ const GAS_BADGE_WIDTH = 82;
 const GAS_BADGE_HEIGHT = 24;
 const GAS_BADGE_GAP = 8;
 const GAS_BADGE_CORNER_PADDING = 20;
+const MAX_UNIT_LIFETIME_GAMELOOPS = 2096;
 const TEAM_COLORS = {
     1: "#5DADEC",
     2: "#F87171"
@@ -584,12 +585,12 @@ function drawUnit(ctx, canvas, bounds, unit, teamId, currentGameloop, stepGamelo
         return false;
     }
 
-    const diedGameloop = unit.diedGameloop ?? unit.DiedGameloop;
-    if (diedGameloop != null && diedGameloop <= currentGameloop) {
+    const expiresGameloop = unit.expiresGameloop ?? unit.ExpiresGameloop ?? spawnGameloop + MAX_UNIT_LIFETIME_GAMELOOPS;
+    if (expiresGameloop <= currentGameloop) {
         return false;
     }
 
-    const position = getUnitPosition(unit, currentGameloop, diedGameloop);
+    const position = getUnitPosition(unit, currentGameloop, expiresGameloop);
     const projected = project(position.x, position.y, bounds, canvas);
     const radius = Math.max(3, (unit.radius ?? unit.Radius ?? 8) * deviceScale(canvas) * 0.55);
     const color = unit.color ?? unit.Color ?? "#EC7063";
@@ -618,15 +619,16 @@ function drawEmptyState(ctx, canvas) {
     ctx.restore();
 }
 
-function getUnitPosition(unit, currentGameloop, diedGameloop) {
+function getUnitPosition(unit, currentGameloop, expiresGameloop) {
     const spawnGameloop = unit.spawnGameloop ?? unit.SpawnGameloop;
     const spawnX = unit.spawnX ?? unit.SpawnX;
     const spawnY = unit.spawnY ?? unit.SpawnY;
     const targetX = unit.targetX ?? unit.TargetX;
     const targetY = unit.targetY ?? unit.TargetY;
-    const endGameloop = diedGameloop ?? Math.max(spawnGameloop + 1, currentGameloop + 224);
-    const progress = clamp((currentGameloop - spawnGameloop) / Math.max(1, endGameloop - spawnGameloop), 0, 1);
-
+    const progress = clamp(
+        (currentGameloop - spawnGameloop) / Math.max(1, expiresGameloop - spawnGameloop),
+        0,
+        1);
     return {
         x: lerp(spawnX, targetX, progress),
         y: lerp(spawnY, targetY, progress)

@@ -8,6 +8,7 @@ public static class SpawnPlaybackFactory
 {
     public const double GameloopsPerSecond = 22.4;
     public const int DefaultStepSeconds = 5;
+    public const int MaxUnitLifetimeGameloops = 2096;
     public const int MapWidth = 256;
     public const int MapHeight = 240;
     private const int SpawnPairWindowGameloops = 112;
@@ -80,6 +81,7 @@ public static class SpawnPlaybackFactory
                     var displayInfo = GetDisplayInfo(displayCache, commander, unit.Name);
                     var target = GetTarget(unit.X, unit.Y, unit.DiedX, unit.DiedY);
                     var unitInfo = UnitMap.GetUnitInfo(unit.Name, commander);
+                    int expiresGameloop = GetExpiresGameloop(unit.Gameloop, unit.DiedGameloop);
 
                     units.Add(new(
                         unit.UnitIndex,
@@ -93,6 +95,7 @@ public static class SpawnPlaybackFactory
                         unit.DiedY,
                         target.X,
                         target.Y,
+                        expiresGameloop,
                         displayInfo.Radius,
                         displayInfo.Color,
                         GetUnitKillGameloops(unitKillGameloops, unit)));
@@ -108,6 +111,8 @@ public static class SpawnPlaybackFactory
                 units));
         }
 
+        IReadOnlyList<SpawnPlaybackSnapshot> snapshots = GetSnapshots(replay);
+
         return new(
             durationGameloop,
             (int)Math.Round(DefaultStepSeconds * GameloopsPerSecond),
@@ -122,7 +127,7 @@ public static class SpawnPlaybackFactory
             GetMiddleControl(replay),
             playbackLandmarks,
             buildUnits ?? [],
-            GetSnapshots(replay),
+            snapshots,
             players);
     }
 
@@ -164,6 +169,7 @@ public static class SpawnPlaybackFactory
                 var displayInfo = GetDisplayInfo(displayCache, commander, sidecarUnit.Name);
                 var target = GetTarget(sidecarUnit.SpawnX, sidecarUnit.SpawnY, sidecarUnit.DiedX, sidecarUnit.DiedY);
                 var unitInfo = UnitMap.GetUnitInfo(sidecarUnit.Name, commander);
+                int expiresGameloop = GetExpiresGameloop(sidecarUnit.SpawnGameloop, sidecarUnit.DiedGameloop);
                 units.Add(new(
                     sidecarUnit.UnitIndex,
                     unitInfo.Name,
@@ -176,6 +182,7 @@ public static class SpawnPlaybackFactory
                     sidecarUnit.DiedY,
                     target.X,
                     target.Y,
+                    expiresGameloop,
                     displayInfo.Radius,
                     displayInfo.Color,
                     sidecarUnit.KillGameloops));
@@ -186,7 +193,7 @@ public static class SpawnPlaybackFactory
                 .Select(group => new
                 {
                     Start = group.Min(unit => unit.SpawnGameloop),
-                    End = group.Max(unit => unit.DiedGameloop ?? unit.SpawnGameloop)
+                    End = group.Max(unit => unit.ExpiresGameloop)
                 }))
             {
                 spawnEvents.Add((spawn.Start, 1));
@@ -203,6 +210,13 @@ public static class SpawnPlaybackFactory
         }
 
         var landmarks = GetReplayDtoLandmarks(replay);
+        SpawnPlaybackSnapshot[] snapshots = sidecar.Snapshots
+            .Select(snapshot => new SpawnPlaybackSnapshot(
+                snapshot.SpawnNumber,
+                snapshot.StartGameloop,
+                snapshot.EndGameloop))
+            .ToArray();
+
         return new(
             Math.Max(1, sidecar.DurationGameloop),
             Math.Max(1, sidecar.StepGameloops),
@@ -217,10 +231,7 @@ public static class SpawnPlaybackFactory
             GetMiddleControl(replay),
             landmarks,
             [],
-            sidecar.Snapshots.Select(snapshot => new SpawnPlaybackSnapshot(
-                snapshot.SpawnNumber,
-                snapshot.StartGameloop,
-                snapshot.EndGameloop)).ToArray(),
+            snapshots,
             players);
     }
 
@@ -250,14 +261,21 @@ public static class SpawnPlaybackFactory
         return displayInfo;
     }
 
-    private static (double X, double Y) GetTarget(int spawnX, int spawnY, int? diedX, int? diedY)
+    private static (double X, double Y) GetRouteTarget(double spawnX, double spawnY)
     {
-        if (diedX is int x && diedY is int y)
-        {
-            return (x, y);
-        }
-
         return (MapWidth - spawnX, MapHeight - spawnY);
+    }
+
+    private static (double X, double Y) GetTarget(double spawnX, double spawnY, double? diedX, double? diedY)
+    {
+        return diedX is double deathX && diedY is double deathY
+            ? (deathX, deathY)
+            : GetRouteTarget(spawnX, spawnY);
+    }
+
+    private static int GetExpiresGameloop(int spawnGameloop, int? diedGameloop)
+    {
+        return diedGameloop ?? spawnGameloop + MaxUnitLifetimeGameloops;
     }
 
     private static IReadOnlyList<int> GetUnitKillGameloops(
@@ -480,10 +498,6 @@ public static class SpawnPlaybackFactory
         {
             AddPoint(unit.SpawnX, unit.SpawnY);
             AddPoint(unit.TargetX, unit.TargetY);
-            if (unit.DiedX is double diedX && unit.DiedY is double diedY)
-            {
-                AddPoint(diedX, diedY);
-            }
         }
 
         foreach (var landmark in landmarks)
