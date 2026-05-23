@@ -11,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using s2protocol.NET;
 using System.Diagnostics;
+using System.IO.Compression;
 
 if (args.Length > 0 && string.Equals(args[0], "import-te-sidecars", StringComparison.OrdinalIgnoreCase))
 {
@@ -174,6 +175,11 @@ static async Task RunImportTeSidecars(string[] args)
         .CreateDbContextAsync())
     {
         await context.Database.MigrateAsync();
+        if (options.ResetSidecars && !options.DryRun)
+        {
+            int deleted = await context.ReplaySpawnPlaybacks.ExecuteDeleteAsync();
+            Console.WriteLine($"Deleted existing ReplaySpawnPlaybacks rows: {deleted}");
+        }
     }
 
     var files = new DirectoryInfo(options.Path)
@@ -184,6 +190,7 @@ static async Task RunImportTeSidecars(string[] args)
 
     Console.WriteLine($"Selected TE replay files: {files.Count}");
     Console.WriteLine($"Dry run: {options.DryRun}");
+    Console.WriteLine($"Brotli level: {options.CompressionLevel}");
     Console.WriteLine();
 
     ReplayDecoder replayDecoder = new();
@@ -231,7 +238,7 @@ static async Task RunImportTeSidecars(string[] args)
 
             Stopwatch encodeSw = Stopwatch.StartNew();
             var sidecar = SpawnPlaybackSidecarFactory.Create(sc2Replay, directStrikeReplay);
-            var encoded = SpawnPlaybackSidecarCodec.EncodeWithMetadata(sidecar);
+            var encoded = SpawnPlaybackSidecarCodec.EncodeWithMetadata(sidecar, options.CompressionLevel);
             encodeSw.Stop();
             encodeElapsed += encodeSw.Elapsed;
 
@@ -334,13 +341,15 @@ static async Task PrintDbVerification(IServiceProvider services, IReadOnlyList<R
             x.Replay!.ReplayHash,
             x.CompressedLength,
             x.UncompressedLength,
-            x.UnitCount
+            x.UnitCount,
+            x.FormatVersion
         })
         .ToListAsync();
 
     Console.WriteLine();
     Console.WriteLine("DB Verification");
     Console.WriteLine($"Sidecars matched by replay hash: {rows.Count}/{metrics.Count}");
+    Console.WriteLine($"DB format versions: {string.Join(", ", rows.GroupBy(x => x.FormatVersion).OrderBy(x => x.Key).Select(x => $"{x.Key}={x.Count()}"))}");
     Console.WriteLine($"DB avg compressed sidecar: {ToKiB(GetAverage(rows.Sum(x => x.CompressedLength), rows.Count)):N1} KiB");
     Console.WriteLine($"DB avg uncompressed sidecar: {ToKiB(GetAverage(rows.Sum(x => x.UncompressedLength), rows.Count)):N1} KiB");
     Console.WriteLine($"DB avg units: {GetAverage(rows.Sum(x => x.UnitCount), rows.Count):N1}");
@@ -365,12 +374,16 @@ sealed class ImportTeOptions
     public string Path { get; private init; } = string.Empty;
     public int Take { get; private init; } = 100;
     public bool DryRun { get; private init; }
+    public bool ResetSidecars { get; private init; }
+    public CompressionLevel CompressionLevel { get; private init; } = CompressionLevel.Optimal;
 
     public static ImportTeOptions Parse(string[] args)
     {
         string path = string.Empty;
         int take = 100;
         bool dryRun = false;
+        bool resetSidecars = false;
+        CompressionLevel compressionLevel = CompressionLevel.Optimal;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -386,6 +399,14 @@ sealed class ImportTeOptions
                 case "--dry-run":
                     dryRun = true;
                     break;
+                case "--reset-sidecars":
+                    resetSidecars = true;
+                    break;
+                case "--compression" when i + 1 < args.Length:
+                    compressionLevel = string.Equals(args[++i], "fastest", StringComparison.OrdinalIgnoreCase)
+                        ? CompressionLevel.Fastest
+                        : CompressionLevel.Optimal;
+                    break;
             }
         }
 
@@ -393,7 +414,9 @@ sealed class ImportTeOptions
         {
             Path = path,
             Take = take,
-            DryRun = dryRun
+            DryRun = dryRun,
+            ResetSidecars = resetSidecars,
+            CompressionLevel = compressionLevel
         };
     }
 }

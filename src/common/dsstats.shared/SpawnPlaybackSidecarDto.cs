@@ -49,19 +49,34 @@ public sealed record ReplayImportDto(
 
 public static class SpawnPlaybackSidecarCodec
 {
-    public const ushort FormatVersion = 1;
+    public const ushort FormatVersion = 2;
     public const SpawnPlaybackCompression Compression = SpawnPlaybackCompression.Brotli;
 
     private const uint Magic = 0x42505344; // DSPB
     private const byte HasDiedGameloop = 1;
     private const byte HasDiedPosition = 2;
+    private const byte HasPackedSpawnPosition = 4;
+    private const byte HasPackedDiedPosition = 8;
+    private const int SpawnCellBits = 9;
+    private const int SpawnCellCount = 403;
+    private const int MapPositionBits = 16;
+    private const int MapWidth = 256;
+    private const int MapHeight = 240;
+    private const int MapPositionStride = MapWidth + 1;
+    private const int Team2SpawnOffset = 81;
+    private const int SpawnMinU = -9;
+    private const int SpawnMaxU = 25;
+    private const int SpawnMinV = 317;
+    private const int SpawnMaxV = 339;
 
     public static byte[] Encode(SpawnPlaybackSidecarDto dto)
     {
         return EncodeWithMetadata(dto).Payload;
     }
 
-    public static SpawnPlaybackEncodedSidecar EncodeWithMetadata(SpawnPlaybackSidecarDto dto)
+    public static SpawnPlaybackEncodedSidecar EncodeWithMetadata(
+        SpawnPlaybackSidecarDto dto,
+        CompressionLevel compressionLevel = CompressionLevel.Optimal)
     {
         ArgumentNullException.ThrowIfNull(dto);
         using var raw = new MemoryStream();
@@ -69,7 +84,7 @@ public static class SpawnPlaybackSidecarCodec
         int uncompressedLength = checked((int)raw.Length);
 
         using var compressed = new MemoryStream();
-        using (var brotli = new BrotliStream(compressed, CompressionLevel.Fastest, leaveOpen: true))
+        using (var brotli = new BrotliStream(compressed, compressionLevel, leaveOpen: true))
         {
             raw.Position = 0;
             raw.CopyTo(brotli);
@@ -131,36 +146,69 @@ public static class SpawnPlaybackSidecarCodec
         WriteVarUInt(stream, (uint)dto.Players.Count);
         foreach (var player in dto.Players.OrderBy(player => player.GamePos))
         {
-            WriteVarUInt(stream, (uint)Math.Max(0, player.GamePos));
-            WriteVarUInt(stream, (uint)player.Units.Count);
-            foreach (var unit in player.Units.OrderBy(unit => unit.SpawnGameloop).ThenBy(unit => unit.UnitIndex))
+            var rows = player.Units
+                .OrderBy(unit => unit.SpawnGameloop)
+                .ThenBy(unit => unit.UnitIndex)
+                .Select(unit => CreateUnitWriteRow(player.GamePos, unit, stringIds[unit.Name]))
+                .ToList();
+
+            int packedSpawnCount = 0;
+            foreach (var row in rows)
             {
+                if ((row.Flags & HasPackedSpawnPosition) != 0)
+                {
+                    packedSpawnCount++;
+                }
+            }
+
+            var spawnCellBytes = packedSpawnCount == 0
+                ? []
+                : new byte[(packedSpawnCount * SpawnCellBits + 7) / 8];
+            var spawnCellWriter = new BitWriter(spawnCellBytes);
+            foreach (var row in rows)
+            {
+                if ((row.Flags & HasPackedSpawnPosition) != 0)
+                {
+                    spawnCellWriter.WriteBits((uint)row.SpawnCellId, SpawnCellBits);
+                }
+            }
+            spawnCellWriter.Flush();
+
+            WriteVarUInt(stream, (uint)Math.Max(0, player.GamePos));
+            WriteVarUInt(stream, (uint)rows.Count);
+            WriteVarUInt(stream, (uint)spawnCellBytes.Length);
+            stream.Write(spawnCellBytes);
+
+            foreach (var row in rows)
+            {
+                var unit = row.Unit;
                 WriteVarUInt(stream, (uint)Math.Max(0, unit.UnitIndex));
-                WriteVarUInt(stream, (uint)stringIds[unit.Name]);
+                WriteVarUInt(stream, (uint)row.UnitNameId);
                 WriteVarUInt(stream, (uint)Math.Max(0, unit.SpawnNumber));
                 WriteVarUInt(stream, (uint)Math.Max(0, unit.SpawnGameloop));
-                WriteVarUInt(stream, (uint)Math.Max(0, unit.SpawnX));
-                WriteVarUInt(stream, (uint)Math.Max(0, unit.SpawnY));
+                stream.WriteByte(row.Flags);
 
-                byte flags = 0;
-                if (unit.DiedGameloop is not null)
+                if ((row.Flags & HasPackedSpawnPosition) == 0)
                 {
-                    flags |= HasDiedGameloop;
+                    WriteVarUInt(stream, (uint)Math.Max(0, unit.SpawnX));
+                    WriteVarUInt(stream, (uint)Math.Max(0, unit.SpawnY));
                 }
-                if (unit.DiedX is not null && unit.DiedY is not null)
-                {
-                    flags |= HasDiedPosition;
-                }
-                stream.WriteByte(flags);
 
-                if ((flags & HasDiedGameloop) != 0)
+                if ((row.Flags & HasDiedGameloop) != 0)
                 {
                     WriteVarUInt(stream, (uint)Math.Max(0, unit.DiedGameloop!.Value - unit.SpawnGameloop));
                 }
-                if ((flags & HasDiedPosition) != 0)
+                if ((row.Flags & HasDiedPosition) != 0)
                 {
-                    WriteVarUInt(stream, (uint)Math.Max(0, unit.DiedX!.Value));
-                    WriteVarUInt(stream, (uint)Math.Max(0, unit.DiedY!.Value));
+                    if ((row.Flags & HasPackedDiedPosition) != 0)
+                    {
+                        WriteUInt16(stream, checked((ushort)row.DiedPositionId));
+                    }
+                    else
+                    {
+                        WriteVarUInt(stream, (uint)Math.Max(0, unit.DiedX!.Value));
+                        WriteVarUInt(stream, (uint)Math.Max(0, unit.DiedY!.Value));
+                    }
                 }
 
                 WriteGameloopDeltas(stream, unit.SpawnGameloop, unit.KillGameloops);
@@ -204,6 +252,11 @@ public static class SpawnPlaybackSidecarCodec
         {
             int gamePos = checked((int)ReadVarUInt(stream));
             var units = new List<SpawnPlaybackUnitSidecarDto>(checked((int)ReadVarUInt(stream)));
+            int spawnCellByteCount = checked((int)ReadVarUInt(stream));
+            var spawnCellBytes = new byte[spawnCellByteCount];
+            stream.ReadExactly(spawnCellBytes);
+            var spawnCellReader = new BitReader(spawnCellBytes);
+
             for (int unitIndex = 0; unitIndex < units.Capacity; unitIndex++)
             {
                 int unitSpawnIndex = checked((int)ReadVarUInt(stream));
@@ -216,12 +269,22 @@ public static class SpawnPlaybackSidecarCodec
                 string name = strings[unitId];
                 int spawnNumber = checked((int)ReadVarUInt(stream));
                 int spawnGameloop = checked((int)ReadVarUInt(stream));
-                int spawnX = checked((int)ReadVarUInt(stream));
-                int spawnY = checked((int)ReadVarUInt(stream));
                 int flags = stream.ReadByte();
                 if (flags < 0)
                 {
                     throw new EndOfStreamException();
+                }
+
+                int spawnX;
+                int spawnY;
+                if ((flags & HasPackedSpawnPosition) != 0)
+                {
+                    (spawnX, spawnY) = GetSpawnPositionFromCellId(gamePos, checked((int)spawnCellReader.ReadBits(SpawnCellBits)));
+                }
+                else
+                {
+                    spawnX = checked((int)ReadVarUInt(stream));
+                    spawnY = checked((int)ReadVarUInt(stream));
                 }
 
                 int? diedGameloop = null;
@@ -234,8 +297,17 @@ public static class SpawnPlaybackSidecarCodec
                 int? diedY = null;
                 if ((flags & HasDiedPosition) != 0)
                 {
-                    diedX = checked((int)ReadVarUInt(stream));
-                    diedY = checked((int)ReadVarUInt(stream));
+                    if ((flags & HasPackedDiedPosition) != 0)
+                    {
+                        int positionId = ReadUInt16(stream);
+                        diedX = positionId % MapPositionStride;
+                        diedY = positionId / MapPositionStride;
+                    }
+                    else
+                    {
+                        diedX = checked((int)ReadVarUInt(stream));
+                        diedY = checked((int)ReadVarUInt(stream));
+                    }
                 }
 
                 units.Add(new(
@@ -279,6 +351,109 @@ public static class SpawnPlaybackSidecarCodec
 
         strings = ids.OrderBy(pair => pair.Value).Select(pair => pair.Key).ToList();
         return ids;
+    }
+
+    private static UnitWriteRow CreateUnitWriteRow(
+        int gamePos,
+        SpawnPlaybackUnitSidecarDto unit,
+        int unitNameId)
+    {
+        byte flags = 0;
+        int spawnCellId = 0;
+        int diedPositionId = 0;
+        if (unit.DiedGameloop is not null)
+        {
+            flags |= HasDiedGameloop;
+        }
+        if (unit.DiedX is not null && unit.DiedY is not null)
+        {
+            flags |= HasDiedPosition;
+        }
+        if (TryGetSpawnPositionCellId(gamePos, unit.SpawnX, unit.SpawnY, out spawnCellId))
+        {
+            flags |= HasPackedSpawnPosition;
+        }
+        if ((flags & HasDiedPosition) != 0
+            && TryGetMapPositionId(unit.DiedX!.Value, unit.DiedY!.Value, out diedPositionId))
+        {
+            flags |= HasPackedDiedPosition;
+        }
+
+        return new(unit, unitNameId, flags, spawnCellId, diedPositionId);
+    }
+
+    public static bool TryGetSpawnPositionCellId(int gamePos, int x, int y, out int cellId)
+    {
+        if (gamePos >= 4)
+        {
+            x += Team2SpawnOffset;
+            y += Team2SpawnOffset;
+        }
+
+        int u = x - y;
+        int v = x + y;
+        if (u < SpawnMinU || u > SpawnMaxU || v < SpawnMinV || v > SpawnMaxV || ((u + v) & 1) != 0)
+        {
+            cellId = 0;
+            return false;
+        }
+
+        int rowIndex = v - SpawnMinV;
+        int cellsBeforeRow = rowIndex / 2 * 35 + (rowIndex % 2 == 0 ? 0 : 18);
+        int cellInRow = (u - SpawnMinU) / 2;
+        int id = cellsBeforeRow + cellInRow;
+
+        if ((uint)id >= SpawnCellCount)
+        {
+            cellId = 0;
+            return false;
+        }
+
+        cellId = id;
+        return true;
+    }
+
+    public static (int X, int Y) GetSpawnPositionFromCellId(int gamePos, int cellId)
+    {
+        if ((uint)cellId >= SpawnCellCount)
+        {
+            throw new InvalidDataException("Invalid spawn position cell id.");
+        }
+
+        int pairIndex = cellId / 35;
+        int cellInPair = cellId % 35;
+        int rowIndex;
+        int offset;
+        if (cellInPair < 18)
+        {
+            rowIndex = pairIndex * 2;
+            offset = cellInPair * 2;
+        }
+        else
+        {
+            rowIndex = pairIndex * 2 + 1;
+            offset = (cellInPair - 18) * 2 + 1;
+        }
+
+        int v = SpawnMinV + rowIndex;
+        int u = SpawnMinU + offset;
+        int x = (u + v) / 2;
+        int y = (v - u) / 2;
+        return gamePos >= 4
+            ? (x - Team2SpawnOffset, y - Team2SpawnOffset)
+            : (x, y);
+    }
+
+    private static bool TryGetMapPositionId(int x, int y, out int positionId)
+    {
+        if ((uint)x > MapWidth || (uint)y > MapHeight)
+        {
+            positionId = 0;
+            return false;
+        }
+
+        positionId = y * MapPositionStride + x;
+        return true;
     }
 
     private static void WriteGameloopDeltas(Stream stream, int startGameloop, IReadOnlyList<int> gameloops)
@@ -344,6 +519,20 @@ public static class SpawnPlaybackSidecarCodec
         return BitConverter.ToUInt32(buffer);
     }
 
+    private static void WriteUInt16(Stream stream, ushort value)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(ushort)];
+        BitConverter.TryWriteBytes(buffer, value);
+        stream.Write(buffer);
+    }
+
+    private static ushort ReadUInt16(Stream stream)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(ushort)];
+        stream.ReadExactly(buffer);
+        return BitConverter.ToUInt16(buffer);
+    }
+
     private static void WriteVarUInt(Stream stream, uint value)
     {
         while (value >= 0x80)
@@ -378,4 +567,81 @@ public static class SpawnPlaybackSidecarCodec
 
         throw new InvalidDataException("Invalid variable-length integer.");
     }
+
+    private sealed class BitWriter(byte[] buffer)
+    {
+        private int byteIndex;
+        private int currentByte;
+        private int bitCount;
+
+        public void WriteBits(uint value, int bits)
+        {
+            for (int i = 0; i < bits; i++)
+            {
+                currentByte |= (int)((value >> i) & 1) << bitCount;
+                bitCount++;
+                if (bitCount == 8)
+                {
+                    FlushByte();
+                }
+            }
+        }
+
+        public void Flush()
+        {
+            if (bitCount > 0)
+            {
+                FlushByte();
+            }
+        }
+
+        private void FlushByte()
+        {
+            if ((uint)byteIndex >= (uint)buffer.Length)
+            {
+                throw new InvalidDataException("Spawn position bit buffer overflow.");
+            }
+
+            buffer[byteIndex++] = (byte)currentByte;
+            currentByte = 0;
+            bitCount = 0;
+        }
+    }
+
+    private sealed class BitReader(byte[] buffer)
+    {
+        private int byteIndex;
+        private int currentByte;
+        private int bitsRemaining;
+
+        public uint ReadBits(int bits)
+        {
+            uint value = 0;
+            for (int i = 0; i < bits; i++)
+            {
+                if (bitsRemaining == 0)
+                {
+                    if ((uint)byteIndex >= (uint)buffer.Length)
+                    {
+                        throw new EndOfStreamException();
+                    }
+                    currentByte = buffer[byteIndex++];
+                    bitsRemaining = 8;
+                }
+
+                value |= (uint)(currentByte & 1) << i;
+                currentByte >>= 1;
+                bitsRemaining--;
+            }
+
+            return value;
+        }
+    }
+
+    private sealed record UnitWriteRow(
+        SpawnPlaybackUnitSidecarDto Unit,
+        int UnitNameId,
+        byte Flags,
+        int SpawnCellId,
+        int DiedPositionId);
 }

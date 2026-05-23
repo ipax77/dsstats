@@ -7,6 +7,33 @@ namespace dsstats.tests;
 public class SpawnPlaybackSidecarCodecTests
 {
     [TestMethod]
+    public void SpawnPositionCells_RoundTripAllTeamCells()
+    {
+        int count = 0;
+        for (int v = 317; v <= 339; v++)
+        {
+            for (int u = -9; u <= 25; u++)
+            {
+                if (((u + v) & 1) != 0)
+                {
+                    continue;
+                }
+
+                int x = (u + v) / 2;
+                int y = (v - u) / 2;
+                Assert.IsTrue(SpawnPlaybackSidecarCodec.TryGetSpawnPositionCellId(1, x, y, out int team1Cell));
+                Assert.IsTrue(SpawnPlaybackSidecarCodec.TryGetSpawnPositionCellId(4, x - 81, y - 81, out int team2Cell));
+                Assert.AreEqual(team1Cell, team2Cell);
+                Assert.AreEqual((x, y), SpawnPlaybackSidecarCodec.GetSpawnPositionFromCellId(1, team1Cell));
+                Assert.AreEqual((x - 81, y - 81), SpawnPlaybackSidecarCodec.GetSpawnPositionFromCellId(4, team2Cell));
+                count++;
+            }
+        }
+
+        Assert.AreEqual(403, count);
+    }
+
+    [TestMethod]
     public void EncodeDecode_RoundTripsSidecar()
     {
         var source = new SpawnPlaybackSidecarDto(
@@ -17,7 +44,8 @@ public class SpawnPlaybackSidecarCodecTests
                 new(1,
                 [
                     new(10, "Marine", 3, 1_120, 165, 174, 2_240, 130, 130, [1_500, 1_620]),
-                    new(11, "Marauder", 3, 1_121, 166, 174, null, null, null, [])
+                    new(11, "Marauder", 3, 1_121, 166, 174, null, null, null, []),
+                    new(12, "Tank", 3, 1_122, 10, 10, 2_500, 300, 300, [])
                 ]),
                 new(4,
                 [
@@ -42,6 +70,8 @@ public class SpawnPlaybackSidecarCodecTests
         Assert.AreEqual(130, decoded.Players[0].Units[0].DiedX);
         CollectionAssert.AreEqual(new[] { 1_500, 1_620 }, decoded.Players[0].Units[0].KillGameloops.ToArray());
         Assert.IsNull(decoded.Players[0].Units[1].DiedGameloop);
+        Assert.AreEqual(10, decoded.Players[0].Units[2].SpawnX);
+        Assert.AreEqual(300, decoded.Players[0].Units[2].DiedX);
         Assert.AreEqual("Zergling", decoded.Players[1].Units[0].Name);
         Assert.AreEqual(2, decoded.Snapshots.Count);
         Assert.AreEqual(3_400, decoded.Snapshots[1].EndGameloop);
