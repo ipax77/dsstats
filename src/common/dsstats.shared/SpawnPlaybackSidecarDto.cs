@@ -39,7 +39,13 @@ public sealed record SpawnPlaybackEncodedSidecar(
     byte[] Payload,
     int CompressedLength,
     int UncompressedLength,
-    int UnitCount);
+    int UnitCount,
+    ushort FormatVersion = SpawnPlaybackSidecarCodec.FormatVersion,
+    SpawnPlaybackCompression Compression = SpawnPlaybackSidecarCodec.Compression);
+
+public sealed record ReplayImportDto(
+    ReplayDto Replay,
+    SpawnPlaybackEncodedSidecar? SpawnPlayback);
 
 public static class SpawnPlaybackSidecarCodec
 {

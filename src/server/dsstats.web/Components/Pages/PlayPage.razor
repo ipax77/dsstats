@@ -1,11 +1,14 @@
 @page "/te/play"
 @using dsstats.parser
 @using dsstats.play
+@using dsstats.shared
+@using dsstats.shared.Interfaces
 @using dsstats.shared.Units
 @using Sc2DirectStrike.Parser
 @using s2protocol.NET
 @rendermode InteractiveServer
 @inject ILogger<PlayPage> Logger
+@inject IReplayImportService ReplayImportService
 
 <PageTitle>dsstats - play</PageTitle>
 
@@ -21,7 +24,7 @@
             </div>
             <div class="alert alert-info mb-0" role="alert">
                 <small>
-                    This page decodes the replay locally in the web process for playback debugging only.
+                    This page decodes the replay locally, stores the replay playback sidecar, and renders the DTO-backed canvas.
                 </small>
             </div>
         </div>
@@ -44,6 +47,13 @@
 
     @if (spawnPlayback is not null)
     {
+        @if (!string.IsNullOrEmpty(importStatus))
+        {
+            <div class="alert alert-success mb-4" style="max-width: 720px;">
+                @importStatus
+            </div>
+        }
+
         <div class="mb-4" style="max-width: 980px;">
             <h5 class="text-warning mb-3">Debug Stats</h5>
             <div class="row g-3">
@@ -98,7 +108,7 @@
             </div>
         </div>
 
-        <SpawnPlaybackCanvas Replay="spawnPlayback" />
+        <SpawnPlaybackCanvas Replay="replayDto" Sidecar="spawnPlaybackSidecar" />
     }
 </div>
 
@@ -106,12 +116,18 @@
     private const long MaxFileSize = 3 * 1024 * 1024;
     private bool isLoading;
     private string error = string.Empty;
+    private string importStatus = string.Empty;
+    private dsstats.shared.ReplayDto? replayDto;
+    private SpawnPlaybackSidecarDto? spawnPlaybackSidecar;
     private SpawnPlaybackReplay? spawnPlayback;
 
     private async Task LoadReplay(InputFileChangeEventArgs e)
     {
         isLoading = true;
         error = string.Empty;
+        importStatus = string.Empty;
+        replayDto = null;
+        spawnPlaybackSidecar = null;
         spawnPlayback = null;
         await InvokeAsync(StateHasChanged);
 
@@ -136,11 +152,35 @@
             }
 
             var directStrikeReplay = DsstatsParser.ParseDirectStrikeReplay(sc2Replay);
-            var metadata = GetPlaybackMetadata(sc2Replay, directStrikeReplay);
-            spawnPlayback = SpawnPlaybackFactory.Create(
-                directStrikeReplay,
-                metadata.Landmarks,
-                metadata.UnitKillGameloops);
+            replayDto = DsstatsParser.ParseReplay(sc2Replay);
+            if (replayDto is null)
+            {
+                error = "Failed parsing replay.";
+                return;
+            }
+
+            spawnPlaybackSidecar = SpawnPlaybackSidecarFactory.Create(sc2Replay, directStrikeReplay);
+            var encodedSidecar = SpawnPlaybackSidecarCodec.EncodeWithMetadata(spawnPlaybackSidecar);
+            replayDto.SpawnPlayback = new()
+            {
+                Available = true,
+                FormatVersion = encodedSidecar.FormatVersion,
+                CompressedLength = encodedSidecar.CompressedLength,
+                UncompressedLength = encodedSidecar.UncompressedLength,
+                UnitCount = encodedSidecar.UnitCount
+            };
+
+            var importResult = await ReplayImportService.ImportReplayWithSpawnPlayback(replayDto, encodedSidecar);
+            if (importResult?.Success == true)
+            {
+                importStatus = $"Stored replay playback sidecar for {importResult.ReplayHash}.";
+            }
+            else
+            {
+                error = $"Replay parsed, but storing playback failed: {importResult?.Error ?? "unknown error"}";
+            }
+
+            spawnPlayback = SpawnPlaybackFactory.Create(replayDto, spawnPlaybackSidecar);
         }
         catch (Exception ex)
         {

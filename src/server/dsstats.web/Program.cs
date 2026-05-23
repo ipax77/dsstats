@@ -31,6 +31,7 @@ builder.Services.AddChartJs(options =>
 builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
+builder.Services.AddScoped<IReplayImportService, ReplayImportService>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 
 builder.Services.AddScoped<IStatsService, StatsService>();

@@ -1,9 +1,10 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
+@using dsstats.shared
 @implements IAsyncDisposable
 @inject IJSRuntime JSRuntime
 
-@if (Replay is not null)
+@if (playback is not null)
 {
     <div class="spawn-playback bgchart border border-dark rounded p-3 mb-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
@@ -113,10 +114,16 @@
 
 @code {
     [Parameter]
-    public SpawnPlaybackReplay? Replay { get; set; }
+    public ReplayDto? Replay { get; set; }
+
+    [Parameter]
+    public SpawnPlaybackSidecarDto? Sidecar { get; set; }
 
     private ElementReference canvasElement;
     private IJSObjectReference? module;
+    private ReplayDto? currentReplay;
+    private SpawnPlaybackSidecarDto? currentSidecar;
+    private SpawnPlaybackReplay? playback;
     private SpawnPlaybackReplay? initializedReplay;
     private int currentGameloop;
     private int renderGameloop;
@@ -128,7 +135,7 @@
     private int currentSpawnNumber;
 
     private string CurrentTimeLabel =>
-        Replay is null
+        playback is null
             ? string.Empty
             : $"{Math.Round(renderGameloop / SpawnPlaybackFactory.GameloopsPerSecond, 1):0.0}s / gameloop {renderGameloop:N0}";
 
@@ -136,16 +143,22 @@
 
     protected override void OnParametersSet()
     {
-        if (!ReferenceEquals(initializedReplay, Replay))
+        if (!ReferenceEquals(currentReplay, Replay) || !ReferenceEquals(currentSidecar, Sidecar))
         {
-            currentGameloop = GetFirstPlaybackGameloop(Replay);
+            currentReplay = Replay;
+            currentSidecar = Sidecar;
+            playback = Replay is not null && Sidecar is not null
+                ? SpawnPlaybackFactory.Create(Replay, Sidecar)
+                : null;
+            initializedReplay = null;
+            currentGameloop = GetFirstPlaybackGameloop(playback);
             SetRenderGameloop(force: true);
         }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (Replay is null)
+        if (playback is null)
         {
             return;
         }
@@ -154,10 +167,10 @@
             "import",
             "./_content/dsstats.play/spawnPlayback.js");
 
-        if (!ReferenceEquals(initializedReplay, Replay))
+        if (!ReferenceEquals(initializedReplay, playback))
         {
-            initializedReplay = Replay;
-            await module.InvokeVoidAsync("initializeSpawnPlayback", canvasElement, Replay);
+            initializedReplay = playback;
+            await module.InvokeVoidAsync("initializeSpawnPlayback", canvasElement, playback);
         }
 
         await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
@@ -165,31 +178,31 @@
 
     private Task StepBackward()
     {
-        if (Replay is null)
+        if (playback is null)
         {
             return Task.CompletedTask;
         }
 
-        currentGameloop = Math.Max(GetFirstPlaybackGameloop(Replay), currentGameloop - Replay.StepGameloops);
+        currentGameloop = Math.Max(GetFirstPlaybackGameloop(playback), currentGameloop - playback.StepGameloops);
         SetRenderGameloop();
         return Task.CompletedTask;
     }
 
     private Task StepForward()
     {
-        if (Replay is null)
+        if (playback is null)
         {
             return Task.CompletedTask;
         }
 
-        currentGameloop = Math.Min(Replay.DurationGameloop, currentGameloop + Replay.StepGameloops);
+        currentGameloop = Math.Min(playback.DurationGameloop, currentGameloop + playback.StepGameloops);
         SetRenderGameloop();
         return Task.CompletedTask;
     }
 
     private bool SetRenderGameloop(bool force = false)
     {
-        int nextRenderGameloop = ResolveRenderGameloop(Replay, currentGameloop);
+        int nextRenderGameloop = ResolveRenderGameloop(playback, currentGameloop);
         if (!force && nextRenderGameloop == renderGameloop)
         {
             return false;
@@ -208,13 +221,13 @@
         team1AliveCount = 0;
         team2AliveCount = 0;
         currentSpawnNumber = 0;
-        if (Replay is null)
+        if (playback is null)
         {
             return;
         }
 
         Dictionary<AliveUnitKey, AliveUnitAccumulator> rows = [];
-        foreach (var player in Replay.Players)
+        foreach (var player in playback.Players)
         {
             foreach (var unit in player.Units)
             {
