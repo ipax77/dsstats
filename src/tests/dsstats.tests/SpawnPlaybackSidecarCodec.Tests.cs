@@ -78,6 +78,122 @@ public class SpawnPlaybackSidecarCodecTests
     }
 
     [TestMethod]
+    public void EncodeDecode_ReusesPreviousSpawnPositions()
+    {
+        var units = Enumerable.Range(1, 40)
+            .Select(spawnNumber => new SpawnPlaybackUnitSidecarDto(
+                UnitIndex: spawnNumber,
+                Name: "Marine",
+                SpawnNumber: spawnNumber,
+                SpawnGameloop: 1_000 + spawnNumber * 100,
+                SpawnX: 165,
+                SpawnY: 174,
+                DiedGameloop: null,
+                DiedX: null,
+                DiedY: null,
+                KillGameloops: []))
+            .ToArray();
+        var source = new SpawnPlaybackSidecarDto(10_000, 112, [new(1, units)], []);
+
+        var encoded = SpawnPlaybackSidecarCodec.EncodeWithMetadata(source);
+        var decoded = SpawnPlaybackSidecarCodec.Decode(encoded.Payload);
+
+        Assert.AreEqual(1, GetPlayerCandidateCount(encoded.CodecStats));
+        Assert.AreEqual(1, GetWrittenCellCount(encoded.CodecStats));
+        Assert.AreEqual(39, encoded.CodecStats?.ReusedSpawnPositionCount);
+        CollectionAssert.AreEqual(
+            units.Select(unit => (unit.SpawnX, unit.SpawnY)).ToArray(),
+            decoded.Players[0].Units.Select(unit => (unit.SpawnX, unit.SpawnY)).ToArray());
+    }
+
+    [TestMethod]
+    public void EncodeDecode_PreviousSpawnDiffHandlesAddedAndSoldUnits()
+    {
+        SpawnPlaybackUnitSidecarDto Unit(int unitIndex, string name, int spawnNumber, int x, int y)
+        {
+            return new(unitIndex, name, spawnNumber, 1_000 + spawnNumber * 100 + unitIndex, x, y, null, null, null, []);
+        }
+
+        var source = new SpawnPlaybackSidecarDto(
+            10_000,
+            112,
+            [
+                new(1,
+                [
+                    Unit(1, "Marine", 1, 165, 174),
+                    Unit(2, "Marine", 1, 166, 173),
+                    Unit(3, "Marauder", 1, 167, 172),
+                    Unit(4, "Marine", 2, 165, 174),
+                    Unit(5, "Marine", 2, 168, 171),
+                    Unit(6, "Marauder", 2, 167, 172),
+                    Unit(7, "Marine", 3, 168, 171),
+                    Unit(8, "Marauder", 3, 167, 172)
+                ])
+            ],
+            []);
+
+        var encoded = SpawnPlaybackSidecarCodec.EncodeWithMetadata(source);
+        var decoded = SpawnPlaybackSidecarCodec.Decode(encoded.Payload);
+
+        Assert.AreEqual(1, GetPlayerCandidateCount(encoded.CodecStats));
+        Assert.IsTrue(GetWrittenCellCount(encoded.CodecStats) >= 5);
+        Assert.IsTrue(encoded.CodecStats?.ReusedSpawnPositionCount >= 2);
+        CollectionAssert.AreEqual(
+            source.Players[0].Units.Select(unit => (unit.Name, unit.SpawnNumber, unit.SpawnX, unit.SpawnY)).ToArray(),
+            decoded.Players[0].Units.Select(unit => (unit.Name, unit.SpawnNumber, unit.SpawnX, unit.SpawnY)).ToArray());
+    }
+
+    [TestMethod]
+    public void Encode_UsesAbsolutePlayerModeForTinyTie()
+    {
+        var source = new SpawnPlaybackSidecarDto(
+            1_000,
+            112,
+            [new(1, [new(1, "Marine", 1, 1_000, 165, 174, null, null, null, [])])],
+            []);
+
+        var encoded = SpawnPlaybackSidecarCodec.EncodeWithMetadata(source);
+
+        Assert.AreEqual(1, GetPlayerCandidateCount(encoded.CodecStats));
+        Assert.AreEqual(1, GetWrittenCellCount(encoded.CodecStats));
+        Assert.AreEqual(0, encoded.CodecStats?.ReusedSpawnPositionCount);
+    }
+
+    [TestMethod]
+    public void EncodeDecode_CanMixAbsoluteAndRepeatPlayerModes()
+    {
+        var repeatedUnits = Enumerable.Range(1, 20)
+            .Select(spawnNumber => new SpawnPlaybackUnitSidecarDto(
+                100 + spawnNumber,
+                "Zergling",
+                spawnNumber,
+                2_000 + spawnNumber,
+                84,
+                93,
+                null,
+                null,
+                null,
+                []))
+            .ToArray();
+        var source = new SpawnPlaybackSidecarDto(
+            10_000,
+            112,
+            [
+                new(1, [new(1, "Marine", 1, 1_000, 165, 174, null, null, null, [])]),
+                new(4, repeatedUnits)
+            ],
+            []);
+
+        var encoded = SpawnPlaybackSidecarCodec.EncodeWithMetadata(source);
+        var decoded = SpawnPlaybackSidecarCodec.Decode(encoded.Payload);
+
+        Assert.AreEqual(2, GetPlayerCandidateCount(encoded.CodecStats));
+        Assert.AreEqual(2, decoded.Players.Count);
+        Assert.AreEqual(84, decoded.Players[1].Units[0].SpawnX);
+        Assert.AreEqual(93, decoded.Players[1].Units[^1].SpawnY);
+    }
+
+    [TestMethod]
     public void Encode_UsesCompactPayloadForRepeatedUnits()
     {
         var units = Enumerable.Range(0, 250)
@@ -106,5 +222,17 @@ public class SpawnPlaybackSidecarCodecTests
         Assert.IsTrue(payload.Length < json.Length);
         Assert.AreEqual(units.Length, SpawnPlaybackSidecarCodec.GetUnitCount(source));
         Assert.IsTrue(SpawnPlaybackSidecarCodec.GetUncompressedLength(source) > payload.Length);
+    }
+
+    private static int GetPlayerCandidateCount(SpawnPlaybackCodecStats? stats)
+    {
+        Assert.IsNotNull(stats);
+        return stats.AbsolutePlayerCount + stats.RepeatPlayerCount;
+    }
+
+    private static int GetWrittenCellCount(SpawnPlaybackCodecStats? stats)
+    {
+        Assert.IsNotNull(stats);
+        return stats.ChangedSpawnPositionCount;
     }
 }

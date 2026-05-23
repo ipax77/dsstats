@@ -252,16 +252,22 @@ static async Task RunImportTeSidecars(string[] args)
             };
 
             imports.Add(new(replay, encoded));
+            var codecStats = encoded.CodecStats ?? new(0, 0, 0, 0, 0);
             metrics.Add(new(
                 file.Name,
                 replay.ComputeHash(),
                 file.Length,
                 encoded.UnitCount,
                 encoded.CompressedLength,
-                encoded.UncompressedLength));
+                encoded.UncompressedLength,
+                codecStats.AbsolutePlayerCount,
+                codecStats.RepeatPlayerCount,
+                codecStats.RawSpawnPositionCount,
+                codecStats.ChangedSpawnPositionCount,
+                codecStats.ReusedSpawnPositionCount));
 
             Console.WriteLine(
-                $"{file.Name}: units={encoded.UnitCount:N0}, compressed={ToKiB(encoded.CompressedLength):N1} KiB, ratio={GetRatio(encoded.CompressedLength, encoded.UncompressedLength):P1}");
+                $"{file.Name}: units={encoded.UnitCount:N0}, compressed={ToKiB(encoded.CompressedLength):N1} KiB, ratio={GetRatio(encoded.CompressedLength, encoded.UncompressedLength):P1}, modes={codecStats.AbsolutePlayerCount:N0}/{codecStats.RepeatPlayerCount:N0}, reuse={codecStats.ReusedSpawnPositionCount:N0}");
         }
         catch (Exception ex)
         {
@@ -301,6 +307,11 @@ static void PrintSummary(
     int totalUnits = metrics.Sum(x => x.UnitCount);
     int totalCompressed = metrics.Sum(x => x.CompressedLength);
     int totalUncompressed = metrics.Sum(x => x.UncompressedLength);
+    int totalAbsolutePlayers = metrics.Sum(x => x.AbsolutePlayerCount);
+    int totalRepeatPlayers = metrics.Sum(x => x.RepeatPlayerCount);
+    int totalRawSpawns = metrics.Sum(x => x.RawSpawnPositionCount);
+    int totalChangedSpawns = metrics.Sum(x => x.ChangedSpawnPositionCount);
+    int totalReusedSpawns = metrics.Sum(x => x.ReusedSpawnPositionCount);
 
     Console.WriteLine();
     Console.WriteLine("Summary");
@@ -313,6 +324,8 @@ static void PrintSummary(
     Console.WriteLine($"Compressed min/max: {ToKiB(metrics.Select(x => x.CompressedLength).DefaultIfEmpty().Min()):N1}/{ToKiB(metrics.Select(x => x.CompressedLength).DefaultIfEmpty().Max()):N1} KiB");
     Console.WriteLine($"Bytes per unit: compressed={GetAverage(totalCompressed, totalUnits):N2}, uncompressed={GetAverage(totalUncompressed, totalUnits):N2}");
     Console.WriteLine($"Compression ratio: {GetRatio(totalCompressed, totalUncompressed):P1}");
+    Console.WriteLine($"Player modes: absolute={totalAbsolutePlayers:N0}, repeat={totalRepeatPlayers:N0}");
+    Console.WriteLine($"Spawn positions: raw={totalRawSpawns:N0}, changed={totalChangedSpawns:N0}, reused={totalReusedSpawns:N0}");
     Console.WriteLine($"Timings: decode={decodeElapsed}, encode={encodeElapsed}, import={importElapsed}, total={totalElapsed}");
 
     if (errors.Count > 0)
@@ -367,7 +380,12 @@ sealed record ReplayImportMetric(
     long FileBytes,
     int UnitCount,
     int CompressedLength,
-    int UncompressedLength);
+    int UncompressedLength,
+    int AbsolutePlayerCount,
+    int RepeatPlayerCount,
+    int RawSpawnPositionCount,
+    int ChangedSpawnPositionCount,
+    int ReusedSpawnPositionCount);
 
 sealed class ImportTeOptions
 {
