@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.web", "dsstats.web.csproj", "{E045C5AF-53F6-C795-3D10-F85163897E06}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsstats.play", "..\..\play\dsstats.play\dsstats.play.csproj", "{340C103B-8658-476B-9F51-8FD796CB1D1A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{E045C5AF-53F6-C795-3D10-F85163897E06}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E045C5AF-53F6-C795-3D10-F85163897E06}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E045C5AF-53F6-C795-3D10-F85163897E06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{340C103B-8658-476B-9F51-8FD796CB1D1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{340C103B-8658-476B-9F51-8FD796CB1D1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{340C103B-8658-476B-9F51-8FD796CB1D1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{340C103B-8658-476B-9F51-8FD796CB1D1A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

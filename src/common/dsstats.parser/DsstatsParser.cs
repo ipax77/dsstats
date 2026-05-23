@@ -3,6 +3,7 @@ using dsstats.shared.InHouse;
 using s2protocol.NET;
 using s2protocol.NET.Models;
 using ExternalDirectStrikeObserver = Sc2DirectStrike.Parser.DirectStrikeObserver;
+using ExternalDirectStrikeReplay = Sc2DirectStrike.Parser.DirectStrikeReplay;
 using ExternalBreakpoint = Sc2DirectStrike.Parser.Breakpoint;
 using ExternalCommander = Sc2DirectStrike.Parser.Commander;
 using ExternalGameMode = Sc2DirectStrike.Parser.GameMode;
@@ -53,6 +54,13 @@ public static class DsstatsParser
         ReplayDto dto = externalReplay.ToDsstatsDto();
         SetMvp(dto);
         return dto;
+    }
+
+    public static ExternalDirectStrikeReplay ParseDirectStrikeReplay(Sc2Replay replay)
+    {
+        ArgumentNullException.ThrowIfNull(replay);
+
+        return Sc2DirectStrike.Parser.Sc2DirectStrikeParser.Parse(replay);
     }
 
     public static InHouseParsedReplayDto ParseInHouseReplay(Sc2Replay replay)

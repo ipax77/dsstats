@@ -249,11 +249,13 @@
 	{
 		isLoading = true;
 		result = string.Empty;
+		replayDetails = null;
 		await InvokeAsync(StateHasChanged);
 
 		var file = e.GetMultipleFiles(maxAllowedFiles).FirstOrDefault();
 		if (file == null || hubConnection == null)
 		{
+			isLoading = false;
 			return;
 		}
 		try

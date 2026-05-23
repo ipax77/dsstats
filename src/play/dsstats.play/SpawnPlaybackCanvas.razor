@@ -1,0 +1,121 @@
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JSRuntime
+
+@if (Replay is not null)
+{
+    <div class="spawn-playback bgchart border border-dark rounded p-3 mb-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+            <div>
+                <h5 class="mb-1 text-warning">Spawn Playback</h5>
+                <div class="small text-light">@CurrentTimeLabel</div>
+            </div>
+            <div class="btn-group" role="group" aria-label="Spawn playback controls">
+                <button type="button" class="btn btn-sm btn-outline-light" title="Back 5 seconds" @onclick="StepBackward">
+                    <span class="bi bi-chevron-left"></span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-light" title="Forward 5 seconds" @onclick="StepForward">
+                    <span class="bi bi-chevron-right"></span>
+                </button>
+            </div>
+        </div>
+        <canvas @ref="canvasElement" class="spawn-playback-canvas"></canvas>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public SpawnPlaybackReplay? Replay { get; set; }
+
+    private ElementReference canvasElement;
+    private IJSObjectReference? module;
+    private SpawnPlaybackReplay? initializedReplay;
+    private int currentGameloop;
+
+    private string CurrentTimeLabel =>
+        Replay is null
+            ? string.Empty
+            : $"{Math.Round(currentGameloop / SpawnPlaybackFactory.GameloopsPerSecond, 1):0.0}s / gameloop {currentGameloop:N0}";
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(initializedReplay, Replay))
+        {
+            currentGameloop = GetFirstSpawnGameloop(Replay);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Replay is null)
+        {
+            return;
+        }
+
+        module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import",
+            "./_content/dsstats.play/spawnPlayback.js");
+
+        if (!ReferenceEquals(initializedReplay, Replay))
+        {
+            initializedReplay = Replay;
+            await module.InvokeVoidAsync("initializeSpawnPlayback", canvasElement, Replay);
+        }
+
+        await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, currentGameloop);
+    }
+
+    private async Task StepBackward()
+    {
+        if (Replay is null)
+        {
+            return;
+        }
+
+        currentGameloop = Math.Max(GetFirstSpawnGameloop(Replay), currentGameloop - Replay.StepGameloops);
+        await Draw();
+    }
+
+    private async Task StepForward()
+    {
+        if (Replay is null)
+        {
+            return;
+        }
+
+        currentGameloop = Math.Min(Replay.DurationGameloop, currentGameloop + Replay.StepGameloops);
+        await Draw();
+    }
+
+    private async Task Draw()
+    {
+        if (module is not null)
+        {
+            await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, currentGameloop);
+        }
+    }
+
+    private static int GetFirstSpawnGameloop(SpawnPlaybackReplay? replay)
+    {
+        return replay?.Players
+            .SelectMany(player => player.Units)
+            .Select(unit => unit.SpawnGameloop)
+            .DefaultIfEmpty(0)
+            .Min() ?? 0;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (module is not null)
+        {
+            try
+            {
+                await module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+    }
+}

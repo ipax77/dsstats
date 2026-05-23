@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\common\dsstats.parser\dsstats.parser.csproj" />
     <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />
     <ProjectReference Include="..\..\common\dsstats.weblib\dsstats.weblib.csproj" />
+    <ProjectReference Include="..\..\play\dsstats.play\dsstats.play.csproj" />
     <ProjectReference Include="..\dsstats.apiServices\dsstats.apiServices.csproj" />
   </ItemGroup>
 
