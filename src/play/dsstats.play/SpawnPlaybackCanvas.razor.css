@@ -22,6 +22,15 @@
     background: #071015;
 }
 
+.spawn-playback-slider {
+    margin-top: 0.75rem;
+}
+
+.spawn-playback-range {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
 .spawn-playback-alive {
     min-width: 0;
 }

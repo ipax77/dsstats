@@ -24,6 +24,22 @@
         <div class="spawn-playback-body">
             <div class="spawn-playback-canvas-wrap">
                 <canvas @ref="canvasElement" class="spawn-playback-canvas"></canvas>
+                <div class="spawn-playback-slider">
+                    <input type="range"
+                           class="form-range spawn-playback-range"
+                           min="0"
+                           max="@PlaybackStopMaxIndex"
+                           step="1"
+                           value="@currentPlaybackStopIndex"
+                           disabled="@(playbackStops.Count <= 1)"
+                           aria-label="Spawn playback position"
+                           @oninput="SeekPlaybackStop" />
+                    <div class="d-flex align-items-center justify-content-between gap-2 small text-muted">
+                        <span>@FirstPlaybackStopLabel</span>
+                        <span>@CurrentPlaybackStopLabel</span>
+                        <span>@LastPlaybackStopLabel</span>
+                    </div>
+                </div>
             </div>
             <div class="spawn-playback-alive">
                 <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
@@ -127,6 +143,9 @@
     private SpawnPlaybackReplay? initializedReplay;
     private int currentGameloop;
     private int renderGameloop;
+    private readonly List<int> playbackStops = [];
+    private int currentPlaybackStopIndex;
+    private bool canvasDrawPending;
     private readonly List<AliveUnitRow> team1AliveUnitRows = [];
     private readonly List<AliveUnitRow> team2AliveUnitRows = [];
     private int aliveUnitCount;
@@ -141,6 +160,18 @@
 
     private string CurrentSpawnLabel => currentSpawnNumber > 0 ? currentSpawnNumber.ToString("N0") : "-";
 
+    private int PlaybackStopMaxIndex => Math.Max(0, playbackStops.Count - 1);
+
+    private string FirstPlaybackStopLabel => playbackStops.Count == 0 ? string.Empty : FormatGameloopSeconds(playbackStops[0]);
+
+    private string CurrentPlaybackStopLabel => playbackStops.Count == 0
+        ? string.Empty
+        : $"{currentPlaybackStopIndex + 1:N0} / {playbackStops.Count:N0}";
+
+    private string LastPlaybackStopLabel => playbackStops.Count == 0
+        ? string.Empty
+        : FormatGameloopSeconds(playbackStops[^1]);
+
     protected override void OnParametersSet()
     {
         if (!ReferenceEquals(currentReplay, Replay) || !ReferenceEquals(currentSidecar, Sidecar))
@@ -151,7 +182,9 @@
                 ? SpawnPlaybackFactory.Create(Replay, Sidecar)
                 : null;
             initializedReplay = null;
+            BuildPlaybackStops(playback);
             currentGameloop = GetFirstPlaybackGameloop(playback);
+            currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(currentGameloop);
             SetRenderGameloop(force: true);
         }
     }
@@ -171,9 +204,14 @@
         {
             initializedReplay = playback;
             await module.InvokeVoidAsync("initializeSpawnPlayback", canvasElement, playback);
+            canvasDrawPending = true;
         }
 
-        await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
+        if (canvasDrawPending)
+        {
+            await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
+            canvasDrawPending = false;
+        }
     }
 
     private Task StepBackward()
@@ -185,6 +223,7 @@
 
         currentGameloop = Math.Max(GetFirstPlaybackGameloop(playback), currentGameloop - playback.StepGameloops);
         SetRenderGameloop();
+        currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(renderGameloop);
         return Task.CompletedTask;
     }
 
@@ -196,6 +235,26 @@
         }
 
         currentGameloop = Math.Min(playback.DurationGameloop, currentGameloop + playback.StepGameloops);
+        SetRenderGameloop();
+        currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(renderGameloop);
+        return Task.CompletedTask;
+    }
+
+    private Task SeekPlaybackStop(ChangeEventArgs args)
+    {
+        if (playback is null || playbackStops.Count == 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        int nextIndex = ParsePlaybackStopIndex(args.Value);
+        if (nextIndex == currentPlaybackStopIndex && playbackStops[nextIndex] == currentGameloop)
+        {
+            return Task.CompletedTask;
+        }
+
+        currentPlaybackStopIndex = nextIndex;
+        currentGameloop = playbackStops[nextIndex];
         SetRenderGameloop();
         return Task.CompletedTask;
     }
@@ -210,7 +269,137 @@
 
         renderGameloop = nextRenderGameloop;
         UpdateAliveUnitRows();
+        canvasDrawPending = true;
         return true;
+    }
+
+    private void BuildPlaybackStops(SpawnPlaybackReplay? replay)
+    {
+        playbackStops.Clear();
+        if (replay is null)
+        {
+            currentPlaybackStopIndex = 0;
+            return;
+        }
+
+        int firstGameloop = GetFirstPlaybackGameloop(replay);
+        if (replay.Snapshots.Count > 0)
+        {
+            AddPlaybackStop(firstGameloop);
+            foreach (var snapshot in replay.Snapshots)
+            {
+                AddPlaybackStop(snapshot.EndGameloop);
+            }
+
+            AddPlaybackStop(replay.DurationGameloop);
+            playbackStops.Sort();
+            RemoveDuplicatePlaybackStops();
+            return;
+        }
+
+        int stepGameloops = Math.Max(1, replay.StepGameloops);
+        int fallbackGameloop = firstGameloop;
+        while (fallbackGameloop < replay.DurationGameloop)
+        {
+            playbackStops.Add(fallbackGameloop);
+            if (replay.DurationGameloop - fallbackGameloop <= stepGameloops)
+            {
+                break;
+            }
+
+            fallbackGameloop += stepGameloops;
+        }
+
+        AddPlaybackStop(firstGameloop);
+        AddPlaybackStop(replay.DurationGameloop);
+        playbackStops.Sort();
+        RemoveDuplicatePlaybackStops();
+    }
+
+    private void AddPlaybackStop(int gameloop)
+    {
+        if (playbackStops.Count == 0 || playbackStops[^1] != gameloop)
+        {
+            playbackStops.Add(gameloop);
+        }
+    }
+
+    private void RemoveDuplicatePlaybackStops()
+    {
+        if (playbackStops.Count < 2)
+        {
+            return;
+        }
+
+        int writeIndex = 1;
+        int previous = playbackStops[0];
+        for (int readIndex = 1; readIndex < playbackStops.Count; readIndex++)
+        {
+            int current = playbackStops[readIndex];
+            if (current == previous)
+            {
+                continue;
+            }
+
+            playbackStops[writeIndex] = current;
+            previous = current;
+            writeIndex++;
+        }
+
+        if (writeIndex < playbackStops.Count)
+        {
+            playbackStops.RemoveRange(writeIndex, playbackStops.Count - writeIndex);
+        }
+    }
+
+    private int ParsePlaybackStopIndex(object? value)
+    {
+        if (value is int index)
+        {
+            return ClampPlaybackStopIndex(index);
+        }
+
+        return value is string text && int.TryParse(text, out index)
+            ? ClampPlaybackStopIndex(index)
+            : currentPlaybackStopIndex;
+    }
+
+    private int ClampPlaybackStopIndex(int index)
+    {
+        if (index < 0)
+        {
+            return 0;
+        }
+
+        int maxIndex = playbackStops.Count - 1;
+        return index > maxIndex ? maxIndex : index;
+    }
+
+    private int FindPlaybackStopIndexAtOrBefore(int gameloop)
+    {
+        int left = 0;
+        int right = playbackStops.Count - 1;
+        int index = 0;
+        while (left <= right)
+        {
+            int middle = left + (right - left) / 2;
+            if (playbackStops[middle] <= gameloop)
+            {
+                index = middle;
+                left = middle + 1;
+            }
+            else
+            {
+                right = middle - 1;
+            }
+        }
+
+        return index;
+    }
+
+    private static string FormatGameloopSeconds(int gameloop)
+    {
+        return $"{Math.Round(gameloop / SpawnPlaybackFactory.GameloopsPerSecond, 1):0.0}s";
     }
 
     private void UpdateAliveUnitRows()
