@@ -20,7 +20,94 @@
                 </button>
             </div>
         </div>
-        <canvas @ref="canvasElement" class="spawn-playback-canvas"></canvas>
+        <div class="spawn-playback-body">
+            <div class="spawn-playback-canvas-wrap">
+                <canvas @ref="canvasElement" class="spawn-playback-canvas"></canvas>
+            </div>
+            <div class="spawn-playback-alive">
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                    <div>
+                        <h6 class="mb-0 text-warning">Alive Units</h6>
+                        <div class="small text-muted">Current spawn @CurrentSpawnLabel</div>
+                    </div>
+                    <span class="badge text-bg-dark border border-secondary">@aliveUnitCount.ToString("N0") units</span>
+                </div>
+                <div class="spawn-playback-team-tables">
+                    <section class="spawn-playback-team-table">
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                            <div class="small fw-semibold text-info">Team 1</div>
+                            <div class="small text-muted">@team1AliveCount.ToString("N0") units</div>
+                        </div>
+                        <div class="table-responsive spawn-playback-alive-table">
+                            <table class="table table-dark table-sm table-striped align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Unit</th>
+                                        <th class="text-end">Alive</th>
+                                        <th class="text-end">Kills</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (team1AliveUnitRows.Count == 0)
+                                    {
+                                        <tr>
+                                            <td colspan="3" class="text-muted text-center py-3">No estimated alive units</td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var row in team1AliveUnitRows)
+                                        {
+                                            <tr>
+                                                <td class="text-truncate" title="@row.UnitName">@row.UnitName</td>
+                                                <td class="text-end">@row.AliveCount.ToString("N0")</td>
+                                                <td class="text-end">@row.CurrentKills</td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                    <section class="spawn-playback-team-table">
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                            <div class="small fw-semibold text-danger">Team 2</div>
+                            <div class="small text-muted">@team2AliveCount.ToString("N0") units</div>
+                        </div>
+                        <div class="table-responsive spawn-playback-alive-table">
+                            <table class="table table-dark table-sm table-striped align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Unit</th>
+                                        <th class="text-end">Alive</th>
+                                        <th class="text-end">Kills</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (team2AliveUnitRows.Count == 0)
+                                    {
+                                        <tr>
+                                            <td colspan="3" class="text-muted text-center py-3">No estimated alive units</td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var row in team2AliveUnitRows)
+                                        {
+                                            <tr>
+                                                <td class="text-truncate" title="@row.UnitName">@row.UnitName</td>
+                                                <td class="text-end">@row.AliveCount.ToString("N0")</td>
+                                                <td class="text-end">@row.CurrentKills</td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
     </div>
 }
 
@@ -32,17 +119,27 @@
     private IJSObjectReference? module;
     private SpawnPlaybackReplay? initializedReplay;
     private int currentGameloop;
+    private int renderGameloop;
+    private readonly List<AliveUnitRow> team1AliveUnitRows = [];
+    private readonly List<AliveUnitRow> team2AliveUnitRows = [];
+    private int aliveUnitCount;
+    private int team1AliveCount;
+    private int team2AliveCount;
+    private int currentSpawnNumber;
 
     private string CurrentTimeLabel =>
         Replay is null
             ? string.Empty
-            : $"{Math.Round(currentGameloop / SpawnPlaybackFactory.GameloopsPerSecond, 1):0.0}s / gameloop {currentGameloop:N0}";
+            : $"{Math.Round(renderGameloop / SpawnPlaybackFactory.GameloopsPerSecond, 1):0.0}s / gameloop {renderGameloop:N0}";
+
+    private string CurrentSpawnLabel => currentSpawnNumber > 0 ? currentSpawnNumber.ToString("N0") : "-";
 
     protected override void OnParametersSet()
     {
         if (!ReferenceEquals(initializedReplay, Replay))
         {
-            currentGameloop = GetFirstSpawnGameloop(Replay);
+            currentGameloop = GetFirstPlaybackGameloop(Replay);
+            SetRenderGameloop(force: true);
         }
     }
 
@@ -63,7 +160,7 @@
             await module.InvokeVoidAsync("initializeSpawnPlayback", canvasElement, Replay);
         }
 
-        await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, currentGameloop);
+        await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
     }
 
     private async Task StepBackward()
@@ -73,7 +170,8 @@
             return;
         }
 
-        currentGameloop = Math.Max(GetFirstSpawnGameloop(Replay), currentGameloop - Replay.StepGameloops);
+        currentGameloop = Math.Max(GetFirstPlaybackGameloop(Replay), currentGameloop - Replay.StepGameloops);
+        SetRenderGameloop();
         await Draw();
     }
 
@@ -85,24 +183,165 @@
         }
 
         currentGameloop = Math.Min(Replay.DurationGameloop, currentGameloop + Replay.StepGameloops);
+        SetRenderGameloop();
         await Draw();
+    }
+
+    private void SetRenderGameloop(bool force = false)
+    {
+        int nextRenderGameloop = ResolveRenderGameloop(Replay, currentGameloop);
+        if (!force && nextRenderGameloop == renderGameloop)
+        {
+            return;
+        }
+
+        renderGameloop = nextRenderGameloop;
+        UpdateAliveUnitRows();
+    }
+
+    private void UpdateAliveUnitRows()
+    {
+        team1AliveUnitRows.Clear();
+        team2AliveUnitRows.Clear();
+        aliveUnitCount = 0;
+        team1AliveCount = 0;
+        team2AliveCount = 0;
+        currentSpawnNumber = 0;
+        if (Replay is null)
+        {
+            return;
+        }
+
+        Dictionary<AliveUnitKey, AliveUnitAccumulator> rows = [];
+        foreach (var player in Replay.Players)
+        {
+            foreach (var unit in player.Units)
+            {
+                if (unit.SpawnGameloop > renderGameloop)
+                {
+                    continue;
+                }
+
+                currentSpawnNumber = Math.Max(currentSpawnNumber, unit.SpawnNumber);
+                if (unit.DiedGameloop is int diedGameloop && diedGameloop <= renderGameloop)
+                {
+                    continue;
+                }
+
+                aliveUnitCount++;
+                if (player.TeamId == 1)
+                {
+                    team1AliveCount++;
+                }
+                else if (player.TeamId == 2)
+                {
+                    team2AliveCount++;
+                }
+
+                var key = new AliveUnitKey(player.TeamId, unit.Name);
+                rows.TryGetValue(key, out var row);
+                rows[key] = row.Add(GetCurrentKills(unit.KillGameloops, renderGameloop));
+            }
+        }
+
+        foreach (var pair in rows)
+        {
+            var row = new AliveUnitRow(
+                pair.Key.TeamId,
+                pair.Key.UnitName,
+                pair.Value.AliveCount,
+                pair.Value.CurrentKills);
+            if (pair.Key.TeamId == 1)
+            {
+                team1AliveUnitRows.Add(row);
+            }
+            else if (pair.Key.TeamId == 2)
+            {
+                team2AliveUnitRows.Add(row);
+            }
+        }
+
+        team1AliveUnitRows.Sort(CompareAliveUnitRows);
+        team2AliveUnitRows.Sort(CompareAliveUnitRows);
+    }
+
+    private static int CompareAliveUnitRows(AliveUnitRow left, AliveUnitRow right)
+    {
+        return string.Compare(left.UnitName, right.UnitName, StringComparison.Ordinal);
+    }
+
+    private readonly record struct AliveUnitKey(int TeamId, string UnitName);
+
+    private readonly record struct AliveUnitAccumulator(int AliveCount, int CurrentKills)
+    {
+        public AliveUnitAccumulator Add(int kills)
+        {
+            return new(AliveCount + 1, CurrentKills + kills);
+        }
+    }
+
+    private static int GetCurrentKills(IReadOnlyList<int> killGameloops, int currentGameloop)
+    {
+        int kills = 0;
+        while (kills < killGameloops.Count && killGameloops[kills] <= currentGameloop)
+        {
+            kills++;
+        }
+
+        return kills;
     }
 
     private async Task Draw()
     {
         if (module is not null)
         {
-            await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, currentGameloop);
+            await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
         }
     }
 
-    private static int GetFirstSpawnGameloop(SpawnPlaybackReplay? replay)
+    private static int GetFirstPlaybackGameloop(SpawnPlaybackReplay? replay)
+    {
+        if (replay is null)
+        {
+            return 0;
+        }
+
+        return replay.Snapshots.Count > 0
+            ? replay.Snapshots[0].EndGameloop
+            : GetFirstUnitSpawnGameloop(replay);
+    }
+
+    private static int GetFirstUnitSpawnGameloop(SpawnPlaybackReplay? replay)
     {
         return replay?.Players
             .SelectMany(player => player.Units)
             .Select(unit => unit.SpawnGameloop)
             .DefaultIfEmpty(0)
             .Min() ?? 0;
+    }
+
+    private static int ResolveRenderGameloop(SpawnPlaybackReplay? replay, int gameloop)
+    {
+        if (replay is null || replay.Snapshots.Count == 0)
+        {
+            return gameloop;
+        }
+
+        int renderGameloop = gameloop;
+        foreach (var snapshot in replay.Snapshots)
+        {
+            if (snapshot.StartGameloop > gameloop)
+            {
+                break;
+            }
+
+            if (snapshot.EndGameloop >= gameloop)
+            {
+                renderGameloop = Math.Max(renderGameloop, snapshot.EndGameloop);
+            }
+        }
+
+        return renderGameloop;
     }
 
     public async ValueTask DisposeAsync()
@@ -118,4 +357,10 @@
             }
         }
     }
+
+    private sealed record AliveUnitRow(
+        int TeamId,
+        string UnitName,
+        int AliveCount,
+        int CurrentKills);
 }

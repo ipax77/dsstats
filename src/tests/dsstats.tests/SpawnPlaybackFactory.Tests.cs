@@ -59,14 +59,23 @@ public sealed class SpawnPlaybackFactoryTests
         Assert.AreEqual(1, playback.Players[0].TeamId);
         Assert.AreEqual("Player One", playback.Players[0].Name);
         Assert.AreEqual("Terran", playback.Players[0].Commander);
+        Assert.AreEqual(0, playback.Players[0].RefineryGameloops.Count);
         CollectionAssert.AreEquivalent(
             new[] { "Nexus", "Cannon", "Bunker", "Planetary" },
             playback.Landmarks.Select(landmark => landmark.Name).ToArray());
         Assert.IsTrue(playback.Landmarks.All(landmark => landmark.Kills == 0));
+        Assert.IsTrue(playback.Landmarks.All(landmark => landmark.DiedGameloop is null));
+        Assert.AreEqual(0, playback.MiddleControl.FirstTeamId);
+        Assert.AreEqual(0, playback.MiddleControl.ChangeGameloops.Count);
+        Assert.AreEqual(1, playback.Snapshots.Count);
+        Assert.AreEqual(1, playback.Snapshots[0].SpawnNumber);
+        Assert.AreEqual(100, playback.Snapshots[0].StartGameloop);
+        Assert.AreEqual(220, playback.Snapshots[0].EndGameloop);
 
         var unit = playback.Players[0].Units.Single();
         Assert.AreEqual(42, unit.UnitIndex);
         Assert.AreEqual("Marine", unit.Name);
+        Assert.AreEqual(1, unit.SpawnNumber);
         Assert.AreEqual(112, unit.SpawnGameloop);
         Assert.AreEqual(170, unit.SpawnX);
         Assert.AreEqual(160, unit.SpawnY);
@@ -75,7 +84,7 @@ public sealed class SpawnPlaybackFactoryTests
         Assert.AreEqual(120, unit.DiedY);
         Assert.AreEqual(130, unit.TargetX);
         Assert.AreEqual(120, unit.TargetY);
-        Assert.AreEqual(0, unit.Kills);
+        Assert.AreEqual(0, unit.KillGameloops.Count);
         Assert.IsTrue(unit.Radius > 0);
         StringAssert.StartsWith(unit.Color, "#");
     }
@@ -207,7 +216,7 @@ public sealed class SpawnPlaybackFactoryTests
     }
 
     [TestMethod]
-    public void Create_PreservesProvidedUnitKillsAndBuildUnitSummary()
+    public void Create_PreservesProvidedUnitKillGameloops()
     {
         var replay = new DirectStrikeReplay
         {
@@ -244,18 +253,218 @@ public sealed class SpawnPlaybackFactoryTests
             ])
         };
         var unitKey = SpawnPlaybackFactory.GetUnitKey(42, 112, 170, 160, "Marine");
-        Dictionary<SpawnPlaybackUnitKey, int> unitKills = new()
+        Dictionary<SpawnPlaybackUnitKey, IReadOnlyList<int>> unitKillGameloops = new()
         {
-            [unitKey] = 4
+            [unitKey] = [180, 140, 160]
         };
-        SpawnPlaybackBuildUnit[] buildUnits =
-        [
-            new("Player One", 1, 1, "Marine", 80, 160, 150, 1, 4, 8, "#5DADEC")
-        ];
 
-        var playback = SpawnPlaybackFactory.Create(replay, unitKills: unitKills, buildUnits: buildUnits);
+        var playback = SpawnPlaybackFactory.Create(replay, unitKillGameloops: unitKillGameloops);
 
-        Assert.AreEqual(4, playback.Players[0].Units.Single().Kills);
-        Assert.AreSame(buildUnits, playback.BuildUnits);
+        CollectionAssert.AreEqual(
+            new[] { 140, 160, 180 },
+            playback.Players[0].Units.Single().KillGameloops.ToArray());
+    }
+
+    [TestMethod]
+    public void Create_PreservesPlayerRefineryTimesAsGameloops()
+    {
+        var replay = new DirectStrikeReplay
+        {
+            Duration = TimeSpan.FromSeconds(30),
+            Players = new ReadOnlyCollection<DirectStrikePlayer>(
+            [
+                new DirectStrikePlayer
+                {
+                    Name = "Gas Player",
+                    TeamId = 1,
+                    GamePos = 2,
+                    Commander = Commander.Terran,
+                    RefineryTimes =
+                    [
+                        TimeSpan.FromSeconds(5),
+                        TimeSpan.FromSeconds(12),
+                    ],
+                    Spawns = new ReadOnlyCollection<DirectStrikePlayerSpawn>([])
+                }
+            ])
+        };
+
+        var playback = SpawnPlaybackFactory.Create(replay);
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                (int)Math.Round(5 * SpawnPlaybackFactory.GameloopsPerSecond),
+                (int)Math.Round(12 * SpawnPlaybackFactory.GameloopsPerSecond),
+            },
+            playback.Players[0].RefineryGameloops.ToArray());
+    }
+
+    [TestMethod]
+    public void Create_PreservesMiddleControlChangesAsGameloops()
+    {
+        var replay = new DirectStrikeReplay
+        {
+            Duration = TimeSpan.FromSeconds(10),
+            FirstMiddleControlTeam = 2,
+            MiddleChanges =
+            [
+                TimeSpan.FromSeconds(3),
+                TimeSpan.FromSeconds(8),
+            ],
+            Players = new ReadOnlyCollection<DirectStrikePlayer>([])
+        };
+
+        var playback = SpawnPlaybackFactory.Create(replay);
+
+        Assert.AreEqual(2, playback.MiddleControl.FirstTeamId);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                (int)Math.Round(3 * SpawnPlaybackFactory.GameloopsPerSecond),
+                (int)Math.Round(8 * SpawnPlaybackFactory.GameloopsPerSecond),
+            },
+            playback.MiddleControl.ChangeGameloops.ToArray());
+    }
+
+    [TestMethod]
+    public void Create_IgnoresInvalidMiddleControl()
+    {
+        var replay = new DirectStrikeReplay
+        {
+            Duration = TimeSpan.FromSeconds(10),
+            FirstMiddleControlTeam = 3,
+            MiddleChanges = [TimeSpan.FromSeconds(3)],
+            Players = new ReadOnlyCollection<DirectStrikePlayer>([])
+        };
+
+        var playback = SpawnPlaybackFactory.Create(replay);
+
+        Assert.AreEqual(0, playback.MiddleControl.FirstTeamId);
+        Assert.AreEqual(0, playback.MiddleControl.ChangeGameloops.Count);
+
+        replay.FirstMiddleControlTeam = 1;
+        replay.MiddleChanges = [];
+
+        playback = SpawnPlaybackFactory.Create(replay);
+
+        Assert.AreEqual(0, playback.MiddleControl.FirstTeamId);
+        Assert.AreEqual(0, playback.MiddleControl.ChangeGameloops.Count);
+    }
+
+    [TestMethod]
+    public void Create_CreatesPairedSnapshotsAtCompletedSpawnEnd()
+    {
+        var replay = new DirectStrikeReplay
+        {
+            Duration = TimeSpan.FromSeconds(10),
+            Players = new ReadOnlyCollection<DirectStrikePlayer>(
+            [
+                CreatePlayer("Team 1", 1, 1, CreateSpawn(1, 100, 140, "Zergling", 112)),
+                CreatePlayer("Team 2", 2, 4, CreateSpawn(1, 104, 170, "Marine", 126)),
+            ])
+        };
+
+        var playback = SpawnPlaybackFactory.Create(replay);
+
+        Assert.AreEqual(1, playback.Snapshots.Count);
+        Assert.AreEqual(1, playback.Snapshots[0].SpawnNumber);
+        Assert.AreEqual(100, playback.Snapshots[0].StartGameloop);
+        Assert.AreEqual(170, playback.Snapshots[0].EndGameloop);
+        Assert.AreEqual(112, playback.Players.Single(player => player.TeamId == 1).Units.Single().SpawnGameloop);
+        Assert.AreEqual(126, playback.Players.Single(player => player.TeamId == 2).Units.Single().SpawnGameloop);
+    }
+
+    [TestMethod]
+    public void Create_KeepsUnpairedSnapshots()
+    {
+        var replay = new DirectStrikeReplay
+        {
+            Duration = TimeSpan.FromSeconds(10),
+            Players = new ReadOnlyCollection<DirectStrikePlayer>(
+            [
+                CreatePlayer("Team 1", 1, 1, CreateSpawn(1, 200, 260, "Marine", 212)),
+            ])
+        };
+
+        var playback = SpawnPlaybackFactory.Create(replay);
+
+        Assert.AreEqual(1, playback.Snapshots.Count);
+        Assert.AreEqual(1, playback.Snapshots[0].SpawnNumber);
+        Assert.AreEqual(200, playback.Snapshots[0].StartGameloop);
+        Assert.AreEqual(260, playback.Snapshots[0].EndGameloop);
+    }
+
+    [TestMethod]
+    public void Create_SortsSnapshotsByStartThenEndThenSpawnNumber()
+    {
+        var replay = new DirectStrikeReplay
+        {
+            Duration = TimeSpan.FromSeconds(10),
+            Players = new ReadOnlyCollection<DirectStrikePlayer>(
+            [
+                CreatePlayer(
+                    "Team 1",
+                    1,
+                    1,
+                    CreateSpawn(1, 300, 340, "Marine", 320),
+                    CreateSpawn(2, 100, 220, "Marauder", 140),
+                    CreateSpawn(3, 100, 180, "Reaper", 150)),
+            ])
+        };
+
+        var playback = SpawnPlaybackFactory.Create(replay);
+
+        CollectionAssert.AreEqual(
+            new[] { 3, 2, 1 },
+            playback.Snapshots.Select(snapshot => snapshot.SpawnNumber).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { 100, 100, 300 },
+            playback.Snapshots.Select(snapshot => snapshot.StartGameloop).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { 180, 220, 340 },
+            playback.Snapshots.Select(snapshot => snapshot.EndGameloop).ToArray());
+    }
+
+    private static DirectStrikePlayer CreatePlayer(
+        string name,
+        int teamId,
+        int gamePos,
+        params DirectStrikePlayerSpawn[] spawns)
+    {
+        return new()
+        {
+            Name = name,
+            TeamId = teamId,
+            GamePos = gamePos,
+            Commander = Commander.Terran,
+            Spawns = new ReadOnlyCollection<DirectStrikePlayerSpawn>(spawns)
+        };
+    }
+
+    private static DirectStrikePlayerSpawn CreateSpawn(
+        int number,
+        int startGameloop,
+        int endGameloop,
+        string unitName,
+        int unitGameloop)
+    {
+        return new()
+        {
+            Number = number,
+            StartGameloop = startGameloop,
+            EndGameloop = endGameloop,
+            Units = new ReadOnlyCollection<DirectStrikeSpawnUnit>(
+            [
+                new()
+                {
+                    UnitIndex = number,
+                    Name = unitName,
+                    Gameloop = unitGameloop,
+                    X = 100 + number,
+                    Y = 100 + number,
+                }
+            ])
+        };
     }
 }

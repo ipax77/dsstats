@@ -98,55 +98,6 @@
             </div>
         </div>
 
-        <div class="mb-4" style="max-width: 980px;">
-            <h5 class="text-warning mb-3">Objective Kills</h5>
-            <div class="row g-3">
-                @foreach (var landmark in spawnPlayback.Landmarks)
-                {
-                    <div class="col-6 col-md-3">
-                        <div class="card bgchart border-secondary h-100">
-                            <div class="card-body py-3">
-                                <div class="text-muted small">@landmark.Name</div>
-                                <div class="fs-4 fw-bold">@landmark.Kills.ToString("N0")</div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-
-        @if (spawnPlayback.BuildUnits.Count > 0)
-        {
-            <div class="mb-4" style="max-width: 980px;">
-                <h5 class="text-warning mb-3">Build Unit Kill Summary</h5>
-                <div class="table-responsive">
-                    <table class="table table-dark table-sm table-striped align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>Player</th>
-                                <th>Unit</th>
-                                <th class="text-end">Kills</th>
-                                <th class="text-end">Matched Spawns</th>
-                                <th class="text-end">Built</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var buildUnit in spawnPlayback.BuildUnits.Take(20))
-                            {
-                                <tr>
-                                    <td>@buildUnit.PlayerName</td>
-                                    <td>@buildUnit.Name</td>
-                                    <td class="text-end">@buildUnit.Kills.ToString("N0")</td>
-                                    <td class="text-end">@buildUnit.SpawnedUnitCount.ToString("N0")</td>
-                                    <td class="text-end">@Math.Round(buildUnit.BuiltGameloop / SpawnPlaybackFactory.GameloopsPerSecond, 1).ToString("0.0")s</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        }
-
         <SpawnPlaybackCanvas Replay="spawnPlayback" />
     }
 </div>
@@ -189,8 +140,7 @@
             spawnPlayback = SpawnPlaybackFactory.Create(
                 directStrikeReplay,
                 metadata.Landmarks,
-                metadata.UnitKills,
-                metadata.BuildUnits);
+                metadata.UnitKillGameloops);
         }
         catch (Exception ex)
         {
@@ -208,15 +158,15 @@
         var bornEvents = replay.TrackerEvents?.SUnitBornEvents;
         if (bornEvents is null || bornEvents.Count == 0)
         {
-            return new([], new Dictionary<SpawnPlaybackUnitKey, int>(), []);
+            return new([], new Dictionary<SpawnPlaybackUnitKey, IReadOnlyList<int>>());
         }
 
-        var killCountsByTag = GetKillCountsByKillerTag(replay);
-        var unitKills = GetUnitKills(bornEvents, killCountsByTag);
+        var killGameloopsByTag = GetKillGameloopsByKillerTag(replay);
+        var unitKillGameloops = GetUnitKillGameloops(bornEvents, killGameloopsByTag);
+        var killCountsByTag = GetKillCountsByTag(killGameloopsByTag);
         var landmarks = GetObjectiveLandmarks(bornEvents, killCountsByTag);
-        var buildUnits = GetBuildUnitSummaries(replay, directStrikeReplay, unitKills);
 
-        return new(landmarks, unitKills, buildUnits);
+        return new(landmarks, unitKillGameloops);
     }
 
     private static IReadOnlyList<SpawnPlaybackLandmark> GetObjectiveLandmarks(
@@ -252,14 +202,14 @@
         return landmarks;
     }
 
-    private static Dictionary<UnitTag, int> GetKillCountsByKillerTag(Sc2Replay replay)
+    private static Dictionary<UnitTag, List<int>> GetKillGameloopsByKillerTag(Sc2Replay replay)
     {
-        Dictionary<UnitTag, int> killCounts = [];
+        Dictionary<UnitTag, List<int>> killGameloops = [];
 
         var diedEvents = replay.TrackerEvents?.SUnitDiedEvents;
         if (diedEvents is null || diedEvents.Count == 0)
         {
-            return killCounts;
+            return killGameloops;
         }
 
         foreach (var diedEvent in diedEvents)
@@ -268,22 +218,45 @@
                 && diedEvent.KillerUnitTagRecycle is int killerUnitTagRecycle)
             {
                 var tag = new UnitTag(killerUnitTagIndex, killerUnitTagRecycle);
-                killCounts[tag] = killCounts.GetValueOrDefault(tag) + 1;
+                if (!killGameloops.TryGetValue(tag, out var gameloops))
+                {
+                    gameloops = [];
+                    killGameloops[tag] = gameloops;
+                }
+
+                gameloops.Add(diedEvent.Gameloop);
             }
+        }
+
+        foreach (var gameloops in killGameloops.Values)
+        {
+            gameloops.Sort();
+        }
+
+        return killGameloops;
+    }
+
+    private static Dictionary<UnitTag, int> GetKillCountsByTag(
+        IReadOnlyDictionary<UnitTag, List<int>> killGameloopsByTag)
+    {
+        Dictionary<UnitTag, int> killCounts = new(killGameloopsByTag.Count);
+        foreach (var pair in killGameloopsByTag)
+        {
+            killCounts[pair.Key] = pair.Value.Count;
         }
 
         return killCounts;
     }
 
-    private static Dictionary<SpawnPlaybackUnitKey, int> GetUnitKills(
+    private static Dictionary<SpawnPlaybackUnitKey, IReadOnlyList<int>> GetUnitKillGameloops(
         ICollection<s2protocol.NET.Models.SUnitBornEvent> bornEvents,
-        IReadOnlyDictionary<UnitTag, int> killCountsByTag)
+        IReadOnlyDictionary<UnitTag, List<int>> killGameloopsByTag)
     {
-        Dictionary<SpawnPlaybackUnitKey, int> unitKills = new(bornEvents.Count);
+        Dictionary<SpawnPlaybackUnitKey, IReadOnlyList<int>> unitKillGameloops = new(bornEvents.Count);
         foreach (var bornEvent in bornEvents)
         {
             var tag = new UnitTag(bornEvent.UnitTagIndex, bornEvent.UnitTagRecycle);
-            if (!killCountsByTag.TryGetValue(tag, out int kills))
+            if (!killGameloopsByTag.TryGetValue(tag, out var killGameloops))
             {
                 continue;
             }
@@ -294,10 +267,10 @@
                 bornEvent.X,
                 bornEvent.Y,
                 bornEvent.UnitTypeName);
-            unitKills[key] = kills;
+            unitKillGameloops[key] = killGameloops;
         }
 
-        return unitKills;
+        return unitKillGameloops;
     }
 
     private static SpawnPlaybackLandmark CreateLandmark(
@@ -312,7 +285,7 @@
     {
         int teamId = y >= SpawnPlaybackFactory.MapHeight / 2 ? 1 : 2;
         int kills = killCountsByTag.GetValueOrDefault(new(bornEvent.UnitTagIndex, bornEvent.UnitTagRecycle));
-        return new(name, kind, teamId, x, y, radius, color, kills);
+        return new(name, kind, teamId, x, y, radius, color, kills, bornEvent.SUnitDiedEvent?.Gameloop);
     }
 
     private static IReadOnlyList<SpawnPlaybackBuildUnit> GetBuildUnitSummaries(
@@ -579,8 +552,7 @@
 
     private sealed record PlaybackMetadata(
         IReadOnlyList<SpawnPlaybackLandmark> Landmarks,
-        IReadOnlyDictionary<SpawnPlaybackUnitKey, int> UnitKills,
-        IReadOnlyList<SpawnPlaybackBuildUnit> BuildUnits);
+        IReadOnlyDictionary<SpawnPlaybackUnitKey, IReadOnlyList<int>> UnitKillGameloops);
 
     private sealed class BuildUnitTracker(
         int playerIndex,

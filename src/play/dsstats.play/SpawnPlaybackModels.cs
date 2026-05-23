@@ -5,8 +5,10 @@ public sealed record SpawnPlaybackReplay(
     int StepGameloops,
     SpawnPlaybackBounds Bounds,
     SpawnPlaybackStats Stats,
+    SpawnPlaybackMiddleControl MiddleControl,
     IReadOnlyList<SpawnPlaybackLandmark> Landmarks,
     IReadOnlyList<SpawnPlaybackBuildUnit> BuildUnits,
+    IReadOnlyList<SpawnPlaybackSnapshot> Snapshots,
     IReadOnlyList<SpawnPlaybackPlayer> Players);
 
 public sealed record SpawnPlaybackPlayer(
@@ -14,11 +16,13 @@ public sealed record SpawnPlaybackPlayer(
     int TeamId,
     int GamePos,
     string Commander,
+    IReadOnlyList<int> RefineryGameloops,
     IReadOnlyList<SpawnPlaybackUnit> Units);
 
 public sealed record SpawnPlaybackUnit(
     int UnitIndex,
     string Name,
+    int SpawnNumber,
     int SpawnGameloop,
     double SpawnX,
     double SpawnY,
@@ -29,9 +33,18 @@ public sealed record SpawnPlaybackUnit(
     double TargetY,
     double Radius,
     string Color,
-    int Kills);
+    IReadOnlyList<int> KillGameloops);
 
 public sealed record SpawnPlaybackBounds(double MinX, double MinY, double MaxX, double MaxY);
+
+public sealed record SpawnPlaybackSnapshot(
+    int SpawnNumber,
+    int StartGameloop,
+    int EndGameloop);
+
+public sealed record SpawnPlaybackMiddleControl(
+    int FirstTeamId,
+    IReadOnlyList<int> ChangeGameloops);
 
 public sealed record SpawnPlaybackLandmark(
     string Name,
@@ -41,7 +54,8 @@ public sealed record SpawnPlaybackLandmark(
     double Y,
     double Radius,
     string Color,
-    int Kills);
+    int Kills,
+    int? DiedGameloop = null);
 
 public sealed record SpawnPlaybackBuildUnit(
     string PlayerName,
