@@ -396,6 +396,30 @@ public sealed class SpawnPlaybackFactoryTests
     }
 
     [TestMethod]
+    public void Create_DoesNotPairSpawnsWithLargeStartOffset()
+    {
+        var replay = new DirectStrikeReplay
+        {
+            Duration = TimeSpan.FromSeconds(120),
+            Players = new ReadOnlyCollection<DirectStrikePlayer>(
+            [
+                CreatePlayer("Team 1", 1, 1, CreateSpawn(1, 2400, 2400, "Zergling", 2400)),
+                CreatePlayer("Team 2", 2, 4, CreateSpawn(1, 960, 960, "Marine", 960)),
+            ])
+        };
+
+        var playback = SpawnPlaybackFactory.Create(replay);
+
+        Assert.AreEqual(2, playback.Snapshots.Count);
+        CollectionAssert.AreEqual(
+            new[] { 960, 2400 },
+            playback.Snapshots.Select(snapshot => snapshot.StartGameloop).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { 960, 2400 },
+            playback.Snapshots.Select(snapshot => snapshot.EndGameloop).ToArray());
+    }
+
+    [TestMethod]
     public void Create_SortsSnapshotsByStartThenEndThenSpawnNumber()
     {
         var replay = new DirectStrikeReplay

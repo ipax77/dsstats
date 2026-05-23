@@ -46,10 +46,12 @@ Measurements came from `src/cli/dsstats.spawnscan.cli`.
 
 - Fixed UI stepping remains `5s` (`112` gameloops).
 - Canvas rendering may use an effective render gameloop rather than the raw step gameloop.
-- When a raw step lands inside a paired spawn window, rendering snaps forward to the completed snapshot end so both paired players' units are visible together.
-- Pairing for completed spawn snapshots is by ordered `GamePos` within each team:
+- When a raw step lands inside a spawn window, rendering snaps forward to the completed snapshot end.
+- Pair candidates are ordered by `GamePos` within each team:
   - First Team 1 player pairs with first Team 2 player.
   - Second pairs with second, etc.
+- Paired snapshots are only created when the two spawn starts are close in time, currently within `112` gameloops.
+- If paired players' actual spawn starts are far apart, their spawns must remain separate one-sided snapshots. Do not pair by spawn number alone.
 - Unit-born gameloops are preserved; only the render time is snapped.
 - Alive-unit tables group by team and unit name, not by individual unit.
 - Current kills are time-aware and count `KillGameloops <= renderGameloop`.

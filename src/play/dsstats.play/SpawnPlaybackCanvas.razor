@@ -163,40 +163,41 @@
         await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
     }
 
-    private async Task StepBackward()
+    private Task StepBackward()
     {
         if (Replay is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         currentGameloop = Math.Max(GetFirstPlaybackGameloop(Replay), currentGameloop - Replay.StepGameloops);
         SetRenderGameloop();
-        await Draw();
+        return Task.CompletedTask;
     }
 
-    private async Task StepForward()
+    private Task StepForward()
     {
         if (Replay is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         currentGameloop = Math.Min(Replay.DurationGameloop, currentGameloop + Replay.StepGameloops);
         SetRenderGameloop();
-        await Draw();
+        return Task.CompletedTask;
     }
 
-    private void SetRenderGameloop(bool force = false)
+    private bool SetRenderGameloop(bool force = false)
     {
         int nextRenderGameloop = ResolveRenderGameloop(Replay, currentGameloop);
         if (!force && nextRenderGameloop == renderGameloop)
         {
-            return;
+            return false;
         }
 
         renderGameloop = nextRenderGameloop;
         UpdateAliveUnitRows();
+        return true;
     }
 
     private void UpdateAliveUnitRows()
@@ -291,14 +292,6 @@
         return kills;
     }
 
-    private async Task Draw()
-    {
-        if (module is not null)
-        {
-            await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
-        }
-    }
-
     private static int GetFirstPlaybackGameloop(SpawnPlaybackReplay? replay)
     {
         if (replay is null)
@@ -327,18 +320,38 @@
             return gameloop;
         }
 
-        int renderGameloop = gameloop;
-        foreach (var snapshot in replay.Snapshots)
+        int left = 0;
+        int right = replay.Snapshots.Count - 1;
+        int candidateIndex = -1;
+        while (left <= right)
         {
-            if (snapshot.StartGameloop > gameloop)
+            int middle = left + (right - left) / 2;
+            if (replay.Snapshots[middle].StartGameloop <= gameloop)
+            {
+                candidateIndex = middle;
+                left = middle + 1;
+            }
+            else
+            {
+                right = middle - 1;
+            }
+        }
+
+        if (candidateIndex < 0)
+        {
+            return gameloop;
+        }
+
+        int renderGameloop = gameloop;
+        for (int i = candidateIndex; i >= 0; i--)
+        {
+            var snapshot = replay.Snapshots[i];
+            if (snapshot.EndGameloop < gameloop)
             {
                 break;
             }
 
-            if (snapshot.EndGameloop >= gameloop)
-            {
-                renderGameloop = Math.Max(renderGameloop, snapshot.EndGameloop);
-            }
+            renderGameloop = Math.Max(renderGameloop, snapshot.EndGameloop);
         }
 
         return renderGameloop;

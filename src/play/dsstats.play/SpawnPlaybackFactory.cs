@@ -10,6 +10,7 @@ public static class SpawnPlaybackFactory
     public const int DefaultStepSeconds = 5;
     public const int MapWidth = 256;
     public const int MapHeight = 240;
+    private const int SpawnPairWindowGameloops = 112;
 
     private static readonly SpawnPlaybackLandmark[] DefaultLandmarks =
     [
@@ -266,40 +267,71 @@ public static class SpawnPlaybackFactory
         IReadOnlyList<Sc2DirectStrike.Parser.DirectStrikePlayerSpawn> team1Spawns,
         IReadOnlyList<Sc2DirectStrike.Parser.DirectStrikePlayerSpawn> team2Spawns)
     {
-        int team1Index = 0;
-        int team2Index = 0;
+        int team1Index = GetNextNonEmptySpawnIndex(team1Spawns, 0);
+        int team2Index = GetNextNonEmptySpawnIndex(team2Spawns, 0);
         while (team1Index < team1Spawns.Count || team2Index < team2Spawns.Count)
         {
-            int team1Number = team1Index < team1Spawns.Count ? team1Spawns[team1Index].Number : int.MaxValue;
-            int team2Number = team2Index < team2Spawns.Count ? team2Spawns[team2Index].Number : int.MaxValue;
-            int spawnNumber = Math.Min(team1Number, team2Number);
-
-            Sc2DirectStrike.Parser.DirectStrikePlayerSpawn? team1Spawn = null;
-            Sc2DirectStrike.Parser.DirectStrikePlayerSpawn? team2Spawn = null;
-            if (team1Number == spawnNumber)
+            if (team1Index >= team1Spawns.Count)
             {
-                team1Spawn = team1Spawns[team1Index];
-                team1Index++;
+                AddSnapshot(snapshots, team2Spawns[team2Index], null);
+                team2Index = GetNextNonEmptySpawnIndex(team2Spawns, team2Index + 1);
+                continue;
             }
-            if (team2Number == spawnNumber)
+            if (team2Index >= team2Spawns.Count)
             {
-                team2Spawn = team2Spawns[team2Index];
-                team2Index++;
-            }
-
-            if ((team1Spawn?.Units.Count ?? 0) == 0 && (team2Spawn?.Units.Count ?? 0) == 0)
-            {
+                AddSnapshot(snapshots, team1Spawns[team1Index], null);
+                team1Index = GetNextNonEmptySpawnIndex(team1Spawns, team1Index + 1);
                 continue;
             }
 
-            int startGameloop = Math.Min(
-                team1Spawn?.StartGameloop ?? int.MaxValue,
-                team2Spawn?.StartGameloop ?? int.MaxValue);
-            int endGameloop = Math.Max(
-                team1Spawn?.EndGameloop ?? 0,
-                team2Spawn?.EndGameloop ?? 0);
-            snapshots.Add(new(spawnNumber, startGameloop, endGameloop));
+            var team1Spawn = team1Spawns[team1Index];
+            var team2Spawn = team2Spawns[team2Index];
+            int startDelta = team1Spawn.StartGameloop - team2Spawn.StartGameloop;
+            if (Math.Abs(startDelta) <= SpawnPairWindowGameloops)
+            {
+                AddSnapshot(snapshots, team1Spawn, team2Spawn);
+                team1Index = GetNextNonEmptySpawnIndex(team1Spawns, team1Index + 1);
+                team2Index = GetNextNonEmptySpawnIndex(team2Spawns, team2Index + 1);
+                continue;
+            }
+
+            if (startDelta < 0)
+            {
+                AddSnapshot(snapshots, team1Spawn, null);
+                team1Index = GetNextNonEmptySpawnIndex(team1Spawns, team1Index + 1);
+            }
+            else
+            {
+                AddSnapshot(snapshots, team2Spawn, null);
+                team2Index = GetNextNonEmptySpawnIndex(team2Spawns, team2Index + 1);
+            }
         }
+    }
+
+    private static int GetNextNonEmptySpawnIndex(
+        IReadOnlyList<Sc2DirectStrike.Parser.DirectStrikePlayerSpawn> spawns,
+        int startIndex)
+    {
+        for (int i = startIndex; i < spawns.Count; i++)
+        {
+            if (spawns[i].Units.Count > 0)
+            {
+                return i;
+            }
+        }
+
+        return spawns.Count;
+    }
+
+    private static void AddSnapshot(
+        List<SpawnPlaybackSnapshot> snapshots,
+        Sc2DirectStrike.Parser.DirectStrikePlayerSpawn firstSpawn,
+        Sc2DirectStrike.Parser.DirectStrikePlayerSpawn? secondSpawn)
+    {
+        int spawnNumber = Math.Max(firstSpawn.Number, secondSpawn?.Number ?? 0);
+        int startGameloop = Math.Min(firstSpawn.StartGameloop, secondSpawn?.StartGameloop ?? int.MaxValue);
+        int endGameloop = Math.Max(firstSpawn.EndGameloop, secondSpawn?.EndGameloop ?? 0);
+        snapshots.Add(new(spawnNumber, startGameloop, endGameloop));
     }
 
     private static SpawnPlaybackBounds GetBounds(
