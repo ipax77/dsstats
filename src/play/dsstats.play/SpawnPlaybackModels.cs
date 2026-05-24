@@ -17,6 +17,7 @@ public sealed record SpawnPlaybackPlayer(
     int GamePos,
     string Commander,
     IReadOnlyList<int> RefineryGameloops,
+    IReadOnlyList<int> TierUpgradeGameloops,
     IReadOnlyList<SpawnPlaybackUnit> Units);
 
 public sealed record SpawnPlaybackUnit(

@@ -5,7 +5,7 @@ const MAP_HEIGHT = 240;
 const MAP_CENTER_SUM = (MAP_WIDTH / 2) + (MAP_HEIGHT / 2);
 const GRID_INTERVAL = 16;
 const NEUTRAL_MIDDLE_LINE_COLOR = "rgba(255, 193, 7, 0.70)";
-const GAS_BADGE_WIDTH = 82;
+const GAS_BADGE_WIDTH = 94;
 const GAS_BADGE_HEIGHT = 24;
 const GAS_BADGE_GAP = 8;
 const GAS_BADGE_CORNER_PADDING = 20;
@@ -443,6 +443,7 @@ function normalizeReplay(replay) {
             gamePos: rawPlayer.gamePos ?? rawPlayer.GamePos ?? 0,
             commander: rawPlayer.commander ?? rawPlayer.Commander ?? "",
             refineryGameloops: normalizeRefineryGameloops(rawPlayer),
+            tierUpgradeGameloops: normalizeTierUpgradeGameloops(rawPlayer),
             units: []
         };
 
@@ -689,7 +690,8 @@ function createPlayerGasBadges(players, spawnAreas, canvas) {
                 y,
                 gamePos: player.gamePos ?? player.GamePos ?? 0,
                 color: spawnArea.color,
-                refineryGameloops: normalizeRefineryGameloops(player)
+                refineryGameloops: normalizeRefineryGameloops(player),
+                tierUpgradeGameloops: normalizeTierUpgradeGameloops(player)
             });
         }
     }
@@ -700,6 +702,13 @@ function createPlayerGasBadges(players, spawnAreas, canvas) {
 function normalizeRefineryGameloops(player) {
     const refineryGameloops = player.refineryGameloops ?? player.RefineryGameloops ?? [];
     return refineryGameloops
+        .filter(gameloop => Number.isFinite(gameloop))
+        .sort((left, right) => left - right);
+}
+
+function normalizeTierUpgradeGameloops(player) {
+    const tierUpgradeGameloops = player.tierUpgradeGameloops ?? player.TierUpgradeGameloops ?? [];
+    return tierUpgradeGameloops
         .filter(gameloop => Number.isFinite(gameloop))
         .sort((left, right) => left - right);
 }
@@ -814,6 +823,7 @@ function drawPlayerGasBadges(ctx, canvas, badges, currentGameloop) {
 
     for (const badge of badges) {
         const gasCount = getGasCountAtGameloop(badge.refineryGameloops, currentGameloop);
+        const tierLevel = getTierLevelAtGameloop(badge.tierUpgradeGameloops, currentGameloop);
         const x = badge.x - width / 2;
         const y = badge.y - height / 2;
 
@@ -826,6 +836,9 @@ function drawPlayerGasBadges(ctx, canvas, badges, currentGameloop) {
 
         ctx.fillStyle = "rgba(255, 255, 255, 0.90)";
         ctx.fillText(`P${badge.gamePos}`, x + 7 * scale, badge.y);
+
+        ctx.fillStyle = "rgba(255, 193, 7, 0.92)";
+        ctx.fillText(`T${tierLevel}`, x + 31 * scale, badge.y);
 
         if (gasCount === 0) {
             ctx.textAlign = "right";
@@ -858,6 +871,17 @@ function getGasCountAtGameloop(refineryGameloops, currentGameloop) {
     }
 
     return gasCount;
+}
+
+function getTierLevelAtGameloop(tierUpgradeGameloops, currentGameloop) {
+    let upgradeCount = 0;
+    while (upgradeCount < tierUpgradeGameloops.length
+        && upgradeCount < 2
+        && tierUpgradeGameloops[upgradeCount] <= currentGameloop) {
+        upgradeCount++;
+    }
+
+    return 1 + upgradeCount;
 }
 
 function drawMiddleLine(ctx, canvas, middleLine, middleControl, currentGameloop) {

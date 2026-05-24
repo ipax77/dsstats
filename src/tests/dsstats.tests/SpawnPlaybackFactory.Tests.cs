@@ -60,6 +60,7 @@ public sealed class SpawnPlaybackFactoryTests
         Assert.AreEqual("Player One", playback.Players[0].Name);
         Assert.AreEqual("Terran", playback.Players[0].Commander);
         Assert.AreEqual(0, playback.Players[0].RefineryGameloops.Count);
+        Assert.AreEqual(0, playback.Players[0].TierUpgradeGameloops.Count);
         CollectionAssert.AreEquivalent(
             new[] { "Nexus", "Cannon", "Bunker", "Planetary" },
             playback.Landmarks.Select(landmark => landmark.Name).ToArray());
@@ -259,6 +260,46 @@ public sealed class SpawnPlaybackFactoryTests
         var playback = SpawnPlaybackFactory.Create(replay, sidecar);
 
         AssertLandmarksAreAtFixedObjectivePositions(playback.Landmarks);
+    }
+
+    [TestMethod]
+    public void CreateFromReplayDto_PreservesPlayerTierUpgradesAsGameloops()
+    {
+        var replay = new dsstats.shared.ReplayDto
+        {
+            Players =
+            [
+                new()
+                {
+                    Name = "Tier Player",
+                    GamePos = 1,
+                    TeamId = 1,
+                    Race = dsstats.shared.Commander.Terran,
+                    TierUpgrades = [45, 120]
+                }
+            ]
+        };
+        var sidecar = new dsstats.shared.SpawnPlaybackSidecarDto(
+            1,
+            112,
+            [
+                new(
+                    1,
+                    [
+                        new(42, "Marine", 1, 112, 170, 160, null, null, null, [])
+                    ])
+            ],
+            []);
+
+        var playback = SpawnPlaybackFactory.Create(replay, sidecar);
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                (int)Math.Round(45 * SpawnPlaybackFactory.GameloopsPerSecond),
+                (int)Math.Round(120 * SpawnPlaybackFactory.GameloopsPerSecond),
+            },
+            playback.Players[0].TierUpgradeGameloops.ToArray());
     }
 
     [TestMethod]

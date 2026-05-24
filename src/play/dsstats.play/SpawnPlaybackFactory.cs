@@ -108,6 +108,7 @@ public static class SpawnPlaybackFactory
                 player.GamePos,
                 commander.ToString(),
                 GetRefineryGameloops(player.RefineryTimes),
+                [],
                 units));
         }
 
@@ -206,6 +207,7 @@ public static class SpawnPlaybackFactory
                 replayPlayer.GamePos,
                 commander.ToString(),
                 replayPlayer.Refineries.Select(ToGameloop).ToArray(),
+                GetTierUpgradeGameloops(replayPlayer.TierUpgrades),
                 units));
         }
 
@@ -355,6 +357,23 @@ public static class SpawnPlaybackFactory
             gameloops[i] = ToGameloop(refineryTimes[i]);
         }
 
+        return gameloops;
+    }
+
+    private static int[] GetTierUpgradeGameloops(IReadOnlyList<int> tierUpgradeSeconds)
+    {
+        if (tierUpgradeSeconds.Count == 0)
+        {
+            return [];
+        }
+
+        int[] gameloops = new int[tierUpgradeSeconds.Count];
+        for (int i = 0; i < gameloops.Length; i++)
+        {
+            gameloops[i] = ToGameloop(tierUpgradeSeconds[i]);
+        }
+
+        Array.Sort(gameloops);
         return gameloops;
     }
 
