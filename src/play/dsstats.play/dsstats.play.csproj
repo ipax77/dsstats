@@ -34,9 +34,13 @@
   <ItemGroup>
     <None Update="package.json;package-lock.json;tsconfig.json">
       <Pack>False</Pack>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
     <Content Update="package.json;package-lock.json;tsconfig.json">
       <Pack>False</Pack>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
 

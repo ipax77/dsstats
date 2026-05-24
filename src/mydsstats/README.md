@@ -34,3 +34,12 @@ Contributions are welcome! Please feel free to open an issue or submit a pull re
 3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
 4.  Push to the Branch (`git push origin feature/AmazingFeature`).
 5.  Open a Pull Request.
+
+### Dev publish/run
+
+`dotnet publish -c Release -p:DsstatsPwaEnvironment=Development`
+
+```
+$env:DSSTATS_PWA_ENVIRONMENT = "Development"
+dotnet publish src/mydsstats/dsstats.pwa/dsstats.pwa.csproj -c Release
+```

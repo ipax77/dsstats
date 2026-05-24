@@ -27,4 +27,17 @@
     <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="package.json;package-lock.json;tsconfig.json;vite.config.ts;webpack.config.js">
+      <Pack>False</Pack>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+    <Content Update="package.json;package-lock.json;tsconfig.json;vite.config.ts;webpack.config.js">
+      <Pack>False</Pack>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
