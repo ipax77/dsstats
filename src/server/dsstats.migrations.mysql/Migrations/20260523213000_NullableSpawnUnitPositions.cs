@@ -17,7 +17,8 @@ namespace dsstats.migrations.mysql.Migrations
             migrationBuilder.Sql("""
                 ALTER TABLE `SpawnUnits`
                 MODIFY COLUMN `Positions` longtext NULL,
-                ALGORITHM=INSTANT
+                ALGORITHM=INPLACE,
+                LOCK=NONE
                 """);
         }
 
@@ -32,7 +33,8 @@ namespace dsstats.migrations.mysql.Migrations
             migrationBuilder.Sql("""
                 ALTER TABLE `SpawnUnits`
                 MODIFY COLUMN `Positions` longtext NOT NULL,
-                ALGORITHM=INSTANT
+                ALGORITHM=INPLACE,
+                LOCK=NONE
                 """);
         }
     }
