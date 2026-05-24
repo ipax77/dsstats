@@ -1505,10 +1505,1355 @@ var terranMarauder = {
     }
   ]
 };
+var terranDetailTokens = {
+  armorFill: "#D7E3EA",
+  armorMid: "#9CAFB9",
+  armorShade: "#5E7480",
+  armorDark: "#263E4A",
+  visorFill: "#F2C84B",
+  visorShade: "#B97828",
+  weaponFill: "#324955",
+  weaponDark: "#101F27",
+  engineGlow: "#70D9FF",
+  flameFill: "#FF9B35",
+  flameCore: "#FFE07A",
+  medicFill: "#F2F7FA",
+  mineGlow: "#FF5A4F",
+  redLight: "#FF5A4F",
+  blueLight: "#76D6FF",
+  darkStroke: "#102634"
+};
+var terranGhost = {
+  id: "terran.ghost",
+  commander: "terran",
+  aliases: ["Ghost", "GhostAlternate", "GhostNova"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 36, 40],
+        ["C", 38, 28, 43, 20, 50, 18],
+        ["C", 57, 20, 62, 28, 64, 40],
+        ["L", 59, 53],
+        ["L", 41, 53],
+        ["Z"]
+      ],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 39, 40],
+        ["L", 61, 40],
+        ["L", 57, 47],
+        ["L", 43, 47],
+        ["Z"]
+      ],
+      fill: "visorFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 37, 52],
+        ["L", 63, 52],
+        ["L", 68, 78],
+        ["L", 55, 90],
+        ["L", 45, 90],
+        ["L", 32, 78],
+        ["Z"]
+      ],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 41, 58],
+        ["L", 59, 58],
+        ["L", 56, 76],
+        ["L", 50, 82],
+        ["L", 44, 76],
+        ["Z"]
+      ],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 34, 57],
+        ["L", 18, 64],
+        ["L", 19, 72],
+        ["L", 39, 66],
+        ["Z"],
+        ["M", 66, 57],
+        ["L", 82, 64],
+        ["L", 81, 72],
+        ["L", 61, 66],
+        ["Z"]
+      ],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 15, 67],
+        ["L", 76, 34],
+        ["L", 82, 39],
+        ["L", 22, 74],
+        ["Z"],
+        ["M", 75, 32],
+        ["L", 94, 25],
+        ["L", 91, 33],
+        ["L", 80, 39],
+        ["Z"]
+      ],
+      fill: "weaponFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 64,
+      r: 3,
+      fill: "blueLight",
+      stroke: "darkStroke",
+      strokeWidth: 1
+    }
+  ]
+};
+var terranHellbat = {
+  id: "terran.hellbat",
+  commander: "terran",
+  aliases: ["Hellbat"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 29, 40],
+        ["C", 33, 29, 41, 23, 50, 23],
+        ["C", 59, 23, 67, 29, 71, 40],
+        ["L", 68, 64],
+        ["L", 58, 75],
+        ["L", 42, 75],
+        ["L", 32, 64],
+        ["Z"]
+      ],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 23, 48],
+        ["C", 13, 52, 9, 62, 12, 72],
+        ["L", 28, 73],
+        ["L", 36, 60],
+        ["L", 34, 49],
+        ["Z"],
+        ["M", 77, 48],
+        ["C", 87, 52, 91, 62, 88, 72],
+        ["L", 72, 73],
+        ["L", 64, 60],
+        ["L", 66, 49],
+        ["Z"]
+      ],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 3.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 37, 37],
+        ["L", 63, 37],
+        ["L", 61, 49],
+        ["L", 39, 49],
+        ["Z"]
+      ],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 40, 44],
+        ["L", 60, 44],
+        ["L", 56, 50],
+        ["L", 44, 50],
+        ["Z"]
+      ],
+      fill: "visorFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 36, 58],
+        ["L", 64, 58],
+        ["L", 61, 79],
+        ["L", 50, 88],
+        ["L", 39, 79],
+        ["Z"]
+      ],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 17, 71],
+        ["L", 7, 76],
+        ["L", 9, 87],
+        ["L", 23, 80],
+        ["Z"],
+        ["M", 83, 71],
+        ["L", 93, 76],
+        ["L", 91, 87],
+        ["L", 77, 80],
+        ["Z"]
+      ],
+      fill: "weaponFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 7, 80],
+        ["C", 1, 85, 2, 93, 10, 96],
+        ["C", 9, 89, 15, 86, 17, 81],
+        ["Z"],
+        ["M", 93, 80],
+        ["C", 99, 85, 98, 93, 90, 96],
+        ["C", 91, 89, 85, 86, 83, 81],
+        ["Z"]
+      ],
+      fill: "flameFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    }
+  ]
+};
+var terranHellion = {
+  id: "terran.hellion",
+  commander: "terran",
+  aliases: ["Hellion", "HellionTank"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 20, 49],
+        ["L", 32, 34],
+        ["L", 68, 34],
+        ["L", 80, 49],
+        ["L", 76, 68],
+        ["L", 24, 68],
+        ["Z"]
+      ],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 36, 40],
+        ["L", 64, 40],
+        ["L", 70, 54],
+        ["L", 30, 54],
+        ["Z"]
+      ],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 41, 44],
+        ["L", 59, 44],
+        ["L", 63, 52],
+        ["L", 37, 52],
+        ["Z"]
+      ],
+      fill: "visorFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 26,
+      cy: 70,
+      r: 9,
+      fill: "weaponDark",
+      stroke: "darkStroke",
+      strokeWidth: 3
+    },
+    {
+      type: "circle",
+      cx: 74,
+      cy: 70,
+      r: 9,
+      fill: "weaponDark",
+      stroke: "darkStroke",
+      strokeWidth: 3
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 24, 57],
+        ["L", 9, 58],
+        ["L", 10, 65],
+        ["L", 27, 64],
+        ["Z"],
+        ["M", 76, 57],
+        ["L", 91, 58],
+        ["L", 90, 65],
+        ["L", 73, 64],
+        ["Z"]
+      ],
+      fill: "weaponFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 9, 61],
+        ["C", 2, 65, 2, 72, 9, 76],
+        ["C", 9, 69, 15, 66, 16, 61],
+        ["Z"],
+        ["M", 91, 61],
+        ["C", 98, 65, 98, 72, 91, 76],
+        ["C", 91, 69, 85, 66, 84, 61],
+        ["Z"]
+      ],
+      fill: "flameFill",
+      opacity: 0.9
+    }
+  ]
+};
+var terranMedivac = {
+  id: "terran.medivac",
+  commander: "terran",
+  aliases: ["Medivac"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 50, 15],
+        ["L", 66, 34],
+        ["L", 86, 44],
+        ["L", 78, 58],
+        ["L", 63, 56],
+        ["L", 59, 80],
+        ["L", 50, 91],
+        ["L", 41, 80],
+        ["L", 37, 56],
+        ["L", 22, 58],
+        ["L", 14, 44],
+        ["L", 34, 34],
+        ["Z"]
+      ],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 40, 33],
+        ["L", 60, 33],
+        ["L", 64, 62],
+        ["L", 56, 78],
+        ["L", 44, 78],
+        ["L", 36, 62],
+        ["Z"]
+      ],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 39],
+        ["L", 57, 39],
+        ["L", 60, 48],
+        ["L", 40, 48],
+        ["Z"]
+      ],
+      fill: "visorFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 46, 53],
+        ["L", 54, 53],
+        ["L", 54, 61],
+        ["L", 62, 61],
+        ["L", 62, 69],
+        ["L", 54, 69],
+        ["L", 54, 77],
+        ["L", 46, 77],
+        ["L", 46, 69],
+        ["L", 38, 69],
+        ["L", 38, 61],
+        ["L", 46, 61],
+        ["Z"]
+      ],
+      fill: "medicFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 22,
+      cy: 51,
+      r: 5,
+      fill: "engineGlow",
+      stroke: "darkStroke",
+      strokeWidth: 2
+    },
+    {
+      type: "circle",
+      cx: 78,
+      cy: 51,
+      r: 5,
+      fill: "engineGlow",
+      stroke: "darkStroke",
+      strokeWidth: 2
+    }
+  ]
+};
+var terranBanshee = {
+  id: "terran.banshee",
+  commander: "terran",
+  aliases: ["Banshee"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 50, 12],
+        ["L", 62, 35],
+        ["L", 87, 43],
+        ["L", 77, 59],
+        ["L", 63, 55],
+        ["L", 59, 79],
+        ["L", 50, 90],
+        ["L", 41, 79],
+        ["L", 37, 55],
+        ["L", 23, 59],
+        ["L", 13, 43],
+        ["L", 38, 35],
+        ["Z"]
+      ],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 40, 32],
+        ["L", 60, 32],
+        ["L", 64, 57],
+        ["L", 56, 73],
+        ["L", 44, 73],
+        ["L", 36, 57],
+        ["Z"]
+      ],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 35],
+        ["L", 57, 35],
+        ["L", 60, 45],
+        ["L", 40, 45],
+        ["Z"]
+      ],
+      fill: "visorFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 20, 39],
+        ["L", 4, 35],
+        ["L", 19, 31],
+        ["M", 80, 39],
+        ["L", 96, 35],
+        ["L", 81, 31]
+      ],
+      stroke: "weaponDark",
+      strokeWidth: 4,
+      lineCap: "round",
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 32, 61],
+        ["L", 19, 75],
+        ["L", 27, 79],
+        ["L", 40, 66],
+        ["Z"],
+        ["M", 68, 61],
+        ["L", 81, 75],
+        ["L", 73, 79],
+        ["L", 60, 66],
+        ["Z"]
+      ],
+      fill: "weaponFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 84,
+      r: 4,
+      fill: "engineGlow",
+      stroke: "darkStroke",
+      strokeWidth: 1.5
+    }
+  ]
+};
+var terranViking = {
+  id: "terran.viking",
+  commander: "terran",
+  aliases: ["Viking", "VikingFighter", "VikingAssault"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 50, 10],
+        ["L", 62, 36],
+        ["L", 91, 52],
+        ["L", 82, 67],
+        ["L", 62, 61],
+        ["L", 58, 83],
+        ["L", 50, 92],
+        ["L", 42, 83],
+        ["L", 38, 61],
+        ["L", 18, 67],
+        ["L", 9, 52],
+        ["L", 38, 36],
+        ["Z"]
+      ],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 41, 32],
+        ["L", 59, 32],
+        ["L", 63, 57],
+        ["L", 55, 75],
+        ["L", 45, 75],
+        ["L", 37, 57],
+        ["Z"]
+      ],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 37],
+        ["L", 57, 37],
+        ["L", 60, 46],
+        ["L", 40, 46],
+        ["Z"]
+      ],
+      fill: "visorFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 18, 55],
+        ["L", 4, 58],
+        ["L", 8, 66],
+        ["L", 25, 62],
+        ["Z"],
+        ["M", 82, 55],
+        ["L", 96, 58],
+        ["L", 92, 66],
+        ["L", 75, 62],
+        ["Z"]
+      ],
+      fill: "weaponFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 78],
+        ["L", 34, 91],
+        ["L", 48, 88],
+        ["Z"],
+        ["M", 57, 78],
+        ["L", 66, 91],
+        ["L", 52, 88],
+        ["Z"]
+      ],
+      fill: "weaponDark",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 84,
+      r: 3.5,
+      fill: "engineGlow",
+      stroke: "darkStroke",
+      strokeWidth: 1.5
+    }
+  ]
+};
+var terranRaven = {
+  id: "terran.raven",
+  commander: "terran",
+  aliases: ["Raven"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 50, 18],
+        ["L", 62, 37],
+        ["L", 82, 43],
+        ["L", 74, 60],
+        ["L", 60, 60],
+        ["L", 57, 78],
+        ["L", 50, 88],
+        ["L", 43, 78],
+        ["L", 40, 60],
+        ["L", 26, 60],
+        ["L", 18, 43],
+        ["L", 38, 37],
+        ["Z"]
+      ],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 39, 39],
+        ["L", 61, 39],
+        ["L", 64, 56],
+        ["L", 55, 67],
+        ["L", 45, 67],
+        ["L", 36, 56],
+        ["Z"]
+      ],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 52,
+      r: 9,
+      fill: "engineGlow",
+      stroke: "darkStroke",
+      strokeWidth: 3
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 52,
+      r: 4,
+      fill: "blueLight",
+      stroke: "darkStroke",
+      strokeWidth: 1.5
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 35, 36],
+        ["L", 27, 24],
+        ["M", 65, 36],
+        ["L", 73, 24],
+        ["M", 50, 30],
+        ["L", 50, 16]
+      ],
+      stroke: "engineGlow",
+      strokeWidth: 3,
+      lineCap: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 15,
+      r: 3,
+      fill: "redLight",
+      stroke: "darkStroke",
+      strokeWidth: 1
+    }
+  ]
+};
+var terranSiegeTank = {
+  id: "terran.siegeTank",
+  commander: "terran",
+  aliases: ["Siege Tank", "SiegeTank"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 21, 50],
+        ["L", 34, 36],
+        ["L", 66, 36],
+        ["L", 79, 50],
+        ["L", 76, 76],
+        ["L", 24, 76],
+        ["Z"]
+      ],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 26, 72],
+        ["L", 17, 85],
+        ["L", 83, 85],
+        ["L", 74, 72],
+        ["Z"]
+      ],
+      fill: "weaponDark",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 36, 44],
+        ["L", 64, 44],
+        ["L", 68, 63],
+        ["L", 59, 72],
+        ["L", 41, 72],
+        ["L", 32, 63],
+        ["Z"]
+      ],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 47, 45],
+        ["L", 53, 45],
+        ["L", 55, 15],
+        ["L", 45, 15],
+        ["Z"],
+        ["M", 43, 12],
+        ["L", 57, 12],
+        ["L", 58, 18],
+        ["L", 42, 18],
+        ["Z"]
+      ],
+      fill: "weaponFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 23, 80],
+        ["L", 34, 72],
+        ["M", 41, 83],
+        ["L", 47, 73],
+        ["M", 59, 83],
+        ["L", 53, 73],
+        ["M", 77, 80],
+        ["L", 66, 72]
+      ],
+      stroke: "armorMid",
+      strokeWidth: 3,
+      lineCap: "round"
+    }
+  ]
+};
+var terranCyclone = {
+  id: "terran.cyclone",
+  commander: "terran",
+  aliases: ["Cyclone"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 23, 48],
+        ["L", 37, 34],
+        ["L", 63, 34],
+        ["L", 77, 48],
+        ["L", 74, 72],
+        ["L", 26, 72],
+        ["Z"]
+      ],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 35, 42],
+        ["L", 65, 42],
+        ["L", 68, 61],
+        ["L", 58, 70],
+        ["L", 42, 70],
+        ["L", 32, 61],
+        ["Z"]
+      ],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 50, 45],
+        ["C", 62, 45, 70, 53, 70, 65],
+        ["C", 70, 77, 61, 86, 50, 86],
+        ["C", 39, 86, 30, 77, 30, 66],
+        ["C", 30, 57, 36, 50, 44, 48]
+      ],
+      stroke: "engineGlow",
+      strokeWidth: 6,
+      lineCap: "round",
+      lineJoin: "round",
+      opacity: 0.8
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 61, 37],
+        ["L", 87, 25],
+        ["L", 91, 34],
+        ["L", 66, 48],
+        ["Z"]
+      ],
+      fill: "weaponFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 24,
+      cy: 74,
+      r: 8,
+      fill: "weaponDark",
+      stroke: "darkStroke",
+      strokeWidth: 3
+    },
+    {
+      type: "circle",
+      cx: 76,
+      cy: 74,
+      r: 8,
+      fill: "weaponDark",
+      stroke: "darkStroke",
+      strokeWidth: 3
+    }
+  ]
+};
+var terranWidowMine = {
+  id: "terran.widowMine",
+  commander: "terran",
+  aliases: ["Widow Mine", "WidowMine"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 50, 20],
+        ["L", 66, 34],
+        ["L", 80, 50],
+        ["L", 66, 66],
+        ["L", 50, 80],
+        ["L", 34, 66],
+        ["L", 20, 50],
+        ["L", 34, 34],
+        ["Z"]
+      ],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 36, 35],
+        ["L", 64, 35],
+        ["L", 70, 50],
+        ["L", 64, 65],
+        ["L", 36, 65],
+        ["L", 30, 50],
+        ["Z"]
+      ],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 50,
+      r: 13,
+      fill: "mineGlow",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      opacity: 0.9
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 50,
+      r: 6,
+      fill: "flameCore",
+      stroke: "darkStroke",
+      strokeWidth: 1.5
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 31, 31],
+        ["L", 18, 22],
+        ["M", 69, 31],
+        ["L", 82, 22],
+        ["M", 31, 69],
+        ["L", 18, 78],
+        ["M", 69, 69],
+        ["L", 82, 78]
+      ],
+      stroke: "weaponFill",
+      strokeWidth: 5,
+      lineCap: "round"
+    }
+  ]
+};
+var terranLiberator = {
+  id: "terran.liberator",
+  commander: "terran",
+  aliases: ["Liberator"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 50, 12],
+        ["L", 62, 34],
+        ["L", 90, 49],
+        ["L", 82, 63],
+        ["L", 62, 58],
+        ["L", 58, 80],
+        ["L", 50, 91],
+        ["L", 42, 80],
+        ["L", 38, 58],
+        ["L", 18, 63],
+        ["L", 10, 49],
+        ["L", 38, 34],
+        ["Z"]
+      ],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 41, 33],
+        ["L", 59, 33],
+        ["L", 63, 56],
+        ["L", 55, 72],
+        ["L", 45, 72],
+        ["L", 37, 56],
+        ["Z"]
+      ],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 27,
+      cy: 55,
+      r: 8,
+      fill: "weaponDark",
+      stroke: "darkStroke",
+      strokeWidth: 2.5
+    },
+    {
+      type: "circle",
+      cx: 73,
+      cy: 55,
+      r: 8,
+      fill: "weaponDark",
+      stroke: "darkStroke",
+      strokeWidth: 2.5
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 45, 72],
+        ["L", 50, 91],
+        ["L", 55, 72]
+      ],
+      stroke: "engineGlow",
+      strokeWidth: 5,
+      lineCap: "round",
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 38],
+        ["L", 57, 38],
+        ["L", 60, 47],
+        ["L", 40, 47],
+        ["Z"]
+      ],
+      fill: "visorFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    }
+  ]
+};
+var terranThor = {
+  id: "terran.thor",
+  commander: "terran",
+  aliases: ["Thor", "ThorAP"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 29, 30],
+        ["L", 41, 18],
+        ["L", 59, 18],
+        ["L", 71, 30],
+        ["L", 75, 63],
+        ["L", 63, 84],
+        ["L", 37, 84],
+        ["L", 25, 63],
+        ["Z"]
+      ],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 22, 42],
+        ["L", 8, 48],
+        ["L", 7, 66],
+        ["L", 24, 68],
+        ["L", 34, 55],
+        ["L", 33, 42],
+        ["Z"],
+        ["M", 78, 42],
+        ["L", 92, 48],
+        ["L", 93, 66],
+        ["L", 76, 68],
+        ["L", 66, 55],
+        ["L", 67, 42],
+        ["Z"]
+      ],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 3.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 38, 33],
+        ["L", 62, 33],
+        ["L", 65, 55],
+        ["L", 57, 70],
+        ["L", 43, 70],
+        ["L", 35, 55],
+        ["Z"]
+      ],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 41, 39],
+        ["L", 59, 39],
+        ["L", 57, 48],
+        ["L", 43, 48],
+        ["Z"]
+      ],
+      fill: "visorFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 19, 58],
+        ["L", 5, 75],
+        ["L", 14, 82],
+        ["L", 29, 65],
+        ["Z"],
+        ["M", 81, 58],
+        ["L", 95, 75],
+        ["L", 86, 82],
+        ["L", 71, 65],
+        ["Z"]
+      ],
+      fill: "weaponFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 39, 82],
+        ["L", 30, 94],
+        ["L", 47, 94],
+        ["L", 50, 84],
+        ["Z"],
+        ["M", 61, 82],
+        ["L", 70, 94],
+        ["L", 53, 94],
+        ["L", 50, 84],
+        ["Z"]
+      ],
+      fill: "weaponDark",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    }
+  ]
+};
+var terranBattlecruiser = {
+  id: "terran.battlecruiser",
+  commander: "terran",
+  aliases: ["Battlecruiser"],
+  viewBox: { width: 100, height: 100 },
+  tokens: terranDetailTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [
+        ["M", 50, 8],
+        ["L", 65, 31],
+        ["L", 86, 45],
+        ["L", 79, 64],
+        ["L", 63, 62],
+        ["L", 60, 84],
+        ["L", 50, 95],
+        ["L", 40, 84],
+        ["L", 37, 62],
+        ["L", 21, 64],
+        ["L", 14, 45],
+        ["L", 35, 31],
+        ["Z"]
+      ],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 39, 29],
+        ["L", 61, 29],
+        ["L", 67, 58],
+        ["L", 58, 77],
+        ["L", 42, 77],
+        ["L", 33, 58],
+        ["Z"]
+      ],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 35],
+        ["L", 57, 35],
+        ["L", 61, 46],
+        ["L", 39, 46],
+        ["Z"]
+      ],
+      fill: "visorFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 32, 55],
+        ["L", 13, 72],
+        ["L", 22, 79],
+        ["L", 41, 62],
+        ["Z"],
+        ["M", 68, 55],
+        ["L", 87, 72],
+        ["L", 78, 79],
+        ["L", 59, 62],
+        ["Z"]
+      ],
+      fill: "weaponFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 44, 77],
+        ["L", 39, 92],
+        ["M", 50, 80],
+        ["L", 50, 96],
+        ["M", 56, 77],
+        ["L", 61, 92]
+      ],
+      stroke: "engineGlow",
+      strokeWidth: 4,
+      lineCap: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 59,
+      r: 5,
+      fill: "redLight",
+      stroke: "darkStroke",
+      strokeWidth: 1.5
+    }
+  ]
+};
 var terranUnits = {
   marine: terranMarine,
   reaper: terranReaper,
-  marauder: terranMarauder
+  marauder: terranMarauder,
+  ghost: terranGhost,
+  hellbat: terranHellbat,
+  hellion: terranHellion,
+  medivac: terranMedivac,
+  banshee: terranBanshee,
+  viking: terranViking,
+  raven: terranRaven,
+  siegeTank: terranSiegeTank,
+  cyclone: terranCyclone,
+  widowMine: terranWidowMine,
+  liberator: terranLiberator,
+  thor: terranThor,
+  battlecruiser: terranBattlecruiser
 };
 
 // TypeScript/zergIcons.ts
@@ -1760,8 +3105,681 @@ var zergZergling = {
     }
   ]
 };
+var zergRoach = {
+  id: "zerg.roach",
+  commander: "zerg",
+  aliases: ["Roach", "RoachLightweight"],
+  viewBox: { width: 100, height: 100 },
+  tokens: {
+    skinFill: "#7B4B83",
+    skinMid: "#633769",
+    skinShade: "#43234A",
+    carapaceFill: "#A77CB7",
+    carapaceMid: "#7C5A8A",
+    carapaceShade: "#4E355B",
+    acidFill: "#8EFF5A",
+    acidCore: "#D7FF75",
+    eyeFill: "#FF5A54",
+    clawFill: "#E7D9B8",
+    darkStroke: "#26142D"
+  },
+  layers: [
+    // Rear tail / abdomen taper
+    {
+      type: "path",
+      commands: [
+        ["M", 17, 59],
+        ["C", 9, 58, 7, 51, 13, 47],
+        ["C", 20, 43, 29, 47, 34, 53],
+        ["L", 31, 64],
+        ["C", 26, 63, 21, 61, 17, 59],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Back left leg
+    {
+      type: "path",
+      commands: [
+        ["M", 31, 63],
+        ["L", 22, 76],
+        ["L", 14, 78],
+        ["L", 21, 84],
+        ["L", 33, 77],
+        ["L", 39, 65],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Back right leg
+    {
+      type: "path",
+      commands: [
+        ["M", 67, 62],
+        ["L", 78, 75],
+        ["L", 87, 77],
+        ["L", 80, 84],
+        ["L", 67, 77],
+        ["L", 61, 65],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Main low body silhouette
+    {
+      type: "path",
+      commands: [
+        ["M", 25, 58],
+        ["C", 28, 43, 42, 34, 58, 35],
+        ["C", 73, 36, 85, 45, 88, 57],
+        ["C", 87, 68, 77, 75, 60, 77],
+        ["C", 43, 79, 29, 72, 25, 58],
+        ["Z"]
+      ],
+      fill: "skinFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Large armored shell / roach back
+    {
+      type: "path",
+      commands: [
+        ["M", 31, 55],
+        ["C", 36, 41, 47, 34, 59, 36],
+        ["C", 72, 38, 82, 46, 85, 56],
+        ["C", 78, 61, 68, 64, 56, 64],
+        ["C", 45, 64, 36, 61, 31, 55],
+        ["Z"]
+      ],
+      fill: "carapaceFill",
+      stroke: "darkStroke",
+      strokeWidth: 3.5,
+      lineJoin: "round"
+    },
+    // Shell segmented plates
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 39],
+        ["C", 39, 46, 38, 55, 42, 62],
+        ["M", 56, 36],
+        ["C", 52, 45, 52, 56, 57, 64],
+        ["M", 70, 41],
+        ["C", 66, 48, 66, 57, 72, 62]
+      ],
+      stroke: "carapaceShade",
+      strokeWidth: 3,
+      lineCap: "round",
+      opacity: 0.9
+    },
+    // Front head
+    {
+      type: "path",
+      commands: [
+        ["M", 72, 54],
+        ["C", 79, 48, 89, 49, 94, 56],
+        ["C", 94, 63, 87, 68, 77, 67],
+        ["L", 68, 62],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 3.5,
+      lineJoin: "round"
+    },
+    // Head carapace / brow
+    {
+      type: "path",
+      commands: [
+        ["M", 77, 54],
+        ["C", 83, 52, 89, 54, 92, 58],
+        ["L", 86, 61],
+        ["C", 82, 59, 78, 59, 75, 61],
+        ["Z"]
+      ],
+      fill: "carapaceMid",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    // Eye
+    {
+      type: "circle",
+      cx: 85,
+      cy: 57,
+      r: 2.5,
+      fill: "eyeFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.5
+    },
+    // Acid mouth sac
+    {
+      type: "path",
+      commands: [
+        ["M", 82, 63],
+        ["C", 86, 62, 90, 64, 91, 67],
+        ["C", 88, 71, 82, 71, 78, 67],
+        ["Z"]
+      ],
+      fill: "acidFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 86,
+      cy: 66,
+      r: 2,
+      fill: "acidCore",
+      opacity: 0.85
+    },
+    // Front left leg
+    {
+      type: "path",
+      commands: [
+        ["M", 63, 67],
+        ["L", 55, 82],
+        ["L", 46, 86],
+        ["L", 55, 91],
+        ["L", 67, 82],
+        ["L", 73, 69],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Front right leg / raised claw
+    {
+      type: "path",
+      commands: [
+        ["M", 75, 63],
+        ["L", 86, 72],
+        ["L", 94, 72],
+        ["L", 90, 80],
+        ["L", 79, 76],
+        ["L", 70, 68],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Claw tips
+    {
+      type: "path",
+      commands: [
+        ["M", 14, 78],
+        ["L", 7, 82],
+        ["L", 20, 84],
+        ["Z"],
+        ["M", 87, 77],
+        ["L", 96, 80],
+        ["L", 80, 84],
+        ["Z"],
+        ["M", 46, 86],
+        ["L", 39, 92],
+        ["L", 55, 91],
+        ["Z"],
+        ["M", 94, 72],
+        ["L", 99, 75],
+        ["L", 90, 80],
+        ["Z"]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    // Acid sacs on back
+    {
+      type: "circle",
+      cx: 46,
+      cy: 52,
+      r: 4,
+      fill: "acidFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.95
+    },
+    {
+      type: "circle",
+      cx: 60,
+      cy: 50,
+      r: 4.5,
+      fill: "acidFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.95
+    },
+    {
+      type: "circle",
+      cx: 72,
+      cy: 53,
+      r: 3.5,
+      fill: "acidFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.95
+    },
+    // Acid sac highlights
+    {
+      type: "path",
+      commands: [
+        ["M", 45, 50],
+        ["L", 47, 49],
+        ["M", 59, 48],
+        ["L", 62, 47],
+        ["M", 71, 51],
+        ["L", 73, 50]
+      ],
+      stroke: "acidCore",
+      strokeWidth: 2,
+      lineCap: "round",
+      opacity: 0.8
+    },
+    // Lower body shadow accent
+    {
+      type: "path",
+      commands: [
+        ["M", 31, 65],
+        ["C", 42, 71, 62, 72, 78, 66]
+      ],
+      stroke: "skinShade",
+      strokeWidth: 4,
+      lineCap: "round",
+      opacity: 0.65
+    }
+  ]
+};
+var zergQueen = {
+  id: "zerg.queen",
+  commander: "zerg",
+  aliases: ["Queen", "QueenLightweight"],
+  viewBox: { width: 100, height: 100 },
+  tokens: {
+    skinFill: "#8A4F8F",
+    skinMid: "#6D3B73",
+    skinShade: "#47224F",
+    carapaceFill: "#B487C8",
+    carapaceMid: "#7D5A8F",
+    carapaceShade: "#4A315A",
+    clawFill: "#E8D7B2",
+    spineFill: "#C6A0D8",
+    eyeFill: "#FF5A54",
+    acidFill: "#8EFF5A",
+    acidCore: "#D7FF75",
+    darkStroke: "#24122C"
+  },
+  layers: [
+    // Rear abdomen / organic base
+    {
+      type: "path",
+      commands: [
+        ["M", 32, 69],
+        ["C", 32, 55, 40, 47, 50, 47],
+        ["C", 60, 47, 68, 55, 68, 69],
+        ["C", 68, 84, 60, 93, 50, 94],
+        ["C", 40, 93, 32, 84, 32, 69],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Abdomen front plate
+    {
+      type: "path",
+      commands: [
+        ["M", 39, 67],
+        ["C", 40, 58, 44, 53, 50, 53],
+        ["C", 56, 53, 60, 58, 61, 67],
+        ["C", 61, 80, 56, 88, 50, 90],
+        ["C", 44, 88, 39, 80, 39, 67],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    // Back carapace / upper shell
+    {
+      type: "path",
+      commands: [
+        ["M", 26, 50],
+        ["C", 30, 36, 39, 28, 50, 28],
+        ["C", 61, 28, 70, 36, 74, 50],
+        ["L", 65, 63],
+        ["L", 35, 63],
+        ["Z"]
+      ],
+      fill: "carapaceShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Main torso
+    {
+      type: "path",
+      commands: [
+        ["M", 34, 48],
+        ["C", 36, 35, 43, 28, 50, 28],
+        ["C", 57, 28, 64, 35, 66, 48],
+        ["L", 62, 68],
+        ["L", 50, 74],
+        ["L", 38, 68],
+        ["Z"]
+      ],
+      fill: "skinFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Chest carapace
+    {
+      type: "path",
+      commands: [
+        ["M", 38, 49],
+        ["C", 41, 41, 45, 37, 50, 37],
+        ["C", 55, 37, 59, 41, 62, 49],
+        ["L", 58, 61],
+        ["L", 50, 66],
+        ["L", 42, 61],
+        ["Z"]
+      ],
+      fill: "carapaceFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Head
+    {
+      type: "path",
+      commands: [
+        ["M", 38, 32],
+        ["C", 39, 21, 44, 14, 50, 14],
+        ["C", 56, 14, 61, 21, 62, 32],
+        ["L", 59, 43],
+        ["L", 50, 47],
+        ["L", 41, 43],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Crown / queen crest
+    {
+      type: "path",
+      commands: [
+        ["M", 41, 24],
+        ["L", 35, 9],
+        ["L", 46, 20],
+        ["M", 50, 18],
+        ["L", 50, 4],
+        ["L", 56, 20],
+        ["M", 59, 24],
+        ["L", 65, 9],
+        ["L", 54, 20]
+      ],
+      fill: "spineFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round",
+      lineCap: "round"
+    },
+    // Face plate / brow
+    {
+      type: "path",
+      commands: [
+        ["M", 41, 31],
+        ["C", 44, 26, 47, 24, 50, 24],
+        ["C", 53, 24, 56, 26, 59, 31],
+        ["L", 56, 37],
+        ["L", 44, 37],
+        ["Z"]
+      ],
+      fill: "carapaceFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    // Eyes
+    {
+      type: "circle",
+      cx: 46,
+      cy: 33,
+      r: 2.2,
+      fill: "eyeFill",
+      stroke: "darkStroke",
+      strokeWidth: 1
+    },
+    {
+      type: "circle",
+      cx: 54,
+      cy: 33,
+      r: 2.2,
+      fill: "eyeFill",
+      stroke: "darkStroke",
+      strokeWidth: 1
+    },
+    // Mouth / mandibles
+    {
+      type: "path",
+      commands: [
+        ["M", 45, 40],
+        ["L", 39, 48],
+        ["L", 47, 44],
+        ["M", 55, 40],
+        ["L", 61, 48],
+        ["L", 53, 44]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.2,
+      lineJoin: "round",
+      lineCap: "round"
+    },
+    // Left upper arm
+    {
+      type: "path",
+      commands: [
+        ["M", 35, 52],
+        ["L", 22, 42],
+        ["L", 13, 47],
+        ["L", 20, 55],
+        ["L", 34, 61],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Right upper arm
+    {
+      type: "path",
+      commands: [
+        ["M", 65, 52],
+        ["L", 78, 42],
+        ["L", 87, 47],
+        ["L", 80, 55],
+        ["L", 66, 61],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Upper claw tips
+    {
+      type: "path",
+      commands: [
+        ["M", 13, 47],
+        ["L", 5, 45],
+        ["L", 13, 54],
+        ["Z"],
+        ["M", 87, 47],
+        ["L", 95, 45],
+        ["L", 87, 54],
+        ["Z"]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    // Left lower arm
+    {
+      type: "path",
+      commands: [
+        ["M", 39, 65],
+        ["L", 28, 72],
+        ["L", 23, 84],
+        ["L", 32, 83],
+        ["L", 43, 72],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Right lower arm
+    {
+      type: "path",
+      commands: [
+        ["M", 61, 65],
+        ["L", 72, 72],
+        ["L", 77, 84],
+        ["L", 68, 83],
+        ["L", 57, 72],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Lower claw tips
+    {
+      type: "path",
+      commands: [
+        ["M", 23, 84],
+        ["L", 16, 91],
+        ["L", 32, 83],
+        ["Z"],
+        ["M", 77, 84],
+        ["L", 84, 91],
+        ["L", 68, 83],
+        ["Z"]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    // Small side legs / stabilizers
+    {
+      type: "path",
+      commands: [
+        ["M", 35, 76],
+        ["L", 25, 92],
+        ["M", 65, 76],
+        ["L", 75, 92]
+      ],
+      stroke: "skinShade",
+      strokeWidth: 5,
+      lineCap: "round"
+    },
+    // Spawn/acid sacs on abdomen
+    {
+      type: "circle",
+      cx: 44,
+      cy: 74,
+      r: 3.5,
+      fill: "acidFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.5,
+      opacity: 0.95
+    },
+    {
+      type: "circle",
+      cx: 56,
+      cy: 74,
+      r: 3.5,
+      fill: "acidFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.5,
+      opacity: 0.95
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 83,
+      r: 3.8,
+      fill: "acidFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.5,
+      opacity: 0.95
+    },
+    // Carapace seams
+    {
+      type: "path",
+      commands: [
+        ["M", 42, 52],
+        ["L", 50, 58],
+        ["L", 58, 52],
+        ["M", 40, 68],
+        ["C", 45, 71, 55, 71, 60, 68],
+        ["M", 43, 78],
+        ["C", 47, 81, 53, 81, 57, 78]
+      ],
+      stroke: "carapaceShade",
+      strokeWidth: 2.3,
+      lineCap: "round",
+      lineJoin: "round",
+      opacity: 0.85
+    },
+    // Acid highlights
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 72],
+        ["L", 45, 71],
+        ["M", 55, 72],
+        ["L", 57, 71],
+        ["M", 49, 81],
+        ["L", 52, 80]
+      ],
+      stroke: "acidCore",
+      strokeWidth: 2,
+      lineCap: "round",
+      opacity: 0.8
+    }
+  ]
+};
 var zergUnits = {
-  zergling: zergZergling
+  zergling: zergZergling,
+  roach: zergRoach,
+  queen: zergQueen
 };
 
 // TypeScript/unitIcons.ts

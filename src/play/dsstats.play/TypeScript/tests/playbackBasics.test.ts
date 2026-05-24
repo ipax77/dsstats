@@ -76,10 +76,44 @@ describe("spawn playback basics", () => {
         const reaper = unitIconCatalog.resolve("Terran", "ReaperLightweight");
         const marauder = unitIconCatalog.resolve("Terran", "Marauder Lightweight");
         const zergling = unitIconCatalog.resolve("zerg", "ZerglingLightweight");
+        const terranUnits = [
+            "Marine",
+            "Marauder",
+            "Reaper",
+            "Ghost",
+            "Hellbat",
+            "Hellion",
+            "Medivac",
+            "Banshee",
+            "Viking",
+            "Raven",
+            "Siege Tank",
+            "Cyclone",
+            "Widow Mine",
+            "Liberator",
+            "Thor",
+            "Battlecruiser"
+        ];
+        const terranAliases = [
+            ["GhostAlternate", "terran.ghost"],
+            ["GhostNova", "terran.ghost"],
+            ["HellionTank", "terran.hellion"],
+            ["VikingFighter", "terran.viking"],
+            ["VikingAssault", "terran.viking"],
+            ["SiegeTank", "terran.siegeTank"],
+            ["WidowMine", "terran.widowMine"],
+            ["ThorAP", "terran.thor"]
+        ] as const;
 
         expect(marine?.id).toBe("terran.marine");
         expect(reaper?.id).toBe("terran.reaper");
         expect(marauder?.id).toBe("terran.marauder");
+        for (const unit of terranUnits) {
+            expect(unitIconCatalog.resolve("Terran", unit), unit).not.toBeNull();
+        }
+        for (const [alias, id] of terranAliases) {
+            expect(unitIconCatalog.resolve("Terran", alias)?.id).toBe(id);
+        }
         expect(zergling?.id).toBe("zerg.zergling");
         expect(unitIconCatalog.resolve("protoss", "Zealot")).toBeNull();
     });
