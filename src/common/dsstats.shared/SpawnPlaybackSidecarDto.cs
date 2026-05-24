@@ -156,6 +156,27 @@ public static class SpawnPlaybackSidecarCodec
         return ReadUncompressed(raw);
     }
 
+    public static SpawnPlaybackSidecarDto DecodeUncompressed(ReadOnlySpan<byte> raw)
+    {
+        if (raw.IsEmpty)
+        {
+            throw new InvalidDataException("Spawn playback sidecar payload is empty.");
+        }
+
+        return DecodeUncompressed(raw.ToArray());
+    }
+
+    public static SpawnPlaybackSidecarDto DecodeUncompressed(byte[] raw)
+    {
+        if (raw.Length == 0)
+        {
+            throw new InvalidDataException("Spawn playback sidecar payload is empty.");
+        }
+
+        using var source = new MemoryStream(raw, writable: false);
+        return ReadUncompressed(source);
+    }
+
     public static int GetUncompressedLength(SpawnPlaybackSidecarDto dto)
     {
         ArgumentNullException.ThrowIfNull(dto);

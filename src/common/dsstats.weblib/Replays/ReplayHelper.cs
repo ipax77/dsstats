@@ -22,12 +22,14 @@ public class ReplayHelper
     private int maxKills;
     private readonly Dictionary<ToonIdDto, ActiveBuild> _activeBuilds = [];
     private readonly SpawnPositionHydrationState _spawnPositionHydration = new();
+    private readonly SpawnPlaybackSidecarCache _sidecarCache;
     public IEnumerable<ActiveBuild> ActiveBuilds =>
         _activeBuilds.Values.OrderBy(x => x.Player.GamePos);
 
-    public ReplayHelper(ReplayDetails replayDetails)
+    public ReplayHelper(ReplayDetails replayDetails, SpawnPlaybackSidecarCache sidecarCache)
     {
         _replayDetails = replayDetails;
+        _sidecarCache = sidecarCache;
         IsTE = _replayDetails.Replay.Title.Contains("TE");
         RatingType = GetDefaultRating();
         maxKills = _replayDetails.Replay.Players
@@ -53,14 +55,14 @@ public class ReplayHelper
         IReplayRepository replayRepository,
         CancellationToken token = default)
     {
-        return _spawnPositionHydration.EnsureHydrated(_replayDetails, replayRepository, token);
+        return _spawnPositionHydration.EnsureHydrated(_replayDetails, _sidecarCache, replayRepository, token);
     }
 
     public Task<SpawnPlaybackSidecarDto?> GetSpawnPlaybackSidecarAsync(
         IReplayRepository replayRepository,
         CancellationToken token = default)
     {
-        return _spawnPositionHydration.GetSidecar(_replayDetails, replayRepository, token);
+        return _spawnPositionHydration.GetSidecar(_replayDetails, _sidecarCache, replayRepository, token);
     }
 
     private RatingType GetDefaultRating()

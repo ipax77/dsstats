@@ -4,6 +4,7 @@
 @using dsstats.weblib.Replays
 @inject IJSRuntime JSRuntime
 @inject IReplayRepository ReplayRepository
+@inject SpawnPlaybackSidecarCache SpawnPlaybackSidecarCache
 @implements IAsyncDisposable
 
 <div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@($"{modalId}Label")" tabindex="-1">
@@ -80,7 +81,7 @@
     {
         ReplayDetails = replayDetails;
         Sample = sample;
-        await spawnPositionHydration.EnsureHydrated(replayDetails, ReplayRepository);
+        await spawnPositionHydration.EnsureHydrated(replayDetails, SpawnPlaybackSidecarCache, ReplayRepository);
         compareModel = CreateCompareModel(replayDetails, sample);
         await InvokeAsync(StateHasChanged);
         await JSRuntime.InvokeVoidAsync("openModalById", modalId);

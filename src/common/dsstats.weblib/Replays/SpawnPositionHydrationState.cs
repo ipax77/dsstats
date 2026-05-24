@@ -13,10 +13,12 @@ public sealed class SpawnPositionHydrationState
 
     public Task<bool> EnsureHydrated(
         ReplayDetails replayDetails,
+        SpawnPlaybackSidecarCache sidecarCache,
         IReplayRepository replayRepository,
         CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(replayDetails);
+        ArgumentNullException.ThrowIfNull(sidecarCache);
         ArgumentNullException.ThrowIfNull(replayRepository);
 
         if (!NeedsHydration(replayDetails.Replay))
@@ -35,6 +37,7 @@ public sealed class SpawnPositionHydrationState
             hydrationTask = Hydrate(replayDetails, replayRepository, token, GetOrLoadSidecar(
                 replayDetails.ReplayHash,
                 replayDetails.Replay.SpawnPlayback?.Compression ?? SpawnPlaybackSidecarCodec.Compression,
+                sidecarCache,
                 replayRepository,
                 token));
             return hydrationTask;
@@ -43,10 +46,12 @@ public sealed class SpawnPositionHydrationState
 
     public Task<SpawnPlaybackSidecarDto?> GetSidecar(
         ReplayDetails replayDetails,
+        SpawnPlaybackSidecarCache sidecarCache,
         IReplayRepository replayRepository,
         CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(replayDetails);
+        ArgumentNullException.ThrowIfNull(sidecarCache);
         ArgumentNullException.ThrowIfNull(replayRepository);
 
         if (replayDetails.Replay.SpawnPlayback?.Available != true)
@@ -59,6 +64,7 @@ public sealed class SpawnPositionHydrationState
             return GetOrLoadSidecar(
                 replayDetails.ReplayHash,
                 replayDetails.Replay.SpawnPlayback.Compression,
+                sidecarCache,
                 replayRepository,
                 token);
         }
@@ -67,6 +73,7 @@ public sealed class SpawnPositionHydrationState
     private Task<SpawnPlaybackSidecarDto?> GetOrLoadSidecar(
         string replayHash,
         SpawnPlaybackCompression compression,
+        SpawnPlaybackSidecarCache sidecarCache,
         IReplayRepository replayRepository,
         CancellationToken token)
     {
@@ -76,7 +83,7 @@ public sealed class SpawnPositionHydrationState
         }
 
         sidecarReplayHash = replayHash;
-        sidecarTask = LoadSidecar(replayHash, compression, replayRepository, token);
+        sidecarTask = sidecarCache.GetSidecar(replayHash, compression, replayRepository, token);
         return sidecarTask;
     }
 
@@ -116,25 +123,4 @@ public sealed class SpawnPositionHydrationState
         return true;
     }
 
-    private static async Task<SpawnPlaybackSidecarDto?> LoadSidecar(
-        string replayHash,
-        SpawnPlaybackCompression compression,
-        IReplayRepository replayRepository,
-        CancellationToken token)
-    {
-        byte[]? payload = await replayRepository.GetReplaySpawnPlayback(replayHash, token);
-        if (payload is null || payload.Length == 0)
-        {
-            return null;
-        }
-
-        try
-        {
-            return SpawnPlaybackSidecarCodec.Decode(payload, compression);
-        }
-        catch (Exception ex) when (ex is InvalidDataException or IOException or NotSupportedException)
-        {
-            return null;
-        }
-    }
 }

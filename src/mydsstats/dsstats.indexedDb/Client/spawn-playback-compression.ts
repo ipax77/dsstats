@@ -8,6 +8,12 @@ export async function compressSpawnPlaybackPayload(rawPayload: Uint8Array): Prom
     return normalizeCompressedPayload(compressed);
 }
 
+export async function decompressSpawnPlaybackPayload(compressedPayload: Uint8Array): Promise<Uint8Array> {
+    const brotli = await brotliPromise;
+    const raw = brotli.decompress(compressedPayload);
+    return normalizeCompressedPayload(raw);
+}
+
 function normalizeCompressedPayload(value: Uint8Array | ArrayBuffer): Uint8Array {
     return value instanceof Uint8Array
         ? value

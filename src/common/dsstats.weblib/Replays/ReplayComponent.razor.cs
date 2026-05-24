@@ -19,6 +19,9 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
     public IReplayRepository ReplayRepository { get; set; } = null!;
 
     [Inject]
+    public SpawnPlaybackSidecarCache SpawnPlaybackSidecarCache { get; set; } = null!;
+
+    [Inject]
     public IOptions<HostOptions> HostOptions { get; set; } = null!;
 
     [Parameter, EditorRequired]
@@ -81,7 +84,7 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
         ReplayDetails = replayDetails;
         currentReplayHash = replayDetails.ReplayHash;
         currentReplay = replayDetails.Replay;
-        _replayHelper = new ReplayHelper(ReplayDetails);
+        _replayHelper = new ReplayHelper(ReplayDetails, SpawnPlaybackSidecarCache);
         team1Players = ReplayDetails.Replay.Players
             .Where(player => player.TeamId == 1)
             .OrderBy(player => player.GamePos)

@@ -10,5 +10,6 @@ vi.mock("brotli-wasm", () => ({
 
       return new Uint8Array([7, 8, 9]);
     },
+    decompress: (_content: Uint8Array) => new Uint8Array([68, 83, 80, 66]),
   }),
 }));
