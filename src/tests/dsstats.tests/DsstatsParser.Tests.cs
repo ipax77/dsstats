@@ -1,7 +1,13 @@
 ﻿using dsstats.parser;
 using dsstats.shared;
 using dsstats.db;
+using s2protocol.NET;
+using System.Collections.ObjectModel;
 using System.Security.Cryptography;
+using ExternalDirectStrikePlayer = Sc2DirectStrike.Parser.DirectStrikePlayer;
+using ExternalDirectStrikePlayerSpawn = Sc2DirectStrike.Parser.DirectStrikePlayerSpawn;
+using ExternalDirectStrikeReplay = Sc2DirectStrike.Parser.DirectStrikeReplay;
+using ExternalDirectStrikeSpawnUnit = Sc2DirectStrike.Parser.DirectStrikeSpawnUnit;
 
 namespace dsstats.tests;
 
@@ -183,6 +189,39 @@ public sealed class DsstatsParserTests
     }
 
     [TestMethod]
+    public void SpawnPlaybackSidecarFactory_ReturnsNullForIneligibleReplays()
+    {
+        Sc2Replay sc2Replay = new();
+
+        Assert.IsNull(SpawnPlaybackSidecarFactory.Create(
+            sc2Replay,
+            CreateDirectStrikeReplay(
+                TimeSpan.FromSeconds(301),
+                CreateDirectStrikePlayer(1, 1))));
+
+        Assert.IsNull(SpawnPlaybackSidecarFactory.Create(
+            sc2Replay,
+            CreateDirectStrikeReplay(
+                TimeSpan.FromSeconds(301),
+                CreateDirectStrikePlayer(1, 1),
+                CreateDirectStrikePlayer(2, 4))));
+
+        Assert.IsNull(SpawnPlaybackSidecarFactory.Create(
+            sc2Replay,
+            CreateDirectStrikeReplay(
+                TimeSpan.FromSeconds(300),
+                CreateDirectStrikePlayer(1, 1, CreateSpawnWithUnit()),
+                CreateDirectStrikePlayer(2, 4))));
+
+        Assert.IsNotNull(SpawnPlaybackSidecarFactory.Create(
+            sc2Replay,
+            CreateDirectStrikeReplay(
+                TimeSpan.FromSeconds(301),
+                CreateDirectStrikePlayer(1, 1, CreateSpawnWithUnit()),
+                CreateDirectStrikePlayer(2, 4, CreateSpawnWithUnit()))));
+    }
+
+    [TestMethod]
     public void CanRoundTripReplayPlayerCompatHash()
     {
         ReplayDto replayDto = new()
@@ -220,5 +259,50 @@ public sealed class DsstatsParserTests
         var replayDto = DsstatsParser.ParseReplay(sc2Replay);
         Assert.IsNotNull(replayDto);
         return replayDto;
+    }
+
+    private static ExternalDirectStrikeReplay CreateDirectStrikeReplay(
+        TimeSpan duration,
+        params ExternalDirectStrikePlayer[] players)
+    {
+        return new()
+        {
+            Duration = duration,
+            Players = new ReadOnlyCollection<ExternalDirectStrikePlayer>(players)
+        };
+    }
+
+    private static ExternalDirectStrikePlayer CreateDirectStrikePlayer(
+        int teamId,
+        int gamePos,
+        params ExternalDirectStrikePlayerSpawn[] spawns)
+    {
+        return new()
+        {
+            TeamId = teamId,
+            GamePos = gamePos,
+            Spawns = new ReadOnlyCollection<ExternalDirectStrikePlayerSpawn>(spawns)
+        };
+    }
+
+    private static ExternalDirectStrikePlayerSpawn CreateSpawnWithUnit()
+    {
+        return new()
+        {
+            Number = 1,
+            StartGameloop = 112,
+            EndGameloop = 224,
+            Units = new ReadOnlyCollection<ExternalDirectStrikeSpawnUnit>(
+            [
+                new()
+                {
+                    UnitIndex = 1,
+                    Name = "Marine",
+                    Gameloop = 112,
+                    X = 165,
+                    Y = 174
+                }
+            ])
+        };
     }
 }

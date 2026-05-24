@@ -256,6 +256,12 @@
             }
 
             spawnPlaybackSidecar = SpawnPlaybackSidecarFactory.Create(sc2Replay, directStrikeReplay);
+            if (spawnPlaybackSidecar is null)
+            {
+                error = "Replay parsed, but it is not eligible for spawn playback.";
+                return;
+            }
+
             var encodedSidecar = SpawnPlaybackSidecarCodec.EncodeWithMetadata(spawnPlaybackSidecar);
             replayDto.SpawnPlayback = new()
             {

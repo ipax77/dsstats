@@ -16,6 +16,8 @@ const CONFIG_KEYS = {
 } as const;
 
 const QUERY_CACHE_LIMIT = 8;
+const MIN_SPAWN_PLAYBACK_PLAYER_COUNT = 2;
+const MIN_SPAWN_PLAYBACK_DURATION_SECONDS = 300;
 const queryCache = new Map<string, string[]>();
 
 type UploadReplaySelection = {
@@ -365,7 +367,8 @@ function hasValidSpawnPlaybackSidecar(
     if (info.formatVersion <= 0
         || info.compressedLength <= 0
         || info.uncompressedLength <= 0
-        || info.unitCount <= 0) {
+        || info.unitCount <= 0
+        || !isSpawnPlaybackEligible(entry.replay)) {
         if (warn) {
             warnSkippedSpawnPlaybackSidecar(entry, "invalid metadata");
         }
@@ -385,6 +388,8 @@ function warnSkippedSpawnPlaybackSidecar(
         `Skipping spawn playback sidecar for ${entry.hash}: ${reason}. ` +
         `fileName=${entry.replay.fileName || "missing"}, ` +
         `title=${entry.replay.title || "missing"}, ` +
+        `duration=${entry.replay.duration ?? "missing"}, ` +
+        `playerCount=${entry.replay.players?.length ?? "missing"}, ` +
         `available=${info?.available ?? false}, ` +
         `compression=${info?.compression ?? "missing"}, ` +
         `formatVersion=${info?.formatVersion ?? "missing"}, ` +
@@ -402,6 +407,11 @@ async function prepareSpawnPlaybackPayload(replay: ReplayDto, payload: Uint8Arra
     }
 
     const info = replay.spawnPlayback;
+    if (!info?.available || info.unitCount <= 0 || !isSpawnPlaybackEligible(replay)) {
+        replay.spawnPlayback = undefined;
+        return undefined;
+    }
+
     if (info?.compression === 1 && isRawSpawnPlaybackPayload(payload)) {
         try {
             const { compressSpawnPlaybackPayload } = await import("./spawn-playback-compression");
@@ -428,6 +438,11 @@ function isRawSpawnPlaybackPayload(payload: Uint8Array): boolean {
         && payload[1] === 0x53
         && payload[2] === 0x50
         && payload[3] === 0x42;
+}
+
+function isSpawnPlaybackEligible(replay: ReplayDto): boolean {
+    return replay.players.length >= MIN_SPAWN_PLAYBACK_PLAYER_COUNT
+        && replay.duration > MIN_SPAWN_PLAYBACK_DURATION_SECONDS;
 }
 
 function normalizeByteArray(value: unknown): Uint8Array | undefined {

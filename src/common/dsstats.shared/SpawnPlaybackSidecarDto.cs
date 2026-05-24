@@ -56,6 +56,24 @@ public sealed record ReplayImportDto(
     ReplayDto Replay,
     SpawnPlaybackEncodedSidecar? SpawnPlayback);
 
+public static class SpawnPlaybackEligibility
+{
+    public const int MinimumPlayerCount = 2;
+    public const int MinimumDurationSeconds = 300;
+
+    public static bool IsEligible(int playerCount, int durationSeconds)
+    {
+        return playerCount >= MinimumPlayerCount
+            && durationSeconds > MinimumDurationSeconds;
+    }
+
+    public static bool IsEligible(int playerCount, TimeSpan duration)
+    {
+        return playerCount >= MinimumPlayerCount
+            && duration > TimeSpan.FromSeconds(MinimumDurationSeconds);
+    }
+}
+
 public static class SpawnPlaybackSidecarCodec
 {
     public const ushort FormatVersion = 3;

@@ -74,10 +74,13 @@ public static class DsstatsParser
         try
         {
             var sidecar = SpawnPlaybackSidecarFactory.Create(replay, directStrikeReplay);
-            Func<SpawnPlaybackSidecarDto, SpawnPlaybackEncodedSidecar> encoder =
-                spawnPlaybackEncoder ?? (sidecarDto => SpawnPlaybackSidecarCodec.EncodeWithMetadata(sidecarDto));
-            encodedSidecar = encoder(sidecar);
-            ApplySpawnPlaybackMetadata(dto, encodedSidecar);
+            if (sidecar is not null)
+            {
+                Func<SpawnPlaybackSidecarDto, SpawnPlaybackEncodedSidecar> encoder =
+                    spawnPlaybackEncoder ?? (sidecarDto => SpawnPlaybackSidecarCodec.EncodeWithMetadata(sidecarDto));
+                encodedSidecar = encoder(sidecar);
+                ApplySpawnPlaybackMetadata(dto, encodedSidecar);
+            }
         }
         catch (Exception ex) when (tolerateSpawnPlaybackErrors)
         {

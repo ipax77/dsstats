@@ -46,14 +46,22 @@ public partial class DecodeClient : IAsyncDisposable
 
         var replay = JsonSerializer.Deserialize(result.ReplayJson!,
             WorkerSerializerContext.Default.ReplayDto);
-        var spawnPlayback = CreateSpawnPlayback(result);
+        var spawnPlayback = CreateSpawnPlayback(replay, result);
         ApplySpawnPlaybackMetadata(replay, spawnPlayback);
         return (true, null, result.Hash, replay, spawnPlayback, result.SpawnPlaybackError);
     }
 
-    private static SpawnPlaybackEncodedSidecar? CreateSpawnPlayback(WorkerDecodeResult result)
+    private static SpawnPlaybackEncodedSidecar? CreateSpawnPlayback(ReplayDto? replay, WorkerDecodeResult result)
     {
+        if (replay is null || !SpawnPlaybackEligibility.IsEligible(replay.Players.Count, replay.Duration))
+        {
+            return null;
+        }
         if (result.SpawnPlaybackPayload is not { Length: > 0 } payload)
+        {
+            return null;
+        }
+        if (result.SpawnPlaybackUnitCount <= 0)
         {
             return null;
         }

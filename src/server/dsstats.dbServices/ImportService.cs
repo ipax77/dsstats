@@ -260,6 +260,11 @@ public partial class ImportService(
             {
                 continue;
             }
+            if (import.SpawnPlayback.UnitCount <= 0
+                || !SpawnPlaybackEligibility.IsEligible(import.Replay.Players.Count, import.Replay.Duration))
+            {
+                continue;
+            }
 
             var replayHash = import.Replay.ComputeHash();
             if (!sidecarCandidates.TryGetValue(replayHash, out var existing)

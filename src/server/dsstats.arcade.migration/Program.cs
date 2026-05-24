@@ -246,6 +246,14 @@ static async Task RunImportTeSidecars(string[] args)
 
             Stopwatch encodeSw = Stopwatch.StartNew();
             var sidecar = SpawnPlaybackSidecarFactory.Create(sc2Replay, directStrikeReplay);
+            if (sidecar is null)
+            {
+                encodeSw.Stop();
+                encodeElapsed += encodeSw.Elapsed;
+                errors.Add($"{file.Name}: not eligible for spawn playback sidecar");
+                Console.WriteLine($"{file.Name}: skipped, not eligible for spawn playback sidecar");
+                continue;
+            }
             var encoded = SpawnPlaybackSidecarCodec.EncodeWithMetadata(sidecar, options.CompressionLevel);
             encodeSw.Stop();
             encodeElapsed += encodeSw.Elapsed;

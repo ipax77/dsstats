@@ -11,10 +11,21 @@ public static class SpawnPlaybackSidecarFactory
 
     private const int SpawnPairWindowGameloops = 112;
 
-    public static SpawnPlaybackSidecarDto Create(Sc2Replay replay, ExternalDirectStrikeReplay directStrikeReplay)
+    public static SpawnPlaybackSidecarDto? Create(Sc2Replay replay, ExternalDirectStrikeReplay directStrikeReplay)
     {
         ArgumentNullException.ThrowIfNull(replay);
         ArgumentNullException.ThrowIfNull(directStrikeReplay);
+
+        if (!SpawnPlaybackEligibility.IsEligible(directStrikeReplay.Players.Count, directStrikeReplay.Duration))
+        {
+            return null;
+        }
+
+        int totalUnitCount = GetSpawnUnitCount(directStrikeReplay);
+        if (totalUnitCount == 0)
+        {
+            return null;
+        }
 
         var killGameloopsByTag = GetKillGameloopsByKillerTag(replay);
         var unitKillGameloops = GetUnitKillGameloops(replay.TrackerEvents?.SUnitBornEvents, killGameloopsByTag);
@@ -58,6 +69,20 @@ public static class SpawnPlaybackSidecarFactory
             (int)Math.Round(DefaultStepSeconds * GameloopsPerSecond),
             players,
             GetSnapshots(directStrikeReplay));
+    }
+
+    private static int GetSpawnUnitCount(ExternalDirectStrikeReplay replay)
+    {
+        int count = 0;
+        foreach (var player in replay.Players)
+        {
+            foreach (var spawn in player.Spawns)
+            {
+                count = checked(count + spawn.Units.Count);
+            }
+        }
+
+        return count;
     }
 
     private static Dictionary<UnitKey, IReadOnlyList<int>> GetUnitKillGameloops(
