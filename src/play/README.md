@@ -25,6 +25,11 @@ npm run test
 npm run build
 ```
 
+In the Codex sandbox, `npm run build` may fail with esbuild noise such as
+`Cannot read directory "../../../../../..": Access is denied` and a misleading suggestion to use
+`././TypeScript/index.ts`. The entrypoint in `package.json` is correct; rerun the same build with
+elevated filesystem access so esbuild can inspect parent directories during module resolution.
+
 The project file also runs `npm ci`/`npm install` and `npm run build` before static web assets are resolved, so a normal .NET build refreshes the playback bundle when TypeScript inputs change.
 
 ## Map Geometry Facts

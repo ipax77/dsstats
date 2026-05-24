@@ -124,12 +124,35 @@ export interface NormalizedReplay {
     stepGameloops: number;
     bounds: Bounds;
     stats: unknown;
+    summary: PlaybackSummary;
     middleControl: MiddleControl;
     landmarks: RawObject[];
     buildUnits: unknown[];
     snapshots: unknown[];
     players: NormalizedPlayer[];
     units: NormalizedUnit[];
+}
+
+export interface PlaybackPlayerSummary {
+    playerName: string;
+    teamId: number;
+    gamePos: number;
+    commander: string;
+    kills: number;
+}
+
+export interface PlaybackTopUnitSummary {
+    playerName: string;
+    teamId: number;
+    gamePos: number;
+    unitName: string;
+    kills: number;
+}
+
+export interface PlaybackSummary {
+    totalKills: number;
+    players: PlaybackPlayerSummary[];
+    topUnits: PlaybackTopUnitSummary[];
 }
 
 export interface TeamSpawnAreaSource {
@@ -186,6 +209,15 @@ export interface StaticGeometry {
     landmarks: LandmarkGeometry[];
 }
 
+export interface ObjectiveDeathAnnouncement {
+    message: string;
+    accentColor: string;
+    anchorGameloop: number;
+    startGameloop: number;
+    holdEndGameloop: number;
+    endGameloop: number;
+}
+
 export interface RenderCache {
     projection: Projection;
 }
@@ -209,6 +241,7 @@ export interface SpawnPlaybackState {
     staticBackgroundCanvas: LayerCanvas | null;
     staticCanvasWidth: number;
     staticCanvasHeight: number;
+    objectiveDeathAnnouncements: ObjectiveDeathAnnouncement[];
     unitSpriteCache: Map<string, LayerCanvas>;
     rootElement: Element | null;
     fullscreenListener: (() => void) | null;

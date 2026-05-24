@@ -303,6 +303,66 @@ public sealed class SpawnPlaybackFactoryTests
     }
 
     [TestMethod]
+    public void CreateFromReplayDto_BuildsFinalKillSummary()
+    {
+        var replay = new dsstats.shared.ReplayDto
+        {
+            Players =
+            [
+                CreateReplayPlayer("Alpha", 1, 1, dsstats.shared.Commander.Terran, 120),
+                CreateReplayPlayer("Bravo", 1, 2, dsstats.shared.Commander.Terran, null),
+                CreateReplayPlayer("Charlie", 2, 4, dsstats.shared.Commander.Terran, 80),
+            ]
+        };
+        var sidecar = new dsstats.shared.SpawnPlaybackSidecarDto(
+            500,
+            112,
+            [
+                new(1,
+                [
+                    new(1, "Marine", 1, 100, 170, 160, null, null, null, [120, 140]),
+                    new(2, "Marine", 1, 105, 171, 161, null, null, null, [130]),
+                    new(3, "Marauder", 1, 110, 172, 162, null, null, null, [140, 150, 160, 170]),
+                    new(4, "Reaper", 1, 115, 173, 163, null, null, null, [180]),
+                ]),
+                new(2,
+                [
+                    new(5, "Hellion", 1, 120, 168, 159, null, null, null, [130, 140, 150, 160, 170, 180]),
+                ]),
+                new(4,
+                [
+                    new(6, "Marine", 1, 125, 90, 85, null, null, null, [140, 150, 160, 170, 180]),
+                    new(7, "Marauder", 1, 130, 91, 86, null, null, null, [150, 160]),
+                ]),
+            ],
+            []);
+
+        var playback = SpawnPlaybackFactory.Create(replay, sidecar);
+
+        Assert.AreEqual(200, playback.Summary.TotalKills);
+        CollectionAssert.AreEqual(
+            new[] { 120, 0, 80 },
+            playback.Summary.Players.Select(player => player.Kills).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { "Alpha", "Bravo", "Charlie" },
+            playback.Summary.Players.Select(player => player.PlayerName).ToArray());
+        Assert.AreEqual("Terran", playback.Summary.Players[0].Commander);
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "Bravo|Hellion|6",
+                "Charlie|Marine|5",
+                "Alpha|Marauder|4",
+                "Alpha|Marine|3",
+                "Charlie|Marauder|2",
+            },
+            playback.Summary.TopUnits
+                .Select(unit => $"{unit.PlayerName}|{unit.UnitName}|{unit.Kills}")
+                .ToArray());
+    }
+
+    [TestMethod]
     public void Create_PreservesProvidedUnitKillGameloops()
     {
         var replay = new DirectStrikeReplay
@@ -551,6 +611,32 @@ public sealed class SpawnPlaybackFactoryTests
             Commander = Commander.Terran,
             Spawns = new ReadOnlyCollection<DirectStrikePlayerSpawn>(spawns)
         };
+    }
+
+    private static dsstats.shared.ReplayPlayerDto CreateReplayPlayer(
+        string name,
+        int teamId,
+        int gamePos,
+        dsstats.shared.Commander commander,
+        int? allKills)
+    {
+        var player = new dsstats.shared.ReplayPlayerDto
+        {
+            Name = name,
+            TeamId = teamId,
+            GamePos = gamePos,
+            Race = commander
+        };
+        if (allKills is int kills)
+        {
+            player.Spawns.Add(new dsstats.shared.SpawnDto
+            {
+                Breakpoint = dsstats.shared.Breakpoint.All,
+                KilledValue = kills
+            });
+        }
+
+        return player;
     }
 
     private static DirectStrikePlayerSpawn CreateSpawn(

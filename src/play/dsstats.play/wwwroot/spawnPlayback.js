@@ -240,12 +240,44 @@ function normalizeReplay(replayValue) {
     stepGameloops: readOptionalNumber(replay, "stepGameloops", "StepGameloops") ?? 112,
     bounds,
     stats: replay.stats ?? replay.Stats,
+    summary: normalizeSummary(replay),
     middleControl: normalizeMiddleControl(replay),
     landmarks: readArray(replay, "landmarks", "Landmarks").map(asObject),
     buildUnits: readArray(replay, "buildUnits", "BuildUnits"),
     snapshots: readArray(replay, "snapshots", "Snapshots"),
     players,
     units
+  };
+}
+function normalizeSummary(replayValue) {
+  const replay = asObject(replayValue);
+  const summary = asObject(replay.summary ?? replay.Summary);
+  const players = readArray(summary, "players", "Players").map(normalizePlayerSummary);
+  const topUnits = readArray(summary, "topUnits", "TopUnits").map(normalizeTopUnitSummary);
+  return {
+    totalKills: readNumber(summary, "totalKills", "TotalKills"),
+    players,
+    topUnits
+  };
+}
+function normalizePlayerSummary(value) {
+  const row = asObject(value);
+  return {
+    playerName: readString(row, "playerName", "PlayerName"),
+    teamId: readNumber(row, "teamId", "TeamId"),
+    gamePos: readNumber(row, "gamePos", "GamePos"),
+    commander: readString(row, "commander", "Commander"),
+    kills: readNumber(row, "kills", "Kills")
+  };
+}
+function normalizeTopUnitSummary(value) {
+  const row = asObject(value);
+  return {
+    playerName: readString(row, "playerName", "PlayerName"),
+    teamId: readNumber(row, "teamId", "TeamId"),
+    gamePos: readNumber(row, "gamePos", "GamePos"),
+    unitName: readString(row, "unitName", "UnitName"),
+    kills: readNumber(row, "kills", "Kills")
   };
 }
 function normalizeBounds(boundsValue) {
@@ -8312,6 +8344,10 @@ function normalize(value) {
 var MAP_BACKGROUND_BASE_COLOR = "#c1bda4";
 var WATER_BACKGROUND_BASE_COLOR = "#56aeca";
 var BACKGROUND_BASELINE_AREA = 960 * 560;
+var OBJECTIVE_DEATH_ANNOUNCEMENT_SECONDS = 28;
+var OBJECTIVE_DEATH_ANNOUNCEMENT_FADE_SECONDS = 7;
+var OBJECTIVE_DEATH_ANNOUNCEMENT_HOLD_SECONDS = 14;
+var OBJECTIVE_DEATH_LABELS = /* @__PURE__ */ new Set(["Bunker", "Cannon"]);
 var FOREST_CLUSTERS = [
   { x: 0.21, y: 0.19, width: 0.18, height: 0.12, trees: 18 },
   { x: 0.27, y: 0.36, width: 0.15, height: 0.12, trees: 16 },
@@ -8338,6 +8374,11 @@ function drawSpawnPlayback(canvas, currentGameloop) {
     state.renderCache = createRenderCache(bounds, canvas);
     state.staticGeometry = createStaticGeometry(replay, bounds, canvas);
     state.staticBackgroundCanvas = createStaticBackgroundCanvas(canvas, state.staticGeometry);
+    state.objectiveDeathAnnouncements = createObjectiveDeathAnnouncements(
+      state.staticGeometry.landmarks,
+      replay.stepGameloops,
+      state.gameloopsPerSecond
+    );
     state.staticCanvasWidth = canvas.width;
     state.staticCanvasHeight = canvas.height;
     state.activeUnits.length = 0;
@@ -8355,6 +8396,8 @@ function drawSpawnPlayback(canvas, currentGameloop) {
   if (drawnUnits === 0) {
     drawEmptyState(ctx, canvas);
   }
+  drawObjectiveDeathAnnouncements(ctx, canvas, state.objectiveDeathAnnouncements, state.currentGameloop);
+  drawEndOfReplaySummary(ctx, canvas, replay.summary, state.currentGameloop, replay.durationGameloop);
 }
 function clampGameloop(state, gameloop) {
   const duration = state.replay.durationGameloop ?? 0;
@@ -8746,6 +8789,240 @@ function drawDynamicMapLayer(ctx, canvas, geometry, currentGameloop) {
     drawLandmark(ctx, canvas, landmark.projected, landmark.radius, landmark.color, landmark.kind, landmark.label);
   }
 }
+function createObjectiveDeathAnnouncements(landmarks, stepGameloops, gameloopsPerSecond) {
+  if (landmarks.length === 0) {
+    return [];
+  }
+  const step = Math.max(1, Math.round(Number.isFinite(stepGameloops) ? stepGameloops : 1));
+  const loopsPerSecond = Number.isFinite(gameloopsPerSecond) && gameloopsPerSecond > 0 ? gameloopsPerSecond : 22.4;
+  const fadeGameloops = Math.round(OBJECTIVE_DEATH_ANNOUNCEMENT_FADE_SECONDS * loopsPerSecond);
+  const holdGameloops = Math.round(OBJECTIVE_DEATH_ANNOUNCEMENT_HOLD_SECONDS * loopsPerSecond);
+  const durationGameloops = Math.round(OBJECTIVE_DEATH_ANNOUNCEMENT_SECONDS * loopsPerSecond);
+  const announcements = [];
+  for (const landmark of landmarks) {
+    if (!OBJECTIVE_DEATH_LABELS.has(landmark.label) || landmark.diedGameloop == null) {
+      continue;
+    }
+    const diedGameloop = landmark.diedGameloop;
+    if (!Number.isFinite(diedGameloop)) {
+      continue;
+    }
+    const anchorGameloop = Math.max(0, Math.round(diedGameloop / step) * step);
+    const message = landmark.kills > 0 ? `${landmark.label} down at ${formatGameloopClock(diedGameloop, loopsPerSecond)} with ${landmark.kills} kills` : `${landmark.label} down at ${formatGameloopClock(diedGameloop, loopsPerSecond)}`;
+    announcements.push({
+      message,
+      accentColor: landmark.color,
+      anchorGameloop,
+      startGameloop: Math.max(0, anchorGameloop - fadeGameloops),
+      holdEndGameloop: anchorGameloop + holdGameloops,
+      endGameloop: anchorGameloop + durationGameloops - fadeGameloops
+    });
+  }
+  return announcements;
+}
+function formatGameloopClock(gameloop, gameloopsPerSecond) {
+  const totalSeconds = Math.max(0, Math.round(gameloop / gameloopsPerSecond));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+function drawObjectiveDeathAnnouncements(ctx, canvas, announcements, currentGameloop) {
+  if (announcements.length === 0) {
+    return;
+  }
+  for (const announcement of announcements) {
+    if (currentGameloop < announcement.startGameloop || currentGameloop > announcement.endGameloop) {
+      continue;
+    }
+    const alpha = getObjectiveDeathAnnouncementAlpha(announcement, currentGameloop);
+    if (alpha <= 0) {
+      continue;
+    }
+    drawObjectiveDeathAnnouncement(ctx, canvas, announcement, alpha);
+  }
+}
+function getObjectiveDeathAnnouncementAlpha(announcement, currentGameloop) {
+  if (currentGameloop < announcement.anchorGameloop) {
+    const fadeDuration2 = Math.max(1, announcement.anchorGameloop - announcement.startGameloop);
+    return clamp((currentGameloop - announcement.startGameloop) / fadeDuration2, 0, 1);
+  }
+  if (currentGameloop <= announcement.holdEndGameloop) {
+    return 1;
+  }
+  const fadeDuration = Math.max(1, announcement.endGameloop - announcement.holdEndGameloop);
+  return clamp(1 - (currentGameloop - announcement.holdEndGameloop) / fadeDuration, 0, 1);
+}
+function drawObjectiveDeathAnnouncement(ctx, canvas, announcement, alpha) {
+  const scale = deviceScale(canvas);
+  const fontSize = Math.max(15, 16 * scale);
+  const horizontalPadding = 18 * scale;
+  const verticalPadding = 10 * scale;
+  const accentWidth = 4 * scale;
+  const y = Math.max(48 * scale, canvas.height * 0.18);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = `700 ${fontSize}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const textWidth = ctx.measureText(announcement.message).width;
+  const panelWidth = Math.min(canvas.width - 24 * scale, textWidth + horizontalPadding * 2 + accentWidth);
+  const panelHeight = fontSize + verticalPadding * 2;
+  const x = (canvas.width - panelWidth) / 2;
+  const panelY = y - panelHeight / 2;
+  const radius = 8 * scale;
+  ctx.fillStyle = "rgba(7, 16, 21, 0.86)";
+  drawRoundedRect(ctx, x, panelY, panelWidth, panelHeight, radius);
+  ctx.fill();
+  ctx.fillStyle = withAlpha(announcement.accentColor, "F2");
+  drawRoundedRect(ctx, x, panelY, accentWidth, panelHeight, radius);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+  ctx.lineWidth = Math.max(1, scale);
+  drawRoundedRect(ctx, x, panelY, panelWidth, panelHeight, radius);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.94)";
+  ctx.fillText(announcement.message, canvas.width / 2 + accentWidth / 2, y, panelWidth - horizontalPadding * 2);
+  ctx.restore();
+}
+function isEndSummaryVisible(currentGameloop, durationGameloop) {
+  return Number.isFinite(currentGameloop) && Number.isFinite(durationGameloop) && durationGameloop > 0 && currentGameloop >= durationGameloop;
+}
+function drawEndOfReplaySummary(ctx, canvas, summary, currentGameloop, durationGameloop) {
+  if (!isEndSummaryVisible(currentGameloop, durationGameloop) || summary.players.length === 0 && summary.topUnits.length === 0) {
+    return;
+  }
+  const scale = deviceScale(canvas);
+  const panelWidth = Math.min(canvas.width - 28 * scale, 820 * scale);
+  const stacked = panelWidth < 620 * scale;
+  const padding = 16 * scale;
+  const headerHeight = 34 * scale;
+  const sectionTitleHeight = 24 * scale;
+  const rowHeight = 18 * scale;
+  const gap = 16 * scale;
+  const playerRowsHeight = summary.players.length * rowHeight;
+  const topRowsHeight = Math.max(1, summary.topUnits.length) * rowHeight;
+  const sectionHeight = sectionTitleHeight + (stacked ? playerRowsHeight + topRowsHeight + sectionTitleHeight + gap : Math.max(playerRowsHeight, topRowsHeight));
+  const panelHeight = Math.min(canvas.height - 28 * scale, padding * 2 + headerHeight + sectionHeight);
+  const x = (canvas.width - panelWidth) / 2;
+  const y = (canvas.height - panelHeight) / 2;
+  const radius = 8 * scale;
+  ctx.save();
+  ctx.fillStyle = "rgba(7, 16, 21, 0.90)";
+  drawRoundedRect(ctx, x, y, panelWidth, panelHeight, radius);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+  ctx.lineWidth = Math.max(1, scale);
+  drawRoundedRect(ctx, x, y, panelWidth, panelHeight, radius);
+  ctx.stroke();
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.font = `700 ${Math.max(15, 16 * scale)}px sans-serif`;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+  ctx.fillText("Replay summary", x + padding, y + padding + 10 * scale);
+  ctx.textAlign = "right";
+  ctx.font = `700 ${Math.max(13, 14 * scale)}px sans-serif`;
+  ctx.fillStyle = "rgba(255, 193, 7, 0.94)";
+  ctx.fillText(`${formatCount(summary.totalKills)} total kills`, x + panelWidth - padding, y + padding + 10 * scale);
+  const contentY = y + padding + headerHeight;
+  if (stacked) {
+    drawPlayerSummaryRows(ctx, summary, x + padding, contentY, panelWidth - padding * 2, rowHeight, scale);
+    drawTopUnitSummaryRows(
+      ctx,
+      summary,
+      x + padding,
+      contentY + sectionTitleHeight + playerRowsHeight + gap,
+      panelWidth - padding * 2,
+      rowHeight,
+      scale
+    );
+  } else {
+    const columnWidth = (panelWidth - padding * 2 - gap) / 2;
+    drawPlayerSummaryRows(ctx, summary, x + padding, contentY, columnWidth, rowHeight, scale);
+    drawTopUnitSummaryRows(ctx, summary, x + padding + columnWidth + gap, contentY, columnWidth, rowHeight, scale);
+  }
+  ctx.restore();
+}
+function drawPlayerSummaryRows(ctx, summary, x, y, width, rowHeight, scale) {
+  drawSummarySectionTitle(ctx, "Player kills", x, y, width, scale);
+  let rowY = y + 24 * scale;
+  const killsWidth = 72 * scale;
+  const labelWidth = Math.min(width - killsWidth - 16 * scale, 180 * scale);
+  const killsX = x + 10 * scale + labelWidth + 14 * scale + killsWidth;
+  for (const row of summary.players) {
+    drawSummaryRowAccent(ctx, row.teamId, x, rowY, rowHeight, scale);
+    ctx.textAlign = "left";
+    ctx.font = `600 ${Math.max(10, 11 * scale)}px sans-serif`;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.90)";
+    ctx.fillText(fitText(ctx, `P${row.gamePos} ${row.playerName}`, labelWidth), x + 10 * scale, rowY + rowHeight / 2);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
+    ctx.fillText(formatCount(row.kills), killsX, rowY + rowHeight / 2);
+    rowY += rowHeight;
+  }
+}
+function drawTopUnitSummaryRows(ctx, summary, x, y, width, rowHeight, scale) {
+  drawSummarySectionTitle(ctx, "Top units", x, y, width, scale);
+  let rowY = y + 24 * scale;
+  if (summary.topUnits.length === 0) {
+    ctx.textAlign = "left";
+    ctx.font = `${Math.max(10, 11 * scale)}px sans-serif`;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.58)";
+    ctx.fillText("No unit kill events", x, rowY + rowHeight / 2, width);
+    return;
+  }
+  for (const row of summary.topUnits) {
+    drawSummaryRowAccent(ctx, row.teamId, x, rowY, rowHeight, scale);
+    ctx.textAlign = "left";
+    ctx.font = `600 ${Math.max(10, 11 * scale)}px sans-serif`;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.90)";
+    const playerWidth = width * 0.42;
+    const unitWidth = width * 0.28;
+    ctx.fillText(fitText(ctx, `P${row.gamePos} ${row.playerName}`, playerWidth), x + 10 * scale, rowY + rowHeight / 2);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
+    ctx.fillText(fitText(ctx, row.unitName, unitWidth), x + width * 0.48, rowY + rowHeight / 2);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
+    ctx.fillText(formatCount(row.kills), x + width, rowY + rowHeight / 2);
+    rowY += rowHeight;
+  }
+}
+function fitText(ctx, text, maxWidth) {
+  if (maxWidth <= 0 || text.length === 0) {
+    return "";
+  }
+  if (ctx.measureText(text).width <= maxWidth) {
+    return text;
+  }
+  const ellipsis = "...";
+  if (ctx.measureText(ellipsis).width > maxWidth) {
+    return "";
+  }
+  let left = 0;
+  let right = text.length;
+  while (left < right) {
+    const middle = Math.ceil((left + right) / 2);
+    const candidate = text.slice(0, middle) + ellipsis;
+    if (ctx.measureText(candidate).width <= maxWidth) {
+      left = middle;
+    } else {
+      right = middle - 1;
+    }
+  }
+  return text.slice(0, left) + ellipsis;
+}
+function drawSummarySectionTitle(ctx, title, x, y, width, scale) {
+  ctx.textAlign = "left";
+  ctx.font = `700 ${Math.max(11, 12 * scale)}px sans-serif`;
+  ctx.fillStyle = "rgba(255, 193, 7, 0.88)";
+  ctx.fillText(title, x, y + 9 * scale, width);
+}
+function drawSummaryRowAccent(ctx, teamId, x, y, rowHeight, scale) {
+  ctx.fillStyle = withAlpha(TEAM_COLORS[teamId] ?? "#FFFFFF", "CC");
+  ctx.fillRect(x, y + 4 * scale, 3 * scale, rowHeight - 8 * scale);
+}
+function formatCount(value) {
+  return Math.max(0, Math.round(value)).toLocaleString("en-US");
+}
 function drawGrid(ctx, canvas, gridLines) {
   ctx.save();
   ctx.strokeStyle = "rgba(255, 255, 255, 0.10)";
@@ -9009,6 +9286,7 @@ function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gamel
     staticBackgroundCanvas: null,
     staticCanvasWidth: 0,
     staticCanvasHeight: 0,
+    objectiveDeathAnnouncements: [],
     unitSpriteCache: /* @__PURE__ */ new Map(),
     rootElement,
     fullscreenListener: null

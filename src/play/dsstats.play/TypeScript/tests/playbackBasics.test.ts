@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { clipSumLine, clamp, withAlpha } from "../canvasUtils";
-import { normalizeMiddleControl, normalizeReplay } from "../normalization";
+import { normalizeMiddleControl, normalizeReplay, normalizeSummary } from "../normalization";
+import { createObjectiveDeathAnnouncements, fitText, isEndSummaryVisible } from "../rendering";
+import type { LandmarkGeometry } from "../types";
 import { hydrateUnitIcons, unitIconCatalog } from "../unitIcons";
 
 describe("spawn playback basics", () => {
@@ -53,6 +55,7 @@ describe("spawn playback basics", () => {
         expect(replay.units[0].deltaY).toBe(0);
         expect(replay.units[1].deltaX).toBe(100);
         expect(replay.units[1].deltaY).toBe(100);
+        expect(replay.summary).toEqual({ totalKills: 0, players: [], topUnits: [] });
     });
 
     it("rejects invalid middle-control data", () => {
@@ -253,4 +256,91 @@ describe("spawn playback basics", () => {
             end: { x: 10, y: 0 }
         });
     });
+
+    it("creates objective death announcements for dead bunker and cannon landmarks", () => {
+        const announcements = createObjectiveDeathAnnouncements([
+            createLandmark("Bunker", 137, 3),
+            createLandmark("Cannon", 351),
+            createLandmark("Planetary", 200, 12),
+            createLandmark("Bunker", null)
+        ], 112, 22.4);
+
+        expect(announcements).toHaveLength(2);
+        expect(announcements[0].message).toBe("Bunker down at 0:06 with 3 kills");
+        expect(announcements[0].anchorGameloop).toBe(112);
+        expect(announcements[0].startGameloop).toBe(0);
+        expect(announcements[0].holdEndGameloop).toBe(426);
+        expect(announcements[0].endGameloop).toBe(582);
+        expect(announcements[1].message).toBe("Cannon down at 0:16");
+        expect(announcements[1].anchorGameloop).toBe(336);
+    });
+
+    it("normalizes PascalCase and camelCase replay summaries", () => {
+        expect(normalizeSummary({
+            Summary: {
+                TotalKills: 42,
+                Players: [
+                    { PlayerName: "Alpha", TeamId: 1, GamePos: 1, Commander: "Terran", Kills: 30 }
+                ],
+                TopUnits: [
+                    { PlayerName: "Alpha", TeamId: 1, GamePos: 1, UnitName: "Marine", Kills: 5 }
+                ]
+            }
+        })).toEqual({
+            totalKills: 42,
+            players: [
+                { playerName: "Alpha", teamId: 1, gamePos: 1, commander: "Terran", kills: 30 }
+            ],
+            topUnits: [
+                { playerName: "Alpha", teamId: 1, gamePos: 1, unitName: "Marine", kills: 5 }
+            ]
+        });
+
+        expect(normalizeSummary({
+            summary: {
+                totalKills: 7,
+                players: [
+                    { playerName: "Bravo", teamId: 2, gamePos: 4, commander: "Zerg", kills: 7 }
+                ],
+                topUnits: []
+            }
+        }).players[0].playerName).toBe("Bravo");
+    });
+
+    it("shows the end summary only at replay duration", () => {
+        expect(isEndSummaryVisible(499, 500)).toBe(false);
+        expect(isEndSummaryVisible(500, 500)).toBe(true);
+        expect(isEndSummaryVisible(520, 500)).toBe(true);
+        expect(isEndSummaryVisible(Number.NaN, 500)).toBe(false);
+    });
+
+    it("fits canvas text with stable ellipsis behavior", () => {
+        const ctx = createMeasureContext();
+
+        expect(fitText(ctx, "P1 Nova", 70)).toBe("P1 Nova");
+        expect(fitText(ctx, "P2 PepperDome", 80)).toBe("P2 Pepp...");
+        expect(fitText(ctx, "P3 NexusDS", 10)).toBe("");
+        expect(fitText(ctx, "", 100)).toBe("");
+    });
 });
+
+function createLandmark(label: string, diedGameloop: number | null, kills = 0): LandmarkGeometry {
+    return {
+        x: 0,
+        y: 0,
+        kind: "Defense",
+        teamId: 1,
+        color: "#F8D34A",
+        kills,
+        label,
+        radius: 9,
+        diedGameloop,
+        projected: { x: 0, y: 0 }
+    };
+}
+
+function createMeasureContext() {
+    return {
+        measureText: (text: string) => ({ width: text.length * 8 }) as TextMetrics
+    };
+}

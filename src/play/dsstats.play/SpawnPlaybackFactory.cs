@@ -125,6 +125,7 @@ public static class SpawnPlaybackFactory
                 unitsWithDiedEvent,
                 unitsWithDiedPosition,
                 GetMaxSimultaneousActiveSpawns(spawnEvents)),
+            new(0, [], []),
             GetMiddleControl(replay),
             playbackLandmarks,
             buildUnits ?? [],
@@ -230,6 +231,7 @@ public static class SpawnPlaybackFactory
                 unitsWithDiedEvent,
                 unitsWithDiedPosition,
                 GetMaxSimultaneousActiveSpawns(spawnEvents)),
+            GetSummary(replay, players),
             GetMiddleControl(replay),
             landmarks,
             [],
@@ -245,6 +247,67 @@ public static class SpawnPlaybackFactory
         string name)
     {
         return new(unitIndex, spawnGameloop, spawnX, spawnY, name);
+    }
+
+    private static SpawnPlaybackSummary GetSummary(
+        dsstats.shared.ReplayDto replay,
+        IReadOnlyList<SpawnPlaybackPlayer> players)
+    {
+        List<SpawnPlaybackPlayerSummary> playerSummaries = new(replay.Players.Count);
+        foreach (var replayPlayer in replay.Players.OrderBy(player => player.TeamId).ThenBy(player => player.GamePos))
+        {
+            int kills = replayPlayer.Spawns
+                .FirstOrDefault(spawn => spawn.Breakpoint == dsstats.shared.Breakpoint.All)
+                ?.KilledValue ?? 0;
+            playerSummaries.Add(new(
+                replayPlayer.Name,
+                replayPlayer.TeamId,
+                replayPlayer.GamePos,
+                replayPlayer.Race.ToString(),
+                kills));
+        }
+
+        List<SpawnPlaybackTopUnitSummary> topUnits = GetTopUnitSummaries(players);
+        return new(playerSummaries.Sum(player => player.Kills), playerSummaries, topUnits);
+    }
+
+    private static List<SpawnPlaybackTopUnitSummary> GetTopUnitSummaries(
+        IReadOnlyList<SpawnPlaybackPlayer> players)
+    {
+        Dictionary<PlayerUnitSummaryKey, int> killsByPlayerUnit = [];
+        foreach (var player in players)
+        {
+            foreach (var unit in player.Units)
+            {
+                int kills = unit.KillGameloops.Count;
+                if (kills == 0)
+                {
+                    continue;
+                }
+
+                var key = new PlayerUnitSummaryKey(
+                    player.Name,
+                    player.TeamId,
+                    player.GamePos,
+                    unit.Name);
+                killsByPlayerUnit.TryGetValue(key, out int existingKills);
+                killsByPlayerUnit[key] = existingKills + kills;
+            }
+        }
+
+        return killsByPlayerUnit
+            .Select(pair => new SpawnPlaybackTopUnitSummary(
+                pair.Key.PlayerName,
+                pair.Key.TeamId,
+                pair.Key.GamePos,
+                pair.Key.UnitName,
+                pair.Value))
+            .OrderByDescending(row => row.Kills)
+            .ThenBy(row => row.TeamId)
+            .ThenBy(row => row.GamePos)
+            .ThenBy(row => row.UnitName, StringComparer.Ordinal)
+            .Take(5)
+            .ToList();
     }
 
     private static (double Radius, string Color) GetDisplayInfo(
@@ -577,4 +640,10 @@ public static class SpawnPlaybackFactory
     {
         return seconds <= 0 ? null : ToGameloop(seconds);
     }
+
+    private readonly record struct PlayerUnitSummaryKey(
+        string PlayerName,
+        int TeamId,
+        int GamePos,
+        string UnitName);
 }

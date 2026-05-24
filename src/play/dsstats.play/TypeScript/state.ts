@@ -34,6 +34,7 @@ export function initializeSpawnPlayback(
         staticBackgroundCanvas: null,
         staticCanvasWidth: 0,
         staticCanvasHeight: 0,
+        objectiveDeathAnnouncements: [],
         unitSpriteCache: new Map(),
         rootElement,
         fullscreenListener: null

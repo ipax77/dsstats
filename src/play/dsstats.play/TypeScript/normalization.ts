@@ -1,5 +1,15 @@
 import { MAP_HEIGHT, MAP_WIDTH, MAX_UNIT_LIFETIME_GAMELOOPS } from "./constants";
-import type { Bounds, MiddleControl, NormalizedPlayer, NormalizedReplay, NormalizedUnit, RawObject } from "./types";
+import type {
+    Bounds,
+    MiddleControl,
+    NormalizedPlayer,
+    NormalizedReplay,
+    NormalizedUnit,
+    PlaybackPlayerSummary,
+    PlaybackSummary,
+    PlaybackTopUnitSummary,
+    RawObject
+} from "./types";
 
 export function normalizeReplay(replayValue: unknown): NormalizedReplay {
     const replay = asObject(replayValue);
@@ -62,12 +72,50 @@ export function normalizeReplay(replayValue: unknown): NormalizedReplay {
         stepGameloops: readOptionalNumber(replay, "stepGameloops", "StepGameloops") ?? 112,
         bounds,
         stats: replay.stats ?? replay.Stats,
+        summary: normalizeSummary(replay),
         middleControl: normalizeMiddleControl(replay),
         landmarks: readArray(replay, "landmarks", "Landmarks").map(asObject),
         buildUnits: readArray(replay, "buildUnits", "BuildUnits"),
         snapshots: readArray(replay, "snapshots", "Snapshots"),
         players,
         units
+    };
+}
+
+export function normalizeSummary(replayValue: unknown): PlaybackSummary {
+    const replay = asObject(replayValue);
+    const summary = asObject(replay.summary ?? replay.Summary);
+    const players = readArray(summary, "players", "Players")
+        .map(normalizePlayerSummary);
+    const topUnits = readArray(summary, "topUnits", "TopUnits")
+        .map(normalizeTopUnitSummary);
+
+    return {
+        totalKills: readNumber(summary, "totalKills", "TotalKills"),
+        players,
+        topUnits
+    };
+}
+
+function normalizePlayerSummary(value: unknown): PlaybackPlayerSummary {
+    const row = asObject(value);
+    return {
+        playerName: readString(row, "playerName", "PlayerName"),
+        teamId: readNumber(row, "teamId", "TeamId"),
+        gamePos: readNumber(row, "gamePos", "GamePos"),
+        commander: readString(row, "commander", "Commander"),
+        kills: readNumber(row, "kills", "Kills")
+    };
+}
+
+function normalizeTopUnitSummary(value: unknown): PlaybackTopUnitSummary {
+    const row = asObject(value);
+    return {
+        playerName: readString(row, "playerName", "PlayerName"),
+        teamId: readNumber(row, "teamId", "TeamId"),
+        gamePos: readNumber(row, "gamePos", "GamePos"),
+        unitName: readString(row, "unitName", "UnitName"),
+        kills: readNumber(row, "kills", "Kills")
     };
 }
 

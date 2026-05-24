@@ -5,6 +5,7 @@ public sealed record SpawnPlaybackReplay(
     int StepGameloops,
     SpawnPlaybackBounds Bounds,
     SpawnPlaybackStats Stats,
+    SpawnPlaybackSummary Summary,
     SpawnPlaybackMiddleControl MiddleControl,
     IReadOnlyList<SpawnPlaybackLandmark> Landmarks,
     IReadOnlyList<SpawnPlaybackBuildUnit> BuildUnits,
@@ -71,6 +72,25 @@ public sealed record SpawnPlaybackBuildUnit(
     int Kills,
     double Radius,
     string Color);
+
+public sealed record SpawnPlaybackSummary(
+    int TotalKills,
+    IReadOnlyList<SpawnPlaybackPlayerSummary> Players,
+    IReadOnlyList<SpawnPlaybackTopUnitSummary> TopUnits);
+
+public sealed record SpawnPlaybackPlayerSummary(
+    string PlayerName,
+    int TeamId,
+    int GamePos,
+    string Commander,
+    int Kills);
+
+public sealed record SpawnPlaybackTopUnitSummary(
+    string PlayerName,
+    int TeamId,
+    int GamePos,
+    string UnitName,
+    int Kills);
 
 public readonly record struct SpawnPlaybackUnitKey(
     int UnitIndex,
