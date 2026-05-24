@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <SpawnPlaybackSources Include="TypeScript/**/*.ts" />
+    <SpawnPlaybackSources Include="TypeScript/**/*.ts" Exclude="TypeScript/tests/**/*.ts" />
   </ItemGroup>
 
   <PropertyGroup>

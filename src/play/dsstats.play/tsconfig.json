@@ -18,5 +18,8 @@
   },
   "include": [
     "./TypeScript/**/*.ts"
+  ],
+  "exclude": [
+    "./TypeScript/tests/**/*.ts"
   ]
 }
