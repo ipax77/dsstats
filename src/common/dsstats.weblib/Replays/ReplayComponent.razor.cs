@@ -53,6 +53,8 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
     private bool loadingSpawnPlayback;
     private bool spawnPlaybackLoadFailed;
     private SpawnPlaybackSidecarDto? spawnPlaybackSidecar;
+    private List<ReplayPlayerDto> team1Players = [];
+    private List<ReplayPlayerDto> team2Players = [];
 
     protected override void OnInitialized()
     {
@@ -80,6 +82,14 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
         currentReplayHash = replayDetails.ReplayHash;
         currentReplay = replayDetails.Replay;
         _replayHelper = new ReplayHelper(ReplayDetails);
+        team1Players = ReplayDetails.Replay.Players
+            .Where(player => player.TeamId == 1)
+            .OrderBy(player => player.GamePos)
+            .ToList();
+        team2Players = ReplayDetails.Replay.Players
+            .Where(player => player.TeamId == 2)
+            .OrderBy(player => player.GamePos)
+            .ToList();
         showSpawnPlayback = false;
         loadingSpawnPlayback = false;
         spawnPlaybackLoadFailed = false;

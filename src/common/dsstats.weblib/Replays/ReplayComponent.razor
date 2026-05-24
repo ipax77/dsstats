@@ -145,7 +145,7 @@
 						</span>
 					</div>
 				</div>
-				<ReplayTeamTableComponent TeamId="1" Players="ReplayDetails.Replay.Players.Where(x => x.TeamId == 1).OrderBy(o => o.GamePos).ToList()"
+				<ReplayTeamTableComponent TeamId="1" Players="team1Players"
 										  ReplayHelper="_replayHelper" RequestBuild="_replayHelper.ToggleBuild" RequestStats="RequestPlayerStats" />
 			</div>
 			<div class="col-auto">
@@ -169,7 +169,7 @@
 						</span>
 					</div>
 				</div>
-				<ReplayTeamTableComponent TeamId="2" Players="ReplayDetails.Replay.Players.Where(x => x.TeamId == 2).OrderBy(o => o.GamePos).ToList()"
+				<ReplayTeamTableComponent TeamId="2" Players="team2Players"
 										  ReplayHelper="_replayHelper" RequestBuild="_replayHelper.ToggleBuild" RequestStats="RequestPlayerStats" />
 			</div>
 		</div>

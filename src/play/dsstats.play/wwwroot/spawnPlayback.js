@@ -43,6 +43,7 @@ const TEAM_SPAWN_AREAS = [
 
 export function initializeSpawnPlayback(
     canvas,
+    rootElement,
     replay,
     callbackRef,
     gameloopsPerSecond,
@@ -70,7 +71,9 @@ export function initializeSpawnPlayback(
         staticBackgroundCanvas: null,
         staticCanvasWidth: 0,
         staticCanvasHeight: 0,
-        unitSpriteCache: new Map()
+        unitSpriteCache: new Map(),
+        rootElement,
+        fullscreenListener: null
     };
 
     const oldState = states.get(canvas);
@@ -78,6 +81,8 @@ export function initializeSpawnPlayback(
 
     state.resizeObserver = new ResizeObserver(() => drawSpawnPlayback(canvas, state.currentGameloop));
     state.resizeObserver.observe(canvas);
+    state.fullscreenListener = () => handleFullscreenChange(canvas);
+    document.addEventListener("fullscreenchange", state.fullscreenListener);
     states.set(canvas, state);
     resizeCanvas(canvas);
 }
@@ -141,6 +146,33 @@ export function setSpawnPlaybackSpeed(canvas, speedMultiplier) {
     }
 
     state.speedMultiplier = speedMultiplier;
+}
+
+export async function setSpawnPlaybackFullscreen(canvas, rootElement, fullscreen) {
+    const state = states.get(canvas);
+    if (!state) {
+        return;
+    }
+
+    if (rootElement) {
+        state.rootElement = rootElement;
+    }
+
+    if (fullscreen) {
+        const target = state.rootElement;
+        if (!target || document.fullscreenElement === target) {
+            notifyFullscreenChanged(state);
+            return;
+        }
+
+        if (target.requestFullscreen) {
+            await target.requestFullscreen();
+        }
+    } else if (document.fullscreenElement === state.rootElement && document.exitFullscreen) {
+        await document.exitFullscreen();
+    } else {
+        notifyFullscreenChanged(state);
+    }
 }
 
 export function disposeSpawnPlayback(canvas) {
@@ -240,6 +272,11 @@ function disposeState(state) {
         state.resizeObserver.disconnect();
         state.resizeObserver = null;
     }
+
+    if (state.fullscreenListener) {
+        document.removeEventListener("fullscreenchange", state.fullscreenListener);
+        state.fullscreenListener = null;
+    }
 }
 
 function cancelAnimation(state) {
@@ -247,6 +284,22 @@ function cancelAnimation(state) {
         cancelAnimationFrame(state.animationFrameId);
         state.animationFrameId = 0;
     }
+}
+
+function handleFullscreenChange(canvas) {
+    const state = states.get(canvas);
+    if (!state) {
+        return;
+    }
+
+    notifyFullscreenChanged(state);
+    requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop));
+}
+
+function notifyFullscreenChanged(state) {
+    state.callbackRef?.invokeMethodAsync(
+        "ReceiveSpawnPlaybackFullscreenChanged",
+        document.fullscreenElement === state.rootElement).catch(() => { });
 }
 
 function clampGameloop(state, gameloop) {

@@ -6,7 +6,7 @@
 
 @if (playback is not null)
 {
-    <div class="spawn-playback bgchart border border-dark rounded p-3 mb-4">
+    <div @ref="playbackElement" class="spawn-playback bgchart border border-dark rounded p-3 mb-4 @(showAliveUnits ? null : "spawn-playback-alive-collapsed")">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
             <div>
                 <h5 class="mb-1 text-warning">Spawn Playback</h5>
@@ -30,6 +30,9 @@
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-light" title="Forward 5 seconds" @onclick="StepForward">
                         <span class="bi bi-chevron-right"></span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light" title="@FullscreenTitle" @onclick="ToggleFullscreen">
+                        <span class="bi @FullscreenIcon"></span>
                     </button>
                 </div>
                 <select class="form-select form-select-sm spawn-playback-speed"
@@ -68,82 +71,94 @@
                         <h6 class="mb-0 text-warning">Alive Units</h6>
                         <div class="small text-muted">Current spawn @CurrentSpawnLabel</div>
                     </div>
-                    <span class="badge text-bg-dark border border-secondary">@aliveUnitCount.ToString("N0") units</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-light"
+                                title="@AliveUnitsToggleTitle"
+                                aria-expanded="@showAliveUnits"
+                                @onclick="ToggleAliveUnits">
+                            <span class="bi @AliveUnitsToggleIcon"></span>
+                        </button>
+                        <span class="badge text-bg-dark border border-secondary">@aliveUnitCount.ToString("N0") units</span>
+                    </div>
                 </div>
-                <div class="spawn-playback-team-tables">
-                    <section class="spawn-playback-team-table">
-                        <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-                            <div class="small fw-semibold text-info">Team 1</div>
-                            <div class="small text-muted">@team1AliveCount.ToString("N0") units</div>
-                        </div>
-                        <div class="table-responsive spawn-playback-alive-table">
-                            <table class="table table-dark table-sm table-striped align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Unit</th>
-                                        <th class="text-end">Alive</th>
-                                        <th class="text-end">Kills</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if (team1AliveUnitRows.Count == 0)
-                                    {
+                @if (showAliveUnits)
+                {
+                    <div class="spawn-playback-team-tables">
+                        <section class="spawn-playback-team-table">
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                <div class="small fw-semibold text-info">Team 1</div>
+                                <div class="small text-muted">@team1AliveCount.ToString("N0") units</div>
+                            </div>
+                            <div class="table-responsive spawn-playback-alive-table">
+                                <table class="table table-dark table-sm table-striped align-middle mb-0">
+                                    <thead>
                                         <tr>
-                                            <td colspan="3" class="text-muted text-center py-3">No estimated alive units</td>
+                                            <th>Unit</th>
+                                            <th class="text-end">Alive</th>
+                                            <th class="text-end">Kills</th>
                                         </tr>
-                                    }
-                                    else
-                                    {
-                                        @foreach (var row in team1AliveUnitRows)
+                                    </thead>
+                                    <tbody>
+                                        @if (team1AliveUnitRows.Count == 0)
                                         {
                                             <tr>
-                                                <td class="text-truncate" title="@row.UnitName">@row.UnitName</td>
-                                                <td class="text-end">@row.AliveCount.ToString("N0")</td>
-                                                <td class="text-end">@row.CurrentKills</td>
+                                                <td colspan="3" class="text-muted text-center py-3">No estimated alive units</td>
                                             </tr>
                                         }
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                    <section class="spawn-playback-team-table">
-                        <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-                            <div class="small fw-semibold text-danger">Team 2</div>
-                            <div class="small text-muted">@team2AliveCount.ToString("N0") units</div>
-                        </div>
-                        <div class="table-responsive spawn-playback-alive-table">
-                            <table class="table table-dark table-sm table-striped align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Unit</th>
-                                        <th class="text-end">Alive</th>
-                                        <th class="text-end">Kills</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if (team2AliveUnitRows.Count == 0)
-                                    {
+                                        else
+                                        {
+                                            @foreach (var row in team1AliveUnitRows)
+                                            {
+                                                <tr>
+                                                    <td class="text-truncate" title="@row.UnitName">@row.UnitName</td>
+                                                    <td class="text-end">@row.AliveCount.ToString("N0")</td>
+                                                    <td class="text-end">@row.CurrentKills</td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                        <section class="spawn-playback-team-table">
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                <div class="small fw-semibold text-danger">Team 2</div>
+                                <div class="small text-muted">@team2AliveCount.ToString("N0") units</div>
+                            </div>
+                            <div class="table-responsive spawn-playback-alive-table">
+                                <table class="table table-dark table-sm table-striped align-middle mb-0">
+                                    <thead>
                                         <tr>
-                                            <td colspan="3" class="text-muted text-center py-3">No estimated alive units</td>
+                                            <th>Unit</th>
+                                            <th class="text-end">Alive</th>
+                                            <th class="text-end">Kills</th>
                                         </tr>
-                                    }
-                                    else
-                                    {
-                                        @foreach (var row in team2AliveUnitRows)
+                                    </thead>
+                                    <tbody>
+                                        @if (team2AliveUnitRows.Count == 0)
                                         {
                                             <tr>
-                                                <td class="text-truncate" title="@row.UnitName">@row.UnitName</td>
-                                                <td class="text-end">@row.AliveCount.ToString("N0")</td>
-                                                <td class="text-end">@row.CurrentKills</td>
+                                                <td colspan="3" class="text-muted text-center py-3">No estimated alive units</td>
                                             </tr>
                                         }
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                </div>
+                                        else
+                                        {
+                                            @foreach (var row in team2AliveUnitRows)
+                                            {
+                                                <tr>
+                                                    <td class="text-truncate" title="@row.UnitName">@row.UnitName</td>
+                                                    <td class="text-end">@row.AliveCount.ToString("N0")</td>
+                                                    <td class="text-end">@row.CurrentKills</td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -156,6 +171,7 @@
     [Parameter]
     public SpawnPlaybackSidecarDto? Sidecar { get; set; }
 
+    private ElementReference playbackElement;
     private ElementReference canvasElement;
     private IJSObjectReference? module;
     private DotNetObjectReference<SpawnPlaybackCanvas>? dotNetReference;
@@ -170,10 +186,13 @@
     private bool canvasDrawPending;
     private readonly List<AliveUnitRow> team1AliveUnitRows = [];
     private readonly List<AliveUnitRow> team2AliveUnitRows = [];
+    private readonly Dictionary<AliveUnitKey, AliveUnitAccumulator> aliveUnitAccumulators = [];
     private int aliveUnitCount;
     private int team1AliveCount;
     private int team2AliveCount;
     private int currentSpawnNumber;
+    private bool isFullscreen;
+    private bool showAliveUnits = true;
     private SpawnPlaybackAnimationState animationState = SpawnPlaybackAnimationState.Stopped;
     private string selectedPlaybackSpeed = "normal";
 
@@ -186,6 +205,14 @@
     private string PlayPauseIcon => animationState == SpawnPlaybackAnimationState.Playing
         ? "bi-pause-fill"
         : "bi-play-fill";
+
+    private string FullscreenTitle => isFullscreen ? "Exit fullscreen" : "Enter fullscreen";
+
+    private string FullscreenIcon => isFullscreen ? "bi-fullscreen-exit" : "bi-fullscreen";
+
+    private string AliveUnitsToggleTitle => showAliveUnits ? "Collapse Alive Units" : "Expand Alive Units";
+
+    private string AliveUnitsToggleIcon => showAliveUnits ? "bi-chevron-up" : "bi-chevron-down";
 
     private string PlaybackStatusLabel => animationState switch
     {
@@ -227,6 +254,8 @@
             currentGameloop = GetFirstPlaybackGameloop(playback);
             currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(currentGameloop);
             animationState = SpawnPlaybackAnimationState.Stopped;
+            isFullscreen = false;
+            showAliveUnits = true;
             SetRenderGameloop(force: true);
         }
     }
@@ -238,9 +267,7 @@
             return;
         }
 
-        module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
-            "import",
-            "./_content/dsstats.play/spawnPlayback.js");
+        module ??= await ImportModuleAsync();
         dotNetReference ??= DotNetObjectReference.Create(this);
 
         if (!ReferenceEquals(initializedReplay, playback))
@@ -249,6 +276,7 @@
             await module.InvokeVoidAsync(
                 "initializeSpawnPlayback",
                 canvasElement,
+                playbackElement,
                 playback,
                 dotNetReference,
                 SpawnPlaybackFactory.GameloopsPerSecond,
@@ -261,6 +289,13 @@
             await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
             canvasDrawPending = false;
         }
+    }
+
+    private ValueTask<IJSObjectReference> ImportModuleAsync()
+    {
+        return JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import",
+            "./_content/dsstats.play/spawnPlayback.js");
     }
 
     private async Task TogglePlayback()
@@ -361,6 +396,29 @@
         }
     }
 
+    private async Task ToggleFullscreen()
+    {
+        if (playback is null)
+        {
+            return;
+        }
+
+        module ??= await ImportModuleAsync();
+        dotNetReference ??= DotNetObjectReference.Create(this);
+        await module.InvokeVoidAsync(
+            "setSpawnPlaybackFullscreen",
+            canvasElement,
+            playbackElement,
+            !isFullscreen);
+    }
+
+    private void ToggleAliveUnits()
+    {
+        showAliveUnits = !showAliveUnits;
+        UpdateAliveUnitRows();
+        canvasDrawPending = true;
+    }
+
     private async Task StopAnimationAndSync(SpawnPlaybackAnimationState nextState)
     {
         animationState = nextState;
@@ -389,6 +447,17 @@
         });
     }
 
+    [JSInvokable]
+    public Task ReceiveSpawnPlaybackFullscreenChanged(bool fullscreen)
+    {
+        return InvokeAsync(() =>
+        {
+            isFullscreen = fullscreen;
+            canvasDrawPending = true;
+            StateHasChanged();
+        });
+    }
+
     private void ApplyAnimationProgress(
         double gameloop,
         SpawnPlaybackAnimationState nextState,
@@ -412,9 +481,9 @@
     {
         return selectedPlaybackSpeed switch
         {
-            "slow" => 0.5,
-            "fast" => 2,
-            _ => 1
+            "slow" => 2,
+            "fast" => 4,
+            _ => 3
         };
     }
 
@@ -569,6 +638,7 @@
     {
         team1AliveUnitRows.Clear();
         team2AliveUnitRows.Clear();
+        aliveUnitAccumulators.Clear();
         aliveUnitCount = 0;
         team1AliveCount = 0;
         team2AliveCount = 0;
@@ -578,7 +648,6 @@
             return;
         }
 
-        Dictionary<AliveUnitKey, AliveUnitAccumulator> rows = [];
         foreach (var player in playback.Players)
         {
             foreach (var unit in player.Units)
@@ -604,13 +673,23 @@
                     team2AliveCount++;
                 }
 
+                if (!showAliveUnits)
+                {
+                    continue;
+                }
+
                 var key = new AliveUnitKey(player.TeamId, unit.Name);
-                rows.TryGetValue(key, out var row);
-                rows[key] = row.Add(GetCurrentKills(unit.KillGameloops, renderGameloop));
+                aliveUnitAccumulators.TryGetValue(key, out var row);
+                aliveUnitAccumulators[key] = row.Add(GetCurrentKills(unit.KillGameloops, renderGameloop));
             }
         }
 
-        foreach (var pair in rows)
+        if (!showAliveUnits)
+        {
+            return;
+        }
+
+        foreach (var pair in aliveUnitAccumulators)
         {
             var row = new AliveUnitRow(
                 pair.Key.TeamId,
