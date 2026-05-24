@@ -44,7 +44,7 @@ public partial class ReplayDecodeWorker
                 onSpawnPlaybackError: ex => spawnPlaybackError = ex.Message,
                 spawnPlaybackEncoder: sidecar => SpawnPlaybackSidecarCodec.EncodeRawWithMetadata(
                     sidecar,
-                    SpawnPlaybackCompression.GZip));
+                    SpawnPlaybackCompression.Brotli));
             var replay = replayImport.Replay;
             var hash   = replay.ComputeHash();
 

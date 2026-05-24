@@ -116,64 +116,10 @@ function onMessage(state, e) {
         const job = pending.get(jobId);
         if (job) {
             pending.delete(jobId);
-            job.resolve(compressSpawnPlaybackSidecar(resultJson));
+            job.resolve(resultJson);
         }
         drain(state);
     }
-}
-
-function compressSpawnPlaybackSidecar(resultJson) {
-    let result;
-    try {
-        result = JSON.parse(resultJson);
-    } catch {
-        return resultJson;
-    }
-
-    if (!result?.success || !result.spawnPlaybackPayload) {
-        return resultJson;
-    }
-
-    try {
-        if (!globalThis.pako?.gzip) {
-            throw new Error('pako.gzip is not available');
-        }
-
-        const rawPayload = base64ToBytes(result.spawnPlaybackPayload);
-        const compressedPayload = globalThis.pako.gzip(rawPayload);
-        result.spawnPlaybackPayload = bytesToBase64(compressedPayload);
-        result.spawnPlaybackCompressedLength = compressedPayload.length;
-        result.spawnPlaybackUncompressedLength = rawPayload.length;
-        result.spawnPlaybackCompression = 2;
-        result.spawnPlaybackError = null;
-    } catch (error) {
-        result.spawnPlaybackPayload = null;
-        result.spawnPlaybackCompressedLength = 0;
-        result.spawnPlaybackUncompressedLength = 0;
-        result.spawnPlaybackUnitCount = 0;
-        result.spawnPlaybackError = `JS gzip failed: ${error?.message ?? error}`;
-    }
-
-    return JSON.stringify(result);
-}
-
-function base64ToBytes(base64) {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
-}
-
-function bytesToBase64(bytes) {
-    const chunkSize = 0x8000;
-    let binary = '';
-    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-        const chunk = bytes.subarray(offset, offset + chunkSize);
-        binary += String.fromCharCode(...chunk);
-    }
-    return btoa(binary);
 }
 
 function dispatch(state, job) {

@@ -124,7 +124,7 @@ public partial class DecodeService : IDisposable
                 onSpawnPlaybackError: ex => spawnPlaybackError = ex.Message,
                 spawnPlaybackEncoder: sidecar => SpawnPlaybackSidecarCodec.EncodeRawWithMetadata(
                     sidecar,
-                    SpawnPlaybackCompression.GZip));
+                    SpawnPlaybackCompression.Brotli));
             var replay = replayImport.Replay;
             var hash = replay.ComputeHash();
             if (replayImport.SpawnPlayback is null)

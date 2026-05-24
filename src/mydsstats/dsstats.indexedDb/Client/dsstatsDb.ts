@@ -28,7 +28,7 @@ export async function saveReplayFull(
 ): Promise<void> {
     const database = await openDB();
     const normalizedSpawnPlaybackPayload = normalizeByteArray(spawnPlaybackPayload);
-    const preparedSpawnPlaybackPayload = prepareSpawnPlaybackPayload(replay, normalizedSpawnPlaybackPayload);
+    const preparedSpawnPlaybackPayload = await prepareSpawnPlaybackPayload(replay, normalizedSpawnPlaybackPayload);
     const hasSpawnPlayback = !!preparedSpawnPlaybackPayload && preparedSpawnPlaybackPayload.length > 0;
 
     if (hasSpawnPlayback) {
@@ -356,16 +356,17 @@ function createSpawnPlaybackExports(
     return sidecars;
 }
 
-function prepareSpawnPlaybackPayload(replay: ReplayDto, payload: Uint8Array | undefined): Uint8Array | undefined {
+async function prepareSpawnPlaybackPayload(replay: ReplayDto, payload: Uint8Array | undefined): Promise<Uint8Array | undefined> {
     if (!payload || payload.length === 0) {
         replay.spawnPlayback = undefined;
         return undefined;
     }
 
     const info = replay.spawnPlayback;
-    if (info?.compression === 2 && isRawSpawnPlaybackPayload(payload)) {
+    if (info?.compression === 1 && isRawSpawnPlaybackPayload(payload)) {
         try {
-            const compressed = pako.gzip(payload);
+            const { compressSpawnPlaybackPayload } = await import("./spawn-playback-compression");
+            const compressed = await compressSpawnPlaybackPayload(payload);
             replay.spawnPlayback = {
                 ...info,
                 compressedLength: compressed.length,
@@ -373,7 +374,7 @@ function prepareSpawnPlaybackPayload(replay: ReplayDto, payload: Uint8Array | un
             };
             return compressed;
         } catch (error) {
-            console.warn("Failed to gzip spawn playback sidecar payload:", error);
+            console.warn("Failed to Brotli-compress spawn playback sidecar payload:", error);
             replay.spawnPlayback = undefined;
             return undefined;
         }

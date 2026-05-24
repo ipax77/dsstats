@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/glob": "^8.1.0",
     "@types/node": "^24.12.4",
+    "brotli-wasm": "^3.0.1",
     "fake-indexeddb": "^6.2.5",
     "glob": "^13.0.6",
     "happy-dom": "^20.9.0",
