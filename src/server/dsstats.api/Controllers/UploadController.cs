@@ -148,31 +148,7 @@ public class UploadController(
             manifest,
             UploadJsonOptions) ?? [];
 
-        var entriesByReplayHash = new Dictionary<string, SpawnPlaybackUploadManifestEntryDto>(StringComparer.Ordinal);
-        foreach (var entry in manifestEntries)
-        {
-            if (string.IsNullOrWhiteSpace(entry.ReplayHash)
-                || string.IsNullOrWhiteSpace(entry.PartName))
-            {
-                return BadRequest("Invalid sidecar manifest.");
-            }
-
-            if (!entriesByReplayHash.TryAdd(entry.ReplayHash, entry))
-            {
-                return BadRequest("Duplicate sidecar manifest entry.");
-            }
-
-            if (entry.FormatVersion != SpawnPlaybackSidecarCodec.FormatVersion
-                || entry.Compression != SpawnPlaybackSidecarCodec.Compression
-                || entry.CompressedLength <= 0
-                || entry.UncompressedLength <= 0
-                || entry.UnitCount <= 0)
-            {
-                return BadRequest("Invalid sidecar metadata.");
-            }
-        }
-
-        var filesByPartName = new Dictionary<string, IFormFile>(StringComparer.Ordinal);
+        var payloadsByPartName = new Dictionary<string, SpawnPlaybackUploadPayload>(StringComparer.Ordinal);
         foreach (var file in HttpContext.Request.Form.Files)
         {
             if (string.Equals(file.Name, "request", StringComparison.Ordinal))
@@ -180,68 +156,28 @@ public class UploadController(
                 continue;
             }
 
-            if (!filesByPartName.TryAdd(file.Name, file))
+            var payload = new SpawnPlaybackUploadPayload(
+                file.Name,
+                file.Length,
+                file.OpenReadStream);
+
+            if (!payloadsByPartName.TryAdd(file.Name, payload))
             {
                 return BadRequest("Duplicate sidecar payload.");
             }
         }
 
-        List<ReplayImportDto> imports = new(uploadRequest.Replays.Count);
-        List<string> replayHashes = new(uploadRequest.Replays.Count);
-        foreach (var replay in uploadRequest.Replays)
+        var result = await importService.InsertReplayImportsWithSidecars(
+            uploadRequest,
+            manifestEntries,
+            payloadsByPartName,
+            token);
+
+        if (!result.Success)
         {
-            var replayHash = replay.ComputeHash();
-            replayHashes.Add(replayHash);
-
-            SpawnPlaybackEncodedSidecar? sidecar = null;
-            if (entriesByReplayHash.Remove(replayHash, out var entry))
-            {
-                if (!filesByPartName.TryGetValue(entry.PartName, out var sidecarFile))
-                {
-                    return BadRequest("Missing sidecar payload.");
-                }
-                if (sidecarFile.Length != entry.CompressedLength)
-                {
-                    return BadRequest("Sidecar compressed length does not match payload length.");
-                }
-
-                var bytes = new byte[checked((int)sidecarFile.Length)];
-                await using (var sidecarStream = sidecarFile.OpenReadStream())
-                {
-                    await sidecarStream.ReadExactlyAsync(bytes, token);
-                }
-
-                sidecar = new(
-                    bytes,
-                    entry.CompressedLength,
-                    entry.UncompressedLength,
-                    entry.UnitCount,
-                    entry.FormatVersion,
-                    entry.Compression);
-
-                replay.SpawnPlayback = new()
-                {
-                    Available = true,
-                    FormatVersion = entry.FormatVersion,
-                    CompressedLength = entry.CompressedLength,
-                    UncompressedLength = entry.UncompressedLength,
-                    UnitCount = entry.UnitCount,
-                };
-            }
-
-            imports.Add(new(replay, sidecar));
+            return BadRequest(result.Error);
         }
 
-        if (entriesByReplayHash.Count > 0)
-        {
-            return BadRequest("Sidecar manifest contains a replay hash that is not in the upload request.");
-        }
-
-        await importService.InsertReplayImports(imports);
-        return Ok(new ReplayImportBatchResultDto
-        {
-            Success = true,
-            ReplayHashes = replayHashes,
-        });
+        return Ok(result);
     }
 }

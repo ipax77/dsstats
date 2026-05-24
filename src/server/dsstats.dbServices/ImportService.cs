@@ -3,6 +3,7 @@ using dsstats.db.Extensions;
 using dsstats.shared;
 using dsstats.shared.Arcade;
 using dsstats.shared.Interfaces;
+using dsstats.shared.Upload;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,11 @@ public interface IImportService
     Task ImportReplay(ReplayDto replayDto);
     Task InsertReplays(List<ReplayDto> replays);
     Task InsertReplayImports(List<ReplayImportDto> imports);
+    Task<ReplayImportBatchResultDto> InsertReplayImportsWithSidecars(
+        UploadRequestDto request,
+        IReadOnlyList<SpawnPlaybackUploadManifestEntryDto> manifestEntries,
+        IReadOnlyDictionary<string, SpawnPlaybackUploadPayload> payloadsByPartName,
+        CancellationToken token = default);
     Task ImportArcadeReplaysRaw(List<ArcadeReplayDto> replays);
     Task ImportArcadeReplays(List<ArcadeReplayDto> replays);
     void ClearExistingArcadeReplayKeys();
