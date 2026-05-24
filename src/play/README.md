@@ -3,6 +3,30 @@
 This folder contains the experimental replay playback UI and shared playback model.
 The current focus is the spawn playback canvas used from `/te/play`.
 
+## TypeScript Playback Bundle
+
+`dsstats.play` uses TypeScript for the spawn playback browser module. Source files live in
+`src/play/dsstats.play/TypeScript/` and are bundled with esbuild into
+`src/play/dsstats.play/wwwroot/spawnPlayback.js`.
+
+- Blazor imports the generated static web asset at `./_content/dsstats.play/spawnPlayback.js`.
+- `TypeScript/index.ts` is the public JS interop entrypoint and must continue exporting the existing playback functions used by `SpawnPlaybackCanvas.razor`.
+- `wwwroot/spawnPlayback.js` is generated, but it is still checked in as the static asset shipped by the Razor class library.
+- Do not edit the generated `wwwroot/spawnPlayback.js` by hand; change the TypeScript sources and rebuild it.
+- Unit tests live under `src/play/dsstats.play/TypeScript/tests/` and are excluded from the production bundle/typecheck inputs.
+
+Useful commands:
+
+```powershell
+cd src/play/dsstats.play
+npm install
+npm run typecheck
+npm run test
+npm run build
+```
+
+The project file also runs `npm ci`/`npm install` and `npm run build` before static web assets are resolved, so a normal .NET build refreshes the playback bundle when TypeScript inputs change.
+
 ## Map Geometry Facts
 
 - Direct Strike tracker map space is treated as `256 x 240` world units.
