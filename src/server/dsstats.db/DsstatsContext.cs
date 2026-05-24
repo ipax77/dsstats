@@ -62,6 +62,8 @@ public class DsstatsContext : DbContext
     public DbSet<InHouseGameSessionStateSnapshot> InHouseGameSessionStateSnapshots { get; set; }
     public DbSet<ReplayObservers> ReplayObservers { get; set; }
     public DbSet<ReplaySpawnPlayback> ReplaySpawnPlaybacks { get; set; }
+    public DbSet<ReplayUserRatingCollect> ReplayUserRatingCollects { get; set; }
+    public DbSet<ReplayUserRatingSummary> ReplayUserRatingSummaries { get; set; }
 
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
 
@@ -201,6 +203,26 @@ public class DsstatsContext : DbContext
             entity.HasOne(i => i.Replay)
                 .WithOne(i => i.SpawnPlayback)
                 .HasForeignKey<ReplaySpawnPlayback>(i => i.ReplayId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReplayUserRatingCollect>(entity =>
+        {
+            entity.Property(i => i.IpHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(i => new { i.ReplayId, i.IpHash, i.CreatedAt });
+            entity.HasIndex(i => new { i.ProcessedAt, i.ReplayId });
+            entity.HasOne(i => i.Replay)
+                .WithMany()
+                .HasForeignKey(i => i.ReplayId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReplayUserRatingSummary>(entity =>
+        {
+            entity.HasIndex(i => i.ReplayId).IsUnique();
+            entity.HasOne(i => i.Replay)
+                .WithMany()
+                .HasForeignKey(i => i.ReplayId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

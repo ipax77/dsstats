@@ -1,4 +1,5 @@
 using dsstats.apiServices;
+using dsstats.shared;
 using dsstats.shared.InHouse;
 using dsstats.shared.Interfaces;
 using dsstats.weblib.Replays;
@@ -30,6 +31,16 @@ builder.Services.AddChartJs(options =>
     options.ChartJsCallbacksModuleLocation = "/_content/dsstats.weblib/js/chartJsCallbacks.js?v=0.1";
 });
 builder.Services.AddMemoryCache();
+builder.Services.Configure<dsstats.shared.HostOptions>(options =>
+{
+    options.Kind = HostAppKind.BlazorServer;
+});
+builder.Services.Configure<ReplayUserRatingClientOptions>(options =>
+{
+    options.ApiBaseAddress = builder.Environment.IsDevelopment()
+        ? "http://localhost:5279"
+        : string.Empty;
+});
 
 builder.Services.AddScoped<ISpawnPlaybackSidecarDecoder, DotNetSpawnPlaybackSidecarDecoder>();
 builder.Services.AddScoped<SpawnPlaybackSidecarCache>();

@@ -1177,6 +1177,71 @@ namespace dsstats.migrations.mysql.Migrations
                     b.ToTable("ReplayUploadJobs");
                 });
 
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingCollect", b =>
+                {
+                    b.Property<int>("ReplayUserRatingCollectId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayUserRatingCollectId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<string>("IpHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReplayUserRatingCollectId");
+
+                    b.HasIndex("ProcessedAt", "ReplayId");
+
+                    b.HasIndex("ReplayId", "IpHash", "CreatedAt");
+
+                    b.ToTable("ReplayUserRatingCollects");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingSummary", b =>
+                {
+                    b.Property<int>("ReplayUserRatingSummaryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayUserRatingSummaryId"));
+
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ScoreSum")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<int>("VoteCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReplayUserRatingSummaryId");
+
+                    b.HasIndex("ReplayId")
+                        .IsUnique();
+
+                    b.ToTable("ReplayUserRatingSummaries");
+                });
+
             modelBuilder.Entity("dsstats.db.Sc2Profile", b =>
                 {
                     b.Property<int>("Sc2ProfileId")
@@ -1916,6 +1981,28 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Navigation("LeaderReplayPlayer");
 
                     b.Navigation("ReplayBuildDetail");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingCollect", b =>
+                {
+                    b.HasOne("dsstats.db.Replay", "Replay")
+                        .WithMany()
+                        .HasForeignKey("ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingSummary", b =>
+                {
+                    b.HasOne("dsstats.db.Replay", "Replay")
+                        .WithMany()
+                        .HasForeignKey("ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
                 });
 
             modelBuilder.Entity("dsstats.db.Sc2Profile", b =>

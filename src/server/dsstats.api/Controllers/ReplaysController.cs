@@ -1,5 +1,6 @@
 ﻿using dsstats.shared;
 using dsstats.shared.Interfaces;
+using dsstats.dbServices;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -7,7 +8,9 @@ namespace dsstats.api.Controllers;
 
 [ApiController]
 [Route("api10/[controller]")]
-public class ReplaysController(IReplayRepository replayRepository) : Controller
+public class ReplaysController(
+    IReplayRepository replayRepository,
+    ReplayUserRatingService replayUserRatingService) : Controller
 {
     [EnableRateLimiting("fixed")]
     [HttpGet("{replayHash}")]
@@ -57,6 +60,39 @@ public class ReplaysController(IReplayRepository replayRepository) : Controller
             return NotFound();
         }
         return Ok(rating);
+    }
+
+    [EnableRateLimiting("fixed")]
+    [HttpGet("{replayHash}/user-rating")]
+    public async Task<IActionResult> GetReplayUserRating(string replayHash, CancellationToken token)
+    {
+        var ipHash = replayUserRatingService.GetIpHash(HttpContext.Connection.RemoteIpAddress);
+        var rating = await replayUserRatingService.GetRatingAsync(replayHash, ipHash, token);
+        if (rating == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(rating);
+    }
+
+    [EnableRateLimiting("replay-user-rating")]
+    [HttpPost("{replayHash}/user-rating")]
+    public async Task<IActionResult> SubmitReplayUserRating(
+        string replayHash,
+        [FromBody] ReplayUserRatingRequest request,
+        CancellationToken token)
+    {
+        var ipHash = replayUserRatingService.GetIpHash(HttpContext.Connection.RemoteIpAddress);
+        var result = await replayUserRatingService.SubmitRatingAsync(replayHash, ipHash, request.Score, token);
+        return result.Status switch
+        {
+            ReplayUserRatingSubmitStatus.Accepted => Ok(result.Rating),
+            ReplayUserRatingSubmitStatus.InvalidScore => BadRequest(result.Rating),
+            ReplayUserRatingSubmitStatus.ReplayNotFound => NotFound(),
+            ReplayUserRatingSubmitStatus.CooldownActive => StatusCode(StatusCodes.Status429TooManyRequests, result.Rating),
+            _ => StatusCode(StatusCodes.Status500InternalServerError)
+        };
     }
 
     [HttpPost("list")]

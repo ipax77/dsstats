@@ -281,7 +281,7 @@
 
 	</div>
 	<div class="card-footer bgchart2">
-		<div class="row g-2">
+		<div class="row g-2 align-items-center">
 			@if (HasSpawnPlayback)
 			{
 				<div class="col-auto">
@@ -305,6 +305,31 @@
 			{
 				<div class="col-auto">
 					<button class="btn btn-sm btn-danger" @onclick="Close">Close</button>
+				</div>
+			}
+			@if (IsReplayUserRatingEnabled)
+			{
+				<div class="col-auto ms-auto">
+					<div class="d-flex align-items-center gap-2">
+						<div class="btn-group" role="group" aria-label="Rate replay" @onmouseleave="() => replayUserRatingHoverScore = 0">
+							@for (var i = 1; i <= 5; i++)
+							{
+								var score = i;
+								<button type="button"
+										class="btn btn-sm btn-link p-0 text-warning"
+										style="width: 1.35rem; text-decoration: none;"
+										title="Rate replay @score"
+										disabled="@replayUserRatingSubmitting"
+										@onmouseover="() => replayUserRatingHoverScore = score"
+										@onfocus="() => replayUserRatingHoverScore = score"
+										@onblur="() => replayUserRatingHoverScore = 0"
+										@onclick="() => SubmitReplayUserRatingAsync(score)">
+									<i class="bi @GetReplayUserRatingStarClass(score)"></i>
+								</button>
+							}
+						</div>
+						<span class="small text-light" style="min-width: 6.5rem; text-align: right;">@GetReplayUserRatingText()</span>
+					</div>
 				</div>
 			}
 		</div>
