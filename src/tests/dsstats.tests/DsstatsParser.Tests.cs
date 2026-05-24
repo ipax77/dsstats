@@ -158,6 +158,30 @@ public sealed class DsstatsParserTests
     }
 
     [TestMethod]
+    [DeploymentItem("testdata/Direct Strike (8607).SC2Replay")]
+    public async Task CanParseReplayImportWithSpawnPlaybackSidecar()
+    {
+        string replayPath = "Direct Strike (8607).SC2Replay";
+        var sc2Replay = await DsstatsParser.GetSc2Replay(replayPath);
+        Assert.IsNotNull(sc2Replay);
+
+        var replayDto = DsstatsParser.ParseReplay(sc2Replay);
+        var import = DsstatsParser.ParseReplayImport(sc2Replay);
+
+        Assert.AreEqual(replayDto.ComputeHash(), import.Replay.ComputeHash());
+        Assert.IsNotNull(import.SpawnPlayback);
+        Assert.IsNotNull(import.Replay.SpawnPlayback);
+        Assert.IsTrue(import.Replay.SpawnPlayback.Available);
+        Assert.AreEqual(import.SpawnPlayback.FormatVersion, import.Replay.SpawnPlayback.FormatVersion);
+        Assert.AreEqual(import.SpawnPlayback.CompressedLength, import.Replay.SpawnPlayback.CompressedLength);
+        Assert.AreEqual(import.SpawnPlayback.UncompressedLength, import.Replay.SpawnPlayback.UncompressedLength);
+        Assert.AreEqual(import.SpawnPlayback.UnitCount, import.Replay.SpawnPlayback.UnitCount);
+
+        var decoded = SpawnPlaybackSidecarCodec.Decode(import.SpawnPlayback.Payload);
+        Assert.IsGreaterThan(0, decoded.Players.Sum(player => player.Units.Count));
+    }
+
+    [TestMethod]
     public void CanRoundTripReplayPlayerCompatHash()
     {
         ReplayDto replayDto = new()

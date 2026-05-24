@@ -22,7 +22,12 @@ public class IndexedDbService
             $"./_content/dsstats.indexedDb/js/dsstatsDb.js?v={Uri.EscapeDataString(ModuleVersion)}").AsTask();
     }
 
-    public async ValueTask UpsertReplayAsync(string replayHash, ReplayDto replay, long size = 0, long lastModified = 0)
+    public async ValueTask UpsertReplayAsync(
+        string replayHash,
+        ReplayDto replay,
+        long size = 0,
+        long lastModified = 0,
+        SpawnPlaybackEncodedSidecar? spawnPlayback = null)
     {
         replay.CompatHash = replayHash;
         var module = await _moduleTask;
@@ -35,7 +40,8 @@ public class IndexedDbService
                 RegionId = replay.RegionId,
                 Size = size,
                 LastModified = lastModified
-            }
+            },
+            spawnPlayback?.Payload
         );
     }
 
@@ -451,6 +457,19 @@ public sealed class ExportResult
 {
     public List<string> Hashes { get; set; } = [];
     public byte[] Payload { get; set; } = [];
+    public List<SpawnPlaybackExportDto> Sidecars { get; set; } = [];
+}
+
+public sealed class SpawnPlaybackExportDto
+{
+    public string ReplayHash { get; set; } = string.Empty;
+    public string PartName { get; set; } = string.Empty;
+    public byte[] Payload { get; set; } = [];
+    public ushort FormatVersion { get; set; }
+    public SpawnPlaybackCompression Compression { get; set; }
+    public int CompressedLength { get; set; }
+    public int UncompressedLength { get; set; }
+    public int UnitCount { get; set; }
 }
 
 public sealed class MyPlayerStats

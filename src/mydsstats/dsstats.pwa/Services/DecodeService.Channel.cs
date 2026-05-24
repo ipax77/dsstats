@@ -88,7 +88,7 @@ public partial class DecodeService
                 {
                     try
                     {
-                        var (success, error, hash, replay) =
+                        var (success, error, hash, replay, spawnPlayback) =
                             await _decodeClient!.DecodeAsync(item.Data, decodeCts.Token);
 
                         await TryWriteDecodedItemAsync(
@@ -101,7 +101,8 @@ public partial class DecodeService
                                 success && replay != null,
                                 error,
                                 hash,
-                                replay
+                                replay,
+                                spawnPlayback
                             )
                         );
                     }
@@ -114,7 +115,7 @@ public partial class DecodeService
                         await TryWriteDecodedItemAsync(
                             decodeChannel,
                             decodeCts.Token,
-                            new DecodedItem(item.Path, item.Size, item.LastModified, false, ex.Message, null, null)
+                            new DecodedItem(item.Path, item.Size, item.LastModified, false, ex.Message, null, null, null)
                         );
                     }
                 }
@@ -142,7 +143,7 @@ public partial class DecodeService
                     {
                         item.Replay.FileName = item.Path;
 
-                        await dbService.UpsertReplayAsync(item.Hash!, item.Replay, item.Size, item.LastModified);
+                        await dbService.UpsertReplayAsync(item.Hash!, item.Replay, item.Size, item.LastModified, item.SpawnPlayback);
 
                         Interlocked.Increment(ref replaysDecoded);
 
@@ -460,4 +461,12 @@ public partial class DecodeService
 }
 
 record ReadItem(string Path, long Size, long LastModified, byte[] Data);
-record DecodedItem(string Path, long Size, long LastModified, bool Success, string? Error, string? Hash, ReplayDto? Replay);
+record DecodedItem(
+    string Path,
+    long Size,
+    long LastModified,
+    bool Success,
+    string? Error,
+    string? Hash,
+    ReplayDto? Replay,
+    SpawnPlaybackEncodedSidecar? SpawnPlayback);

@@ -37,14 +37,15 @@ public partial class ReplayDecodeWorker
             if (sc2Replay is null)
                 return Fail("ReplayDecoder returned null.");
 
-            var replay = DsstatsParser.ParseReplay(sc2Replay, compat: true);
+            var replayImport = DsstatsParser.ParseReplayImport(sc2Replay, compat: true);
+            var replay = replayImport.Replay;
             var hash   = replay.ComputeHash();
 
             var replayJson = JsonSerializer.Serialize(replay,
                 WorkerSerializerContext.Default.ReplayDto);
 
             return JsonSerializer.Serialize(
-                new WorkerDecodeResult { Success = true, Hash = hash, ReplayJson = replayJson },
+                WorkerDecodeResult.SuccessResult(hash, replayJson, replayImport.SpawnPlayback),
                 WorkerSerializerContext.Default.WorkerDecodeResult);
         }
         catch (Exception ex)
@@ -67,6 +68,37 @@ public sealed class WorkerDecodeResult
     /// <summary>JSON-serialized ReplayDto. Set only when Success is true.</summary>
     public string? ReplayJson { get; set; }
     public string? Error      { get; set; }
+    public byte[]? SpawnPlaybackPayload { get; set; }
+    public int SpawnPlaybackCompressedLength { get; set; }
+    public int SpawnPlaybackUncompressedLength { get; set; }
+    public int SpawnPlaybackUnitCount { get; set; }
+    public ushort SpawnPlaybackFormatVersion { get; set; }
+    public SpawnPlaybackCompression SpawnPlaybackCompression { get; set; }
+
+    public static WorkerDecodeResult SuccessResult(
+        string hash,
+        string replayJson,
+        SpawnPlaybackEncodedSidecar? spawnPlayback)
+    {
+        var result = new WorkerDecodeResult
+        {
+            Success = true,
+            Hash = hash,
+            ReplayJson = replayJson,
+        };
+
+        if (spawnPlayback is not null)
+        {
+            result.SpawnPlaybackPayload = spawnPlayback.Payload;
+            result.SpawnPlaybackCompressedLength = spawnPlayback.CompressedLength;
+            result.SpawnPlaybackUncompressedLength = spawnPlayback.UncompressedLength;
+            result.SpawnPlaybackUnitCount = spawnPlayback.UnitCount;
+            result.SpawnPlaybackFormatVersion = spawnPlayback.FormatVersion;
+            result.SpawnPlaybackCompression = spawnPlayback.Compression;
+        }
+
+        return result;
+    }
 }
 
 /// <summary>
@@ -77,6 +109,7 @@ public sealed class WorkerDecodeResult
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(WorkerDecodeResult))]
 [JsonSerializable(typeof(ReplayDto))]
+[JsonSerializable(typeof(SpawnPlaybackInfoDto))]
 [JsonSerializable(typeof(ReplayPlayerDto))]
 [JsonSerializable(typeof(SpawnDto))]
 [JsonSerializable(typeof(UnitDto))]

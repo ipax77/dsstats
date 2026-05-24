@@ -1,6 +1,6 @@
 // dsstatsDb.ts v1.4
 import { openDB, STORES } from "./db-core";
-import { ExportedReplays, FileInfoRecord, PlayerDto, ProfileCandidateDto, PwaConfig, ReplayDto, ReplayFilter, ReplayListDto, ReplayMeta, TrackedProfileDto, UploadRequestDto, ExportResult, ReplayRatingDto, SessionWindowSettingsDto, TableOrder, RequestNames } from "./dtos";
+import { ExportedReplays, FileInfoRecord, PlayerDto, ProfileCandidateDto, PwaConfig, ReplayDto, ReplayFilter, ReplayListDto, ReplayMeta, TrackedProfileDto, UploadRequestDto, ExportResult, ReplayRatingDto, SessionWindowSettingsDto, TableOrder, RequestNames, SpawnPlaybackExportDto } from "./dtos";
 import { getReplaysFromFolder, readFileContentStream } from "./pick-replays";
 import { exportBackup, importBackup } from "./backup";
 import { MyPlayerStats } from "./stats/stats-dto";
@@ -23,12 +23,16 @@ export async function saveReplayFull(
     replayHash: string,
     replay: ReplayDto,
     list: ReplayListDto,
-    meta: ReplayMeta
+    meta: ReplayMeta,
+    spawnPlaybackPayload?: Uint8Array
 ): Promise<void> {
     const database = await openDB();
 
     return new Promise((resolve, reject) => {
-        const tx = database.transaction([STORES.replays, STORES.lists, STORES.meta], "readwrite");
+        const storeNames = spawnPlaybackPayload && spawnPlaybackPayload.length > 0
+            ? [STORES.replays, STORES.lists, STORES.meta, STORES.spawnPlayback]
+            : [STORES.replays, STORES.lists, STORES.meta];
+        const tx = database.transaction(storeNames, "readwrite");
 
         const replays = tx.objectStore(STORES.replays);
         const lists = tx.objectStore(STORES.lists);
@@ -37,6 +41,9 @@ export async function saveReplayFull(
         replays.put({ ...replay, replayHash: replayHash, gametime: replay.gametime });
         lists.put({ ...list, gametime: list.gametime });
         metas.put(meta);
+        if (spawnPlaybackPayload && spawnPlaybackPayload.length > 0) {
+            tx.objectStore(STORES.spawnPlayback).put({ replayHash, payload: spawnPlaybackPayload });
+        }
 
         tx.oncomplete = () => {
             clearReplayQueryCache();
@@ -217,19 +224,36 @@ export async function exportUnuploadedReplays10(uploadRequest: UploadRequestDto,
             const metas = req.result as { replayHash: string }[];
 
             if (metas.length === 0) {
-                resolve({ hashes: [], payload: new Uint8Array(0) });
+                resolve({ hashes: [], payload: new Uint8Array(0), sidecars: [] });
                 return;
             }
 
             // Fetch full replays
-            const replayTx = database.transaction(STORES.replays, "readonly");
+            const replayTx = database.transaction([STORES.replays, STORES.spawnPlayback], "readonly");
             const replayStore = replayTx.objectStore(STORES.replays);
+            const spawnPlaybackStore = replayTx.objectStore(STORES.spawnPlayback);
 
             const replayPromises = metas.map(
                 (m) =>
-                    new Promise<{ hash: string; replay?: ReplayDto }>((res, rej) => {
+                    new Promise<{ hash: string; replay?: ReplayDto; spawnPlayback?: Uint8Array }>((res, rej) => {
                         const r = replayStore.get(m.replayHash);
-                        r.onsuccess = () => res({ hash: m.replayHash, replay: r.result as ReplayDto | undefined });
+                        r.onsuccess = () => {
+                            const replay = r.result as ReplayDto | undefined;
+                            if (!replay?.spawnPlayback?.available) {
+                                res({ hash: m.replayHash, replay });
+                                return;
+                            }
+
+                            const sidecarRequest = spawnPlaybackStore.get(m.replayHash);
+                            sidecarRequest.onsuccess = () => {
+                                res({
+                                    hash: m.replayHash,
+                                    replay,
+                                    spawnPlayback: normalizeByteArray(sidecarRequest.result?.payload),
+                                });
+                            };
+                            sidecarRequest.onerror = () => rej(sidecarRequest.error);
+                        };
                         r.onerror = () => rej(r.error);
                     })
             );
@@ -271,8 +295,9 @@ export async function exportUnuploadedReplays10(uploadRequest: UploadRequestDto,
 
                 // Compress
                 const payload = gzipStringRaw(JSON.stringify(request));
+                const sidecars = createSpawnPlaybackExports(selected);
 
-                resolve({ hashes, payload });
+                resolve({ hashes, payload, sidecars });
             } catch (err) {
                 console.error("exportUnuploadedReplays10 failed:", err);
                 reject(err);
@@ -281,6 +306,46 @@ export async function exportUnuploadedReplays10(uploadRequest: UploadRequestDto,
 
         req.onerror = () => reject(req.error);
     });
+}
+
+function createSpawnPlaybackExports(
+    selected: { hash: string; replay: ReplayDto; spawnPlayback?: Uint8Array }[]
+): SpawnPlaybackExportDto[] {
+    const sidecars: SpawnPlaybackExportDto[] = [];
+    for (const entry of selected) {
+        const info = entry.replay.spawnPlayback;
+        const payload = entry.spawnPlayback;
+        if (!info?.available || !payload || payload.length === 0) {
+            continue;
+        }
+
+        sidecars.push({
+            replayHash: entry.hash,
+            partName: `sidecar-${sidecars.length}`,
+            payload,
+            formatVersion: info.formatVersion,
+            compression: 1,
+            compressedLength: info.compressedLength,
+            uncompressedLength: info.uncompressedLength,
+            unitCount: info.unitCount,
+        });
+    }
+
+    return sidecars;
+}
+
+function normalizeByteArray(value: unknown): Uint8Array | undefined {
+    if (value instanceof Uint8Array) {
+        return value;
+    }
+    if (value instanceof ArrayBuffer) {
+        return new Uint8Array(value);
+    }
+    if (Array.isArray(value)) {
+        return new Uint8Array(value);
+    }
+
+    return undefined;
 }
 
 export async function markReplaysAsUploaded(hashes: string[]): Promise<void> {

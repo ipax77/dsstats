@@ -23,7 +23,7 @@ public partial class DecodeService : IDisposable
     public bool Decoding { get; private set; }
     public ReplayDto? LatestReplay { get; private set; }
     public string? LatestReplayHash { get; private set; }
-    public static readonly Version Version = new(1, 7);
+    public static readonly Version Version = new(1, 8);
     private int _currentWorkerCount = -1;
 
     public DecodeService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory,
@@ -117,9 +117,10 @@ public partial class DecodeService : IDisposable
                 message = "Failed to decode replay.";
                 ArgumentNullException.ThrowIfNull(sc2Replay, message);
             }
-            var replay = DsstatsParser.ParseReplay(sc2Replay, compat: true);
+            var replayImport = DsstatsParser.ParseReplayImport(sc2Replay, compat: true);
+            var replay = replayImport.Replay;
             var hash = replay.ComputeHash();
-            await dbService.UpsertReplayAsync(hash, replay);
+            await dbService.UpsertReplayAsync(hash, replay, spawnPlayback: replayImport.SpawnPlayback);
             logger.LogInformation("Decoded and saved replay from stream: {FileName}", originalFileName);
             success = true;
             replayDto = replay;
@@ -374,18 +375,18 @@ public partial class DecodeService : IDisposable
             token.ThrowIfCancellationRequested();
 
             // CPU-heavy decode: dispatched to Web Worker
-            var (success, error, hash, replay) = await _decodeClient!.DecodeAsync(ms.ToArray(), token);
+            var (success, error, hash, replay, spawnPlayback) = await _decodeClient!.DecodeAsync(ms.ToArray(), token);
             if (!success || replay is null)
                 return new DecodeResult { Success = false, Message = error ?? "Worker decode error", Path = path };
 
             replay.FileName = path;
 
             // IndexedDB write: JSInterop — must stay on main thread
-            await dbService.UpsertReplayAsync(hash!, replay);
+            await dbService.UpsertReplayAsync(hash!, replay, spawnPlayback: spawnPlayback);
             Interlocked.Increment(ref replaysDecoded);
             LatestReplay = replay;
             LatestReplayHash = hash;
-            return new DecodeResult { Success = true, Message = "Replay decoded successfully.", Replay = replay, Path = path };
+            return new DecodeResult { Success = true, Message = "Replay decoded successfully.", Replay = replay, SpawnPlayback = spawnPlayback, Path = path };
         }
         catch (OperationCanceledException)
         {
@@ -428,6 +429,7 @@ public partial class DecodeService : IDisposable
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
         public ReplayDto? Replay { get; set; }
+        public SpawnPlaybackEncodedSidecar? SpawnPlayback { get; set; }
         public string Path { get; set; } = string.Empty;
     }
 

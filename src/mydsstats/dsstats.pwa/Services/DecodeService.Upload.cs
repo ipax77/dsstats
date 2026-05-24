@@ -1,6 +1,8 @@
 ﻿using dsstats.indexedDb.Services;
 using dsstats.shared.Upload;
 using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace dsstats.pwa.Services;
 
@@ -41,12 +43,9 @@ public partial class DecodeService
                     AppVersion = $"myds{Version}",
                     RequestNames = requestNames,
                 };
-                var content = new ByteArrayContent(exportResult.Payload);
-                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-                content.Headers.ContentEncoding.Add("gzip");
-                content.Headers.ContentLength = exportResult.Payload.Length;
-
-                var response = await httpClient.PostAsync("api10/Upload", content);
+                using var response = exportResult.Sidecars.Count > 0
+                    ? await PostSpawnPlaybackBatch(httpClient, exportResult)
+                    : await PostReplayBatch(httpClient, exportResult);
                 response.EnsureSuccessStatusCode();
                 logger.LogInformation("Upload Successful");
                 await dbService.MarkReplaysAsUploaded(exportResult.Hashes);
@@ -69,6 +68,51 @@ public partial class DecodeService
         });
     }
 
+    private static async Task<HttpResponseMessage> PostReplayBatch(HttpClient httpClient, ExportResult exportResult)
+    {
+        using var content = new ByteArrayContent(exportResult.Payload);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        content.Headers.ContentEncoding.Add("gzip");
+        content.Headers.ContentLength = exportResult.Payload.Length;
+
+        return await httpClient.PostAsync("api10/Upload", content);
+    }
+
+    private static async Task<HttpResponseMessage> PostSpawnPlaybackBatch(HttpClient httpClient, ExportResult exportResult)
+    {
+        using var multipart = new MultipartFormDataContent();
+
+        var requestContent = new ByteArrayContent(exportResult.Payload);
+        requestContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        requestContent.Headers.ContentEncoding.Add("gzip");
+        multipart.Add(requestContent, "request", "request.json.gz");
+
+        var manifest = exportResult.Sidecars
+            .Select(sidecar => new SpawnPlaybackUploadManifestEntryDto
+            {
+                ReplayHash = sidecar.ReplayHash,
+                PartName = sidecar.PartName,
+                FormatVersion = sidecar.FormatVersion,
+                Compression = sidecar.Compression,
+                CompressedLength = sidecar.CompressedLength,
+                UncompressedLength = sidecar.UncompressedLength,
+                UnitCount = sidecar.UnitCount,
+            })
+            .ToList();
+
+        multipart.Add(
+            new StringContent(JsonSerializer.Serialize(manifest, JsonSerializerOptions.Web), Encoding.UTF8, "application/json"),
+            "manifest");
+
+        foreach (var sidecar in exportResult.Sidecars)
+        {
+            var sidecarContent = new ByteArrayContent(sidecar.Payload);
+            sidecarContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+            multipart.Add(sidecarContent, sidecar.PartName, $"{sidecar.PartName}.bin");
+        }
+
+        return await httpClient.PostAsync("api10/upload/import-spawn-playbacks", multipart);
+    }
 
     private static async Task<List<RequestNames>> GetUploadRequestNames(IndexedDbService dbService)
     {

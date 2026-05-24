@@ -56,6 +56,34 @@ public static class DsstatsParser
         return dto;
     }
 
+    public static ReplayImportDto ParseReplayImport(
+        Sc2Replay replay,
+        bool compat = true,
+        bool tolerateSpawnPlaybackErrors = true)
+    {
+        ArgumentNullException.ThrowIfNull(replay);
+
+        ExternalDirectStrikeReplay directStrikeReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.Parse(replay);
+        ExternalReplayDto externalReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.ParseDto(replay, directStrikeReplay);
+        ReplayDto dto = externalReplay.ToDsstatsDto();
+        SetMvp(dto);
+
+        SpawnPlaybackEncodedSidecar? encodedSidecar = null;
+        try
+        {
+            var sidecar = SpawnPlaybackSidecarFactory.Create(replay, directStrikeReplay);
+            encodedSidecar = SpawnPlaybackSidecarCodec.EncodeWithMetadata(sidecar);
+            ApplySpawnPlaybackMetadata(dto, encodedSidecar);
+        }
+        catch when (tolerateSpawnPlaybackErrors)
+        {
+            encodedSidecar = null;
+            dto.SpawnPlayback = null;
+        }
+
+        return new(dto, encodedSidecar);
+    }
+
     public static ExternalDirectStrikeReplay ParseDirectStrikeReplay(Sc2Replay replay)
     {
         ArgumentNullException.ThrowIfNull(replay);
@@ -68,7 +96,7 @@ public static class DsstatsParser
         ArgumentNullException.ThrowIfNull(replay);
 
         var directStrikeReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.Parse(replay);
-        var dto = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.ParseDto(replay).ToDsstatsDto();
+        var dto = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.ParseDto(replay, directStrikeReplay).ToDsstatsDto();
         SetMvp(dto);
 
         return new()
@@ -159,6 +187,18 @@ public static class DsstatsParser
         return new()
         {
             Players = players
+        };
+    }
+
+    private static void ApplySpawnPlaybackMetadata(ReplayDto replay, SpawnPlaybackEncodedSidecar sidecar)
+    {
+        replay.SpawnPlayback = new()
+        {
+            Available = true,
+            FormatVersion = sidecar.FormatVersion,
+            CompressedLength = sidecar.CompressedLength,
+            UncompressedLength = sidecar.UncompressedLength,
+            UnitCount = sidecar.UnitCount,
         };
     }
 
