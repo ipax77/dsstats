@@ -132,7 +132,8 @@
                                                                       UnitName="@row.UnitName"
                                                                       Size="20"
                                                                       TeamId="@row.TeamId"
-                                                                      TeamColor="@row.TeamColor" />
+                                                                      TeamColor="@row.TeamColor"
+                                                                      UnitColor="@row.UnitColor" />
                                                             <span class="text-truncate">@row.UnitName</span>
                                                         </span>
                                                     </td>
@@ -185,7 +186,8 @@
                                                                       UnitName="@row.UnitName"
                                                                       Size="20"
                                                                       TeamId="@row.TeamId"
-                                                                      TeamColor="@row.TeamColor" />
+                                                                      TeamColor="@row.TeamColor"
+                                                                      UnitColor="@row.UnitColor" />
                                                             <span class="text-truncate">@row.UnitName</span>
                                                         </span>
                                                     </td>
@@ -727,7 +729,7 @@
 
                 var key = new AliveUnitKey(player.TeamId, player.Commander, unit.Name);
                 aliveUnitAccumulators.TryGetValue(key, out var row);
-                aliveUnitAccumulators[key] = row.Add(GetCurrentKills(unit.KillGameloops, renderGameloop));
+                aliveUnitAccumulators[key] = row.Add(unit.Color, GetCurrentKills(unit.KillGameloops, renderGameloop));
             }
         }
 
@@ -744,6 +746,7 @@
                 pair.Key.UnitName,
                 CreateAliveUnitHighlightKey(pair.Key.TeamId, pair.Key.Commander, pair.Key.UnitName),
                 GetTeamColor(pair.Key.TeamId),
+                pair.Value.UnitColor,
                 pair.Value.AliveCount,
                 pair.Value.CurrentKills);
             if (pair.Key.TeamId == 1)
@@ -780,11 +783,11 @@
 
     private readonly record struct AliveUnitKey(int TeamId, string Commander, string UnitName);
 
-    private readonly record struct AliveUnitAccumulator(int AliveCount, int CurrentKills)
+    private readonly record struct AliveUnitAccumulator(int AliveCount, int CurrentKills, string? UnitColor)
     {
-        public AliveUnitAccumulator Add(int kills)
+        public AliveUnitAccumulator Add(string unitColor, int kills)
         {
-            return new(AliveCount + 1, CurrentKills + kills);
+            return new(AliveCount + 1, CurrentKills + kills, UnitColor ?? unitColor);
         }
     }
 
@@ -894,6 +897,7 @@
         string UnitName,
         string HighlightKey,
         string TeamColor,
+        string? UnitColor,
         int AliveCount,
         int CurrentKills);
 }

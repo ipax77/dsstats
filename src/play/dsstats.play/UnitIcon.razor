@@ -4,7 +4,8 @@
       data-unit-commander="@Commander"
       data-unit-size="@Size"
       data-team-id="@TeamId"
-      data-team-color="@TeamColor"></span>
+      data-team-color="@TeamColor"
+      data-unit-color="@UnitColor"></span>
 
 @code {
     [Parameter, EditorRequired]
@@ -21,6 +22,9 @@
 
     [Parameter]
     public string? TeamColor { get; set; }
+
+    [Parameter]
+    public string? UnitColor { get; set; }
 
     [Parameter]
     public string? Class { get; set; }

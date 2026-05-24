@@ -8125,6 +8125,7 @@ var definitions = [
 var aliases = /* @__PURE__ */ new Map();
 var svgCache = /* @__PURE__ */ new Map();
 var tokenCache = /* @__PURE__ */ new Map();
+var OBJECTIVE_COMMANDER = "objective";
 for (const definition of definitions) {
   for (const alias of definition.aliases) {
     aliases.set(getAliasKey(definition.commander, alias), definition);
@@ -8152,14 +8153,47 @@ function hydrateUnitIcons(root = document) {
     const size = normalizeSize(Number(host.dataset.unitSize ?? 20));
     const teamId = Number(host.dataset.teamId ?? 0);
     const teamColor = host.dataset.teamColor || colorForTeam(teamId);
+    const unitColor = host.dataset.unitColor || void 0;
     const definition = unitIconCatalog.resolve(commander, unitName);
-    const renderKey = `${commander}|${unitName}|${size}|${teamColor ?? ""}|${definition?.id ?? ""}`;
+    const isObjective = isObjectiveIcon(commander);
+    const renderKey = `${commander}|${unitName}|${size}|${teamColor ?? ""}|${unitColor ?? ""}|${definition?.id ?? ""}|${isObjective ? "objective" : ""}`;
     if (host.dataset.renderedIconKey === renderKey) {
       continue;
     }
     host.dataset.renderedIconKey = renderKey;
-    host.innerHTML = definition ? toSvg(definition, { size, teamColor }) : fallbackSvg(size, teamColor ?? "#8a949e");
+    if (definition) {
+      host.innerHTML = toSvg(definition, { size, teamColor });
+    } else if (isObjective && hydrateObjectiveIcon(host, unitName, size, teamColor ?? "#8a949e")) {
+      continue;
+    } else {
+      host.innerHTML = fallbackSvg(size, unitColor ?? teamColor ?? "#8a949e");
+    }
   }
+}
+function hydrateObjectiveIcon(host, unitName, size, teamColor) {
+  const pixelSize = Math.ceil(size);
+  const canvas = document.createElement("canvas");
+  canvas.width = pixelSize;
+  canvas.height = pixelSize;
+  const ctx = getCanvasContext(canvas);
+  if (!ctx) {
+    return false;
+  }
+  const rendered = objectiveIconCatalog.render(ctx, {
+    name: unitName,
+    kind: unitName,
+    teamColor,
+    x: pixelSize / 2,
+    y: pixelSize / 2,
+    size: pixelSize * 0.72
+  });
+  if (!rendered) {
+    return false;
+  }
+  canvas.style.width = `${pixelSize}px`;
+  canvas.style.height = `${pixelSize}px`;
+  host.replaceChildren(canvas);
+  return true;
 }
 function renderIcon(ctx, definition, options) {
   const size = normalizeSize(options.size ?? 24);
@@ -8339,6 +8373,9 @@ function normalizeSize(value) {
 }
 function getAliasKey(commander, unitName) {
   return `${normalize(commander)}|${normalize(unitName)}`;
+}
+function isObjectiveIcon(commander) {
+  return normalize(commander) === OBJECTIVE_COMMANDER;
 }
 function normalize(value) {
   return String(value ?? "").trim().toLowerCase().replace(/ /g, "");

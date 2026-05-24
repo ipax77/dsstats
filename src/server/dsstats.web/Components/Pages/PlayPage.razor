@@ -50,9 +50,10 @@
                     {
                         <div class="unit-icon-preview-item" title="@unit.Name">
                             <UnitIcon Class="unit-icon-preview-glyph"
-                                      Commander="@group.Name"
+                                      Commander="@group.Commander"
                                       UnitName="@unit.Name"
                                       Size="@IconPreviewSize"
+                                      TeamColor="@unit.TeamColor"
                                       Title="@unit.Name" />
                             <span class="unit-icon-preview-label">@unit.Name</span>
                         </div>
@@ -155,7 +156,14 @@
     private const int IconPreviewSize = 60;
     private static readonly IconPreviewGroup[] IconPreviewGroups =
     [
-        new("Protoss", "#F4D372",
+        new("Objectives", "Objective", "#F8D34A",
+        [
+            new("Nexus", "#5DADEC"),
+            new("Planetary", "#F87171"),
+            new("Cannon", "#F8D34A"),
+            new("Bunker", "#F59E0B"),
+        ]),
+        new("Protoss", "Protoss", "#F4D372",
         [
             new("Zealot"),
             new("Sentry"),
@@ -175,7 +183,7 @@
             new("Tempest"),
             new("Mothership"),
         ]),
-        new("Terran", "#8FB6D6",
+        new("Terran", "Terran", "#8FB6D6",
         [
             new("Marine"),
             new("Marauder"),
@@ -194,7 +202,7 @@
             new("Thor"),
             new("Battlecruiser"),
         ]),
-        new("Zerg", "#B487C8",
+        new("Zerg", "Zerg", "#B487C8",
         [
             new("Zergling"),
             new("Hydralisk"),
@@ -215,7 +223,7 @@
         ]),
     ];
 
-    private static int IconPreviewCount => IconPreviewGroups.Sum(group => group.Units.Length);
+    private static readonly int IconPreviewCount = IconPreviewGroups.Sum(static group => group.Units.Length);
 
     private async Task LoadReplay(InputFileChangeEventArgs e)
     {
@@ -779,7 +787,7 @@
 
     private readonly record struct PlaybackPoint(int X, int Y);
 
-    private sealed record IconPreviewGroup(string Name, string AccentColor, IconPreviewUnit[] Units);
+    private sealed record IconPreviewGroup(string Name, string Commander, string AccentColor, IconPreviewUnit[] Units);
 
-    private sealed record IconPreviewUnit(string Name);
+    private sealed record IconPreviewUnit(string Name, string? TeamColor = null);
 }

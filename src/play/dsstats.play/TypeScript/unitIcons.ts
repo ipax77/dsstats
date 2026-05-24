@@ -1,4 +1,6 @@
 import { TEAM_COLORS } from "./constants";
+import { getCanvasContext } from "./canvasUtils";
+import { objectiveIconCatalog } from "./objectiveIcons";
 import { protossUnits } from "./protossIcons";
 import { terranUnits } from "./terranIcons";
 import type {
@@ -19,6 +21,7 @@ const definitions: UnitIconDefinition[] = [
 const aliases = new Map<string, UnitIconDefinition>();
 const svgCache = new Map<string, string>();
 const tokenCache = new Map<string, Record<string, string>>();
+const OBJECTIVE_COMMANDER = "objective";
 
 for (const definition of definitions) {
     for (const alias of definition.aliases) {
@@ -53,18 +56,52 @@ export function hydrateUnitIcons(root: ParentNode = document): void {
         const size = normalizeSize(Number(host.dataset.unitSize ?? 20));
         const teamId = Number(host.dataset.teamId ?? 0);
         const teamColor = host.dataset.teamColor || colorForTeam(teamId);
+        const unitColor = host.dataset.unitColor || undefined;
         const definition = unitIconCatalog.resolve(commander, unitName);
-        const renderKey = `${commander}|${unitName}|${size}|${teamColor ?? ""}|${definition?.id ?? ""}`;
+        const isObjective = isObjectiveIcon(commander);
+        const renderKey = `${commander}|${unitName}|${size}|${teamColor ?? ""}|${unitColor ?? ""}|${definition?.id ?? ""}|${isObjective ? "objective" : ""}`;
 
         if (host.dataset.renderedIconKey === renderKey) {
             continue;
         }
 
         host.dataset.renderedIconKey = renderKey;
-        host.innerHTML = definition
-            ? toSvg(definition, { size, teamColor })
-            : fallbackSvg(size, teamColor ?? "#8a949e");
+        if (definition) {
+            host.innerHTML = toSvg(definition, { size, teamColor });
+        } else if (isObjective && hydrateObjectiveIcon(host, unitName, size, teamColor ?? "#8a949e")) {
+            continue;
+        } else {
+            host.innerHTML = fallbackSvg(size, unitColor ?? teamColor ?? "#8a949e");
+        }
     }
+}
+
+function hydrateObjectiveIcon(host: HTMLElement, unitName: string, size: number, teamColor: string): boolean {
+    const pixelSize = Math.ceil(size);
+    const canvas = document.createElement("canvas");
+    canvas.width = pixelSize;
+    canvas.height = pixelSize;
+    const ctx = getCanvasContext(canvas);
+    if (!ctx) {
+        return false;
+    }
+
+    const rendered = objectiveIconCatalog.render(ctx, {
+        name: unitName,
+        kind: unitName,
+        teamColor,
+        x: pixelSize / 2,
+        y: pixelSize / 2,
+        size: pixelSize * 0.72
+    });
+    if (!rendered) {
+        return false;
+    }
+
+    canvas.style.width = `${pixelSize}px`;
+    canvas.style.height = `${pixelSize}px`;
+    host.replaceChildren(canvas);
+    return true;
 }
 
 function renderIcon(ctx: CanvasContext, definition: UnitIconDefinition, options: UnitIconRenderOptions): void {
@@ -286,6 +323,10 @@ function normalizeSize(value: number): number {
 
 function getAliasKey(commander: string, unitName: string): string {
     return `${normalize(commander)}|${normalize(unitName)}`;
+}
+
+function isObjectiveIcon(commander: string): boolean {
+    return normalize(commander) === OBJECTIVE_COMMANDER;
 }
 
 function normalize(value: string): string {

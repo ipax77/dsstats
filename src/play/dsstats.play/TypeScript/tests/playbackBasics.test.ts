@@ -214,7 +214,8 @@ describe("spawn playback basics", () => {
                     unitCommander: "Zerg",
                     unitSize: "20",
                     teamId: "1",
-                    teamColor: "#5DADEC"
+                    teamColor: "#5DADEC",
+                    unitColor: "#FDBA2D"
                 },
                 innerHTML: ""
             },
@@ -224,7 +225,19 @@ describe("spawn playback basics", () => {
                     unitCommander: "Zerg",
                     unitSize: "20",
                     teamId: "2",
-                    teamColor: "#F87171"
+                    teamColor: "#F87171",
+                    unitColor: "#34D399"
+                },
+                innerHTML: ""
+            },
+            {
+                dataset: {
+                    unitIcon: "Supplicant",
+                    unitCommander: "Alarak",
+                    unitSize: "20",
+                    teamId: "1",
+                    teamColor: "#5DADEC",
+                    unitColor: "#FDBA2D"
                 },
                 innerHTML: ""
             }
@@ -237,14 +250,20 @@ describe("spawn playback basics", () => {
         const firstHtml = hosts.map(host => host.innerHTML);
 
         expect(firstHtml[0]).toContain("#5DADEC");
+        expect(firstHtml[0]).not.toContain("#FDBA2D");
         expect(firstHtml[1]).toContain("#F87171");
+        expect(firstHtml[1]).not.toContain("#34D399");
+        expect(firstHtml[2]).toContain("#FDBA2D");
+        expect(firstHtml[2]).not.toContain("#5DADEC");
         expect(hosts[0].dataset.renderedIconKey).not.toBe(hosts[1].dataset.renderedIconKey);
 
         hosts[0].innerHTML = "unchanged";
+        hosts[2].dataset.unitColor = "#A78BFA";
         hydrateUnitIcons(root);
 
         expect(hosts[0].innerHTML).toBe("unchanged");
         expect(hosts[1].innerHTML).toBe(firstHtml[1]);
+        expect(hosts[2].innerHTML).toContain("#A78BFA");
     });
 
     it("keeps small math and color helpers predictable", () => {

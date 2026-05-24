@@ -51,7 +51,8 @@
     justify-content: center;
 }
 
-.unit-icon-preview-glyph svg {
+.unit-icon-preview-glyph svg,
+.unit-icon-preview-glyph canvas {
     display: block;
 }
 
