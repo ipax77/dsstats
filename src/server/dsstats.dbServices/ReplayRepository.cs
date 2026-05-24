@@ -182,6 +182,7 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
             {
                 Available = true,
                 FormatVersion = x.FormatVersion,
+                Compression = x.Compression,
                 CompressedLength = x.CompressedLength,
                 UncompressedLength = x.UncompressedLength,
                 UnitCount = x.UnitCount

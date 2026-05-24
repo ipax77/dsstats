@@ -99,6 +99,17 @@ public class UploadController(
         {
             return BadRequest("Sidecar compressed length does not match payload length.");
         }
+        if (formatVersion != SpawnPlaybackSidecarCodec.FormatVersion
+            || compressedLength <= 0
+            || uncompressedLength <= 0
+            || unitCount <= 0)
+        {
+            return BadRequest("Invalid sidecar metadata.");
+        }
+        if (!ImportService.IsSupportedCompression(compression))
+        {
+            return BadRequest("Unsupported sidecar compression.");
+        }
 
         var encodedSidecar = new SpawnPlaybackEncodedSidecar(
             bytes,

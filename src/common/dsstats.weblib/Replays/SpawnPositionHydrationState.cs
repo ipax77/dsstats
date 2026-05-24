@@ -32,7 +32,11 @@ public sealed class SpawnPositionHydrationState
             }
 
             hydrationReplayHash = replayDetails.ReplayHash;
-            hydrationTask = Hydrate(replayDetails, replayRepository, token, GetOrLoadSidecar(replayDetails.ReplayHash, replayRepository, token));
+            hydrationTask = Hydrate(replayDetails, replayRepository, token, GetOrLoadSidecar(
+                replayDetails.ReplayHash,
+                replayDetails.Replay.SpawnPlayback?.Compression ?? SpawnPlaybackSidecarCodec.Compression,
+                replayRepository,
+                token));
             return hydrationTask;
         }
     }
@@ -52,12 +56,17 @@ public sealed class SpawnPositionHydrationState
 
         lock (hydrationLock)
         {
-            return GetOrLoadSidecar(replayDetails.ReplayHash, replayRepository, token);
+            return GetOrLoadSidecar(
+                replayDetails.ReplayHash,
+                replayDetails.Replay.SpawnPlayback.Compression,
+                replayRepository,
+                token);
         }
     }
 
     private Task<SpawnPlaybackSidecarDto?> GetOrLoadSidecar(
         string replayHash,
+        SpawnPlaybackCompression compression,
         IReplayRepository replayRepository,
         CancellationToken token)
     {
@@ -67,7 +76,7 @@ public sealed class SpawnPositionHydrationState
         }
 
         sidecarReplayHash = replayHash;
-        sidecarTask = LoadSidecar(replayHash, replayRepository, token);
+        sidecarTask = LoadSidecar(replayHash, compression, replayRepository, token);
         return sidecarTask;
     }
 
@@ -109,6 +118,7 @@ public sealed class SpawnPositionHydrationState
 
     private static async Task<SpawnPlaybackSidecarDto?> LoadSidecar(
         string replayHash,
+        SpawnPlaybackCompression compression,
         IReplayRepository replayRepository,
         CancellationToken token)
     {
@@ -120,7 +130,7 @@ public sealed class SpawnPositionHydrationState
 
         try
         {
-            return SpawnPlaybackSidecarCodec.Decode(payload);
+            return SpawnPlaybackSidecarCodec.Decode(payload, compression);
         }
         catch (Exception ex) when (ex is InvalidDataException or IOException or NotSupportedException)
         {

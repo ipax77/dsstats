@@ -5,7 +5,8 @@ namespace dsstats.shared;
 
 public enum SpawnPlaybackCompression : byte
 {
-    Brotli = 1
+    Brotli = 1,
+    GZip = 2
 }
 
 public sealed record SpawnPlaybackSidecarDto(
@@ -82,6 +83,24 @@ public static class SpawnPlaybackSidecarCodec
         return EncodeWithMetadata(dto).Payload;
     }
 
+    public static SpawnPlaybackEncodedSidecar EncodeRawWithMetadata(
+        SpawnPlaybackSidecarDto dto,
+        SpawnPlaybackCompression targetCompression = SpawnPlaybackCompression.GZip)
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+        using var raw = new MemoryStream();
+        var statsBuilder = new SpawnPlaybackCodecStatsBuilder();
+        WriteUncompressed(raw, dto, statsBuilder);
+        byte[] payload = raw.ToArray();
+        return new(
+            payload,
+            payload.Length,
+            payload.Length,
+            GetUnitCount(dto),
+            Compression: targetCompression,
+            CodecStats: statsBuilder.ToStats());
+    }
+
     public static SpawnPlaybackEncodedSidecar EncodeWithMetadata(
         SpawnPlaybackSidecarDto dto,
         CompressionLevel compressionLevel = CompressionLevel.Optimal)
@@ -104,6 +123,9 @@ public static class SpawnPlaybackSidecarCodec
     }
 
     public static SpawnPlaybackSidecarDto Decode(ReadOnlySpan<byte> compressed)
+        => Decode(compressed, Compression);
+
+    public static SpawnPlaybackSidecarDto Decode(ReadOnlySpan<byte> compressed, SpawnPlaybackCompression compression)
     {
         if (compressed.IsEmpty)
         {
@@ -111,9 +133,24 @@ public static class SpawnPlaybackSidecarCodec
         }
 
         using var source = new MemoryStream(compressed.ToArray());
-        using var brotli = new BrotliStream(source, CompressionMode.Decompress);
         using var raw = new MemoryStream();
-        brotli.CopyTo(raw);
+        switch (compression)
+        {
+            case SpawnPlaybackCompression.Brotli:
+                using (var brotli = new BrotliStream(source, CompressionMode.Decompress))
+                {
+                    brotli.CopyTo(raw);
+                }
+                break;
+            case SpawnPlaybackCompression.GZip:
+                using (var gzip = new GZipStream(source, CompressionMode.Decompress))
+                {
+                    gzip.CopyTo(raw);
+                }
+                break;
+            default:
+                throw new NotSupportedException($"Unsupported spawn playback sidecar compression {compression}.");
+        }
         raw.Position = 0;
 
         return ReadUncompressed(raw);

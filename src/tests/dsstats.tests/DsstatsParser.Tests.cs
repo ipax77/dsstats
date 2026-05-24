@@ -173,11 +173,12 @@ public sealed class DsstatsParserTests
         Assert.IsNotNull(import.Replay.SpawnPlayback);
         Assert.IsTrue(import.Replay.SpawnPlayback.Available);
         Assert.AreEqual(import.SpawnPlayback.FormatVersion, import.Replay.SpawnPlayback.FormatVersion);
+        Assert.AreEqual(import.SpawnPlayback.Compression, import.Replay.SpawnPlayback.Compression);
         Assert.AreEqual(import.SpawnPlayback.CompressedLength, import.Replay.SpawnPlayback.CompressedLength);
         Assert.AreEqual(import.SpawnPlayback.UncompressedLength, import.Replay.SpawnPlayback.UncompressedLength);
         Assert.AreEqual(import.SpawnPlayback.UnitCount, import.Replay.SpawnPlayback.UnitCount);
 
-        var decoded = SpawnPlaybackSidecarCodec.Decode(import.SpawnPlayback.Payload);
+        var decoded = SpawnPlaybackSidecarCodec.Decode(import.SpawnPlayback.Payload, import.SpawnPlayback.Compression);
         Assert.IsGreaterThan(0, decoded.Players.Sum(player => player.Units.Count));
     }
 

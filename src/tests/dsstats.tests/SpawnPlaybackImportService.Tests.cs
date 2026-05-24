@@ -2,11 +2,13 @@ using dsstats.db;
 using dsstats.dbServices;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
+using dsstats.shared.Upload;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.IO.Compression;
 
 namespace dsstats.tests;
 
@@ -187,6 +189,83 @@ public sealed class SpawnPlaybackImportServiceTests
         }
     }
 
+    [TestMethod]
+    public async Task InsertReplayImportsWithSidecars_GZipManifest_StoresPayload()
+    {
+        using var serviceProvider = BuildServiceProvider(out var connection);
+        try
+        {
+            var importService = serviceProvider.GetRequiredService<IImportService>();
+            var replay = CreateReplay("Direct Strike", 900);
+            var sidecar = CreateGZipSidecar("Marine");
+
+            var result = await importService.InsertReplayImportsWithSidecars(
+                CreateUploadRequest(replay),
+                [CreateManifestEntry(replay, sidecar)],
+                CreatePayloads(sidecar));
+
+            Assert.IsTrue(result.Success, result.Error);
+            var stored = await GetOnlySidecar(serviceProvider);
+            Assert.AreEqual(SpawnPlaybackCompression.GZip, stored.Compression);
+            Assert.AreEqual(sidecar.CompressedLength, stored.CompressedLength);
+            CollectionAssert.AreEqual(sidecar.Payload, stored.Payload);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [TestMethod]
+    public async Task InsertReplayImportsWithSidecars_MismatchedLength_ReturnsError()
+    {
+        using var serviceProvider = BuildServiceProvider(out var connection);
+        try
+        {
+            var importService = serviceProvider.GetRequiredService<IImportService>();
+            var replay = CreateReplay("Direct Strike", 900);
+            var sidecar = CreateGZipSidecar("Marine");
+            var manifest = CreateManifestEntry(replay, sidecar, compressedLength: sidecar.CompressedLength + 1);
+
+            var result = await importService.InsertReplayImportsWithSidecars(
+                CreateUploadRequest(replay),
+                [manifest],
+                CreatePayloads(sidecar));
+
+            Assert.IsFalse(result.Success);
+            Assert.AreEqual("Sidecar compressed length does not match payload length.", result.Error);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [TestMethod]
+    public async Task InsertReplayImportsWithSidecars_UnsupportedCompression_ReturnsError()
+    {
+        using var serviceProvider = BuildServiceProvider(out var connection);
+        try
+        {
+            var importService = serviceProvider.GetRequiredService<IImportService>();
+            var replay = CreateReplay("Direct Strike", 900);
+            var sidecar = CreateGZipSidecar("Marine");
+            var manifest = CreateManifestEntry(replay, sidecar, compression: (SpawnPlaybackCompression)255);
+
+            var result = await importService.InsertReplayImportsWithSidecars(
+                CreateUploadRequest(replay),
+                [manifest],
+                CreatePayloads(sidecar));
+
+            Assert.IsFalse(result.Success);
+            Assert.AreEqual("Invalid sidecar metadata.", result.Error);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
     private static ServiceProvider BuildServiceProvider(out SqliteConnection connection)
     {
         var services = new ServiceCollection();
@@ -285,7 +364,24 @@ public sealed class SpawnPlaybackImportServiceTests
 
     private static SpawnPlaybackEncodedSidecar CreateSidecar(string unitName)
     {
-        return SpawnPlaybackSidecarCodec.EncodeWithMetadata(new(
+        return SpawnPlaybackSidecarCodec.EncodeWithMetadata(CreateSidecarDto(unitName));
+    }
+
+    private static SpawnPlaybackEncodedSidecar CreateGZipSidecar(string unitName)
+    {
+        var raw = SpawnPlaybackSidecarCodec.EncodeRawWithMetadata(CreateSidecarDto(unitName));
+        byte[] gzipPayload = GZip(raw.Payload);
+        return raw with
+        {
+            Payload = gzipPayload,
+            CompressedLength = gzipPayload.Length,
+            Compression = SpawnPlaybackCompression.GZip,
+        };
+    }
+
+    private static SpawnPlaybackSidecarDto CreateSidecarDto(string unitName)
+    {
+        return new(
             DurationGameloop: 900 * 16,
             StepGameloops: 80,
             Players:
@@ -308,6 +404,52 @@ public sealed class SpawnPlaybackImportServiceTests
             Snapshots:
             [
                 new(1, 160, 320)
-            ]));
+            ]);
+    }
+
+    private static UploadRequestDto CreateUploadRequest(ReplayDto replay)
+    {
+        return new()
+        {
+            AppGuid = Guid.NewGuid(),
+            AppVersion = "test",
+            Replays = [replay],
+        };
+    }
+
+    private static SpawnPlaybackUploadManifestEntryDto CreateManifestEntry(
+        ReplayDto replay,
+        SpawnPlaybackEncodedSidecar sidecar,
+        SpawnPlaybackCompression? compression = null,
+        int? compressedLength = null)
+    {
+        return new()
+        {
+            ReplayHash = replay.ComputeHash(),
+            PartName = "sidecar-0",
+            FormatVersion = sidecar.FormatVersion,
+            Compression = compression ?? sidecar.Compression,
+            CompressedLength = compressedLength ?? sidecar.CompressedLength,
+            UncompressedLength = sidecar.UncompressedLength,
+            UnitCount = sidecar.UnitCount,
+        };
+    }
+
+    private static Dictionary<string, SpawnPlaybackUploadPayload> CreatePayloads(SpawnPlaybackEncodedSidecar sidecar)
+    {
+        return new(StringComparer.Ordinal)
+        {
+            ["sidecar-0"] = new("sidecar-0", sidecar.Payload.Length, () => new MemoryStream(sidecar.Payload))
+        };
+    }
+
+    private static byte[] GZip(byte[] payload)
+    {
+        using var compressed = new MemoryStream();
+        using (var gzip = new GZipStream(compressed, CompressionLevel.Optimal, leaveOpen: true))
+        {
+            gzip.Write(payload);
+        }
+        return compressed.ToArray();
     }
 }

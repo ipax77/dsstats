@@ -4,7 +4,10 @@ import { exportUnuploadedReplays, exportUnuploadedReplays10, getReplayByHash, ma
 import { getTestReplay, getTestReplayList, getTestReplayMeta } from './replays.test';
 
 vi.mock("pako", () => ({
-  gzip: (content: string) => new TextEncoder().encode(content),
+  gzip: (content: string | Uint8Array) =>
+    typeof content === "string"
+      ? new TextEncoder().encode(content)
+      : new Uint8Array(content),
   ungzip: (binary: Uint8Array) => new TextDecoder().decode(binary),
 }));
 
@@ -107,6 +110,51 @@ describe("dsstats IndexedDb Upload Flow", () => {
 
         const storedReplay = await getReplayByHash(replay.compatHash);
         expect(storedReplay?.players.map(player => player.isUploader)).toEqual([false, false]);
+    });
+
+    it("should preserve gzip spawn playback sidecars in upload request exports", async () => {
+        const gzipMock = vi.spyOn((globalThis as any).pako, "gzip")
+            .mockImplementation((content: string | Uint8Array) =>
+                typeof content === "string"
+                    ? new TextEncoder().encode(content)
+                    : new Uint8Array([9, 8, 7]));
+
+        try {
+            const replay = getTestReplay();
+            const meta = getTestReplayMeta(replay);
+            const rawSidecar = new Uint8Array([0x44, 0x53, 0x50, 0x42, 1, 2, 3, 4]);
+            meta.uploaded = 0;
+            replay.spawnPlayback = {
+                available: true,
+                formatVersion: 3,
+                compression: 2,
+                compressedLength: rawSidecar.length,
+                uncompressedLength: rawSidecar.length,
+                unitCount: 1,
+            };
+
+            await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta, rawSidecar);
+
+            const storedReplay = await getReplayByHash(replay.compatHash);
+            expect(storedReplay?.spawnPlayback?.compression).toBe(2);
+            expect(storedReplay?.spawnPlayback?.compressedLength).toBe(3);
+            expect(storedReplay?.spawnPlayback?.uncompressedLength).toBe(rawSidecar.length);
+
+            const exported = await exportUnuploadedReplays10({
+                appGuid: "test-app",
+                appVersion: "1.0.0",
+                requestNames: [],
+                replays: []
+            });
+
+            expect(exported.sidecars.length).toBe(1);
+            expect(exported.sidecars[0].compression).toBe(2);
+            expect(exported.sidecars[0].compressedLength).toBe(3);
+            expect(exported.sidecars[0].uncompressedLength).toBe(rawSidecar.length);
+            expect(Array.from(exported.sidecars[0].payload)).toEqual([9, 8, 7]);
+        } finally {
+            gzipMock.mockRestore();
+        }
     });
 
     it("should not export uploaded replays", async () => {

@@ -37,7 +37,14 @@ public partial class ReplayDecodeWorker
             if (sc2Replay is null)
                 return Fail("ReplayDecoder returned null.");
 
-            var replayImport = DsstatsParser.ParseReplayImport(sc2Replay, compat: true);
+            string? spawnPlaybackError = null;
+            var replayImport = DsstatsParser.ParseReplayImport(
+                sc2Replay,
+                compat: true,
+                onSpawnPlaybackError: ex => spawnPlaybackError = ex.Message,
+                spawnPlaybackEncoder: sidecar => SpawnPlaybackSidecarCodec.EncodeRawWithMetadata(
+                    sidecar,
+                    SpawnPlaybackCompression.GZip));
             var replay = replayImport.Replay;
             var hash   = replay.ComputeHash();
 
@@ -45,7 +52,7 @@ public partial class ReplayDecodeWorker
                 WorkerSerializerContext.Default.ReplayDto);
 
             return JsonSerializer.Serialize(
-                WorkerDecodeResult.SuccessResult(hash, replayJson, replayImport.SpawnPlayback),
+                WorkerDecodeResult.SuccessResult(hash, replayJson, replayImport.SpawnPlayback, spawnPlaybackError),
                 WorkerSerializerContext.Default.WorkerDecodeResult);
         }
         catch (Exception ex)
@@ -74,17 +81,20 @@ public sealed class WorkerDecodeResult
     public int SpawnPlaybackUnitCount { get; set; }
     public ushort SpawnPlaybackFormatVersion { get; set; }
     public SpawnPlaybackCompression SpawnPlaybackCompression { get; set; }
+    public string? SpawnPlaybackError { get; set; }
 
     public static WorkerDecodeResult SuccessResult(
         string hash,
         string replayJson,
-        SpawnPlaybackEncodedSidecar? spawnPlayback)
+        SpawnPlaybackEncodedSidecar? spawnPlayback,
+        string? spawnPlaybackError)
     {
         var result = new WorkerDecodeResult
         {
             Success = true,
             Hash = hash,
             ReplayJson = replayJson,
+            SpawnPlaybackError = spawnPlaybackError,
         };
 
         if (spawnPlayback is not null)

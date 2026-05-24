@@ -59,7 +59,9 @@ public static class DsstatsParser
     public static ReplayImportDto ParseReplayImport(
         Sc2Replay replay,
         bool compat = true,
-        bool tolerateSpawnPlaybackErrors = true)
+        bool tolerateSpawnPlaybackErrors = true,
+        Action<Exception>? onSpawnPlaybackError = null,
+        Func<SpawnPlaybackSidecarDto, SpawnPlaybackEncodedSidecar>? spawnPlaybackEncoder = null)
     {
         ArgumentNullException.ThrowIfNull(replay);
 
@@ -72,11 +74,14 @@ public static class DsstatsParser
         try
         {
             var sidecar = SpawnPlaybackSidecarFactory.Create(replay, directStrikeReplay);
-            encodedSidecar = SpawnPlaybackSidecarCodec.EncodeWithMetadata(sidecar);
+            Func<SpawnPlaybackSidecarDto, SpawnPlaybackEncodedSidecar> encoder =
+                spawnPlaybackEncoder ?? (sidecarDto => SpawnPlaybackSidecarCodec.EncodeWithMetadata(sidecarDto));
+            encodedSidecar = encoder(sidecar);
             ApplySpawnPlaybackMetadata(dto, encodedSidecar);
         }
-        catch when (tolerateSpawnPlaybackErrors)
+        catch (Exception ex) when (tolerateSpawnPlaybackErrors)
         {
+            onSpawnPlaybackError?.Invoke(ex);
             encodedSidecar = null;
             dto.SpawnPlayback = null;
         }
@@ -196,6 +201,7 @@ public static class DsstatsParser
         {
             Available = true,
             FormatVersion = sidecar.FormatVersion,
+            Compression = sidecar.Compression,
             CompressedLength = sidecar.CompressedLength,
             UncompressedLength = sidecar.UncompressedLength,
             UnitCount = sidecar.UnitCount,

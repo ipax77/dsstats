@@ -124,7 +124,7 @@ public partial class ImportService
         }
 
         if (entry.FormatVersion != SpawnPlaybackSidecarCodec.FormatVersion
-            || entry.Compression != SpawnPlaybackSidecarCodec.Compression
+            || !IsSupportedCompression(entry.Compression)
             || entry.CompressedLength <= 0
             || entry.UncompressedLength <= 0
             || entry.UnitCount <= 0)
@@ -133,6 +133,11 @@ public partial class ImportService
         }
 
         return null;
+    }
+
+    public static bool IsSupportedCompression(SpawnPlaybackCompression compression)
+    {
+        return compression is SpawnPlaybackCompression.Brotli or SpawnPlaybackCompression.GZip;
     }
 
     private static async Task<SidecarPayloadReadResult> ReadSidecarPayload(

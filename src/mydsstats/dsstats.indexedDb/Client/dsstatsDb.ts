@@ -1,4 +1,4 @@
-// dsstatsDb.ts v1.4
+// dsstatsDb.ts v1.5
 import { openDB, STORES } from "./db-core";
 import { ExportedReplays, FileInfoRecord, PlayerDto, ProfileCandidateDto, PwaConfig, ReplayDto, ReplayFilter, ReplayListDto, ReplayMeta, TrackedProfileDto, UploadRequestDto, ExportResult, ReplayRatingDto, SessionWindowSettingsDto, TableOrder, RequestNames, SpawnPlaybackExportDto } from "./dtos";
 import { getReplaysFromFolder, readFileContentStream } from "./pick-replays";
@@ -24,12 +24,22 @@ export async function saveReplayFull(
     replay: ReplayDto,
     list: ReplayListDto,
     meta: ReplayMeta,
-    spawnPlaybackPayload?: Uint8Array
+    spawnPlaybackPayload?: unknown
 ): Promise<void> {
     const database = await openDB();
+    const normalizedSpawnPlaybackPayload = normalizeByteArray(spawnPlaybackPayload);
+    const preparedSpawnPlaybackPayload = prepareSpawnPlaybackPayload(replay, normalizedSpawnPlaybackPayload);
+    const hasSpawnPlayback = !!preparedSpawnPlaybackPayload && preparedSpawnPlaybackPayload.length > 0;
+
+    if (hasSpawnPlayback) {
+        console.debug(`saveReplayFull: storing spawn playback sidecar for ${replayHash} (${preparedSpawnPlaybackPayload!.length} bytes).`, {
+            compression: replay.spawnPlayback?.compression,
+            payloadType: getPayloadType(spawnPlaybackPayload),
+        });
+    }
 
     return new Promise((resolve, reject) => {
-        const storeNames = spawnPlaybackPayload && spawnPlaybackPayload.length > 0
+        const storeNames = hasSpawnPlayback
             ? [STORES.replays, STORES.lists, STORES.meta, STORES.spawnPlayback]
             : [STORES.replays, STORES.lists, STORES.meta];
         const tx = database.transaction(storeNames, "readwrite");
@@ -41,8 +51,8 @@ export async function saveReplayFull(
         replays.put({ ...replay, replayHash: replayHash, gametime: replay.gametime });
         lists.put({ ...list, gametime: list.gametime });
         metas.put(meta);
-        if (spawnPlaybackPayload && spawnPlaybackPayload.length > 0) {
-            tx.objectStore(STORES.spawnPlayback).put({ replayHash, payload: spawnPlaybackPayload });
+        if (hasSpawnPlayback) {
+            tx.objectStore(STORES.spawnPlayback).put({ replayHash, payload: preparedSpawnPlaybackPayload });
         }
 
         tx.oncomplete = () => {
@@ -336,7 +346,7 @@ function createSpawnPlaybackExports(
             partName: `sidecar-${sidecars.length}`,
             payload,
             formatVersion: info.formatVersion,
-            compression: 1,
+            compression: info.compression ?? 1,
             compressedLength: info.compressedLength,
             uncompressedLength: info.uncompressedLength,
             unitCount: info.unitCount,
@@ -346,9 +356,46 @@ function createSpawnPlaybackExports(
     return sidecars;
 }
 
+function prepareSpawnPlaybackPayload(replay: ReplayDto, payload: Uint8Array | undefined): Uint8Array | undefined {
+    if (!payload || payload.length === 0) {
+        replay.spawnPlayback = undefined;
+        return undefined;
+    }
+
+    const info = replay.spawnPlayback;
+    if (info?.compression === 2 && isRawSpawnPlaybackPayload(payload)) {
+        try {
+            const compressed = pako.gzip(payload);
+            replay.spawnPlayback = {
+                ...info,
+                compressedLength: compressed.length,
+                uncompressedLength: payload.length,
+            };
+            return compressed;
+        } catch (error) {
+            console.warn("Failed to gzip spawn playback sidecar payload:", error);
+            replay.spawnPlayback = undefined;
+            return undefined;
+        }
+    }
+
+    return payload;
+}
+
+function isRawSpawnPlaybackPayload(payload: Uint8Array): boolean {
+    return payload.length >= 4
+        && payload[0] === 0x44
+        && payload[1] === 0x53
+        && payload[2] === 0x50
+        && payload[3] === 0x42;
+}
+
 function normalizeByteArray(value: unknown): Uint8Array | undefined {
     if (value instanceof Uint8Array) {
         return value;
+    }
+    if (ArrayBuffer.isView(value)) {
+        return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
     }
     if (value instanceof ArrayBuffer) {
         return new Uint8Array(value);
@@ -356,8 +403,35 @@ function normalizeByteArray(value: unknown): Uint8Array | undefined {
     if (Array.isArray(value)) {
         return new Uint8Array(value);
     }
+    if (typeof value === "string" && value.length > 0) {
+        const binary = atob(value);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+    }
 
     return undefined;
+}
+
+function getPayloadType(value: unknown): string {
+    if (value === undefined) {
+        return "undefined";
+    }
+    if (value === null) {
+        return "null";
+    }
+    if (ArrayBuffer.isView(value)) {
+        return value.constructor.name;
+    }
+    if (value instanceof ArrayBuffer) {
+        return "ArrayBuffer";
+    }
+    if (Array.isArray(value)) {
+        return "Array";
+    }
+    return typeof value;
 }
 
 export async function markReplaysAsUploaded(hashes: string[]): Promise<void> {

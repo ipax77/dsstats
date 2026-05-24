@@ -26,6 +26,7 @@ public sealed class SpawnPlaybackInfoDto
 {
     public bool Available { get; set; }
     public ushort FormatVersion { get; set; }
+    public SpawnPlaybackCompression Compression { get; set; } = SpawnPlaybackSidecarCodec.Compression;
     public int CompressedLength { get; set; }
     public int UncompressedLength { get; set; }
     public int UnitCount { get; set; }

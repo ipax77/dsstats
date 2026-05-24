@@ -14,6 +14,8 @@
 
   <PropertyGroup>
 	<WasmFingerprintAssets>false</WasmFingerprintAssets>
+    <DsstatsPwaEnvironment Condition="'$(DsstatsPwaEnvironment)' == '' and '$(DSSTATS_PWA_ENVIRONMENT)' != ''">$(DSSTATS_PWA_ENVIRONMENT)</DsstatsPwaEnvironment>
+    <WasmApplicationEnvironmentName Condition="'$(DsstatsPwaEnvironment)' != ''">$(DsstatsPwaEnvironment)</WasmApplicationEnvironmentName>
   </PropertyGroup>
 	
   <ItemGroup>
@@ -30,7 +32,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.*" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.*" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.*" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Configuration" Version="10.0.*" />
   </ItemGroup>
 
   <ItemGroup>

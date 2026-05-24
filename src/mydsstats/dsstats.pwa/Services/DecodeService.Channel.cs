@@ -88,7 +88,7 @@ public partial class DecodeService
                 {
                     try
                     {
-                        var (success, error, hash, replay, spawnPlayback) =
+                        var (success, error, hash, replay, spawnPlayback, spawnPlaybackError) =
                             await _decodeClient!.DecodeAsync(item.Data, decodeCts.Token);
 
                         await TryWriteDecodedItemAsync(
@@ -102,7 +102,8 @@ public partial class DecodeService
                                 error,
                                 hash,
                                 replay,
-                                spawnPlayback
+                                spawnPlayback,
+                                spawnPlaybackError
                             )
                         );
                     }
@@ -115,7 +116,7 @@ public partial class DecodeService
                         await TryWriteDecodedItemAsync(
                             decodeChannel,
                             decodeCts.Token,
-                            new DecodedItem(item.Path, item.Size, item.LastModified, false, ex.Message, null, null, null)
+                            new DecodedItem(item.Path, item.Size, item.LastModified, false, ex.Message, null, null, null, null)
                         );
                     }
                 }
@@ -142,6 +143,24 @@ public partial class DecodeService
                     if (item.Success && item.Replay != null)
                     {
                         item.Replay.FileName = item.Path;
+
+                        if (item.SpawnPlayback is null)
+                        {
+                            logger.LogWarning(
+                                "Replay {Path} decoded without spawn playback sidecar. Reason: {Reason}",
+                                item.Path,
+                                item.SpawnPlaybackError ?? "worker returned no sidecar payload");
+                        }
+                        else
+                        {
+                            logger.LogDebug(
+                                "Replay {Path} decoded with spawn playback sidecar. Hash: {Hash}, CompressedLength: {CompressedLength}, UncompressedLength: {UncompressedLength}, UnitCount: {UnitCount}",
+                                item.Path,
+                                item.Hash,
+                                item.SpawnPlayback.CompressedLength,
+                                item.SpawnPlayback.UncompressedLength,
+                                item.SpawnPlayback.UnitCount);
+                        }
 
                         await dbService.UpsertReplayAsync(item.Hash!, item.Replay, item.Size, item.LastModified, item.SpawnPlayback);
 
@@ -469,4 +488,5 @@ record DecodedItem(
     string? Error,
     string? Hash,
     ReplayDto? Replay,
-    SpawnPlaybackEncodedSidecar? SpawnPlayback);
+    SpawnPlaybackEncodedSidecar? SpawnPlayback,
+    string? SpawnPlaybackError);

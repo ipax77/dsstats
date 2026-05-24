@@ -153,6 +153,7 @@ export interface ReplayDto {
 export interface SpawnPlaybackInfoDto {
     available: boolean;
     formatVersion: number;
+    compression: number;
     compressedLength: number;
     uncompressedLength: number;
     unitCount: number;

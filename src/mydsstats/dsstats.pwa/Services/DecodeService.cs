@@ -117,9 +117,33 @@ public partial class DecodeService : IDisposable
                 message = "Failed to decode replay.";
                 ArgumentNullException.ThrowIfNull(sc2Replay, message);
             }
-            var replayImport = DsstatsParser.ParseReplayImport(sc2Replay, compat: true);
+            string? spawnPlaybackError = null;
+            var replayImport = DsstatsParser.ParseReplayImport(
+                sc2Replay,
+                compat: true,
+                onSpawnPlaybackError: ex => spawnPlaybackError = ex.Message,
+                spawnPlaybackEncoder: sidecar => SpawnPlaybackSidecarCodec.EncodeRawWithMetadata(
+                    sidecar,
+                    SpawnPlaybackCompression.GZip));
             var replay = replayImport.Replay;
             var hash = replay.ComputeHash();
+            if (replayImport.SpawnPlayback is null)
+            {
+                logger.LogWarning(
+                    "Replay {FileName} decoded without spawn playback sidecar. Reason: {Reason}",
+                    originalFileName,
+                    spawnPlaybackError ?? "parser returned no sidecar payload");
+            }
+            else
+            {
+                logger.LogDebug(
+                    "Replay {FileName} decoded with spawn playback sidecar. Hash: {Hash}, CompressedLength: {CompressedLength}, UncompressedLength: {UncompressedLength}, UnitCount: {UnitCount}",
+                    originalFileName,
+                    hash,
+                    replayImport.SpawnPlayback.CompressedLength,
+                    replayImport.SpawnPlayback.UncompressedLength,
+                    replayImport.SpawnPlayback.UnitCount);
+            }
             await dbService.UpsertReplayAsync(hash, replay, spawnPlayback: replayImport.SpawnPlayback);
             logger.LogInformation("Decoded and saved replay from stream: {FileName}", originalFileName);
             success = true;
@@ -375,11 +399,28 @@ public partial class DecodeService : IDisposable
             token.ThrowIfCancellationRequested();
 
             // CPU-heavy decode: dispatched to Web Worker
-            var (success, error, hash, replay, spawnPlayback) = await _decodeClient!.DecodeAsync(ms.ToArray(), token);
+            var (success, error, hash, replay, spawnPlayback, spawnPlaybackError) = await _decodeClient!.DecodeAsync(ms.ToArray(), token);
             if (!success || replay is null)
                 return new DecodeResult { Success = false, Message = error ?? "Worker decode error", Path = path };
 
             replay.FileName = path;
+            if (spawnPlayback is null)
+            {
+                logger.LogWarning(
+                    "Replay {Path} decoded without spawn playback sidecar. Reason: {Reason}",
+                    path,
+                    spawnPlaybackError ?? "worker returned no sidecar payload");
+            }
+            else
+            {
+                logger.LogDebug(
+                    "Replay {Path} decoded with spawn playback sidecar. Hash: {Hash}, CompressedLength: {CompressedLength}, UncompressedLength: {UncompressedLength}, UnitCount: {UnitCount}",
+                    path,
+                    hash,
+                    spawnPlayback.CompressedLength,
+                    spawnPlayback.UncompressedLength,
+                    spawnPlayback.UnitCount);
+            }
 
             // IndexedDB write: JSInterop — must stay on main thread
             await dbService.UpsertReplayAsync(hash!, replay, spawnPlayback: spawnPlayback);

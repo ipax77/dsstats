@@ -1,4 +1,5 @@
 using dsstats.shared;
+using System.IO.Compression;
 using System.Text.Json;
 
 namespace dsstats.tests;
@@ -75,6 +76,35 @@ public class SpawnPlaybackSidecarCodecTests
         Assert.AreEqual("Zergling", decoded.Players[1].Units[0].Name);
         Assert.AreEqual(2, decoded.Snapshots.Count);
         Assert.AreEqual(3_400, decoded.Snapshots[1].EndGameloop);
+    }
+
+    [TestMethod]
+    public void EncodeRawDecodeGZip_RoundTripsSidecar()
+    {
+        var source = CreateSmallSidecar();
+        var raw = SpawnPlaybackSidecarCodec.EncodeRawWithMetadata(source);
+        byte[] gzipPayload = GZip(raw.Payload);
+
+        var decoded = SpawnPlaybackSidecarCodec.Decode(gzipPayload, SpawnPlaybackCompression.GZip);
+
+        Assert.AreEqual(SpawnPlaybackCompression.GZip, raw.Compression);
+        Assert.AreEqual(raw.Payload.Length, raw.UncompressedLength);
+        Assert.AreEqual(raw.UnitCount, SpawnPlaybackSidecarCodec.GetUnitCount(decoded));
+        Assert.AreEqual(source.DurationGameloop, decoded.DurationGameloop);
+        Assert.AreEqual(source.Players[0].Units[0].Name, decoded.Players[0].Units[0].Name);
+    }
+
+    [TestMethod]
+    public void Decode_UnsupportedCompression_Throws()
+    {
+        try
+        {
+            SpawnPlaybackSidecarCodec.Decode([1, 2, 3], (SpawnPlaybackCompression)255);
+            Assert.Fail("Expected NotSupportedException.");
+        }
+        catch (NotSupportedException)
+        {
+        }
     }
 
     [TestMethod]
@@ -364,5 +394,33 @@ public class SpawnPlaybackSidecarCodecTests
     {
         Assert.IsNotNull(stats);
         return stats.ChangedSpawnPositionCount;
+    }
+
+    private static SpawnPlaybackSidecarDto CreateSmallSidecar()
+    {
+        return new(
+            DurationGameloop: 10_000,
+            StepGameloops: 112,
+            Players:
+            [
+                new(1,
+                [
+                    new(1, "Marine", 1, 1_000, 165, 174, null, null, null, [])
+                ])
+            ],
+            Snapshots:
+            [
+                new(1, 1_000, 2_000)
+            ]);
+    }
+
+    private static byte[] GZip(byte[] payload)
+    {
+        using var compressed = new MemoryStream();
+        using (var gzip = new GZipStream(compressed, CompressionLevel.Optimal, leaveOpen: true))
+        {
+            gzip.Write(payload);
+        }
+        return compressed.ToArray();
     }
 }
