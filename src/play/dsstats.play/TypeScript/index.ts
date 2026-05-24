@@ -9,3 +9,4 @@ export {
 } from "./state";
 
 export { drawSpawnPlayback } from "./rendering";
+export { hydrateUnitIcons } from "./unitIcons";

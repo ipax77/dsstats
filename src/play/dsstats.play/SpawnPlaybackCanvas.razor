@@ -111,7 +111,17 @@
                                             @foreach (var row in team1AliveUnitRows)
                                             {
                                                 <tr>
-                                                    <td class="text-truncate" title="@row.UnitName">@row.UnitName</td>
+                                                    <td title="@row.UnitName">
+                                                        <span class="spawn-playback-unit-cell">
+                                                            <span class="spawn-playback-unit-icon"
+                                                                  data-unit-icon="@row.UnitName"
+                                                                  data-unit-commander="@row.Commander"
+                                                                  data-unit-size="20"
+                                                                  data-team-id="@row.TeamId"
+                                                                  data-team-color="@row.TeamColor"></span>
+                                                            <span class="text-truncate">@row.UnitName</span>
+                                                        </span>
+                                                    </td>
                                                     <td class="text-end">@row.AliveCount.ToString("N0")</td>
                                                     <td class="text-end">@row.CurrentKills</td>
                                                 </tr>
@@ -147,7 +157,17 @@
                                             @foreach (var row in team2AliveUnitRows)
                                             {
                                                 <tr>
-                                                    <td class="text-truncate" title="@row.UnitName">@row.UnitName</td>
+                                                    <td title="@row.UnitName">
+                                                        <span class="spawn-playback-unit-cell">
+                                                            <span class="spawn-playback-unit-icon"
+                                                                  data-unit-icon="@row.UnitName"
+                                                                  data-unit-commander="@row.Commander"
+                                                                  data-unit-size="20"
+                                                                  data-team-id="@row.TeamId"
+                                                                  data-team-color="@row.TeamColor"></span>
+                                                            <span class="text-truncate">@row.UnitName</span>
+                                                        </span>
+                                                    </td>
                                                     <td class="text-end">@row.AliveCount.ToString("N0")</td>
                                                     <td class="text-end">@row.CurrentKills</td>
                                                 </tr>
@@ -288,6 +308,11 @@
         {
             await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
             canvasDrawPending = false;
+        }
+
+        if (showAliveUnits)
+        {
+            await module.InvokeVoidAsync("hydrateUnitIcons", playbackElement);
         }
     }
 
@@ -678,7 +703,7 @@
                     continue;
                 }
 
-                var key = new AliveUnitKey(player.TeamId, unit.Name);
+                var key = new AliveUnitKey(player.TeamId, player.Commander, unit.Name);
                 aliveUnitAccumulators.TryGetValue(key, out var row);
                 aliveUnitAccumulators[key] = row.Add(GetCurrentKills(unit.KillGameloops, renderGameloop));
             }
@@ -693,7 +718,9 @@
         {
             var row = new AliveUnitRow(
                 pair.Key.TeamId,
+                pair.Key.Commander,
                 pair.Key.UnitName,
+                GetTeamColor(pair.Key.TeamId),
                 pair.Value.AliveCount,
                 pair.Value.CurrentKills);
             if (pair.Key.TeamId == 1)
@@ -712,10 +739,18 @@
 
     private static int CompareAliveUnitRows(AliveUnitRow left, AliveUnitRow right)
     {
-        return string.Compare(left.UnitName, right.UnitName, StringComparison.Ordinal);
+        int unitCompare = string.Compare(left.UnitName, right.UnitName, StringComparison.Ordinal);
+        return unitCompare != 0
+            ? unitCompare
+            : string.Compare(left.Commander, right.Commander, StringComparison.Ordinal);
     }
 
-    private readonly record struct AliveUnitKey(int TeamId, string UnitName);
+    private static string GetTeamColor(int teamId)
+    {
+        return teamId == 1 ? "#5DADEC" : "#F87171";
+    }
+
+    private readonly record struct AliveUnitKey(int TeamId, string Commander, string UnitName);
 
     private readonly record struct AliveUnitAccumulator(int AliveCount, int CurrentKills)
     {
@@ -827,7 +862,9 @@
 
     private sealed record AliveUnitRow(
         int TeamId,
+        string Commander,
         string UnitName,
+        string TeamColor,
         int AliveCount,
         int CurrentKills);
 }

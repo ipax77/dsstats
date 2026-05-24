@@ -118,8 +118,9 @@ function getUnitSprite(
     const color = unit.color;
     const teamId = unit.teamId;
     const iconDefinition = unit.iconDefinition;
+    const iconColor = iconDefinition ? TEAM_COLORS[teamId] ?? color : color;
     const key = iconDefinition
-        ? `${iconDefinition.id}|${unit.commander}|${unit.name}|${teamId}|${color}|${Math.round(radius * 10)}`
+        ? `${iconDefinition.id}|${unit.commander}|${unit.name}|${teamId}|${iconColor}|${Math.round(radius * 10)}`
         : `${teamId}|${color}|${Math.round(radius * 10)}`;
     const cached = state.unitSpriteCache.get(key);
     if (cached) {
@@ -146,7 +147,7 @@ function getUnitSprite(
             x: center,
             y: center,
             size: iconSize,
-            teamColor: color
+            teamColor: iconColor
         });
     } else {
         ctx.fillStyle = withAlpha(color, "99");

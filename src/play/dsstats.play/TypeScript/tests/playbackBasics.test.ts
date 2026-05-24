@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { clipSumLine, clamp, withAlpha } from "../canvasUtils";
 import { normalizeMiddleControl, normalizeReplay } from "../normalization";
-import { unitIconCatalog } from "../unitIcons";
+import { hydrateUnitIcons, unitIconCatalog } from "../unitIcons";
 
 describe("spawn playback basics", () => {
     it("normalizes PascalCase replay DTOs and sorts units by spawn time", () => {
@@ -78,6 +78,65 @@ describe("spawn playback basics", () => {
         expect(marine?.id).toBe("terran.marine");
         expect(zergling?.id).toBe("zerg.zergling");
         expect(unitIconCatalog.resolve("protoss", "Zealot")).toBeNull();
+    });
+
+    it("renders team-colored SVG for catalog icons", () => {
+        const marine = unitIconCatalog.resolve("terran", "Marine");
+        const zergling = unitIconCatalog.resolve("zerg", "Zergling");
+
+        expect(marine).not.toBeNull();
+        expect(zergling).not.toBeNull();
+
+        const team1Marine = unitIconCatalog.toSvg(marine!, { size: 20, teamColor: "#5DADEC" });
+        const team2Zergling = unitIconCatalog.toSvg(zergling!, { size: 20, teamColor: "#F87171" });
+
+        expect(team1Marine).toContain("<svg");
+        expect(team1Marine).toContain("#5DADEC");
+        expect(team1Marine).toContain("#B6DAF6");
+        expect(team2Zergling).toContain("<svg");
+        expect(team2Zergling).toContain("#F87171");
+        expect(team2Zergling).toContain("#FCBFBF");
+    });
+
+    it("hydrates unit icon hosts once per render key", () => {
+        const hosts: Array<{ dataset: Record<string, string>; innerHTML: string }> = [
+            {
+                dataset: {
+                    unitIcon: "Zergling",
+                    unitCommander: "Zerg",
+                    unitSize: "20",
+                    teamId: "1",
+                    teamColor: "#5DADEC"
+                },
+                innerHTML: ""
+            },
+            {
+                dataset: {
+                    unitIcon: "Zergling",
+                    unitCommander: "Zerg",
+                    unitSize: "20",
+                    teamId: "2",
+                    teamColor: "#F87171"
+                },
+                innerHTML: ""
+            }
+        ];
+        const root = {
+            querySelectorAll: () => hosts
+        } as unknown as ParentNode;
+
+        hydrateUnitIcons(root);
+        const firstHtml = hosts.map(host => host.innerHTML);
+
+        expect(firstHtml[0]).toContain("#5DADEC");
+        expect(firstHtml[1]).toContain("#F87171");
+        expect(hosts[0].dataset.renderedIconKey).not.toBe(hosts[1].dataset.renderedIconKey);
+
+        hosts[0].innerHTML = "unchanged";
+        hydrateUnitIcons(root);
+
+        expect(hosts[0].innerHTML).toBe("unchanged");
+        expect(hosts[1].innerHTML).toBe(firstHtml[1]);
     });
 
     it("keeps small math and color helpers predictable", () => {

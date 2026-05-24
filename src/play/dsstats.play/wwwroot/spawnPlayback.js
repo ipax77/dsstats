@@ -480,7 +480,7 @@ function deleteState(canvas) {
   states.delete(canvas);
 }
 
-// TypeScript/unitIcons.ts
+// TypeScript/terranIcons.ts
 var terranMarine = {
   id: "terran.marine",
   commander: "terran",
@@ -767,6 +767,11 @@ var terranMarine = {
     }
   ]
 };
+var terranUnits = {
+  marine: terranMarine
+};
+
+// TypeScript/zergIcons.ts
 var zergZergling = {
   id: "zerg.zergling",
   commander: "zerg",
@@ -1015,17 +1020,18 @@ var zergZergling = {
     }
   ]
 };
-var terranUnits = {
-  marine: terranMarine
-};
 var zergUnits = {
   zergling: zergZergling
 };
+
+// TypeScript/unitIcons.ts
 var definitions = [
   terranUnits.marine,
   zergUnits.zergling
 ];
 var aliases = /* @__PURE__ */ new Map();
+var svgCache = /* @__PURE__ */ new Map();
+var tokenCache = /* @__PURE__ */ new Map();
 for (const definition of definitions) {
   for (const alias of definition.aliases) {
     aliases.set(getAliasKey(definition.commander, alias), definition);
@@ -1037,10 +1043,33 @@ var unitIconCatalog = {
   },
   render(ctx, definition, options) {
     renderIcon(ctx, definition, options);
+  },
+  toSvg(definition, options) {
+    return toSvg(definition, options);
+  },
+  hydrateUnitIcons(root = document) {
+    hydrateUnitIcons(root);
   }
 };
+function hydrateUnitIcons(root = document) {
+  const hosts = root.querySelectorAll("[data-unit-icon]");
+  for (const host of hosts) {
+    const commander = host.dataset.unitCommander ?? "";
+    const unitName = host.dataset.unitIcon ?? "";
+    const size = normalizeSize(Number(host.dataset.unitSize ?? 20));
+    const teamId = Number(host.dataset.teamId ?? 0);
+    const teamColor = host.dataset.teamColor || colorForTeam(teamId);
+    const definition = unitIconCatalog.resolve(commander, unitName);
+    const renderKey = `${commander}|${unitName}|${size}|${teamColor ?? ""}|${definition?.id ?? ""}`;
+    if (host.dataset.renderedIconKey === renderKey) {
+      continue;
+    }
+    host.dataset.renderedIconKey = renderKey;
+    host.innerHTML = definition ? toSvg(definition, { size, teamColor }) : fallbackSvg(size, teamColor ?? "#8a949e");
+  }
+}
 function renderIcon(ctx, definition, options) {
-  const size = Math.max(1, options.size ?? 24);
+  const size = normalizeSize(options.size ?? 24);
   const x = options.x ?? size / 2;
   const y = options.y ?? size / 2;
   const scaleX = size / definition.viewBox.width;
@@ -1097,17 +1126,123 @@ function applyPath(ctx, commands) {
     }
   }
 }
+function toSvg(definition, options) {
+  const size = normalizeSize(options.size ?? 20);
+  const teamColor = options.teamColor ?? "";
+  const cacheKey = `${definition.id}|${size}|${teamColor}`;
+  const cached = svgCache.get(cacheKey);
+  if (cached !== void 0) {
+    return cached;
+  }
+  const tokens = resolveTokens(definition, options.teamColor);
+  const layers = definition.layers.map((layer) => toSvgLayer(layer, tokens)).join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${definition.viewBox.width} ${definition.viewBox.height}" role="img" aria-hidden="true" focusable="false">${layers}</svg>`;
+  svgCache.set(cacheKey, svg);
+  return svg;
+}
+function toSvgLayer(layer, tokens) {
+  const common = [
+    attr("fill", layer.fill ? resolvePaint(layer.fill, tokens) : void 0),
+    attr("stroke", layer.stroke ? resolvePaint(layer.stroke, tokens) : void 0),
+    attr("stroke-width", layer.strokeWidth),
+    attr("opacity", layer.opacity === void 0 || layer.opacity === 1 ? void 0 : layer.opacity),
+    layer.type === "path" ? attr("stroke-linecap", layer.lineCap) : "",
+    layer.type === "path" ? attr("stroke-linejoin", layer.lineJoin) : ""
+  ].join("");
+  if (layer.type === "circle") {
+    return `<circle cx="${layer.cx}" cy="${layer.cy}" r="${layer.r}"${common}/>`;
+  }
+  return `<path d="${commandsToPath(layer.commands)}"${common}/>`;
+}
+function commandsToPath(commands) {
+  return commands.map((command) => command.join(" ")).join(" ");
+}
+function fallbackSvg(size, color) {
+  const safeColor = escapeAttribute(color);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 20 20" role="img" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7" fill="${safeColor}99" stroke="${safeColor}" stroke-width="2"/></svg>`;
+}
 function resolveTokens(definition, teamColor) {
   if (!teamColor) {
     return definition.tokens;
   }
-  return {
+  const cacheKey = `${definition.id}|${teamColor}`;
+  const cached = tokenCache.get(cacheKey);
+  if (cached !== void 0) {
+    return cached;
+  }
+  const palette = createTeamPalette(teamColor);
+  const tokens = {
     ...definition.tokens,
-    badgeFill: teamColor
+    badgeFill: teamColor,
+    badgeGlow: palette.light,
+    badgeStroke: palette.light,
+    armorFill: palette.light,
+    armorMid: teamColor,
+    armorShade: palette.dark,
+    armorDark: palette.deeper,
+    rifleFill: palette.deeper,
+    skinFill: teamColor,
+    skinMid: palette.dark,
+    skinShade: palette.deeper,
+    carapaceFill: palette.light,
+    carapaceShade: palette.dark
   };
+  tokenCache.set(cacheKey, tokens);
+  return tokens;
+}
+function createTeamPalette(color) {
+  return {
+    light: mixHex(color, "#ffffff", 0.55),
+    mid: mixHex(color, "#ffffff", 0.18),
+    dark: mixHex(color, "#000000", 0.24),
+    deeper: mixHex(color, "#000000", 0.48)
+  };
+}
+function mixHex(left, right, weightRight) {
+  const leftRgb = parseHexColor(left);
+  const rightRgb = parseHexColor(right);
+  if (!leftRgb || !rightRgb) {
+    return left;
+  }
+  const weightLeft = 1 - weightRight;
+  return toHex(
+    Math.round(leftRgb.r * weightLeft + rightRgb.r * weightRight),
+    Math.round(leftRgb.g * weightLeft + rightRgb.g * weightRight),
+    Math.round(leftRgb.b * weightLeft + rightRgb.b * weightRight)
+  );
+}
+function parseHexColor(color) {
+  const match = /^#?([0-9a-f]{6})$/i.exec(color.trim());
+  if (!match) {
+    return null;
+  }
+  const value = Number.parseInt(match[1], 16);
+  return {
+    r: value >> 16 & 255,
+    g: value >> 8 & 255,
+    b: value & 255
+  };
+}
+function toHex(r, g, b) {
+  return `#${hexByte(r)}${hexByte(g)}${hexByte(b)}`;
+}
+function hexByte(value) {
+  return Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0").toUpperCase();
 }
 function resolvePaint(paint, tokens) {
   return tokens[paint] ?? paint;
+}
+function colorForTeam(teamId) {
+  return TEAM_COLORS[teamId];
+}
+function attr(name, value) {
+  return value === void 0 ? "" : ` ${name}="${escapeAttribute(String(value))}"`;
+}
+function escapeAttribute(value) {
+  return value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+function normalizeSize(value) {
+  return Number.isFinite(value) && value > 0 ? value : 20;
 }
 function getAliasKey(commander, unitName) {
   return `${normalize(commander)}|${normalize(unitName)}`;
@@ -1184,7 +1319,8 @@ function getUnitSprite(state, unit, radius, canvasScale) {
   const color = unit.color;
   const teamId = unit.teamId;
   const iconDefinition = unit.iconDefinition;
-  const key = iconDefinition ? `${iconDefinition.id}|${unit.commander}|${unit.name}|${teamId}|${color}|${Math.round(radius * 10)}` : `${teamId}|${color}|${Math.round(radius * 10)}`;
+  const iconColor = iconDefinition ? TEAM_COLORS[teamId] ?? color : color;
+  const key = iconDefinition ? `${iconDefinition.id}|${unit.commander}|${unit.name}|${teamId}|${iconColor}|${Math.round(radius * 10)}` : `${teamId}|${color}|${Math.round(radius * 10)}`;
   const cached = state.unitSpriteCache.get(key);
   if (cached) {
     return cached;
@@ -1206,7 +1342,7 @@ function getUnitSprite(state, unit, radius, canvasScale) {
       x: center,
       y: center,
       size: iconSize,
-      teamColor: color
+      teamColor: iconColor
     });
   } else {
     ctx.fillStyle = withAlpha(color, "99");
@@ -1689,6 +1825,7 @@ function notifyFullscreenChanged(state) {
 export {
   disposeSpawnPlayback,
   drawSpawnPlayback,
+  hydrateUnitIcons,
   initializeSpawnPlayback,
   pauseSpawnPlayback,
   setSpawnPlaybackFullscreen,
