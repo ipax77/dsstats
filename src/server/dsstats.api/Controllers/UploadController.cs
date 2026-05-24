@@ -3,6 +3,7 @@ using dsstats.dbServices;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using dsstats.shared.Upload;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using System.IO.Compression;
@@ -129,25 +130,41 @@ public class UploadController(
 
     [HttpPost]
     [RequestSizeLimit(1024 * 1024 * 1024)]
+    [RequestFormLimits(
+        MultipartBodyLengthLimit = 1024L * 1024 * 1024,
+        ValueLengthLimit = 10 * 1024 * 1024,
+        MultipartHeadersLengthLimit = 128 * 1024,
+        MultipartHeadersCountLimit = 256)]
     [Route("import-spawn-playbacks")]
     public async Task<ActionResult<ReplayImportBatchResultDto>> ImportSpawnPlaybacks(
-        [FromForm] IFormFile request,
-        [FromForm] string manifest,
+        [FromForm] IFormFile? request,
+        [FromForm] string? manifest,
         CancellationToken token)
     {
-        if (request.Length == 0)
+        if (request is null || request.Length == 0)
         {
             return BadRequest("Invalid replay payload.");
         }
 
         UploadRequestDto? uploadRequest;
-        await using (var requestStream = request.OpenReadStream())
-        await using (var gzip = new GZipStream(requestStream, CompressionMode.Decompress))
+        try
         {
+            await using var requestStream = request.OpenReadStream();
+            await using var gzip = new GZipStream(requestStream, CompressionMode.Decompress);
             uploadRequest = await JsonSerializer.DeserializeAsync<UploadRequestDto>(
                 gzip,
                 UploadJsonOptions,
                 token);
+        }
+        catch (InvalidDataException ex)
+        {
+            logger.LogWarning(ex, "Failed to decompress spawn playback import request.");
+            return BadRequest("Invalid replay payload gzip stream.");
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "Failed to deserialize spawn playback import request.");
+            return BadRequest("Invalid replay payload json.");
         }
 
         if (uploadRequest is null)
@@ -155,9 +172,23 @@ public class UploadController(
             return BadRequest("Invalid replay payload.");
         }
 
-        var manifestEntries = JsonSerializer.Deserialize<List<SpawnPlaybackUploadManifestEntryDto>>(
-            manifest,
-            UploadJsonOptions) ?? [];
+        if (string.IsNullOrWhiteSpace(manifest))
+        {
+            return BadRequest("Missing sidecar manifest.");
+        }
+
+        List<SpawnPlaybackUploadManifestEntryDto> manifestEntries;
+        try
+        {
+            manifestEntries = JsonSerializer.Deserialize<List<SpawnPlaybackUploadManifestEntryDto>>(
+                manifest,
+                UploadJsonOptions) ?? [];
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "Failed to deserialize spawn playback import manifest.");
+            return BadRequest("Invalid sidecar manifest json.");
+        }
 
         var payloadsByPartName = new Dictionary<string, SpawnPlaybackUploadPayload>(StringComparer.Ordinal);
         foreach (var file in HttpContext.Request.Form.Files)

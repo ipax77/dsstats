@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { closeDB, openDB } from '../db-core';
+import { closeDB, DB_NAME, openDB } from '../db-core';
 import { exportUnuploadedReplays, exportUnuploadedReplays10, getReplayByHash, markReplaysAsUploaded, saveReplayFull } from '../dsstatsDb';
 import { getTestReplay, getTestReplayList, getTestReplayMeta } from './replays.test';
 
@@ -19,7 +19,7 @@ describe("dsstats IndexedDb Upload Flow", () => {
     afterEach(async () => {
         closeDB();
         await new Promise<void>((resolve, reject) => {
-            const deleteRequest = indexedDB.deleteDatabase("DsstatsDB");
+            const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
             deleteRequest.onsuccess = () => resolve();
             deleteRequest.onerror = () => reject(deleteRequest.error);
             deleteRequest.onblocked = () => {
@@ -175,6 +175,39 @@ describe("dsstats IndexedDb Upload Flow", () => {
         expect(exported.sidecars[0].compressedLength).toBe(gzipSidecar.length);
         expect(exported.sidecars[0].uncompressedLength).toBe(8);
         expect(Array.from(exported.sidecars[0].payload)).toEqual([9, 8, 7]);
+    });
+
+    it("should export a bounded newest-first upload request with matching sidecars", async () => {
+        for (let id = 1; id <= 3; id++) {
+            const replay = getTestReplay(id);
+            const meta = getTestReplayMeta(replay);
+            const gzipSidecar = new Uint8Array([id, id + 1, id + 2]);
+            meta.uploaded = 0;
+            replay.spawnPlayback = {
+                available: true,
+                formatVersion: 3,
+                compression: 2,
+                compressedLength: gzipSidecar.length,
+                uncompressedLength: 8,
+                unitCount: id,
+            };
+
+            await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta, gzipSidecar);
+        }
+
+        const exported = await exportUnuploadedReplays10({
+            appGuid: "test-app",
+            appVersion: "1.0.0",
+            requestNames: [],
+            replays: []
+        }, 2);
+        const uploadRequest = JSON.parse(new TextDecoder().decode(exported.payload));
+
+        expect(exported.hashes).toEqual([getTestReplay(3).compatHash, getTestReplay(2).compatHash]);
+        expect(uploadRequest.replays.map((replay: { compatHash: string }) => replay.compatHash)).toEqual(exported.hashes);
+        expect(exported.sidecars.map(sidecar => sidecar.replayHash)).toEqual(exported.hashes);
+        expect(exported.sidecars.map(sidecar => sidecar.partName)).toEqual(["sidecar-0", "sidecar-1"]);
+        expect(exported.sidecars.map(sidecar => Array.from(sidecar.payload))).toEqual([[3, 4, 5], [2, 3, 4]]);
     });
 
     it("should not export uploaded replays", async () => {

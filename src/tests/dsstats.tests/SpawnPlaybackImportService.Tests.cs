@@ -217,6 +217,38 @@ public sealed class SpawnPlaybackImportServiceTests
     }
 
     [TestMethod]
+    public async Task InsertReplayImportsWithSidecars_DuplicateReplayWithSidecar_ReturnsSuccessAndStoresPayload()
+    {
+        using var serviceProvider = BuildServiceProvider(out var connection);
+        try
+        {
+            var importService = serviceProvider.GetRequiredService<IImportService>();
+            var replay = CreateReplay("Direct Strike", 900);
+            var sidecar = CreateGZipSidecar("Marine");
+
+            await importService.InsertReplayImports([new(replay, null)]);
+
+            var result = await importService.InsertReplayImportsWithSidecars(
+                CreateUploadRequest(replay),
+                [CreateManifestEntry(replay, sidecar)],
+                CreatePayloads(sidecar));
+
+            Assert.IsTrue(result.Success, result.Error);
+            CollectionAssert.AreEqual(new[] { replay.ComputeHash() }, result.ReplayHashes);
+
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            Assert.AreEqual(1, await context.Replays.CountAsync());
+            var stored = await context.ReplaySpawnPlaybacks.SingleAsync();
+            CollectionAssert.AreEqual(sidecar.Payload, stored.Payload);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [TestMethod]
     public async Task InsertReplayImportsWithSidecars_MismatchedLength_ReturnsError()
     {
         using var serviceProvider = BuildServiceProvider(out var connection);

@@ -18,6 +18,12 @@ const CONFIG_KEYS = {
 const QUERY_CACHE_LIMIT = 8;
 const queryCache = new Map<string, string[]>();
 
+type UploadReplaySelection = {
+    hash: string;
+    replay: ReplayDto;
+    spawnPlayback?: Uint8Array;
+};
+
 // Save replay and its projection + meta in one transaction
 export async function saveReplayFull(
     replayHash: string,
@@ -166,66 +172,16 @@ export async function getStorageEstimate(): Promise<{ usage: number; quota: numb
 export async function exportUnuploadedReplays(limit: number = 1000): Promise<ExportedReplays> {
     const database = await openDB();
 
-    return new Promise((resolve, reject) => {
-        const metaTx = database.transaction(STORES.meta, "readonly");
-        const metaStore = metaTx.objectStore(STORES.meta);
-        const uploadedIndex = metaStore.index("uploaded");
+    const selected = await getLatestUnuploadedReplays(database, limit, false);
+    if (selected.length === 0) {
+        return { hashes: [], payload: gzipString("[]") };
+    }
 
-        // Query all with uploaded == false
-        const req = uploadedIndex.getAll(IDBKeyRange.only(0));
+    const hashes = selected.map((x) => x.hash);
+    const replays = selected.map((x) => x.replay);
+    const payload = gzipString(JSON.stringify(replays));
 
-        req.onsuccess = async () => {
-            const metas = req.result as { replayHash: string }[];
-
-            if (metas.length === 0) {
-                resolve({ hashes: [], payload: gzipString("[]") });
-                return;
-            }
-
-            // Fetch full replays
-            const replayTx = database.transaction(STORES.replays, "readonly");
-            const replayStore = replayTx.objectStore(STORES.replays);
-
-            const replayPromises = metas.map(
-                (m) =>
-                    new Promise<{ hash: string; replay?: ReplayDto }>((res, rej) => {
-                        const r = replayStore.get(m.replayHash);
-                        r.onsuccess = () => res({ hash: m.replayHash, replay: r.result as ReplayDto | undefined });
-                        r.onerror = () => rej(r.error);
-                    })
-            );
-
-            try {
-                const all = await Promise.all(replayPromises);
-
-                // Filter out undefined
-                const valid = all.filter((x) => !!x.replay) as { hash: string; replay: ReplayDto }[];
-
-                // Sort by gametime desc
-                valid.sort(
-                    (a, b) =>
-                        new Date(b.replay.gametime).getTime() -
-                        new Date(a.replay.gametime).getTime()
-                );
-
-                // Limit
-                const selected = valid.slice(0, limit);
-
-                // Collect
-                const hashes = selected.map((x) => x.hash);
-                const replays = selected.map((x) => x.replay);
-
-                // Compress
-                const payload = gzipString(JSON.stringify(replays));
-
-                resolve({ hashes, payload });
-            } catch (err) {
-                reject(err);
-            }
-        };
-
-        req.onerror = () => reject(req.error);
-    });
+    return { hashes, payload };
 }
 
 /**
@@ -234,99 +190,114 @@ export async function exportUnuploadedReplays(limit: number = 1000): Promise<Exp
 export async function exportUnuploadedReplays10(uploadRequest: UploadRequestDto, limit: number = 250): Promise<ExportResult> {
     const database = await openDB();
 
+    try {
+        const selected = await getLatestUnuploadedReplays(database, limit, true);
+
+        if (selected.length === 0) {
+            return { hashes: [], payload: new Uint8Array(0), sidecars: [] };
+        }
+
+        const hashes = selected.map((x) => x.hash);
+        // Create a plain JS object from the .NET proxy object to avoid stack overflow issues
+        // when stringifying an object that contains a .NET proxy.
+        const plainUploadRequest = JSON.parse(JSON.stringify(uploadRequest));
+        const requestNames = (plainUploadRequest.requestNames ?? []) as RequestNames[];
+        const uploaderToonKeys = new Set(
+            requestNames
+                .filter(requestName => requestName.toonId > 0)
+                .map(requestName => requestToonKey(requestName))
+        );
+        const replays = selected.map((x) => createUploadReplay(x.replay, uploaderToonKeys));
+
+        const request: UploadRequestDto = {
+            ...plainUploadRequest,
+            requestNames,
+            replays
+        };
+
+        const payload = gzipStringRaw(JSON.stringify(request));
+        const sidecars = createSpawnPlaybackExports(selected);
+
+        return { hashes, payload, sidecars };
+    } catch (err) {
+        console.error("exportUnuploadedReplays10 failed:", err);
+        throw err;
+    }
+}
+
+async function getLatestUnuploadedReplays(
+    database: IDBDatabase,
+    limit: number,
+    includeSpawnPlayback: boolean
+): Promise<UploadReplaySelection[]> {
+    if (limit <= 0) {
+        return [];
+    }
+
     return new Promise((resolve, reject) => {
-        const metaTx = database.transaction(STORES.meta, "readonly");
-        const metaStore = metaTx.objectStore(STORES.meta);
-        const uploadedIndex = metaStore.index("uploaded");
+        const storeNames = includeSpawnPlayback
+            ? [STORES.lists, STORES.meta, STORES.replays, STORES.spawnPlayback]
+            : [STORES.lists, STORES.meta, STORES.replays];
+        const tx = database.transaction(storeNames, "readonly");
+        const listIndex = tx.objectStore(STORES.lists).index("gametime");
+        const metaStore = tx.objectStore(STORES.meta);
+        const replayStore = tx.objectStore(STORES.replays);
+        const spawnPlaybackStore = includeSpawnPlayback
+            ? tx.objectStore(STORES.spawnPlayback)
+            : undefined;
+        const selected: UploadReplaySelection[] = [];
 
-        // Query all with uploaded == false
-        const req = uploadedIndex.getAll(IDBKeyRange.only(0));
-
-        req.onsuccess = async () => {
-            const metas = req.result as { replayHash: string }[];
-
-            if (metas.length === 0) {
-                resolve({ hashes: [], payload: new Uint8Array(0), sidecars: [] });
+        const cursorRequest = listIndex.openCursor(null, "prev");
+        cursorRequest.onsuccess = (event) => {
+            const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+            if (!cursor || selected.length >= limit) {
+                resolve(selected);
                 return;
             }
 
-            // Fetch full replays
-            const replayTx = database.transaction([STORES.replays, STORES.spawnPlayback], "readonly");
-            const replayStore = replayTx.objectStore(STORES.replays);
-            const spawnPlaybackStore = replayTx.objectStore(STORES.spawnPlayback);
+            const list = cursor.value as ReplayListDto;
+            const hash = list.replayHash;
+            const metaRequest = metaStore.get(hash);
 
-            const replayPromises = metas.map(
-                (m) =>
-                    new Promise<{ hash: string; replay?: ReplayDto; spawnPlayback?: Uint8Array }>((res, rej) => {
-                        const r = replayStore.get(m.replayHash);
-                        r.onsuccess = () => {
-                            const replay = r.result as ReplayDto | undefined;
-                            if (!replay?.spawnPlayback?.available) {
-                                res({ hash: m.replayHash, replay });
-                                return;
-                            }
+            metaRequest.onsuccess = () => {
+                const meta = metaRequest.result as ReplayMeta | undefined;
+                if (!meta || meta.uploaded !== 0) {
+                    cursor.continue();
+                    return;
+                }
 
-                            const sidecarRequest = spawnPlaybackStore.get(m.replayHash);
-                            sidecarRequest.onsuccess = () => {
-                                res({
-                                    hash: m.replayHash,
-                                    replay,
-                                    spawnPlayback: normalizeByteArray(sidecarRequest.result?.payload),
-                                });
-                            };
-                            sidecarRequest.onerror = () => rej(sidecarRequest.error);
-                        };
-                        r.onerror = () => rej(r.error);
-                    })
-            );
+                const replayRequest = replayStore.get(hash);
+                replayRequest.onsuccess = () => {
+                    const replay = replayRequest.result as ReplayDto | undefined;
+                    if (!replay) {
+                        cursor.continue();
+                        return;
+                    }
 
-            try {
-                const all = await Promise.all(replayPromises);
+                    if (!includeSpawnPlayback || !replay.spawnPlayback?.available || !spawnPlaybackStore) {
+                        selected.push({ hash, replay });
+                        cursor.continue();
+                        return;
+                    }
 
-                // Filter out undefined
-                const valid = all.filter((x) => !!x.replay) as { hash: string; replay: ReplayDto }[];
-
-                // Sort by gametime desc
-                valid.sort(
-                    (a, b) =>
-                        new Date(b.replay.gametime).getTime() -
-                        new Date(a.replay.gametime).getTime()
-                );
-
-                // Limit
-                const selected = valid.slice(0, limit);
-
-                // Collect
-                const hashes = selected.map((x) => x.hash);
-                // Create a plain JS object from the .NET proxy object to avoid stack overflow issues
-                // when stringifying an object that contains a .NET proxy.
-                const plainUploadRequest = JSON.parse(JSON.stringify(uploadRequest));
-                const requestNames = (plainUploadRequest.requestNames ?? []) as RequestNames[];
-                const uploaderToonKeys = new Set(
-                    requestNames
-                        .filter(requestName => requestName.toonId > 0)
-                        .map(requestName => requestToonKey(requestName))
-                );
-                const replays = selected.map((x) => createUploadReplay(x.replay, uploaderToonKeys));
-
-                const request: UploadRequestDto = {
-                    ...plainUploadRequest,
-                    requestNames,
-                    replays
+                    const sidecarRequest = spawnPlaybackStore.get(hash);
+                    sidecarRequest.onsuccess = () => {
+                        selected.push({
+                            hash,
+                            replay,
+                            spawnPlayback: normalizeByteArray(sidecarRequest.result?.payload),
+                        });
+                        cursor.continue();
+                    };
+                    sidecarRequest.onerror = () => reject(sidecarRequest.error);
                 };
-
-                // Compress
-                const payload = gzipStringRaw(JSON.stringify(request));
-                const sidecars = createSpawnPlaybackExports(selected);
-
-                resolve({ hashes, payload, sidecars });
-            } catch (err) {
-                console.error("exportUnuploadedReplays10 failed:", err);
-                reject(err);
-            }
+                replayRequest.onerror = () => reject(replayRequest.error);
+            };
+            metaRequest.onerror = () => reject(metaRequest.error);
         };
 
-        req.onerror = () => reject(req.error);
+        cursorRequest.onerror = () => reject(cursorRequest.error);
+        tx.onerror = () => reject(tx.error);
     });
 }
 
