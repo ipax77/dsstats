@@ -129,6 +129,32 @@ describe("spawn playback basics", () => {
             ["DarkTemplar", "protoss.darkTemplar"],
             ["VoidRay", "protoss.voidRay"]
         ] as const;
+        const zergUnits = [
+            "Zergling",
+            "Hydralisk",
+            "Infestor",
+            "Overseer",
+            "Corruptor",
+            "Lurker",
+            "Roach",
+            "Queen",
+            "Mutalisk",
+            "Swarm Host",
+            "Ultralisk",
+            "Ravager",
+            "Baneling",
+            "Viper",
+            "Brood Lord",
+            "Locust"
+        ];
+        const zergAliases = [
+            ["ZerglingLightweight", "zerg.zergling"],
+            ["LurkerMP", "zerg.lurker"],
+            ["SwarmHost", "zerg.swarm_host"],
+            ["SwarmHostMP", "zerg.swarm_host"],
+            ["BroodLord", "zerg.broodLord"],
+            ["LocustMPPrecursor", "zerg.locust"]
+        ] as const;
 
         expect(marine?.id).toBe("terran.marine");
         expect(reaper?.id).toBe("terran.reaper");
@@ -147,6 +173,12 @@ describe("spawn playback basics", () => {
             expect(unitIconCatalog.resolve("Protoss", alias)?.id).toBe(id);
         }
         expect(zergling?.id).toBe("zerg.zergling");
+        for (const unit of zergUnits) {
+            expect(unitIconCatalog.resolve("Zerg", unit), unit).not.toBeNull();
+        }
+        for (const [alias, id] of zergAliases) {
+            expect(unitIconCatalog.resolve("Zerg", alias)?.id).toBe(id);
+        }
         expect(unitIconCatalog.resolve("protoss", "Probe")).toBeNull();
     });
 

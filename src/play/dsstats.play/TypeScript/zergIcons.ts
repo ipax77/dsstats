@@ -2034,7 +2034,7 @@ const zergCorruptor: UnitIconDefinition = {
 const zergLurker: UnitIconDefinition = {
     id: "zerg.lurker",
     commander: "zerg",
-    aliases: ["Lurker", "LurkerLightweight"],
+    aliases: ["Lurker", "LurkerLightweight", "LurkerMP"],
     viewBox: { width: 100, height: 100 },
     tokens: {
         skinFill: "#7B4B83",
@@ -2744,7 +2744,7 @@ const zergMutalisk: UnitIconDefinition = {
 const zergSwarmHost: UnitIconDefinition = {
     id: "zerg.swarm_host",
     commander: "zerg",
-    aliases: ["SwarmHost", "SwarmHostLightweight"],
+    aliases: ["Swarm Host", "SwarmHost", "SwarmHostLightweight", "SwarmHostMP"],
     viewBox: { width: 100, height: 100 },
     tokens: {
         skinFill: "#7E4B87",
@@ -3523,6 +3523,722 @@ const zergUltralisk: UnitIconDefinition = {
     ]
 };
 
+const zergOverseer: UnitIconDefinition = {
+    id: "zerg.overseer",
+    commander: "zerg",
+    aliases: ["Overseer"],
+    viewBox: { width: 100, height: 100 },
+    tokens: {
+        skinFill: "#87518F",
+        skinMid: "#6B3A73",
+        skinShade: "#43234A",
+        carapaceFill: "#B487C8",
+        carapaceShade: "#5A3A66",
+        eyeFill: "#FF5A54",
+        bioGlow: "#8EFF5A",
+        bioCore: "#D7FF75",
+        clawFill: "#E8D7B2",
+        darkStroke: "#24122C"
+    },
+    layers: [
+        {
+            type: "path",
+            commands: [
+                ["M", 50, 15],
+                ["C", 69, 17, 83, 31, 85, 50],
+                ["C", 83, 69, 68, 83, 50, 86],
+                ["C", 32, 83, 17, 69, 15, 50],
+                ["C", 17, 31, 31, 17, 50, 15],
+                ["Z"]
+            ],
+            fill: "skinShade",
+            stroke: "darkStroke",
+            strokeWidth: 4,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 26, 48],
+                ["C", 29, 34, 39, 26, 50, 26],
+                ["C", 61, 26, 71, 34, 74, 48],
+                ["C", 68, 56, 59, 60, 50, 60],
+                ["C", 41, 60, 32, 56, 26, 48],
+                ["Z"]
+            ],
+            fill: "carapaceFill",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            lineJoin: "round"
+        },
+        {
+            type: "circle",
+            cx: 50,
+            cy: 52,
+            r: 15,
+            fill: "bioGlow",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            opacity: 0.9
+        },
+        {
+            type: "circle",
+            cx: 50,
+            cy: 52,
+            r: 7,
+            fill: "bioCore",
+            stroke: "darkStroke",
+            strokeWidth: 1.5
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 23, 49],
+                ["L", 8, 37],
+                ["L", 15, 55],
+                ["M", 77, 49],
+                ["L", 92, 37],
+                ["L", 85, 55],
+                ["M", 32, 70],
+                ["L", 20, 87],
+                ["M", 68, 70],
+                ["L", 80, 87]
+            ],
+            stroke: "skinMid",
+            strokeWidth: 5,
+            lineCap: "round",
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 36, 26],
+                ["L", 31, 10],
+                ["L", 45, 24],
+                ["M", 64, 26],
+                ["L", 69, 10],
+                ["L", 55, 24]
+            ],
+            fill: "carapaceShade",
+            stroke: "darkStroke",
+            strokeWidth: 2.5,
+            lineJoin: "round"
+        },
+        {
+            type: "circle",
+            cx: 43,
+            cy: 45,
+            r: 2.6,
+            fill: "eyeFill",
+            stroke: "darkStroke",
+            strokeWidth: 1
+        },
+        {
+            type: "circle",
+            cx: 57,
+            cy: 45,
+            r: 2.6,
+            fill: "eyeFill",
+            stroke: "darkStroke",
+            strokeWidth: 1
+        }
+    ]
+};
+
+const zergRavager: UnitIconDefinition = {
+    id: "zerg.ravager",
+    commander: "zerg",
+    aliases: ["Ravager"],
+    viewBox: { width: 100, height: 100 },
+    tokens: {
+        skinFill: "#7B4B83",
+        skinMid: "#633769",
+        skinShade: "#43234A",
+        carapaceFill: "#AA7BBC",
+        carapaceShade: "#4E355B",
+        bileFill: "#8EFF5A",
+        bileCore: "#D7FF75",
+        clawFill: "#E8D7B2",
+        eyeFill: "#FF5A54",
+        darkStroke: "#24122C"
+    },
+    layers: [
+        {
+            type: "path",
+            commands: [
+                ["M", 18, 61],
+                ["C", 21, 43, 37, 32, 58, 34],
+                ["C", 76, 36, 90, 48, 92, 63],
+                ["C", 91, 78, 76, 88, 55, 88],
+                ["C", 34, 88, 18, 77, 18, 61],
+                ["Z"]
+            ],
+            fill: "skinFill",
+            stroke: "darkStroke",
+            strokeWidth: 4,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 27, 55],
+                ["C", 33, 39, 45, 31, 60, 35],
+                ["C", 75, 39, 86, 50, 88, 62],
+                ["C", 77, 66, 61, 67, 44, 64],
+                ["C", 35, 62, 30, 59, 27, 55],
+                ["Z"]
+            ],
+            fill: "carapaceFill",
+            stroke: "darkStroke",
+            strokeWidth: 3.5,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 40, 42],
+                ["L", 45, 21],
+                ["L", 52, 43],
+                ["M", 57, 39],
+                ["L", 68, 20],
+                ["L", 66, 45],
+                ["M", 72, 47],
+                ["L", 88, 34],
+                ["L", 80, 54]
+            ],
+            fill: "carapaceShade",
+            stroke: "darkStroke",
+            strokeWidth: 2.5,
+            lineJoin: "round"
+        },
+        {
+            type: "circle",
+            cx: 52,
+            cy: 53,
+            r: 6,
+            fill: "bileFill",
+            stroke: "darkStroke",
+            strokeWidth: 2
+        },
+        {
+            type: "circle",
+            cx: 68,
+            cy: 56,
+            r: 5,
+            fill: "bileFill",
+            stroke: "darkStroke",
+            strokeWidth: 2
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 70, 58],
+                ["C", 79, 52, 91, 55, 96, 64],
+                ["C", 94, 72, 84, 77, 73, 73],
+                ["L", 64, 66],
+                ["Z"]
+            ],
+            fill: "skinShade",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            lineJoin: "round"
+        },
+        {
+            type: "circle",
+            cx: 84,
+            cy: 62,
+            r: 2.5,
+            fill: "eyeFill",
+            stroke: "darkStroke",
+            strokeWidth: 1
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 32, 70],
+                ["L", 20, 83],
+                ["L", 8, 85],
+                ["L", 18, 91],
+                ["L", 34, 82],
+                ["Z"],
+                ["M", 68, 72],
+                ["L", 81, 82],
+                ["L", 94, 82],
+                ["L", 85, 90],
+                ["L", 70, 83],
+                ["Z"]
+            ],
+            fill: "skinMid",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            lineJoin: "round"
+        }
+    ]
+};
+
+const zergBaneling: UnitIconDefinition = {
+    id: "zerg.baneling",
+    commander: "zerg",
+    aliases: ["Baneling"],
+    viewBox: { width: 100, height: 100 },
+    tokens: {
+        skinFill: "#7B4B83",
+        skinShade: "#43234A",
+        carapaceFill: "#A77CB7",
+        acidFill: "#8EFF5A",
+        acidCore: "#D7FF75",
+        eyeFill: "#FF5A54",
+        darkStroke: "#24122C"
+    },
+    layers: [
+        {
+            type: "circle",
+            cx: 50,
+            cy: 57,
+            r: 31,
+            fill: "skinShade",
+            stroke: "darkStroke",
+            strokeWidth: 4
+        },
+        {
+            type: "circle",
+            cx: 50,
+            cy: 54,
+            r: 25,
+            fill: "acidFill",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            opacity: 0.92
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 28, 44],
+                ["C", 36, 29, 56, 24, 72, 35],
+                ["C", 65, 41, 56, 44, 45, 44],
+                ["C", 38, 44, 32, 44, 28, 44],
+                ["Z"]
+            ],
+            fill: "carapaceFill",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            lineJoin: "round"
+        },
+        {
+            type: "circle",
+            cx: 45,
+            cy: 51,
+            r: 7,
+            fill: "acidCore",
+            opacity: 0.9
+        },
+        {
+            type: "circle",
+            cx: 60,
+            cy: 61,
+            r: 6,
+            fill: "acidCore",
+            opacity: 0.75
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 28, 70],
+                ["L", 14, 82],
+                ["L", 24, 86],
+                ["L", 37, 75],
+                ["M", 72, 70],
+                ["L", 86, 82],
+                ["L", 76, 86],
+                ["L", 63, 75]
+            ],
+            stroke: "skinFill",
+            strokeWidth: 5,
+            lineCap: "round",
+            lineJoin: "round"
+        },
+        {
+            type: "circle",
+            cx: 66,
+            cy: 42,
+            r: 2.6,
+            fill: "eyeFill",
+            stroke: "darkStroke",
+            strokeWidth: 1
+        }
+    ]
+};
+
+const zergViper: UnitIconDefinition = {
+    id: "zerg.viper",
+    commander: "zerg",
+    aliases: ["Viper"],
+    viewBox: { width: 100, height: 100 },
+    tokens: {
+        skinFill: "#86508E",
+        skinMid: "#6B3A73",
+        skinShade: "#43234A",
+        carapaceFill: "#B487C8",
+        carapaceShade: "#5A3A66",
+        acidFill: "#8EFF5A",
+        acidCore: "#D7FF75",
+        eyeFill: "#FF5A54",
+        darkStroke: "#24122C"
+    },
+    layers: [
+        {
+            type: "path",
+            commands: [
+                ["M", 50, 13],
+                ["C", 62, 25, 70, 42, 69, 61],
+                ["C", 64, 77, 56, 88, 50, 94],
+                ["C", 44, 88, 36, 77, 31, 61],
+                ["C", 30, 42, 38, 25, 50, 13],
+                ["Z"]
+            ],
+            fill: "skinShade",
+            stroke: "darkStroke",
+            strokeWidth: 4,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 39, 30],
+                ["C", 43, 21, 47, 16, 50, 13],
+                ["C", 53, 16, 57, 21, 61, 30],
+                ["L", 58, 56],
+                ["L", 50, 68],
+                ["L", 42, 56],
+                ["Z"]
+            ],
+            fill: "carapaceFill",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 37, 45],
+                ["C", 24, 38, 13, 34, 4, 36],
+                ["C", 13, 49, 25, 58, 39, 60],
+                ["Z"],
+                ["M", 63, 45],
+                ["C", 76, 38, 87, 34, 96, 36],
+                ["C", 87, 49, 75, 58, 61, 60],
+                ["Z"]
+            ],
+            fill: "skinFill",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 35, 62],
+                ["L", 22, 75],
+                ["L", 27, 83],
+                ["L", 44, 69],
+                ["M", 65, 62],
+                ["L", 78, 75],
+                ["L", 73, 83],
+                ["L", 56, 69]
+            ],
+            stroke: "skinMid",
+            strokeWidth: 5,
+            lineCap: "round",
+            lineJoin: "round"
+        },
+        {
+            type: "circle",
+            cx: 44,
+            cy: 35,
+            r: 2.5,
+            fill: "eyeFill",
+            stroke: "darkStroke",
+            strokeWidth: 1
+        },
+        {
+            type: "circle",
+            cx: 56,
+            cy: 35,
+            r: 2.5,
+            fill: "eyeFill",
+            stroke: "darkStroke",
+            strokeWidth: 1
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 46, 56],
+                ["C", 48, 64, 52, 64, 54, 56],
+                ["M", 40, 72],
+                ["C", 46, 80, 54, 80, 60, 72]
+            ],
+            stroke: "acidFill",
+            strokeWidth: 3,
+            lineCap: "round",
+            opacity: 0.9
+        }
+    ]
+};
+
+const zergBroodLord: UnitIconDefinition = {
+    id: "zerg.broodLord",
+    commander: "zerg",
+    aliases: ["Brood Lord", "BroodLord"],
+    viewBox: { width: 100, height: 100 },
+    tokens: {
+        skinFill: "#80508A",
+        skinMid: "#65376E",
+        skinShade: "#402247",
+        carapaceFill: "#AD7FC0",
+        carapaceShade: "#4B3158",
+        broodFill: "#8EFF5A",
+        broodCore: "#D7FF75",
+        clawFill: "#E8D7B2",
+        eyeFill: "#FF5A54",
+        darkStroke: "#24122C"
+    },
+    layers: [
+        {
+            type: "path",
+            commands: [
+                ["M", 50, 16],
+                ["C", 68, 19, 83, 35, 85, 55],
+                ["C", 82, 76, 67, 89, 50, 91],
+                ["C", 33, 89, 18, 76, 15, 55],
+                ["C", 17, 35, 32, 19, 50, 16],
+                ["Z"]
+            ],
+            fill: "skinShade",
+            stroke: "darkStroke",
+            strokeWidth: 4,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 25, 51],
+                ["C", 30, 34, 41, 25, 50, 25],
+                ["C", 59, 25, 70, 34, 75, 51],
+                ["C", 66, 58, 56, 61, 50, 61],
+                ["C", 44, 61, 34, 58, 25, 51],
+                ["Z"]
+            ],
+            fill: "carapaceFill",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 31, 48],
+                ["C", 18, 42, 8, 38, 1, 42],
+                ["C", 10, 55, 23, 65, 38, 66],
+                ["Z"],
+                ["M", 69, 48],
+                ["C", 82, 42, 92, 38, 99, 42],
+                ["C", 90, 55, 77, 65, 62, 66],
+                ["Z"]
+            ],
+            fill: "skinFill",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            lineJoin: "round"
+        },
+        {
+            type: "circle",
+            cx: 42,
+            cy: 63,
+            r: 6,
+            fill: "broodFill",
+            stroke: "darkStroke",
+            strokeWidth: 2
+        },
+        {
+            type: "circle",
+            cx: 58,
+            cy: 63,
+            r: 6,
+            fill: "broodFill",
+            stroke: "darkStroke",
+            strokeWidth: 2
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 36, 76],
+                ["L", 20, 90],
+                ["L", 32, 93],
+                ["L", 47, 79],
+                ["M", 64, 76],
+                ["L", 80, 90],
+                ["L", 68, 93],
+                ["L", 53, 79]
+            ],
+            stroke: "skinMid",
+            strokeWidth: 5,
+            lineCap: "round",
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 39, 33],
+                ["L", 34, 15],
+                ["L", 47, 31],
+                ["M", 61, 33],
+                ["L", 66, 15],
+                ["L", 53, 31]
+            ],
+            fill: "carapaceShade",
+            stroke: "darkStroke",
+            strokeWidth: 2.5,
+            lineJoin: "round"
+        },
+        {
+            type: "circle",
+            cx: 50,
+            cy: 48,
+            r: 3,
+            fill: "eyeFill",
+            stroke: "darkStroke",
+            strokeWidth: 1
+        }
+    ]
+};
+
+const zergLocust: UnitIconDefinition = {
+    id: "zerg.locust",
+    commander: "zerg",
+    aliases: ["Locust", "LocustMPPrecursor"],
+    viewBox: { width: 100, height: 100 },
+    tokens: {
+        skinFill: "#8C5A92",
+        skinMid: "#6F4374",
+        skinShade: "#4F2D56",
+        carapaceFill: "#B78AC8",
+        carapaceShade: "#7C5A8A",
+        clawFill: "#E7D9B8",
+        eyeFill: "#FF5A54",
+        darkStroke: "#2A1630"
+    },
+    layers: [
+        {
+            type: "path",
+            commands: [
+                ["M", 25, 63],
+                ["C", 29, 49, 43, 39, 59, 40],
+                ["C", 74, 41, 86, 50, 88, 62],
+                ["C", 86, 75, 72, 82, 54, 82],
+                ["C", 38, 82, 27, 74, 25, 63],
+                ["Z"]
+            ],
+            fill: "skinFill",
+            stroke: "darkStroke",
+            strokeWidth: 4,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 33, 56],
+                ["C", 41, 43, 55, 38, 70, 44],
+                ["C", 76, 47, 82, 54, 85, 61],
+                ["C", 72, 61, 58, 59, 43, 64],
+                ["Z"]
+            ],
+            fill: "carapaceFill",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 67, 53],
+                ["C", 76, 48, 88, 51, 94, 59],
+                ["C", 93, 66, 84, 70, 73, 68],
+                ["L", 63, 62],
+                ["Z"]
+            ],
+            fill: "skinShade",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            lineJoin: "round"
+        },
+        {
+            type: "circle",
+            cx: 84,
+            cy: 58,
+            r: 2.5,
+            fill: "eyeFill",
+            stroke: "darkStroke",
+            strokeWidth: 1
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 35, 66],
+                ["L", 22, 80],
+                ["L", 12, 82],
+                ["L", 20, 89],
+                ["L", 36, 78],
+                ["Z"],
+                ["M", 62, 68],
+                ["L", 76, 81],
+                ["L", 88, 82],
+                ["L", 80, 90],
+                ["L", 64, 79],
+                ["Z"]
+            ],
+            fill: "skinMid",
+            stroke: "darkStroke",
+            strokeWidth: 3,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 39, 51],
+                ["L", 36, 33],
+                ["L", 48, 49],
+                ["M", 56, 44],
+                ["L", 60, 25],
+                ["L", 65, 47],
+                ["M", 72, 49],
+                ["L", 84, 36],
+                ["L", 78, 56]
+            ],
+            fill: "carapaceShade",
+            stroke: "darkStroke",
+            strokeWidth: 2.5,
+            lineJoin: "round"
+        },
+        {
+            type: "path",
+            commands: [
+                ["M", 12, 82],
+                ["L", 5, 87],
+                ["L", 20, 89],
+                ["Z"],
+                ["M", 88, 82],
+                ["L", 96, 87],
+                ["L", 80, 90],
+                ["Z"]
+            ],
+            fill: "clawFill",
+            stroke: "darkStroke",
+            strokeWidth: 2,
+            lineJoin: "round"
+        }
+    ]
+};
+
 export const zergUnits = {
     zergling: zergZergling,
     roach: zergRoach,
@@ -3534,4 +4250,10 @@ export const zergUnits = {
     mutalisk: zergMutalisk,
     swarmhost: zergSwarmHost,
     ultralisk: zergUltralisk,
+    overseer: zergOverseer,
+    ravager: zergRavager,
+    baneling: zergBaneling,
+    viper: zergViper,
+    broodLord: zergBroodLord,
+    locust: zergLocust
 };
