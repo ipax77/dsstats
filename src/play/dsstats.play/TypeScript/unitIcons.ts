@@ -10,8 +10,8 @@ import type {
 import { zergUnits } from "./zergIcons";
 
 const definitions: UnitIconDefinition[] = [
-    terranUnits.marine,
-    zergUnits.zergling
+    ...Object.values(terranUnits),
+    ...Object.values(zergUnits)
 ];
 
 const aliases = new Map<string, UnitIconDefinition>();

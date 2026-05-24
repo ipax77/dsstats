@@ -73,9 +73,13 @@ describe("spawn playback basics", () => {
 
     it("resolves catalog icons using normalized commander and unit aliases", () => {
         const marine = unitIconCatalog.resolve(" Terran ", "Marine Lightweight");
+        const reaper = unitIconCatalog.resolve("Terran", "ReaperLightweight");
+        const marauder = unitIconCatalog.resolve("Terran", "Marauder Lightweight");
         const zergling = unitIconCatalog.resolve("zerg", "ZerglingLightweight");
 
         expect(marine?.id).toBe("terran.marine");
+        expect(reaper?.id).toBe("terran.reaper");
+        expect(marauder?.id).toBe("terran.marauder");
         expect(zergling?.id).toBe("zerg.zergling");
         expect(unitIconCatalog.resolve("protoss", "Zealot")).toBeNull();
     });
