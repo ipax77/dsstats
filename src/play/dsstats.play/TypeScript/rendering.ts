@@ -17,6 +17,7 @@ import {
     withAlpha
 } from "./canvasUtils";
 import { createRenderCache, createStaticGeometry } from "./geometry";
+import { objectiveIconCatalog } from "./objectiveIcons";
 import { getState } from "./store";
 import type {
     CanvasContext,
@@ -807,39 +808,65 @@ function drawLandmark(
     }
 
     ctx.save();
+    const scale = deviceScale(canvas);
+    const objectiveSize = objectiveIconCatalog.getSize(label, kind, radius, scale);
+    const renderedIcon = objectiveIconCatalog.render(ctx, {
+        name: label,
+        kind,
+        teamColor: color,
+        x: projected.x,
+        y: projected.y,
+        size: objectiveSize
+    });
+
+    if (!renderedIcon) {
+        drawFallbackLandmark(ctx, projected.x, projected.y, radius, color, kind, canvas);
+    }
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
+    ctx.font = `${Math.max(10, 10 * scale)}px sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    const labelOffset = renderedIcon ? objectiveSize / 2 : radius;
+    ctx.fillText(label, projected.x, projected.y + labelOffset + 3 * scale);
+    ctx.restore();
+}
+
+function drawFallbackLandmark(
+    ctx: CanvasContext,
+    x: number,
+    y: number,
+    radius: number,
+    color: string,
+    kind: string,
+    canvas: HTMLCanvasElement): void {
     ctx.lineWidth = Math.max(2.25, deviceScale(canvas) * 2.25);
     ctx.strokeStyle = withAlpha(color, "FF");
     ctx.fillStyle = withAlpha(color, kind === "Base" ? "64" : "72");
 
     if (kind === "Base") {
         ctx.beginPath();
-        ctx.moveTo(projected.x, projected.y - radius);
-        ctx.lineTo(projected.x + radius, projected.y);
-        ctx.lineTo(projected.x, projected.y + radius);
-        ctx.lineTo(projected.x - radius, projected.y);
+        ctx.moveTo(x, y - radius);
+        ctx.lineTo(x + radius, y);
+        ctx.lineTo(x, y + radius);
+        ctx.lineTo(x - radius, y);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-    } else {
-        ctx.beginPath();
-        ctx.arc(projected.x, projected.y, radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(projected.x - radius * 0.75, projected.y);
-        ctx.lineTo(projected.x + radius * 0.75, projected.y);
-        ctx.moveTo(projected.x, projected.y - radius * 0.75);
-        ctx.lineTo(projected.x, projected.y + radius * 0.75);
-        ctx.stroke();
+        return;
     }
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
-    ctx.font = `${Math.max(10, 10 * deviceScale(canvas))}px sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    ctx.fillText(label, projected.x, projected.y + radius + 3 * deviceScale(canvas));
-    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x - radius * 0.75, y);
+    ctx.lineTo(x + radius * 0.75, y);
+    ctx.moveTo(x, y - radius * 0.75);
+    ctx.lineTo(x, y + radius * 0.75);
+    ctx.stroke();
 }
 
 function drawUnitLayer(
