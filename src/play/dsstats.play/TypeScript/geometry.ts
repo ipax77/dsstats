@@ -91,7 +91,26 @@ function createGridLines(bounds: Bounds, canvas: HTMLCanvasElement): Segment[] {
 
 function createMiddleLine(bounds: Bounds, canvas: HTMLCanvasElement): Segment | null {
     const segment = clipSumLine(bounds, MAP_CENTER_SUM);
-    return segment ? projectSegment(segment, bounds, canvas) : null;
+    return segment ? shortenSegment(projectSegment(segment, bounds, canvas), 1 / 3) : null;
+}
+
+function shortenSegment(segment: Segment, fraction: number): Segment {
+    const clampedFraction = Math.max(0, Math.min(1, fraction));
+    const midX = (segment.start.x + segment.end.x) / 2;
+    const midY = (segment.start.y + segment.end.y) / 2;
+    const halfX = (segment.end.x - segment.start.x) * clampedFraction / 2;
+    const halfY = (segment.end.y - segment.start.y) * clampedFraction / 2;
+
+    return {
+        start: {
+            x: midX - halfX,
+            y: midY - halfY
+        },
+        end: {
+            x: midX + halfX,
+            y: midY + halfY
+        }
+    };
 }
 
 function createSpawnAreas(bounds: Bounds, canvas: HTMLCanvasElement): SpawnAreaGeometry[] {

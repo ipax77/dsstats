@@ -13,7 +13,7 @@
     display: flex;
     flex-direction: column;
     overflow: auto;
-    background: #071015;
+    background: #0B1820;
 }
 
 .spawn-playback-body {
@@ -50,7 +50,7 @@
     height: 560px;
     border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 6px;
-    background: #071015;
+    background: #56aeca;
 }
 
 .spawn-playback:fullscreen .spawn-playback-canvas {

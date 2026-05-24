@@ -32,6 +32,19 @@ import type {
 } from "./types";
 import { unitIconCatalog } from "./unitIcons";
 
+const MAP_BACKGROUND_BASE_COLOR = "#c1bda4";
+const WATER_BACKGROUND_BASE_COLOR = "#56aeca";
+const BACKGROUND_BASELINE_AREA = 960 * 560;
+const FOREST_CLUSTERS = [
+    { x: 0.21, y: 0.19, width: 0.18, height: 0.12, trees: 18 },
+    { x: 0.27, y: 0.36, width: 0.15, height: 0.12, trees: 16 },
+    { x: 0.48, y: 0.17, width: 0.13, height: 0.10, trees: 12 },
+    { x: 0.13, y: 0.61, width: 0.14, height: 0.17, trees: 18 },
+    { x: 0.48, y: 0.84, width: 0.24, height: 0.13, trees: 28 },
+    { x: 0.72, y: 0.62, width: 0.13, height: 0.17, trees: 18 },
+    { x: 0.87, y: 0.41, width: 0.09, height: 0.12, trees: 10 }
+];
+
 export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: number): void {
     const state = getState(canvas);
     if (!state?.replay) {
@@ -214,12 +227,356 @@ function compactActiveUnits(state: SpawnPlaybackState, currentGameloop: number):
 
 function drawStaticBackgroundLayer(ctx: CanvasContext, canvas: HTMLCanvasElement, geometry: StaticGeometry): void {
     ctx.save();
-    ctx.fillStyle = "#071015";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawCloudyBackground(ctx, canvas);
+    drawForestAssets(ctx, canvas);
     ctx.restore();
 
     drawGrid(ctx, canvas, geometry.gridLines);
     drawSpawnAreas(ctx, canvas, geometry.spawnAreas);
+}
+
+function drawCloudyBackground(ctx: CanvasContext, canvas: HTMLCanvasElement): void {
+    const scale = deviceScale(canvas);
+    const random = createBackgroundRandom(canvas.width, canvas.height);
+    const patchScale = getBackgroundAreaScale(canvas, scale);
+
+    drawWaterBackground(ctx, canvas, random, scale, patchScale);
+    drawShoreBands(ctx, canvas, scale);
+
+    ctx.save();
+    traceIslandPath(ctx, canvas, 0);
+    ctx.clip();
+
+    ctx.fillStyle = MAP_BACKGROUND_BASE_COLOR;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawCloudPatches(ctx, canvas, random, Math.round(90 * patchScale), scale, {
+        offset: 100,
+        minRadius: 80,
+        maxRadius: 260,
+        centerColor: "255,255,245",
+        minAlpha: 0.025,
+        maxAlpha: 0.08
+    });
+
+    drawCloudPatches(ctx, canvas, random, Math.round(70 * patchScale), scale, {
+        offset: 100,
+        minRadius: 60,
+        maxRadius: 220,
+        centerColor: "80,90,80",
+        minAlpha: 0.018,
+        maxAlpha: 0.055
+    });
+
+    drawWispyBackgroundStrokes(ctx, canvas, random, Math.round(140 * patchScale), scale);
+    drawFineGrain(ctx, canvas, random, scale);
+    ctx.restore();
+}
+
+function drawWaterBackground(
+    ctx: CanvasContext,
+    canvas: HTMLCanvasElement,
+    random: () => number,
+    scale: number,
+    patchScale: number): void {
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, "#58b9d8");
+    gradient.addColorStop(0.55, WATER_BACKGROUND_BASE_COLOR);
+    gradient.addColorStop(1, "#3287b8");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.globalAlpha = 0.25;
+    ctx.lineCap = "round";
+    for (let i = 0; i < Math.round(90 * patchScale); i++) {
+        const x = rand(random, -40 * scale, canvas.width);
+        const y = rand(random, 0, canvas.height);
+        const length = rand(random, 36 * scale, 130 * scale);
+        ctx.strokeStyle = random() > 0.45
+            ? "rgba(210, 244, 240, 0.30)"
+            : "rgba(24, 111, 158, 0.26)";
+        ctx.lineWidth = rand(random, 1 * scale, 2.25 * scale);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.bezierCurveTo(
+            x + length * 0.35,
+            y + rand(random, -10 * scale, 10 * scale),
+            x + length * 0.65,
+            y + rand(random, -10 * scale, 10 * scale),
+            x + length,
+            y + rand(random, -8 * scale, 8 * scale));
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+function drawShoreBands(ctx: CanvasContext, canvas: HTMLCanvasElement, scale: number): void {
+    ctx.save();
+    traceIslandPath(ctx, canvas, 24 * scale);
+    ctx.fillStyle = "rgba(218, 213, 169, 0.74)";
+    ctx.fill();
+
+    traceIslandPath(ctx, canvas, 12 * scale);
+    ctx.fillStyle = "rgba(196, 190, 143, 0.70)";
+    ctx.fill();
+
+    traceIslandPath(ctx, canvas, 0);
+    ctx.fillStyle = MAP_BACKGROUND_BASE_COLOR;
+    ctx.fill();
+
+    ctx.lineWidth = Math.max(2, 2 * scale);
+    ctx.strokeStyle = "rgba(245, 238, 190, 0.42)";
+    traceIslandPath(ctx, canvas, 24 * scale);
+    ctx.stroke();
+
+    ctx.lineWidth = Math.max(1, 1.25 * scale);
+    ctx.strokeStyle = "rgba(65, 125, 136, 0.30)";
+    traceIslandPath(ctx, canvas, 36 * scale);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function traceIslandPath(ctx: CanvasContext, canvas: HTMLCanvasElement, expand: number): void {
+    const width = canvas.width;
+    const height = canvas.height;
+    const left = 0.075 * width - expand;
+    const right = 0.925 * width + expand;
+    const top = 0.105 * height - expand;
+    const bottom = 0.895 * height + expand;
+    const upperRight = 0.985 * width + expand;
+    const upperTop = 0.055 * height - expand;
+    const lowerLeft = 0.02 * width - expand;
+    const lowerBottom = 0.95 * height + expand;
+
+    ctx.beginPath();
+    ctx.moveTo(0.19 * width, top + 0.03 * height);
+    ctx.bezierCurveTo(0.32 * width, top - 0.045 * height, 0.47 * width, top - 0.01 * height, 0.58 * width, top + 0.02 * height);
+    ctx.bezierCurveTo(0.72 * width, upperTop - 0.035 * height, upperRight - 0.015 * width, upperTop + 0.02 * height, upperRight, 0.21 * height);
+    ctx.bezierCurveTo(upperRight + 0.01 * width, 0.35 * height, 0.84 * width, 0.45 * height, 0.90 * width, 0.58 * height);
+    ctx.bezierCurveTo(0.95 * width, 0.73 * height, 0.79 * width, bottom + 0.03 * height, 0.63 * width, bottom);
+    ctx.bezierCurveTo(0.51 * width, lowerBottom + 0.035 * height, 0.39 * width, 0.93 * height, 0.28 * width, lowerBottom - 0.01 * height);
+    ctx.bezierCurveTo(0.12 * width, lowerBottom + 0.03 * height, lowerLeft - 0.015 * width, 0.77 * height, lowerLeft, 0.61 * height);
+    ctx.bezierCurveTo(left - 0.035 * width, 0.48 * height, 0.15 * width, 0.39 * height, left + 0.01 * width, 0.28 * height);
+    ctx.bezierCurveTo(left + 0.035 * width, 0.18 * height, 0.10 * width, 0.15 * height, 0.19 * width, top + 0.03 * height);
+    ctx.closePath();
+}
+
+function getBackgroundAreaScale(canvas: HTMLCanvasElement, scale: number): number {
+    const cssWidth = canvas.width / Math.max(1, scale);
+    const cssHeight = canvas.height / Math.max(1, scale);
+    return clamp((cssWidth * cssHeight) / BACKGROUND_BASELINE_AREA, 0.65, 1.8);
+}
+
+function drawCloudPatches(
+    ctx: CanvasContext,
+    canvas: HTMLCanvasElement,
+    random: () => number,
+    count: number,
+    scale: number,
+    options: {
+        offset: number;
+        minRadius: number;
+        maxRadius: number;
+        centerColor: string;
+        minAlpha: number;
+        maxAlpha: number;
+    }): void {
+    const offset = options.offset * scale;
+    for (let i = 0; i < count; i++) {
+        const x = rand(random, -offset, canvas.width + offset);
+        const y = rand(random, -offset, canvas.height + offset);
+        const radius = rand(random, options.minRadius * scale, options.maxRadius * scale);
+        const alpha = rand(random, options.minAlpha, options.maxAlpha);
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        gradient.addColorStop(0, `rgba(${options.centerColor},${alpha})`);
+        gradient.addColorStop(1, `rgba(${options.centerColor},0)`);
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawWispyBackgroundStrokes(
+    ctx: CanvasContext,
+    canvas: HTMLCanvasElement,
+    random: () => number,
+    count: number,
+    scale: number): void {
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.lineCap = "round";
+
+    for (let i = 0; i < count; i++) {
+        const x = rand(random, -100 * scale, canvas.width);
+        const y = rand(random, 0, canvas.height);
+        const length = rand(random, 80 * scale, 260 * scale);
+
+        ctx.strokeStyle = random() > 0.5
+            ? "rgba(245,245,230,0.18)"
+            : "rgba(85,95,85,0.12)";
+        ctx.lineWidth = rand(random, 1 * scale, 4 * scale);
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.bezierCurveTo(
+            x + length * 0.25,
+            y + rand(random, -20 * scale, 20 * scale),
+            x + length * 0.7,
+            y + rand(random, -30 * scale, 30 * scale),
+            x + length,
+            y + rand(random, -18 * scale, 18 * scale));
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
+function drawFineGrain(
+    ctx: CanvasContext,
+    canvas: HTMLCanvasElement,
+    random: () => number,
+    scale: number): void {
+    const tileSize = Math.max(96, Math.round(128 * Math.min(scale, 2)));
+    const grainCanvas = createLayerCanvas(tileSize, tileSize);
+    const grainCtx = getCanvasContext(grainCanvas);
+    if (!grainCtx) {
+        return;
+    }
+
+    const imageData = grainCtx.createImageData(tileSize, tileSize);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        const noise = Math.round(rand(random, 0, 32));
+        data[i] = noise;
+        data[i + 1] = noise;
+        data[i + 2] = noise;
+        data[i + 3] = 34;
+    }
+
+    grainCtx.putImageData(imageData, 0, 0);
+    const pattern = ctx.createPattern(grainCanvas, "repeat");
+    if (!pattern) {
+        return;
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation = "overlay";
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+}
+
+function drawForestAssets(ctx: CanvasContext, canvas: HTMLCanvasElement): void {
+    const scale = deviceScale(canvas);
+    const random = createBackgroundRandom(canvas.width + 17, canvas.height + 31);
+    const areaScale = getBackgroundAreaScale(canvas, scale);
+
+    ctx.save();
+    traceIslandPath(ctx, canvas, 0);
+    ctx.clip();
+    for (const cluster of FOREST_CLUSTERS) {
+        const centerX = cluster.x * canvas.width;
+        const centerY = cluster.y * canvas.height;
+        const width = cluster.width * canvas.width;
+        const height = cluster.height * canvas.height;
+        const treeCount = Math.round(cluster.trees * clamp(areaScale, 0.8, 1.35));
+
+        drawForestGroundPatch(ctx, centerX, centerY, width, height, random);
+        for (let i = 0; i < treeCount; i++) {
+            const point = randomPointInEllipse(centerX, centerY, width * 0.45, height * 0.42, random);
+            const size = rand(random, 5.5 * scale, 11 * scale);
+            drawMinimalTree(ctx, point.x, point.y, size, random);
+        }
+    }
+
+    ctx.restore();
+}
+
+function drawForestGroundPatch(
+    ctx: CanvasContext,
+    centerX: number,
+    centerY: number,
+    width: number,
+    height: number,
+    random: () => number): void {
+    ctx.save();
+    ctx.globalAlpha = 0.44;
+    ctx.fillStyle = "rgba(28, 92, 42, 0.34)";
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, width * rand(random, 0.42, 0.5), height * rand(random, 0.36, 0.48), rand(random, -0.45, 0.45), 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = "rgba(18, 73, 36, 0.30)";
+    ctx.beginPath();
+    ctx.ellipse(centerX + width * rand(random, -0.12, 0.12), centerY + height * rand(random, -0.14, 0.14), width * 0.36, height * 0.30, rand(random, -0.7, 0.7), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function randomPointInEllipse(
+    centerX: number,
+    centerY: number,
+    radiusX: number,
+    radiusY: number,
+    random: () => number): { x: number; y: number } {
+    const angle = rand(random, 0, Math.PI * 2);
+    const distance = Math.sqrt(random());
+    return {
+        x: centerX + Math.cos(angle) * radiusX * distance,
+        y: centerY + Math.sin(angle) * radiusY * distance
+    };
+}
+
+function drawMinimalTree(ctx: CanvasContext, x: number, y: number, size: number, random: () => number): void {
+    const height = size * rand(random, 1.2, 1.8);
+    const width = size * rand(random, 0.8, 1.15);
+    const sway = rand(random, -0.12, 0.12);
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(sway);
+    ctx.fillStyle = "rgba(42, 106, 49, 0.72)";
+    drawTreeTriangle(ctx, 0, -height * 0.55, width * 0.58, height * 0.48);
+    ctx.fillStyle = "rgba(23, 82, 38, 0.78)";
+    drawTreeTriangle(ctx, 0, -height * 0.24, width * 0.72, height * 0.54);
+    ctx.fillStyle = "rgba(17, 63, 32, 0.82)";
+    drawTreeTriangle(ctx, 0, height * 0.08, width * 0.86, height * 0.58);
+    ctx.strokeStyle = "rgba(77, 61, 35, 0.52)";
+    ctx.lineWidth = Math.max(1, size * 0.13);
+    ctx.beginPath();
+    ctx.moveTo(0, height * 0.06);
+    ctx.lineTo(0, height * 0.42);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawTreeTriangle(ctx: CanvasContext, centerX: number, topY: number, width: number, height: number): void {
+    ctx.beginPath();
+    ctx.moveTo(centerX, topY);
+    ctx.lineTo(centerX - width * 0.5, topY + height);
+    ctx.lineTo(centerX + width * 0.5, topY + height);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function createBackgroundRandom(width: number, height: number): () => number {
+    let seed = (width * 73856093 ^ height * 19349663 ^ 0x6D2B79F5) >>> 0;
+    return () => {
+        seed = seed + 0x6D2B79F5 | 0;
+        let value = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        value ^= value + Math.imul(value ^ value >>> 7, 61 | value);
+        return ((value ^ value >>> 14) >>> 0) / 4294967296;
+    };
+}
+
+function rand(random: () => number, min: number, max: number): number {
+    return random() * (max - min) + min;
 }
 
 function drawDynamicMapLayer(
@@ -256,16 +613,16 @@ function drawGrid(ctx: CanvasContext, canvas: HTMLCanvasElement, gridLines: Segm
 
 function drawSpawnAreas(ctx: CanvasContext, canvas: HTMLCanvasElement, spawnAreas: SpawnAreaGeometry[]): void {
     ctx.save();
-    ctx.lineWidth = Math.max(1.5, deviceScale(canvas) * 1.5);
-    ctx.setLineDash([6 * deviceScale(canvas), 4 * deviceScale(canvas)]);
+    ctx.lineWidth = Math.max(2.25, deviceScale(canvas) * 2.25);
+    ctx.setLineDash([7 * deviceScale(canvas), 4 * deviceScale(canvas)]);
 
     for (const area of spawnAreas) {
         if (area.points.length === 0) {
             continue;
         }
 
-        ctx.fillStyle = withAlpha(area.color, "20");
-        ctx.strokeStyle = withAlpha(area.color, "CC");
+        ctx.fillStyle = withAlpha(area.color, "34");
+        ctx.strokeStyle = withAlpha(area.color, "F2");
         ctx.beginPath();
         ctx.moveTo(area.points[0].x, area.points[0].y);
         for (let i = 1; i < area.points.length; i++) {
@@ -450,9 +807,9 @@ function drawLandmark(
     }
 
     ctx.save();
-    ctx.lineWidth = Math.max(1.5, deviceScale(canvas) * 1.5);
-    ctx.strokeStyle = withAlpha(color, "EE");
-    ctx.fillStyle = withAlpha(color, kind === "Base" ? "44" : "55");
+    ctx.lineWidth = Math.max(2.25, deviceScale(canvas) * 2.25);
+    ctx.strokeStyle = withAlpha(color, "FF");
+    ctx.fillStyle = withAlpha(color, kind === "Base" ? "64" : "72");
 
     if (kind === "Base") {
         ctx.beginPath();
