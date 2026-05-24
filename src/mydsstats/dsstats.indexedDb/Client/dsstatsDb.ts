@@ -207,7 +207,14 @@ export async function exportUnuploadedReplays10(uploadRequest: UploadRequestDto,
                 .filter(requestName => requestName.toonId > 0)
                 .map(requestName => requestToonKey(requestName))
         );
-        const replays = selected.map((x) => createUploadReplay(x.replay, uploaderToonKeys));
+        const validSidecarHashes = new Set(
+            selected
+                .filter(entry => hasValidSpawnPlaybackSidecar(entry, false))
+                .map(entry => entry.hash)
+        );
+        const replays = selected.map((x) =>
+            createUploadReplay(x.replay, uploaderToonKeys, validSidecarHashes.has(x.hash))
+        );
 
         const request: UploadRequestDto = {
             ...plainUploadRequest,
@@ -306,25 +313,86 @@ function createSpawnPlaybackExports(
 ): SpawnPlaybackExportDto[] {
     const sidecars: SpawnPlaybackExportDto[] = [];
     for (const entry of selected) {
-        const info = entry.replay.spawnPlayback;
-        const payload = entry.spawnPlayback;
-        if (!info?.available || !payload || payload.length === 0) {
+        if (!hasValidSpawnPlaybackSidecar(entry)) {
             continue;
         }
+
+        const info = entry.replay.spawnPlayback;
+        const payload = entry.spawnPlayback!;
 
         sidecars.push({
             replayHash: entry.hash,
             partName: `sidecar-${sidecars.length}`,
             payload,
-            formatVersion: info.formatVersion,
-            compression: info.compression ?? 1,
-            compressedLength: info.compressedLength,
-            uncompressedLength: info.uncompressedLength,
-            unitCount: info.unitCount,
+            formatVersion: info!.formatVersion,
+            compression: info!.compression ?? 1,
+            compressedLength: info!.compressedLength,
+            uncompressedLength: info!.uncompressedLength,
+            unitCount: info!.unitCount,
         });
     }
 
     return sidecars;
+}
+
+function hasValidSpawnPlaybackSidecar(
+    entry: { hash: string; replay: ReplayDto; spawnPlayback?: Uint8Array },
+    warn: boolean = true
+): boolean {
+    const info = entry.replay.spawnPlayback;
+    const payload = entry.spawnPlayback;
+    if (!info?.available) {
+        return false;
+    }
+
+    if (!payload || payload.length === 0) {
+        if (warn) {
+            warnSkippedSpawnPlaybackSidecar(entry, "missing payload");
+        }
+        return false;
+    }
+
+    if (info.compressedLength !== payload.length) {
+        if (warn) {
+            warnSkippedSpawnPlaybackSidecar(
+                entry,
+                `metadata length ${info.compressedLength} does not match payload length ${payload.length}`
+            );
+        }
+        return false;
+    }
+
+    if (info.formatVersion <= 0
+        || info.compressedLength <= 0
+        || info.uncompressedLength <= 0
+        || info.unitCount <= 0) {
+        if (warn) {
+            warnSkippedSpawnPlaybackSidecar(entry, "invalid metadata");
+        }
+        return false;
+    }
+
+    return true;
+}
+
+function warnSkippedSpawnPlaybackSidecar(
+    entry: { hash: string; replay: ReplayDto; spawnPlayback?: Uint8Array },
+    reason: string
+): void {
+    const info = entry.replay.spawnPlayback;
+    const payloadLength = entry.spawnPlayback?.length ?? 0;
+    console.warn(
+        `Skipping spawn playback sidecar for ${entry.hash}: ${reason}. ` +
+        `fileName=${entry.replay.fileName || "missing"}, ` +
+        `title=${entry.replay.title || "missing"}, ` +
+        `available=${info?.available ?? false}, ` +
+        `compression=${info?.compression ?? "missing"}, ` +
+        `formatVersion=${info?.formatVersion ?? "missing"}, ` +
+        `compressedLength=${info?.compressedLength ?? "missing"}, ` +
+        `payloadLength=${payloadLength}, ` +
+        `uncompressedLength=${info?.uncompressedLength ?? "missing"}, ` +
+        `unitCount=${info?.unitCount ?? "missing"}.`
+    );
 }
 
 async function prepareSpawnPlaybackPayload(replay: ReplayDto, payload: Uint8Array | undefined): Promise<Uint8Array | undefined> {
@@ -1020,7 +1088,11 @@ function requestToonKey(requestName: RequestNames): string {
     return `${requestName.regionId}:${requestName.realmId}:${requestName.toonId}`;
 }
 
-function createUploadReplay(replay: ReplayDto, uploaderToonKeys: Set<string>): ReplayDto {
+function createUploadReplay(
+    replay: ReplayDto,
+    uploaderToonKeys: Set<string>,
+    includeSpawnPlayback: boolean = !!replay.spawnPlayback?.available
+): ReplayDto {
     const uploadReplay = JSON.parse(JSON.stringify(replay)) as ReplayDto;
 
     for (const replayPlayer of uploadReplay.players) {
@@ -1028,6 +1100,10 @@ function createUploadReplay(replay: ReplayDto, uploaderToonKeys: Set<string>): R
         if (playerToonId && uploaderToonKeys.has(toonKey(playerToonId))) {
             replayPlayer.isUploader = true;
         }
+    }
+
+    if (!includeSpawnPlayback) {
+        uploadReplay.spawnPlayback = undefined;
     }
 
     return uploadReplay;

@@ -1,5 +1,6 @@
 using dsstats.shared;
 using dsstats.shared.Upload;
+using Microsoft.Extensions.Logging;
 
 namespace dsstats.dbServices;
 
@@ -39,7 +40,7 @@ public partial class ImportService
         };
     }
 
-    private static async Task<PreparedReplayImports> PrepareReplayImportsWithSidecars(
+    private async Task<PreparedReplayImports> PrepareReplayImportsWithSidecars(
         UploadRequestDto request,
         IReadOnlyList<SpawnPlaybackUploadManifestEntryDto> manifestEntries,
         IReadOnlyDictionary<string, SpawnPlaybackUploadPayload> payloadsByPartName,
@@ -48,15 +49,19 @@ public partial class ImportService
         var entriesByReplayHash = new Dictionary<string, SpawnPlaybackUploadManifestEntryDto>(StringComparer.Ordinal);
         foreach (var entry in manifestEntries)
         {
-            var error = ValidateManifestEntry(entry);
-            if (error is not null)
+            if (!IsPotentialManifestEntry(entry))
             {
-                return PreparedReplayImports.Failed(error);
+                LogSkippedManifestEntry(entry, payloadLength: null, "Invalid sidecar manifest.");
+                continue;
             }
 
-            if (!entriesByReplayHash.TryAdd(entry.ReplayHash, entry))
+            if (!entriesByReplayHash.ContainsKey(entry.ReplayHash))
             {
-                return PreparedReplayImports.Failed("Duplicate sidecar manifest entry.");
+                entriesByReplayHash.Add(entry.ReplayHash, entry);
+            }
+            else
+            {
+                LogSkippedManifestEntry(entry, payloadLength: null, "Duplicate sidecar manifest entry.");
             }
         }
 
@@ -70,15 +75,27 @@ public partial class ImportService
             SpawnPlaybackEncodedSidecar? sidecar = null;
             if (entriesByReplayHash.Remove(replayHash, out var entry))
             {
+                var error = ValidateManifestEntry(entry);
+                if (error is not null)
+                {
+                    LogSkippedSidecar(replay, replayHash, entry, payloadLength: null, error);
+                    imports.Add(new(replay, null));
+                    continue;
+                }
+
                 if (!payloadsByPartName.TryGetValue(entry.PartName, out var payload))
                 {
-                    return PreparedReplayImports.Failed("Missing sidecar payload.");
+                    LogSkippedSidecar(replay, replayHash, entry, payloadLength: null, "Missing sidecar payload.");
+                    imports.Add(new(replay, null));
+                    continue;
                 }
 
                 var payloadBytes = await ReadSidecarPayload(entry, payload, token);
                 if (!payloadBytes.Success)
                 {
-                    return PreparedReplayImports.Failed(payloadBytes.Error!);
+                    LogSkippedSidecar(replay, replayHash, entry, payload.Length, payloadBytes.Error!);
+                    imports.Add(new(replay, null));
+                    continue;
                 }
 
                 sidecar = new(
@@ -102,9 +119,13 @@ public partial class ImportService
             imports.Add(new(replay, sidecar));
         }
 
-        if (entriesByReplayHash.Count > 0)
+        foreach (var orphan in entriesByReplayHash.Values)
         {
-            return PreparedReplayImports.Failed("Sidecar manifest contains a replay hash that is not in the upload request.");
+            payloadsByPartName.TryGetValue(orphan.PartName, out var payload);
+            LogSkippedManifestEntry(
+                orphan,
+                payload?.Length,
+                "Replay is not in the upload request.");
         }
 
         return new()
@@ -115,10 +136,55 @@ public partial class ImportService
         };
     }
 
+    private void LogSkippedSidecar(
+        ReplayDto replay,
+        string replayHash,
+        SpawnPlaybackUploadManifestEntryDto entry,
+        long? payloadLength,
+        string reason)
+    {
+        logger.LogWarning(
+            "Skipping spawn playback sidecar for replay {ReplayHash}, file {FileName}, title {Title}, part {PartName}: {Reason} Compression={Compression}, FormatVersion={FormatVersion}, ManifestCompressedLength={CompressedLength}, PayloadLength={PayloadLength}, UncompressedLength={UncompressedLength}, UnitCount={UnitCount}",
+            replayHash,
+            replay.FileName,
+            replay.Title,
+            entry.PartName,
+            reason,
+            entry.Compression,
+            entry.FormatVersion,
+            entry.CompressedLength,
+            payloadLength,
+            entry.UncompressedLength,
+            entry.UnitCount);
+    }
+
+    private void LogSkippedManifestEntry(
+        SpawnPlaybackUploadManifestEntryDto entry,
+        long? payloadLength,
+        string reason)
+    {
+        logger.LogWarning(
+            "Skipping spawn playback sidecar manifest entry for replay {ReplayHash}, part {PartName}: {Reason} Compression={Compression}, FormatVersion={FormatVersion}, ManifestCompressedLength={CompressedLength}, PayloadLength={PayloadLength}, UncompressedLength={UncompressedLength}, UnitCount={UnitCount}",
+            entry.ReplayHash,
+            entry.PartName,
+            reason,
+            entry.Compression,
+            entry.FormatVersion,
+            entry.CompressedLength,
+            payloadLength,
+            entry.UncompressedLength,
+            entry.UnitCount);
+    }
+
+    private static bool IsPotentialManifestEntry(SpawnPlaybackUploadManifestEntryDto entry)
+    {
+        return !string.IsNullOrWhiteSpace(entry.ReplayHash)
+            && !string.IsNullOrWhiteSpace(entry.PartName);
+    }
+
     private static string? ValidateManifestEntry(SpawnPlaybackUploadManifestEntryDto entry)
     {
-        if (string.IsNullOrWhiteSpace(entry.ReplayHash)
-            || string.IsNullOrWhiteSpace(entry.PartName))
+        if (!IsPotentialManifestEntry(entry))
         {
             return "Invalid sidecar manifest.";
         }

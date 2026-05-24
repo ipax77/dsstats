@@ -249,7 +249,7 @@ public sealed class SpawnPlaybackImportServiceTests
     }
 
     [TestMethod]
-    public async Task InsertReplayImportsWithSidecars_MismatchedLength_ReturnsError()
+    public async Task InsertReplayImportsWithSidecars_MismatchedLength_ImportsReplayWithoutSidecar()
     {
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
@@ -264,8 +264,12 @@ public sealed class SpawnPlaybackImportServiceTests
                 [manifest],
                 CreatePayloads(sidecar));
 
-            Assert.IsFalse(result.Success);
-            Assert.AreEqual("Sidecar compressed length does not match payload length.", result.Error);
+            Assert.IsTrue(result.Success, result.Error);
+
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            Assert.AreEqual(1, await context.Replays.CountAsync());
+            Assert.AreEqual(0, await context.ReplaySpawnPlaybacks.CountAsync());
         }
         finally
         {
@@ -274,7 +278,7 @@ public sealed class SpawnPlaybackImportServiceTests
     }
 
     [TestMethod]
-    public async Task InsertReplayImportsWithSidecars_UnsupportedCompression_ReturnsError()
+    public async Task InsertReplayImportsWithSidecars_UnsupportedCompression_ImportsReplayWithoutSidecar()
     {
         using var serviceProvider = BuildServiceProvider(out var connection);
         try
@@ -289,8 +293,12 @@ public sealed class SpawnPlaybackImportServiceTests
                 [manifest],
                 CreatePayloads(sidecar));
 
-            Assert.IsFalse(result.Success);
-            Assert.AreEqual("Invalid sidecar metadata.", result.Error);
+            Assert.IsTrue(result.Success, result.Error);
+
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            Assert.AreEqual(1, await context.Replays.CountAsync());
+            Assert.AreEqual(0, await context.ReplaySpawnPlaybacks.CountAsync());
         }
         finally
         {

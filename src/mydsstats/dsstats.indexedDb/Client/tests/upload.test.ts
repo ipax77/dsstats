@@ -210,6 +210,55 @@ describe("dsstats IndexedDb Upload Flow", () => {
         expect(exported.sidecars.map(sidecar => Array.from(sidecar.payload))).toEqual([[3, 4, 5], [2, 3, 4]]);
     });
 
+    it("should skip malformed sidecars without blocking replay upload exports", async () => {
+        const replay = getTestReplay();
+        const meta = getTestReplayMeta(replay);
+        const sidecar = new Uint8Array([9, 8, 7]);
+        meta.uploaded = 0;
+        replay.spawnPlayback = {
+            available: true,
+            formatVersion: 3,
+            compression: 2,
+            compressedLength: sidecar.length,
+            uncompressedLength: 8,
+            unitCount: 0,
+        };
+
+        await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta, sidecar);
+
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+        let exported;
+        let warning = "";
+        try {
+            exported = await exportUnuploadedReplays10({
+                appGuid: "test-app",
+                appVersion: "1.0.0",
+                requestNames: [],
+                replays: []
+            });
+            expect(warnSpy).toHaveBeenCalledOnce();
+            warning = warnSpy.mock.calls[0][0] as string;
+        } finally {
+            warnSpy.mockRestore();
+        }
+        const uploadRequest = JSON.parse(new TextDecoder().decode(exported.payload));
+
+        expect(exported.hashes).toEqual([replay.compatHash]);
+        expect(exported.sidecars).toEqual([]);
+        expect(uploadRequest.replays[0].compatHash).toBe(replay.compatHash);
+        expect(uploadRequest.replays[0].spawnPlayback).toBeUndefined();
+        expect(warning).toContain(`Skipping spawn playback sidecar for ${replay.compatHash}: invalid metadata.`);
+        expect(warning).toContain(`fileName=${replay.fileName}`);
+        expect(warning).toContain(`title=${replay.title}`);
+        expect(warning).toContain("available=true");
+        expect(warning).toContain("compression=2");
+        expect(warning).toContain("formatVersion=3");
+        expect(warning).toContain("compressedLength=3");
+        expect(warning).toContain("payloadLength=3");
+        expect(warning).toContain("uncompressedLength=8");
+        expect(warning).toContain("unitCount=0");
+    });
+
     it("should not export uploaded replays", async () => {
         const replay = getTestReplay();
         const meta = getTestReplayMeta(replay);

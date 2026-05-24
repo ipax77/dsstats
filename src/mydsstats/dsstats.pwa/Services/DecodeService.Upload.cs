@@ -49,7 +49,7 @@ public partial class DecodeService
                 using var response = exportResult.Sidecars.Count > 0
                     ? await PostSpawnPlaybackBatch(httpClient, exportResult)
                     : await PostReplayBatch(httpClient, exportResult);
-                response.EnsureSuccessStatusCode();
+                await EnsureUploadSuccess(response);
                 logger.LogInformation("Upload Successful");
 
                 var uploadedHashes = await GetUploadedHashes(response, exportResult);
@@ -142,9 +142,21 @@ public partial class DecodeService
             stream,
             JsonSerializerOptions.Web);
 
-        return result?.ReplayHashes.Count > 0
-            ? result.ReplayHashes
-            : exportResult.Hashes;
+        return result?.ReplayHashes.Count > 0 ? result.ReplayHashes : [];
+    }
+
+    private static async Task EnsureUploadSuccess(HttpResponseMessage response)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var body = await response.Content.ReadAsStringAsync();
+        var message = string.IsNullOrWhiteSpace(body)
+            ? $"Upload failed with {(int)response.StatusCode} {response.ReasonPhrase}."
+            : $"Upload failed with {(int)response.StatusCode} {response.ReasonPhrase}: {body}";
+        throw new HttpRequestException(message, null, response.StatusCode);
     }
 
     private static async Task<List<RequestNames>> GetUploadRequestNames(IndexedDbService dbService)
