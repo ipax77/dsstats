@@ -1072,6 +1072,39 @@ namespace dsstats.migrations.postgresql.Migrations
                     b.ToTable("ReplayRatings");
                 });
 
+            modelBuilder.Entity("dsstats.db.ReplaySpawnPlayback", b =>
+                {
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CompressedLength")
+                        .HasColumnType("integer");
+
+                    b.Property<byte>("Compression")
+                        .HasColumnType("smallint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("timestamp(0) with time zone");
+
+                    b.Property<int>("FormatVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<byte[]>("Payload")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<int>("UncompressedLength")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UnitCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ReplayId");
+
+                    b.ToTable("ReplaySpawnPlaybacks");
+                });
+
             modelBuilder.Entity("dsstats.db.ReplayTeamBuildDetail", b =>
                 {
                     b.Property<int>("ReplayTeamBuildDetailId")
@@ -1142,6 +1175,71 @@ namespace dsstats.migrations.postgresql.Migrations
                     b.HasIndex("FinishedAt");
 
                     b.ToTable("ReplayUploadJobs");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingCollect", b =>
+                {
+                    b.Property<int>("ReplayUserRatingCollectId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayUserRatingCollectId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("timestamp(0) with time zone");
+
+                    b.Property<string>("IpHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("timestamp(0) with time zone");
+
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ReplayUserRatingCollectId");
+
+                    b.HasIndex("ProcessedAt", "ReplayId");
+
+                    b.HasIndex("ReplayId", "IpHash", "CreatedAt");
+
+                    b.ToTable("ReplayUserRatingCollects");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingSummary", b =>
+                {
+                    b.Property<int>("ReplayUserRatingSummaryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReplayUserRatingSummaryId"));
+
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ScoreSum")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("timestamp(0) with time zone");
+
+                    b.Property<int>("VoteCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ReplayUserRatingSummaryId");
+
+                    b.HasIndex("ReplayId")
+                        .IsUnique();
+
+                    b.ToTable("ReplayUserRatingSummaries");
                 });
 
             modelBuilder.Entity("dsstats.db.Sc2Profile", b =>
@@ -1225,7 +1323,6 @@ namespace dsstats.migrations.postgresql.Migrations
                         .HasColumnType("integer");
 
                     b.PrimitiveCollection<int[]>("Positions")
-                        .IsRequired()
                         .HasColumnType("integer[]");
 
                     b.Property<int>("SpawnId")
@@ -1848,6 +1945,17 @@ namespace dsstats.migrations.postgresql.Migrations
                     b.Navigation("Replay");
                 });
 
+            modelBuilder.Entity("dsstats.db.ReplaySpawnPlayback", b =>
+                {
+                    b.HasOne("dsstats.db.Replay", "Replay")
+                        .WithOne("SpawnPlayback")
+                        .HasForeignKey("dsstats.db.ReplaySpawnPlayback", "ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
+                });
+
             modelBuilder.Entity("dsstats.db.ReplayTeamBuildDetail", b =>
                 {
                     b.HasOne("dsstats.db.ReplayPlayer", "FollowerReplayPlayer")
@@ -1873,6 +1981,28 @@ namespace dsstats.migrations.postgresql.Migrations
                     b.Navigation("LeaderReplayPlayer");
 
                     b.Navigation("ReplayBuildDetail");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingCollect", b =>
+                {
+                    b.HasOne("dsstats.db.Replay", "Replay")
+                        .WithMany()
+                        .HasForeignKey("ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingSummary", b =>
+                {
+                    b.HasOne("dsstats.db.Replay", "Replay")
+                        .WithMany()
+                        .HasForeignKey("ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
                 });
 
             modelBuilder.Entity("dsstats.db.Sc2Profile", b =>
@@ -2010,6 +2140,8 @@ namespace dsstats.migrations.postgresql.Migrations
                     b.Navigation("Players");
 
                     b.Navigation("Ratings");
+
+                    b.Navigation("SpawnPlayback");
                 });
 
             modelBuilder.Entity("dsstats.db.ReplayBuildDetail", b =>

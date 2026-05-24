@@ -33,7 +33,7 @@ public partial class DecodeClient : IAsyncDisposable
     /// promise stays alive until the worker finishes, then resolves silently —
     /// the pool stays healthy.
     /// </summary>
-    public async Task<(bool Success, string? Error, string? Hash, ReplayDto? Replay)> DecodeAsync(
+    public async Task<(bool Success, string? Error, string? Hash, ReplayDto? Replay, SpawnPlaybackEncodedSidecar? SpawnPlayback, string? SpawnPlaybackError)> DecodeAsync(
         byte[] bytes, CancellationToken cancellationToken = default)
     {
         // byte[] cannot be marshaled directly in JSImport — encode as base64 string.
@@ -42,11 +42,57 @@ public partial class DecodeClient : IAsyncDisposable
         var json = await DecodeReplayJs(base64).WaitAsync(cancellationToken);
         var result = JsonSerializer.Deserialize(json, WorkerSerializerContext.Default.WorkerDecodeResult);
         if (result is null || !result.Success)
-            return (false, result?.Error ?? "null result from worker", null, null);
+            return (false, result?.Error ?? "null result from worker", null, null, null, null);
 
         var replay = JsonSerializer.Deserialize(result.ReplayJson!,
             WorkerSerializerContext.Default.ReplayDto);
-        return (true, null, result.Hash, replay);
+        var spawnPlayback = CreateSpawnPlayback(replay, result);
+        ApplySpawnPlaybackMetadata(replay, spawnPlayback);
+        return (true, null, result.Hash, replay, spawnPlayback, result.SpawnPlaybackError);
+    }
+
+    private static SpawnPlaybackEncodedSidecar? CreateSpawnPlayback(ReplayDto? replay, WorkerDecodeResult result)
+    {
+        if (replay is null || !SpawnPlaybackEligibility.IsEligible(replay.Players.Count, replay.Duration))
+        {
+            return null;
+        }
+        if (result.SpawnPlaybackPayload is not { Length: > 0 } payload)
+        {
+            return null;
+        }
+        if (result.SpawnPlaybackUnitCount <= 0)
+        {
+            return null;
+        }
+
+        return new(
+            payload,
+            result.SpawnPlaybackCompressedLength,
+            result.SpawnPlaybackUncompressedLength,
+            result.SpawnPlaybackUnitCount,
+            result.SpawnPlaybackFormatVersion,
+            result.SpawnPlaybackCompression);
+    }
+
+    private static void ApplySpawnPlaybackMetadata(ReplayDto? replay, SpawnPlaybackEncodedSidecar? spawnPlayback)
+    {
+        if (replay is null)
+        {
+            return;
+        }
+
+        replay.SpawnPlayback = spawnPlayback is null
+            ? null
+            : new()
+            {
+                Available = true,
+                FormatVersion = spawnPlayback.FormatVersion,
+                Compression = spawnPlayback.Compression,
+                CompressedLength = spawnPlayback.CompressedLength,
+                UncompressedLength = spawnPlayback.UncompressedLength,
+                UnitCount = spawnPlayback.UnitCount,
+            };
     }
 
     public TimeSpan ConsumeBrowserPause()

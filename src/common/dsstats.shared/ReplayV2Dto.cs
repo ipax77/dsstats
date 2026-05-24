@@ -115,7 +115,7 @@ public class ReplayV2Dto
                 Units = spawn.Units.Select(unit => new SpawnUnitV2Dto
                 {
                     Count = (byte)unit.Count,
-                    Poss = string.Join(",", unit.Positions),
+                    Poss = string.Join(",", unit.Positions ?? []),
                     Unit = new UnitV2Dto { Name = unit.Name }
                 }).ToList()
             }).ToList(),

@@ -4,9 +4,11 @@ using dsstats.pwa.Services;
 using dsstats.shared;
 using dsstats.shared.InHouse;
 using dsstats.shared.Interfaces;
+using dsstats.weblib.Replays;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.Configuration;
 using pax.BlazorChartJs;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -22,7 +24,8 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 
 builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
 
-var isProduction = builder.HostEnvironment.IsProduction();
+var isProduction = builder.Configuration.GetValue<bool?>("Dsstats:Pwa:IsProduction")
+    ?? builder.HostEnvironment.IsProduction();
 var inHouseHubBaseAddress = isProduction
     ? new Uri(builder.HostEnvironment.BaseAddress)
     : new Uri("http://localhost:5279");
@@ -69,6 +72,8 @@ builder.Services.AddSingleton<AppNotificationService>();
 builder.Services.AddSingleton<PwaConfigService>();
 builder.Services.AddSingleton<PwaUpdateService>();
 builder.Services.AddScoped<BackupService>();
+builder.Services.AddScoped<ISpawnPlaybackSidecarDecoder, BrowserSpawnPlaybackSidecarDecoder>();
+builder.Services.AddScoped<SpawnPlaybackSidecarCache>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<RatingService>();
 builder.Services.AddScoped<SessionProgressService>();

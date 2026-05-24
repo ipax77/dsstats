@@ -34,4 +34,5 @@ public class Replay
     public bool Uploaded { get; set; }
     public ICollection<ReplayPlayer> Players { get; set; } = [];
     public ICollection<ReplayRating> Ratings { get; set; } = [];
+    public ReplaySpawnPlayback? SpawnPlayback { get; set; }
 }

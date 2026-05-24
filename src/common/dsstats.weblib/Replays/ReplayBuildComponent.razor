@@ -1,6 +1,8 @@
 @using Microsoft.JSInterop
 @using dsstats.shared
+@using dsstats.shared.Interfaces
 @using dsstats.shared.Units
+@inject IReplayRepository ReplayRepository
 
 <div class="card bgchart w-auto">
     <div class="card-header bgchart2 rounded">
@@ -12,7 +14,7 @@
             <div>
                 <button class="btn btn-sm btn-outline-light bgchart" type="button" data-bs-toggle="collapse"
                         data-bs-target="@($"#Player{Player.GamePos}Map")" aria-expanded="false"
-                        aria-controls="@($"Player{Player.GamePos}Map")" @onclick="e => showMap = !showMap">
+                        aria-controls="@($"Player{Player.GamePos}Map")" @onclick="ToggleMap">
                     <span class="oi @(showMap ? "bi-chevron-down" : "bi-chevron-up")"></span>
                     Map
                 </button>
@@ -123,6 +125,17 @@
             return;
         }
         await buildChart.HighlightUnits(name);
+    }
+
+    private async Task ToggleMap()
+    {
+        showMap = !showMap;
+        if (showMap)
+        {
+            await ReplayHelper.EnsureSpawnPositionsAsync(ReplayRepository);
+            ComputeDisplayInfo();
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     public void Update()

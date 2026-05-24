@@ -3,6 +3,7 @@ using dsstats.shared.InHouse;
 using s2protocol.NET;
 using s2protocol.NET.Models;
 using ExternalDirectStrikeObserver = Sc2DirectStrike.Parser.DirectStrikeObserver;
+using ExternalDirectStrikeReplay = Sc2DirectStrike.Parser.DirectStrikeReplay;
 using ExternalBreakpoint = Sc2DirectStrike.Parser.Breakpoint;
 using ExternalCommander = Sc2DirectStrike.Parser.Commander;
 using ExternalGameMode = Sc2DirectStrike.Parser.GameMode;
@@ -55,12 +56,55 @@ public static class DsstatsParser
         return dto;
     }
 
+    public static ReplayImportDto ParseReplayImport(
+        Sc2Replay replay,
+        bool compat = true,
+        bool tolerateSpawnPlaybackErrors = true,
+        Action<Exception>? onSpawnPlaybackError = null,
+        Func<SpawnPlaybackSidecarDto, SpawnPlaybackEncodedSidecar>? spawnPlaybackEncoder = null)
+    {
+        ArgumentNullException.ThrowIfNull(replay);
+
+        ExternalDirectStrikeReplay directStrikeReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.Parse(replay);
+        ExternalReplayDto externalReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.ParseDto(replay, directStrikeReplay);
+        ReplayDto dto = externalReplay.ToDsstatsDto();
+        SetMvp(dto);
+
+        SpawnPlaybackEncodedSidecar? encodedSidecar = null;
+        try
+        {
+            var sidecar = SpawnPlaybackSidecarFactory.Create(replay, directStrikeReplay);
+            if (sidecar is not null)
+            {
+                Func<SpawnPlaybackSidecarDto, SpawnPlaybackEncodedSidecar> encoder =
+                    spawnPlaybackEncoder ?? (sidecarDto => SpawnPlaybackSidecarCodec.EncodeWithMetadata(sidecarDto));
+                encodedSidecar = encoder(sidecar);
+                ApplySpawnPlaybackMetadata(dto, encodedSidecar);
+            }
+        }
+        catch (Exception ex) when (tolerateSpawnPlaybackErrors)
+        {
+            onSpawnPlaybackError?.Invoke(ex);
+            encodedSidecar = null;
+            dto.SpawnPlayback = null;
+        }
+
+        return new(dto, encodedSidecar);
+    }
+
+    public static ExternalDirectStrikeReplay ParseDirectStrikeReplay(Sc2Replay replay)
+    {
+        ArgumentNullException.ThrowIfNull(replay);
+
+        return Sc2DirectStrike.Parser.Sc2DirectStrikeParser.Parse(replay);
+    }
+
     public static InHouseParsedReplayDto ParseInHouseReplay(Sc2Replay replay)
     {
         ArgumentNullException.ThrowIfNull(replay);
 
         var directStrikeReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.Parse(replay);
-        var dto = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.ParseDto(replay).ToDsstatsDto();
+        var dto = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.ParseDto(replay, directStrikeReplay).ToDsstatsDto();
         SetMvp(dto);
 
         return new()
@@ -151,6 +195,19 @@ public static class DsstatsParser
         return new()
         {
             Players = players
+        };
+    }
+
+    private static void ApplySpawnPlaybackMetadata(ReplayDto replay, SpawnPlaybackEncodedSidecar sidecar)
+    {
+        replay.SpawnPlayback = new()
+        {
+            Available = true,
+            FormatVersion = sidecar.FormatVersion,
+            Compression = sidecar.Compression,
+            CompressedLength = sidecar.CompressedLength,
+            UncompressedLength = sidecar.UncompressedLength,
+            UnitCount = sidecar.UnitCount,
         };
     }
 

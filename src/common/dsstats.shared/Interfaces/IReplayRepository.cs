@@ -3,6 +3,8 @@
 public interface IReplayRepository
 {
     Task<ReplayDetails?> GetReplayDetails(string replayHash);
+    Task<byte[]?> GetReplaySpawnPlayback(string replayHash, CancellationToken token = default);
+    Task<ReplaySpawnPositionsDto?> GetReplaySpawnPositions(string replayHash, CancellationToken token = default);
     Task<ReplayRatingDto?> GetReplayRating(string replayHash);
     Task SaveReplayRatingAll(string replayHash, ReplayRatingDto rating);
     Task<ReplayDetails?> GetLatestReplay();

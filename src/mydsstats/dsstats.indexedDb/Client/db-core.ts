@@ -1,7 +1,7 @@
 import { Dump, Migration } from "./migration.js";
 
 export const DB_NAME = "ReplayDB";
-export const DB_VERSION = 8;
+export const DB_VERSION = 9;
 
 export const STORES = {
     replays: "Replays",
@@ -10,6 +10,7 @@ export const STORES = {
     config: "Config",
     directoryHandles: "DirectoryHandles",
     ratings: "ReplayRatings",
+    spawnPlayback: "ReplaySpawnPlayback",
 };
 
 let db: IDBDatabase | null = null;
@@ -272,6 +273,14 @@ const migration7: Migration = {
   },
 };
 
+const migration8: Migration = {
+  schema: (db) => {
+    if (!db.objectStoreNames.contains(STORES.spawnPlayback)) {
+      db.createObjectStore(STORES.spawnPlayback, { keyPath: "replayHash" });
+    }
+  },
+};
+
 const upgrades: Record<number, Migration> = {
   0: migration0, // initial schema
   1: migration1, // uploaded boolean → number (dump/restore path only)
@@ -281,6 +290,7 @@ const upgrades: Record<number, Migration> = {
   5: migration5, // new ReplayRatings store
   6: migration6, // add directory fingerprints
   7: migration7, // replay list query indexes and filter projections
+  8: migration8, // compressed spawn playback sidecars
 };
 
 function backfillReplayListProjections(listsStore: IDBObjectStore, replaysStore: IDBObjectStore): void {

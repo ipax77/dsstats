@@ -71,11 +71,11 @@ public class ReplayProcessingService(
             var sc2Replay = await replayDecoder.DecodeAsync(job.BlobFilePath, replayDecoderOptions, token);
             ArgumentNullException.ThrowIfNull(sc2Replay, "decoding replay failed.");
 
-            var replay = DsstatsParser.ParseReplay(sc2Replay);
-            ArgumentNullException.ThrowIfNull(replay, "parsing replay failed.");
+            var replayImport = DsstatsParser.ParseReplayImport(sc2Replay, tolerateSpawnPlaybackErrors: false);
+            var replay = replayImport.Replay;
 
             // 2. Insert into DB
-            await importService.InsertReplays([replay]);
+            await importService.InsertReplayImports([replayImport]);
 
             // 3. Update job metadata
             var dbJob = await context.ReplayUploadJobs.FindAsync(job.ReplayUploadJobId, token);

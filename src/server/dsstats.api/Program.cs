@@ -77,6 +77,15 @@ builder.Services.AddRateLimiter(options =>
         options.QueueLimit = 0;
     });
 
+    options.AddPolicy("replay-user-rating", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(GetClientPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        }));
+
     options.AddPolicy("inhouse-device-link-attempt", httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(GetClientPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
         {
@@ -99,6 +108,8 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddDbConfig(builder.Configuration);
 builder.Services.AddUploadChannels();
 builder.Services.Configure<InHouseAuthOptions>(builder.Configuration.GetSection(InHouseAuthOptions.SectionName));
+builder.Services.AddOptions<ReplayUserRatingOptions>()
+    .Bind(builder.Configuration.GetSection("ReplayUserRating"));
 
 if (builder.Environment.IsProduction())
 {
@@ -142,6 +153,7 @@ builder.Services.AddSingleton<ArcadeJobService>();
 builder.Services.AddSingleton<IImportService, ImportService>();
 builder.Services.AddSingleton<IRatingService, RatingService>();
 builder.Services.AddSingleton<IPickBanService, PickBanService>();
+builder.Services.AddSingleton<ReplayUserRatingService>();
 builder.Services.AddSingleton<InHouseConnectionTracker>();
 builder.Services.AddSingleton<IInHouseAccountNotifier, InHouseAccountNotifier>();
 builder.Services.AddSingleton<IInHouseGameSessionService, InHouseGameSessionService>();

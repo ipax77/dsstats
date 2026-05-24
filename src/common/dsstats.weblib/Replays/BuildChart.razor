@@ -51,11 +51,11 @@
 
         foreach (var unit in spawn.Units)
         {
-            if (unit.Positions.Count > 0)
+            if (unit.Positions is { Count: > 0 } positions)
             {
-                for (int i = 0; i < unit.Positions.Count; i += 2)
+                for (int i = 0; i < positions.Count; i += 2)
                 {
-                    Point point = new(unit.Positions[i], unit.Positions[i + 1]);
+                    Point point = new(positions[i], positions[i + 1]);
                     (var x, var y) = GetRotatedPoint(point, team);
                     units.Add(new(unit.Name, x, y));
                 }

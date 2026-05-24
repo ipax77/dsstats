@@ -1072,6 +1072,39 @@ namespace dsstats.migrations.mysql.Migrations
                     b.ToTable("ReplayRatings");
                 });
 
+            modelBuilder.Entity("dsstats.db.ReplaySpawnPlayback", b =>
+                {
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompressedLength")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("Compression")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<ushort>("FormatVersion")
+                        .HasColumnType("smallint unsigned");
+
+                    b.Property<byte[]>("Payload")
+                        .IsRequired()
+                        .HasColumnType("longblob");
+
+                    b.Property<int>("UncompressedLength")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UnitCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReplayId");
+
+                    b.ToTable("ReplaySpawnPlaybacks");
+                });
+
             modelBuilder.Entity("dsstats.db.ReplayTeamBuildDetail", b =>
                 {
                     b.Property<int>("ReplayTeamBuildDetailId")
@@ -1142,6 +1175,71 @@ namespace dsstats.migrations.mysql.Migrations
                     b.HasIndex("FinishedAt");
 
                     b.ToTable("ReplayUploadJobs");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingCollect", b =>
+                {
+                    b.Property<int>("ReplayUserRatingCollectId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayUserRatingCollectId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<string>("IpHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReplayUserRatingCollectId");
+
+                    b.HasIndex("ProcessedAt", "ReplayId");
+
+                    b.HasIndex("ReplayId", "IpHash", "CreatedAt");
+
+                    b.ToTable("ReplayUserRatingCollects");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingSummary", b =>
+                {
+                    b.Property<int>("ReplayUserRatingSummaryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("ReplayUserRatingSummaryId"));
+
+                    b.Property<int>("ReplayId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ScoreSum")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasPrecision(0)
+                        .HasColumnType("datetime(0)");
+
+                    b.Property<int>("VoteCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReplayUserRatingSummaryId");
+
+                    b.HasIndex("ReplayId")
+                        .IsUnique();
+
+                    b.ToTable("ReplayUserRatingSummaries");
                 });
 
             modelBuilder.Entity("dsstats.db.Sc2Profile", b =>
@@ -1225,7 +1323,6 @@ namespace dsstats.migrations.mysql.Migrations
                         .HasColumnType("int");
 
                     b.PrimitiveCollection<string>("Positions")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<int>("SpawnId")
@@ -1848,6 +1945,17 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Navigation("Replay");
                 });
 
+            modelBuilder.Entity("dsstats.db.ReplaySpawnPlayback", b =>
+                {
+                    b.HasOne("dsstats.db.Replay", "Replay")
+                        .WithOne("SpawnPlayback")
+                        .HasForeignKey("dsstats.db.ReplaySpawnPlayback", "ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
+                });
+
             modelBuilder.Entity("dsstats.db.ReplayTeamBuildDetail", b =>
                 {
                     b.HasOne("dsstats.db.ReplayPlayer", "FollowerReplayPlayer")
@@ -1873,6 +1981,28 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Navigation("LeaderReplayPlayer");
 
                     b.Navigation("ReplayBuildDetail");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingCollect", b =>
+                {
+                    b.HasOne("dsstats.db.Replay", "Replay")
+                        .WithMany()
+                        .HasForeignKey("ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
+                });
+
+            modelBuilder.Entity("dsstats.db.ReplayUserRatingSummary", b =>
+                {
+                    b.HasOne("dsstats.db.Replay", "Replay")
+                        .WithMany()
+                        .HasForeignKey("ReplayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Replay");
                 });
 
             modelBuilder.Entity("dsstats.db.Sc2Profile", b =>
@@ -2010,6 +2140,8 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Navigation("Players");
 
                     b.Navigation("Ratings");
+
+                    b.Navigation("SpawnPlayback");
                 });
 
             modelBuilder.Entity("dsstats.db.ReplayBuildDetail", b =>

@@ -94,6 +94,18 @@ export interface ExportedReplays {
 export interface ExportResult {
     hashes: string[];
     payload: Uint8Array;
+    sidecars: SpawnPlaybackExportDto[];
+}
+
+export interface SpawnPlaybackExportDto {
+    replayHash: string;
+    partName: string;
+    payload: Uint8Array;
+    formatVersion: number;
+    compression: number;
+    compressedLength: number;
+    uncompressedLength: number;
+    unitCount: number;
 }
 
 export interface UploadRequestDto {
@@ -135,6 +147,16 @@ export interface ReplayDto {
     winnerTeam: number;
     middleChanges: number[];
     players: ReplayPlayerDto[];
+    spawnPlayback?: SpawnPlaybackInfoDto;
+}
+
+export interface SpawnPlaybackInfoDto {
+    available: boolean;
+    formatVersion: number;
+    compression: number;
+    compressedLength: number;
+    uncompressedLength: number;
+    unitCount: number;
 }
 
 export interface ReplayPlayerDto {

@@ -1,0 +1,15 @@
+{
+  "name": "dsstats-play-spawn-playback",
+  "private": true,
+  "scripts": {
+    "bundle": "esbuild ./TypeScript/index.ts --bundle --format=esm --target=es2022 --outfile=wwwroot/spawnPlayback.js",
+    "build": "npm run bundle",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.11",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.4"
+  }
+}

@@ -5,7 +5,7 @@ namespace dsstats.db;
 
 public static class ReplayDtoMapper
 {
-    public static Replay ToEntity(this ReplayDto dto)
+    public static Replay ToEntity(this ReplayDto dto, bool stripSpawnUnitPositions = false)
     {
         var replay = new Replay
         {
@@ -23,7 +23,7 @@ public static class ReplayDtoMapper
             Bunker = dto.Bunker,
             WinnerTeam = dto.WinnerTeam,
             MiddleChanges = dto.MiddleChanges.ToArray(),
-            Players = dto.Players.Select(p => p.ToEntity(dto)).ToList(),
+            Players = dto.Players.Select(p => p.ToEntity(dto, stripSpawnUnitPositions)).ToList(),
             Imported = DateTime.UtcNow,
 
             ReplayHash = dto.ComputeHash(),
@@ -39,7 +39,7 @@ public static class ReplayDtoMapper
         return replay;
     }
 
-    public static ReplayPlayer ToEntity(this ReplayPlayerDto dto, ReplayDto replay)
+    public static ReplayPlayer ToEntity(this ReplayPlayerDto dto, ReplayDto replay, bool stripSpawnUnitPositions = false)
     {
         Commander race = dto.Race;
         if (Data.IsCommanderGameMode(replay.GameMode) && (int)dto.Race <= 3)
@@ -64,7 +64,7 @@ public static class ReplayDtoMapper
             Pings = dto.Pings,
             IsMvp = dto.IsMvp,
             IsUploader = dto.IsUploader,
-            Spawns = dto.Spawns.Select(s => s.ToEntity()).ToList(),
+            Spawns = dto.Spawns.Select(s => s.ToEntity(stripSpawnUnitPositions)).ToList(),
             TierUpgrades = dto.TierUpgrades.ToArray(),
             Refineries = dto.Refineries.ToArray(),
             Upgrades = dto.Upgrades.Select(s => new PlayerUpgrade()
@@ -112,7 +112,7 @@ public static class ReplayDtoMapper
         };
     }
 
-    public static Spawn ToEntity(this SpawnDto dto)
+    public static Spawn ToEntity(this SpawnDto dto, bool stripSpawnUnitPositions = false)
     {
         return new()
         {
@@ -125,7 +125,7 @@ public static class ReplayDtoMapper
             Units = dto.Units.Select(s => new SpawnUnit()
             {
                 Count = s.Count,
-                Positions = s.Positions.ToArray(),
+                Positions = stripSpawnUnitPositions ? null : s.Positions?.ToArray(),
                 Unit = new() { Name = s.Name }
             }).ToList()
         };
@@ -210,7 +210,7 @@ public static class ReplayDtoMapper
             Units = spawn.Units.Select(u => new UnitDto()
             {
                 Count = u.Count,
-                Positions = u.Positions.ToList(),
+                Positions = u.Positions?.ToList(),
                 Name = u.Unit!.Name
             }).ToList()
         };

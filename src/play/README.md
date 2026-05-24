@@ -1,0 +1,131 @@
+# Direct Strike Play Notes
+
+This folder contains the experimental replay playback UI and shared playback model.
+The current focus is the spawn playback canvas used from `/te/play`.
+
+## TypeScript Playback Bundle
+
+`dsstats.play` uses TypeScript for the spawn playback browser module. Source files live in
+`src/play/dsstats.play/TypeScript/` and are bundled with esbuild into
+`src/play/dsstats.play/wwwroot/spawnPlayback.js`.
+
+- Blazor imports the generated static web asset at `./_content/dsstats.play/spawnPlayback.js`.
+- `TypeScript/index.ts` is the public JS interop entrypoint and must continue exporting the existing playback functions used by `SpawnPlaybackCanvas.razor`.
+- `wwwroot/spawnPlayback.js` is generated, but it is still checked in as the static asset shipped by the Razor class library.
+- Do not edit the generated `wwwroot/spawnPlayback.js` by hand; change the TypeScript sources and rebuild it.
+- Unit tests live under `src/play/dsstats.play/TypeScript/tests/` and are excluded from the production bundle/typecheck inputs.
+
+Useful commands:
+
+```powershell
+cd src/play/dsstats.play
+npm install
+npm run typecheck
+npm run test
+npm run build
+```
+
+In the Codex sandbox, `npm run build` may fail with esbuild noise such as
+`Cannot read directory "../../../../../..": Access is denied` and a misleading suggestion to use
+`././TypeScript/index.ts`. The entrypoint in `package.json` is correct; rerun the same build with
+elevated filesystem access so esbuild can inspect parent directories during module resolution.
+
+The project file also runs `npm ci`/`npm install` and `npm run build` before static web assets are resolved, so a normal .NET build refreshes the playback bundle when TypeScript inputs change.
+
+## Map Geometry Facts
+
+- Direct Strike tracker map space is treated as `256 x 240` world units.
+- The real battlefront separator is the diagonal line `x + y = 248`.
+- The canvas grid should follow the rotated map axes, using constant `x + y` and `x - y` lines.
+- Known spawn polygons from `Sc2DirectStrikeParser.TrackerLayout.cs`:
+  - Team 1/top right: `(165,174) -> (182,157) -> (171,146) -> (154,163)`
+  - Team 2/bottom left: `(84,93) -> (101,76) -> (90,65) -> (73,82)`
+- Team 1 is the top-right side on the canvas; Team 2 is the bottom-left side.
+- Fixed objective landmark positions come from zero-gameloop tracker born events and are stable across replays:
+  - Team 1/top right: Planetary `(160,152)`, Bunker `(146,138)`
+  - Team 2/bottom left: Nexus `(96,88)`, Cannon `(110,102)`
+- The objective pairs mirror around the map bounds:
+  - Planetary `(160,152)` mirrors to Nexus `(96,88)` using `256 - x`, `240 - y`.
+  - Bunker `(146,138)` mirrors to Cannon `(110,102)` using `256 - x`, `240 - y`.
+- Canvas spawn-area labels are drawn from configured polygon edge segments. Team 2 uses segment `[2,3]` so its label sits on the opposite long edge from Team 1.
+
+## Playback Data Facts
+
+- Parser unit `Gameloop` values are real unit-born timings. A single player spawn can take several gameloops, especially in late game.
+- `DirectStrikePlayerSpawn.StartGameloop` is the first unit born in that player spawn.
+- `DirectStrikePlayerSpawn.EndGameloop` is the last unit born in that player spawn.
+- Middle control comes from `FirstMiddleControlTeam` and `MiddleChanges`.
+  - The first `MiddleChanges` value is when `FirstMiddleControlTeam` takes mid.
+  - Later values alternate control between teams.
+- Objective landmarks can disappear when the source objective born event has a matching death gameloop.
+- `SpawnPlaybackSidecarDto` projection/cell constants are for compressing and decoding spawn-unit positions only. They are not objective landmark storage, and removing them would break sidecar position decoding.
+
+## Newly Measured Timing Facts
+
+Measurements came from `src/cli/dsstats.spawnscan.cli`.
+
+- Normal Direct Strike spawn cadence is effectively `1440` gameloops, about `64.29s`.
+- In `Direct Strike TE (1928).SC2Replay`:
+  - First middle control: `T2@840`.
+  - Spawn interval range: `1440..1572`, median `1440`.
+  - Spawn window range: `0..3`, median `1`.
+  - First spawns: `P1:480-481`, `P4:481-481`, `P5:960-960`, `P6:1441-1441`, `P2:2400-2400`, `P3:1440-1440`.
+  - Estimated uncontested movement speed from first mid: `0.1429` world units/gameloop, about `3.20` world units/second.
+- A 5-replay local sample produced first-mid speed estimates around `3.04..3.20` world units/second.
+- Tutorial replay `Direct Strike (10232).SC2Replay`:
+  - Special/tutorial cadence observed: `480` gameloops.
+  - Observer spawned at `1440` and disappeared/died at `3376`.
+  - Observer lifetime delta: `1936` gameloops, about `86.43s`.
+  - Later observer spawns in that replay had missing death data, likely because the replay ended before their max lifetime elapsed or disappearance was not tracked.
+- In regular combat replays, many units show lifetime caps around `2095..2098` gameloops, about `93.6s`, but combat deaths make that data noisy.
+
+## Current Playback Assumptions
+
+- Fixed UI stepping remains `5s` (`112` gameloops).
+- Canvas rendering may use an effective render gameloop rather than the raw step gameloop.
+- When a raw step lands inside a spawn window, rendering snaps forward to the completed snapshot end.
+- Pair candidates are ordered by `GamePos` within each team:
+  - First Team 1 player pairs with first Team 2 player.
+  - Second pairs with second, etc.
+- Paired snapshots are only created when the two spawn starts are close in time, currently within `112` gameloops.
+- If paired players' actual spawn starts are far apart, their spawns must remain separate one-sided snapshots. Do not pair by spawn number alone.
+- Unit-born gameloops are preserved; only the render time is snapped.
+- Units with a recorded death position move toward that death position as their primary target.
+- Units without a recorded death position use the mirrored map position as the fallback target.
+- Units with no recorded death expire after `2096` gameloops; real death gameloops are preserved and are not clamped.
+- Tutorial/one-player parser shapes are not treated as real-world production replay cases.
+- Alive-unit tables group by team and unit name, not by individual unit.
+- Current kills are time-aware and count `KillGameloops <= renderGameloop`.
+
+## Performance Notes
+
+- Playback rendering should not introduce database interactions or extra API calls.
+- Static canvas geometry is cached in JavaScript after replay initialization.
+- Snapshot metadata is built once while creating `SpawnPlaybackReplay`.
+- Alive table rows should only be rebuilt when the effective render gameloop changes.
+- Avoid per-frame LINQ-heavy table generation and avoid allocating new canvas geometry on every draw.
+- Playback creation should avoid proximity precompute while playback movement uses direct target interpolation.
+- Canvas movement is one interpolation per visible unit, using the precomputed target and expiry gameloop.
+- If playback loading feels slow, measure decode/parse/metadata separately before optimizing the canvas path.
+
+## Scanner CLI
+
+The scanner is intentionally separate from the server solution:
+
+```powershell
+dotnet run --project src/cli/dsstats.spawnscan.cli/dsstats.spawnscan.cli.csproj -- "C:\path\to\replay.SC2Replay"
+```
+
+Scan a replay directory with a limit:
+
+```powershell
+dotnet run --project src/cli/dsstats.spawnscan.cli/dsstats.spawnscan.cli.csproj -- "C:\path\to\Replays\Multiplayer" 10
+```
+
+The scanner reports decode time, parse time, spawn intervals, spawn windows, first-spawn timings, first-middle speed estimates, and unit lifetime/disappear summaries. For ad hoc geometry verification, inspect zero-gameloop `Objective*` born events from the parser; those are the source of the fixed objective landmark coordinates listed above.
+
+## Resolved Playback Decisions
+
+- Death positions are the primary playback target when present; mirrored map positions are only the fallback for units without death positions.
+- `2096` gameloops is the general max lifetime for units without real death events.
+- One-player tutorial replay shapes are treated as non-production data.

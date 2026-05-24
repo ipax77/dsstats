@@ -4,6 +4,7 @@ using dsstats.dbServices;
 using dsstats.maui.Services;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
+using dsstats.weblib.Replays;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -89,6 +90,8 @@ namespace dsstats.maui
 
             builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
             builder.Services.AddKeyedScoped<IReplayRepository, apiServices.ReplayRepository>("api");
+            builder.Services.AddScoped<ISpawnPlaybackSidecarDecoder, DotNetSpawnPlaybackSidecarDecoder>();
+            builder.Services.AddScoped<SpawnPlaybackSidecarCache>();
 
             var app = builder.Build();
             using var scope = app.Services.CreateScope();

@@ -109,6 +109,7 @@ public partial class ImportService
             {
                 SetUploaders(keeper, duplicate);
                 logger.LogInformation("Duplicate candidate: Keeper {keeperId}, Duplicate {dupId}", keeper.ReplayId, duplicate.ReplayId);
+                await CopySpawnPlaybackIfKeeperMissing(keeper.ReplayId, duplicate.ReplayId, context);
                 await DeleteReplay(duplicate.ReplayHash, context);
                 deletedCount++;
             }
@@ -116,6 +117,29 @@ public partial class ImportService
             await context.SaveChangesAsync();
         }
         return deletedCount;
+    }
+
+    private static async Task CopySpawnPlaybackIfKeeperMissing(
+        int keeperReplayId,
+        int duplicateReplayId,
+        DsstatsContext context)
+    {
+        bool keeperHasSidecar = await context.ReplaySpawnPlaybacks
+            .AnyAsync(x => x.ReplayId == keeperReplayId);
+        if (keeperHasSidecar)
+        {
+            return;
+        }
+
+        var duplicateSidecar = await GetSpawnPlaybackSidecar(duplicateReplayId, context);
+        if (duplicateSidecar is null)
+        {
+            return;
+        }
+
+        await SaveSpawnPlaybackSidecars(
+            [new(null, keeperReplayId, duplicateSidecar, ReplaceExisting: false)],
+            context);
     }
 
     private static async Task<List<string>> GetDuplicateCandidateHashes(DsstatsContext context, DateTime fromTime)

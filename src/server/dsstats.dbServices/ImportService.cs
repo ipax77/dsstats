@@ -3,6 +3,7 @@ using dsstats.db.Extensions;
 using dsstats.shared;
 using dsstats.shared.Arcade;
 using dsstats.shared.Interfaces;
+using dsstats.shared.Upload;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -15,6 +16,12 @@ public interface IImportService
 {
     Task ImportReplay(ReplayDto replayDto);
     Task InsertReplays(List<ReplayDto> replays);
+    Task InsertReplayImports(List<ReplayImportDto> imports);
+    Task<ReplayImportBatchResultDto> InsertReplayImportsWithSidecars(
+        UploadRequestDto request,
+        IReadOnlyList<SpawnPlaybackUploadManifestEntryDto> manifestEntries,
+        IReadOnlyDictionary<string, SpawnPlaybackUploadPayload> payloadsByPartName,
+        CancellationToken token = default);
     Task ImportArcadeReplaysRaw(List<ArcadeReplayDto> replays);
     Task ImportArcadeReplays(List<ArcadeReplayDto> replays);
     void ClearExistingArcadeReplayKeys();
@@ -232,13 +239,42 @@ public partial class ImportService(
         }
     }
 
-    public async Task InsertReplays(List<ReplayDto> replays)
+    public Task InsertReplays(List<ReplayDto> replays)
+    {
+        return InsertReplayImports(replays.Select(replay => new ReplayImportDto(replay, null)).ToList());
+    }
+
+    public async Task InsertReplayImports(List<ReplayImportDto> imports)
     {
         Init();
+        var replays = imports.Select(import => import.Replay).ToList();
         foreach (var replay in replays)
         {
             NormalizeReplayPlayerCompatHashes(replay);
         }
+
+        Dictionary<string, (int Duration, SpawnPlaybackEncodedSidecar Sidecar)> sidecarCandidates = [];
+        foreach (var import in imports)
+        {
+            if (import.SpawnPlayback is null)
+            {
+                continue;
+            }
+            if (import.SpawnPlayback.UnitCount <= 0
+                || !SpawnPlaybackEligibility.IsEligible(import.Replay.Players.Count, import.Replay.Duration))
+            {
+                continue;
+            }
+
+            var replayHash = import.Replay.ComputeHash();
+            if (!sidecarCandidates.TryGetValue(replayHash, out var existing)
+                || import.Replay.Duration >= existing.Duration)
+            {
+                sidecarCandidates[replayHash] = (import.Replay.Duration, import.SpawnPlayback);
+            }
+        }
+        Dictionary<string, SpawnPlaybackEncodedSidecar> sidecarsByReplayHash = sidecarCandidates
+            .ToDictionary(k => k.Key, v => v.Value.Sidecar);
 
         Dictionary<ToonIdRec, string> players = [];
         foreach (var player in replays.SelectMany(s => s.Players))
@@ -263,7 +299,8 @@ public partial class ImportService(
                 AdjustReplayResult(replay);
             }
 
-            var dbReplay = replay.ToEntity();
+            var replayHash = replay.ComputeHash();
+            var dbReplay = replay.ToEntity(sidecarsByReplayHash.ContainsKey(replayHash));
 
             foreach (var player in dbReplay.Players)
             {
@@ -299,7 +336,7 @@ public partial class ImportService(
             dbReplays.Add(dbReplay);
         }
 
-        var duplicateResult = await HandleDuplicates(dbReplays, context);
+        var duplicateResult = await HandleDuplicates(dbReplays, context, sidecarsByReplayHash);
 
         if (duplicateResult.ReplaysToImport.Count > 0)
         {
@@ -317,6 +354,12 @@ public partial class ImportService(
                 await ratingService.PreRatings(replayCalcDtos);
             }
         }
+
+        if (duplicateResult.SidecarsToSave.Count > 0)
+        {
+            await SaveSpawnPlaybackSidecars(duplicateResult.SidecarsToSave, context);
+        }
+
         if (!OperatingSystem.IsWindows())
         {
             logger.LogWarning("Replays imported: {count}, dups: {duplicates}, replaced: {replaced}",

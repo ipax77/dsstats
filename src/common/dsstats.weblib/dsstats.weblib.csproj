@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\play\dsstats.play\dsstats.play.csproj" />
     <ProjectReference Include="..\dsstats.shared\dsstats.shared.csproj" />
   </ItemGroup>
 

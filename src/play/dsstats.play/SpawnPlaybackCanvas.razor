@@ -1,0 +1,903 @@
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using dsstats.shared
+@implements IAsyncDisposable
+@inject IJSRuntime JSRuntime
+
+@if (playback is not null)
+{
+    <div @ref="playbackElement" class="spawn-playback bgchart border border-dark rounded p-3 mb-4 @(showAliveUnits ? null : "spawn-playback-alive-collapsed")">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+            <div>
+                <h5 class="mb-1 text-warning">Spawn Playback</h5>
+                <div class="small text-light">@CurrentTimeLabel</div>
+                <div class="small text-muted">@PlaybackStatusLabel</div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="btn-group" role="group" aria-label="Spawn playback controls">
+                    <button type="button" class="btn btn-sm btn-outline-light" title="Back 5 seconds" @onclick="StepBackward">
+                        <span class="bi bi-chevron-left"></span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light" title="@PlayPauseTitle" @onclick="TogglePlayback">
+                        <span class="bi @PlayPauseIcon"></span>
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-light"
+                            title="Stop"
+                            disabled="@(animationState == SpawnPlaybackAnimationState.Stopped)"
+                            @onclick="StopAnimation">
+                        <span class="bi bi-stop-fill"></span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light" title="Forward 5 seconds" @onclick="StepForward">
+                        <span class="bi bi-chevron-right"></span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light" title="@FullscreenTitle" @onclick="ToggleFullscreen">
+                        <span class="bi @FullscreenIcon"></span>
+                    </button>
+                </div>
+                <select class="form-select form-select-sm spawn-playback-speed"
+                        aria-label="Spawn playback speed"
+                        value="@selectedPlaybackSpeed"
+                        @onchange="SetPlaybackSpeed">
+                    <option value="slow">Slow</option>
+                    <option value="normal">Normal</option>
+                    <option value="fast">Fast</option>
+                </select>
+            </div>
+        </div>
+        <div class="spawn-playback-body">
+            <div class="spawn-playback-canvas-wrap">
+                <canvas @ref="canvasElement" class="spawn-playback-canvas"></canvas>
+                <div class="spawn-playback-slider">
+                    <input type="range"
+                           class="form-range spawn-playback-range"
+                           min="0"
+                           max="@PlaybackStopMaxIndex"
+                           step="1"
+                           value="@currentPlaybackStopIndex"
+                           disabled="@(playbackStops.Count <= 1)"
+                           aria-label="Spawn playback position"
+                           @oninput="SeekPlaybackStop" />
+                    <div class="d-flex align-items-center justify-content-between gap-2 small text-muted">
+                        <span>@FirstPlaybackStopLabel</span>
+                        <span>@CurrentPlaybackStopLabel</span>
+                        <span>@LastPlaybackStopLabel</span>
+                    </div>
+                </div>
+            </div>
+            <div class="spawn-playback-alive">
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                    <div>
+                        <h6 class="mb-0 text-warning">Alive Units</h6>
+                        <div class="small text-muted">Current spawn @CurrentSpawnLabel</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-light spawn-playback-clear-highlight"
+                                title="Clear unit highlight"
+                                aria-label="Clear unit highlight"
+                                data-spawn-playback-clear-highlight>
+                            <span class="bi bi-x-lg"></span>
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-light"
+                                title="@AliveUnitsToggleTitle"
+                                aria-expanded="@showAliveUnits"
+                                @onclick="ToggleAliveUnits">
+                            <span class="bi @AliveUnitsToggleIcon"></span>
+                        </button>
+                        <span class="badge text-bg-dark border border-secondary">@aliveUnitCount.ToString("N0") units</span>
+                    </div>
+                </div>
+                @if (showAliveUnits)
+                {
+                    <div class="spawn-playback-team-tables">
+                        <section class="spawn-playback-team-table">
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                <div class="small fw-semibold text-info">Team 1</div>
+                                <div class="small text-muted">@team1AliveCount.ToString("N0") units</div>
+                            </div>
+                            <div class="table-responsive spawn-playback-alive-table">
+                                <table class="table table-dark table-sm table-striped align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Unit</th>
+                                            <th class="text-end">Alive</th>
+                                            <th class="text-end">Kills</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (team1AliveUnitRows.Count == 0)
+                                        {
+                                            <tr>
+                                                <td colspan="3" class="text-muted text-center py-3">No estimated alive units</td>
+                                            </tr>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var row in team1AliveUnitRows)
+                                            {
+                                                <tr class="spawn-playback-alive-row"
+                                                    @key="row.HighlightKey"
+                                                    role="button"
+                                                    tabindex="0"
+                                                    aria-pressed="false"
+                                                    title="Highlight @row.UnitName on the canvas"
+                                                    data-spawn-playback-alive-unit-row
+                                                    data-spawn-playback-highlight-key="@row.HighlightKey">
+                                                    <td title="@row.UnitName">
+                                                        <span class="spawn-playback-unit-cell">
+                                                            <UnitIcon Class="spawn-playback-unit-icon"
+                                                                      Commander="@row.Commander"
+                                                                      UnitName="@row.UnitName"
+                                                                      Size="20"
+                                                                      TeamId="@row.TeamId"
+                                                                      TeamColor="@row.TeamColor"
+                                                                      UnitColor="@row.UnitColor" />
+                                                            <span class="text-truncate">@row.UnitName</span>
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-end">@row.AliveCount.ToString("N0")</td>
+                                                    <td class="text-end">@row.CurrentKills</td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                        <section class="spawn-playback-team-table">
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                <div class="small fw-semibold text-danger">Team 2</div>
+                                <div class="small text-muted">@team2AliveCount.ToString("N0") units</div>
+                            </div>
+                            <div class="table-responsive spawn-playback-alive-table">
+                                <table class="table table-dark table-sm table-striped align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Unit</th>
+                                            <th class="text-end">Alive</th>
+                                            <th class="text-end">Kills</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (team2AliveUnitRows.Count == 0)
+                                        {
+                                            <tr>
+                                                <td colspan="3" class="text-muted text-center py-3">No estimated alive units</td>
+                                            </tr>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var row in team2AliveUnitRows)
+                                            {
+                                                <tr class="spawn-playback-alive-row"
+                                                    @key="row.HighlightKey"
+                                                    role="button"
+                                                    tabindex="0"
+                                                    aria-pressed="false"
+                                                    title="Highlight @row.UnitName on the canvas"
+                                                    data-spawn-playback-alive-unit-row
+                                                    data-spawn-playback-highlight-key="@row.HighlightKey">
+                                                    <td title="@row.UnitName">
+                                                        <span class="spawn-playback-unit-cell">
+                                                            <UnitIcon Class="spawn-playback-unit-icon"
+                                                                      Commander="@row.Commander"
+                                                                      UnitName="@row.UnitName"
+                                                                      Size="20"
+                                                                      TeamId="@row.TeamId"
+                                                                      TeamColor="@row.TeamColor"
+                                                                      UnitColor="@row.UnitColor" />
+                                                            <span class="text-truncate">@row.UnitName</span>
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-end">@row.AliveCount.ToString("N0")</td>
+                                                    <td class="text-end">@row.CurrentKills</td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public ReplayDto? Replay { get; set; }
+
+    [Parameter]
+    public SpawnPlaybackSidecarDto? Sidecar { get; set; }
+
+    private ElementReference playbackElement;
+    private ElementReference canvasElement;
+    private IJSObjectReference? module;
+    private DotNetObjectReference<SpawnPlaybackCanvas>? dotNetReference;
+    private ReplayDto? currentReplay;
+    private SpawnPlaybackSidecarDto? currentSidecar;
+    private SpawnPlaybackReplay? playback;
+    private SpawnPlaybackReplay? initializedReplay;
+    private int currentGameloop;
+    private int renderGameloop;
+    private readonly List<int> playbackStops = [];
+    private int currentPlaybackStopIndex;
+    private bool canvasDrawPending;
+    private readonly List<AliveUnitRow> team1AliveUnitRows = [];
+    private readonly List<AliveUnitRow> team2AliveUnitRows = [];
+    private readonly Dictionary<AliveUnitKey, AliveUnitAccumulator> aliveUnitAccumulators = [];
+    private int aliveUnitCount;
+    private int team1AliveCount;
+    private int team2AliveCount;
+    private int currentSpawnNumber;
+    private bool isFullscreen;
+    private bool showAliveUnits = true;
+    private SpawnPlaybackAnimationState animationState = SpawnPlaybackAnimationState.Stopped;
+    private string selectedPlaybackSpeed = "normal";
+
+    private string PlayPauseTitle => animationState == SpawnPlaybackAnimationState.Playing
+        ? "Pause"
+        : animationState == SpawnPlaybackAnimationState.Paused
+            ? "Resume"
+            : "Play";
+
+    private string PlayPauseIcon => animationState == SpawnPlaybackAnimationState.Playing
+        ? "bi-pause-fill"
+        : "bi-play-fill";
+
+    private string FullscreenTitle => isFullscreen ? "Exit fullscreen" : "Enter fullscreen";
+
+    private string FullscreenIcon => isFullscreen ? "bi-fullscreen-exit" : "bi-fullscreen";
+
+    private string AliveUnitsToggleTitle => showAliveUnits ? "Collapse Alive Units" : "Expand Alive Units";
+
+    private string AliveUnitsToggleIcon => showAliveUnits ? "bi-chevron-up" : "bi-chevron-down";
+
+    private string PlaybackStatusLabel => animationState switch
+    {
+        SpawnPlaybackAnimationState.Playing => $"Playing {GetPlaybackSpeedMultiplier():0.##}x",
+        SpawnPlaybackAnimationState.Paused => "Paused",
+        _ => "Stopped"
+    };
+
+    private string CurrentTimeLabel =>
+        playback is null
+            ? string.Empty
+            : $"{Math.Round(renderGameloop / SpawnPlaybackFactory.GameloopsPerSecond, 1):0.0}s / gameloop {renderGameloop:N0}";
+
+    private string CurrentSpawnLabel => currentSpawnNumber > 0 ? currentSpawnNumber.ToString("N0") : "-";
+
+    private int PlaybackStopMaxIndex => Math.Max(0, playbackStops.Count - 1);
+
+    private string FirstPlaybackStopLabel => playbackStops.Count == 0 ? string.Empty : FormatGameloopSeconds(playbackStops[0]);
+
+    private string CurrentPlaybackStopLabel => playbackStops.Count == 0
+        ? string.Empty
+        : $"{currentPlaybackStopIndex + 1:N0} / {playbackStops.Count:N0}";
+
+    private string LastPlaybackStopLabel => playbackStops.Count == 0
+        ? string.Empty
+        : FormatGameloopSeconds(playbackStops[^1]);
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(currentReplay, Replay) || !ReferenceEquals(currentSidecar, Sidecar))
+        {
+            currentReplay = Replay;
+            currentSidecar = Sidecar;
+            playback = Replay is not null && Sidecar is not null
+                ? SpawnPlaybackFactory.Create(Replay, Sidecar)
+                : null;
+            initializedReplay = null;
+            BuildPlaybackStops(playback);
+            currentGameloop = GetFirstPlaybackGameloop(playback);
+            currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(currentGameloop);
+            animationState = SpawnPlaybackAnimationState.Stopped;
+            isFullscreen = false;
+            showAliveUnits = true;
+            SetRenderGameloop(force: true);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (playback is null)
+        {
+            return;
+        }
+
+        module ??= await ImportModuleAsync();
+        dotNetReference ??= DotNetObjectReference.Create(this);
+
+        if (!ReferenceEquals(initializedReplay, playback))
+        {
+            initializedReplay = playback;
+            await module.InvokeVoidAsync(
+                "initializeSpawnPlayback",
+                canvasElement,
+                playbackElement,
+                playback,
+                dotNetReference,
+                SpawnPlaybackFactory.GameloopsPerSecond,
+                GetPlaybackSpeedMultiplier());
+            canvasDrawPending = true;
+        }
+
+        if (canvasDrawPending)
+        {
+            await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
+            canvasDrawPending = false;
+        }
+
+        if (showAliveUnits)
+        {
+            await module.InvokeVoidAsync("hydrateUnitIcons", playbackElement);
+            await module.InvokeVoidAsync("syncAliveUnitHighlightSelection", canvasElement);
+        }
+    }
+
+    private ValueTask<IJSObjectReference> ImportModuleAsync()
+    {
+        return JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import",
+            "./_content/dsstats.play/spawnPlayback.js");
+    }
+
+    private async Task TogglePlayback()
+    {
+        if (playback is null || module is null)
+        {
+            return;
+        }
+
+        if (animationState == SpawnPlaybackAnimationState.Playing)
+        {
+            await PauseAnimation();
+            return;
+        }
+
+        animationState = SpawnPlaybackAnimationState.Playing;
+        await module.InvokeVoidAsync(
+            "startSpawnPlayback",
+            canvasElement,
+            currentGameloop,
+            GetPlaybackSpeedMultiplier());
+    }
+
+    private async Task PauseAnimation()
+    {
+        if (module is null)
+        {
+            animationState = SpawnPlaybackAnimationState.Paused;
+            return;
+        }
+
+        double stoppedGameloop = await module.InvokeAsync<double>("pauseSpawnPlayback", canvasElement, false);
+        ApplyAnimationProgress(stoppedGameloop, SpawnPlaybackAnimationState.Paused, requestCanvasDraw: false);
+        StateHasChanged();
+    }
+
+    private async Task StopAnimation()
+    {
+        await StopAnimationAndSync(SpawnPlaybackAnimationState.Stopped);
+        StateHasChanged();
+    }
+
+    private async Task StepBackward()
+    {
+        if (playback is null)
+        {
+            return;
+        }
+
+        await StopAnimationAndSync(SpawnPlaybackAnimationState.Stopped);
+        currentGameloop = Math.Max(GetFirstPlaybackGameloop(playback), currentGameloop - playback.StepGameloops);
+        SetRenderGameloop();
+        currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(renderGameloop);
+    }
+
+    private async Task StepForward()
+    {
+        if (playback is null)
+        {
+            return;
+        }
+
+        await StopAnimationAndSync(SpawnPlaybackAnimationState.Stopped);
+        currentGameloop = Math.Min(playback.DurationGameloop, currentGameloop + playback.StepGameloops);
+        SetRenderGameloop();
+        currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(renderGameloop);
+    }
+
+    private async Task SeekPlaybackStop(ChangeEventArgs args)
+    {
+        if (playback is null || playbackStops.Count == 0)
+        {
+            return;
+        }
+
+        await StopAnimationAndSync(SpawnPlaybackAnimationState.Stopped);
+        int nextIndex = ParsePlaybackStopIndex(args.Value);
+        if (nextIndex == currentPlaybackStopIndex && playbackStops[nextIndex] == currentGameloop)
+        {
+            return;
+        }
+
+        currentPlaybackStopIndex = nextIndex;
+        currentGameloop = playbackStops[nextIndex];
+        SetRenderGameloop();
+    }
+
+    private async Task SetPlaybackSpeed(ChangeEventArgs args)
+    {
+        string nextSpeed = args.Value?.ToString() ?? "normal";
+        selectedPlaybackSpeed = nextSpeed is "slow" or "normal" or "fast"
+            ? nextSpeed
+            : "normal";
+
+        if (module is not null)
+        {
+            await module.InvokeVoidAsync("setSpawnPlaybackSpeed", canvasElement, GetPlaybackSpeedMultiplier());
+        }
+    }
+
+    private async Task ToggleFullscreen()
+    {
+        if (playback is null)
+        {
+            return;
+        }
+
+        module ??= await ImportModuleAsync();
+        dotNetReference ??= DotNetObjectReference.Create(this);
+        await module.InvokeVoidAsync(
+            "setSpawnPlaybackFullscreen",
+            canvasElement,
+            playbackElement,
+            !isFullscreen);
+    }
+
+    private void ToggleAliveUnits()
+    {
+        showAliveUnits = !showAliveUnits;
+        UpdateAliveUnitRows();
+        canvasDrawPending = true;
+    }
+
+    private async Task StopAnimationAndSync(SpawnPlaybackAnimationState nextState)
+    {
+        animationState = nextState;
+        if (module is null)
+        {
+            return;
+        }
+
+        double stoppedGameloop = await module.InvokeAsync<double>("stopSpawnPlayback", canvasElement, false);
+        ApplyAnimationProgress(stoppedGameloop, nextState, requestCanvasDraw: false);
+    }
+
+    [JSInvokable]
+    public Task ReceiveSpawnPlaybackProgress(double gameloop, string state)
+    {
+        return InvokeAsync(() =>
+        {
+            SpawnPlaybackAnimationState nextState = state switch
+            {
+                "playing" => SpawnPlaybackAnimationState.Playing,
+                "paused" => SpawnPlaybackAnimationState.Paused,
+                _ => SpawnPlaybackAnimationState.Stopped
+            };
+            ApplyAnimationProgress(gameloop, nextState, requestCanvasDraw: false);
+            StateHasChanged();
+        });
+    }
+
+    [JSInvokable]
+    public Task ReceiveSpawnPlaybackFullscreenChanged(bool fullscreen)
+    {
+        return InvokeAsync(() =>
+        {
+            isFullscreen = fullscreen;
+            canvasDrawPending = true;
+            StateHasChanged();
+        });
+    }
+
+    private void ApplyAnimationProgress(
+        double gameloop,
+        SpawnPlaybackAnimationState nextState,
+        bool requestCanvasDraw)
+    {
+        if (playback is null)
+        {
+            animationState = SpawnPlaybackAnimationState.Stopped;
+            return;
+        }
+
+        int firstGameloop = GetFirstPlaybackGameloop(playback);
+        int nextGameloop = (int)Math.Round(gameloop);
+        currentGameloop = Math.Clamp(nextGameloop, firstGameloop, playback.DurationGameloop);
+        SetRenderGameloop(requestCanvasDraw: requestCanvasDraw);
+        currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(renderGameloop);
+        animationState = nextState;
+    }
+
+    private double GetPlaybackSpeedMultiplier()
+    {
+        return selectedPlaybackSpeed switch
+        {
+            "slow" => 2,
+            "fast" => 6,
+            _ => 4
+        };
+    }
+
+    private bool SetRenderGameloop(bool force = false, bool requestCanvasDraw = true)
+    {
+        int nextRenderGameloop = ResolveRenderGameloop(playback, currentGameloop);
+        if (!force && nextRenderGameloop == renderGameloop)
+        {
+            return false;
+        }
+
+        renderGameloop = nextRenderGameloop;
+        UpdateAliveUnitRows();
+        if (requestCanvasDraw)
+        {
+            canvasDrawPending = true;
+        }
+
+        return true;
+    }
+
+    private void BuildPlaybackStops(SpawnPlaybackReplay? replay)
+    {
+        playbackStops.Clear();
+        if (replay is null)
+        {
+            currentPlaybackStopIndex = 0;
+            return;
+        }
+
+        int firstGameloop = GetFirstPlaybackGameloop(replay);
+        if (replay.Snapshots.Count > 0)
+        {
+            AddPlaybackStop(firstGameloop);
+            foreach (var snapshot in replay.Snapshots)
+            {
+                AddPlaybackStop(snapshot.EndGameloop);
+            }
+
+            AddPlaybackStop(replay.DurationGameloop);
+            playbackStops.Sort();
+            RemoveDuplicatePlaybackStops();
+            return;
+        }
+
+        int stepGameloops = Math.Max(1, replay.StepGameloops);
+        int fallbackGameloop = firstGameloop;
+        while (fallbackGameloop < replay.DurationGameloop)
+        {
+            playbackStops.Add(fallbackGameloop);
+            if (replay.DurationGameloop - fallbackGameloop <= stepGameloops)
+            {
+                break;
+            }
+
+            fallbackGameloop += stepGameloops;
+        }
+
+        AddPlaybackStop(firstGameloop);
+        AddPlaybackStop(replay.DurationGameloop);
+        playbackStops.Sort();
+        RemoveDuplicatePlaybackStops();
+    }
+
+    private void AddPlaybackStop(int gameloop)
+    {
+        if (playbackStops.Count == 0 || playbackStops[^1] != gameloop)
+        {
+            playbackStops.Add(gameloop);
+        }
+    }
+
+    private void RemoveDuplicatePlaybackStops()
+    {
+        if (playbackStops.Count < 2)
+        {
+            return;
+        }
+
+        int writeIndex = 1;
+        int previous = playbackStops[0];
+        for (int readIndex = 1; readIndex < playbackStops.Count; readIndex++)
+        {
+            int current = playbackStops[readIndex];
+            if (current == previous)
+            {
+                continue;
+            }
+
+            playbackStops[writeIndex] = current;
+            previous = current;
+            writeIndex++;
+        }
+
+        if (writeIndex < playbackStops.Count)
+        {
+            playbackStops.RemoveRange(writeIndex, playbackStops.Count - writeIndex);
+        }
+    }
+
+    private int ParsePlaybackStopIndex(object? value)
+    {
+        if (value is int index)
+        {
+            return ClampPlaybackStopIndex(index);
+        }
+
+        return value is string text && int.TryParse(text, out index)
+            ? ClampPlaybackStopIndex(index)
+            : currentPlaybackStopIndex;
+    }
+
+    private int ClampPlaybackStopIndex(int index)
+    {
+        if (index < 0)
+        {
+            return 0;
+        }
+
+        int maxIndex = playbackStops.Count - 1;
+        return index > maxIndex ? maxIndex : index;
+    }
+
+    private int FindPlaybackStopIndexAtOrBefore(int gameloop)
+    {
+        int left = 0;
+        int right = playbackStops.Count - 1;
+        int index = 0;
+        while (left <= right)
+        {
+            int middle = left + (right - left) / 2;
+            if (playbackStops[middle] <= gameloop)
+            {
+                index = middle;
+                left = middle + 1;
+            }
+            else
+            {
+                right = middle - 1;
+            }
+        }
+
+        return index;
+    }
+
+    private static string FormatGameloopSeconds(int gameloop)
+    {
+        return $"{Math.Round(gameloop / SpawnPlaybackFactory.GameloopsPerSecond, 1):0.0}s";
+    }
+
+    private void UpdateAliveUnitRows()
+    {
+        team1AliveUnitRows.Clear();
+        team2AliveUnitRows.Clear();
+        aliveUnitAccumulators.Clear();
+        aliveUnitCount = 0;
+        team1AliveCount = 0;
+        team2AliveCount = 0;
+        currentSpawnNumber = 0;
+        if (playback is null)
+        {
+            return;
+        }
+
+        foreach (var player in playback.Players)
+        {
+            foreach (var unit in player.Units)
+            {
+                if (unit.SpawnGameloop > renderGameloop)
+                {
+                    continue;
+                }
+
+                currentSpawnNumber = Math.Max(currentSpawnNumber, unit.SpawnNumber);
+                if (unit.ExpiresGameloop <= renderGameloop)
+                {
+                    continue;
+                }
+
+                aliveUnitCount++;
+                if (player.TeamId == 1)
+                {
+                    team1AliveCount++;
+                }
+                else if (player.TeamId == 2)
+                {
+                    team2AliveCount++;
+                }
+
+                if (!showAliveUnits)
+                {
+                    continue;
+                }
+
+                var key = new AliveUnitKey(player.TeamId, player.Commander, unit.Name);
+                aliveUnitAccumulators.TryGetValue(key, out var row);
+                aliveUnitAccumulators[key] = row.Add(unit.Color, GetCurrentKills(unit.KillGameloops, renderGameloop));
+            }
+        }
+
+        if (!showAliveUnits)
+        {
+            return;
+        }
+
+        foreach (var pair in aliveUnitAccumulators)
+        {
+            var row = new AliveUnitRow(
+                pair.Key.TeamId,
+                pair.Key.Commander,
+                pair.Key.UnitName,
+                CreateAliveUnitHighlightKey(pair.Key.TeamId, pair.Key.Commander, pair.Key.UnitName),
+                GetTeamColor(pair.Key.TeamId),
+                pair.Value.UnitColor,
+                pair.Value.AliveCount,
+                pair.Value.CurrentKills);
+            if (pair.Key.TeamId == 1)
+            {
+                team1AliveUnitRows.Add(row);
+            }
+            else if (pair.Key.TeamId == 2)
+            {
+                team2AliveUnitRows.Add(row);
+            }
+        }
+
+        team1AliveUnitRows.Sort(CompareAliveUnitRows);
+        team2AliveUnitRows.Sort(CompareAliveUnitRows);
+    }
+
+    private static int CompareAliveUnitRows(AliveUnitRow left, AliveUnitRow right)
+    {
+        int unitCompare = string.Compare(left.UnitName, right.UnitName, StringComparison.Ordinal);
+        return unitCompare != 0
+            ? unitCompare
+            : string.Compare(left.Commander, right.Commander, StringComparison.Ordinal);
+    }
+
+    private static string GetTeamColor(int teamId)
+    {
+        return teamId == 1 ? "#5DADEC" : "#F87171";
+    }
+
+    private static string CreateAliveUnitHighlightKey(int teamId, string commander, string unitName)
+    {
+        return $"{teamId}|{commander.Length}:{commander}|{unitName.Length}:{unitName}";
+    }
+
+    private readonly record struct AliveUnitKey(int TeamId, string Commander, string UnitName);
+
+    private readonly record struct AliveUnitAccumulator(int AliveCount, int CurrentKills, string? UnitColor)
+    {
+        public AliveUnitAccumulator Add(string unitColor, int kills)
+        {
+            return new(AliveCount + 1, CurrentKills + kills, UnitColor ?? unitColor);
+        }
+    }
+
+    private static int GetCurrentKills(IReadOnlyList<int> killGameloops, int currentGameloop)
+    {
+        int kills = 0;
+        while (kills < killGameloops.Count && killGameloops[kills] <= currentGameloop)
+        {
+            kills++;
+        }
+
+        return kills;
+    }
+
+    private static int GetFirstPlaybackGameloop(SpawnPlaybackReplay? replay)
+    {
+        if (replay is null)
+        {
+            return 0;
+        }
+
+        return replay.Snapshots.Count > 0
+            ? replay.Snapshots[0].EndGameloop
+            : GetFirstUnitSpawnGameloop(replay);
+    }
+
+    private static int GetFirstUnitSpawnGameloop(SpawnPlaybackReplay? replay)
+    {
+        return replay?.Players
+            .SelectMany(player => player.Units)
+            .Select(unit => unit.SpawnGameloop)
+            .DefaultIfEmpty(0)
+            .Min() ?? 0;
+    }
+
+    private static int ResolveRenderGameloop(SpawnPlaybackReplay? replay, int gameloop)
+    {
+        if (replay is null || replay.Snapshots.Count == 0)
+        {
+            return gameloop;
+        }
+
+        int left = 0;
+        int right = replay.Snapshots.Count - 1;
+        int candidateIndex = -1;
+        while (left <= right)
+        {
+            int middle = left + (right - left) / 2;
+            if (replay.Snapshots[middle].StartGameloop <= gameloop)
+            {
+                candidateIndex = middle;
+                left = middle + 1;
+            }
+            else
+            {
+                right = middle - 1;
+            }
+        }
+
+        if (candidateIndex < 0)
+        {
+            return gameloop;
+        }
+
+        int renderGameloop = gameloop;
+        for (int i = candidateIndex; i >= 0; i--)
+        {
+            var snapshot = replay.Snapshots[i];
+            if (snapshot.EndGameloop < gameloop)
+            {
+                break;
+            }
+
+            renderGameloop = Math.Max(renderGameloop, snapshot.EndGameloop);
+        }
+
+        return renderGameloop;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (module is not null)
+        {
+            try
+            {
+                await module.InvokeVoidAsync("disposeSpawnPlayback", canvasElement);
+                await module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        dotNetReference?.Dispose();
+    }
+
+    private enum SpawnPlaybackAnimationState
+    {
+        Stopped,
+        Playing,
+        Paused
+    }
+
+    private sealed record AliveUnitRow(
+        int TeamId,
+        string Commander,
+        string UnitName,
+        string HighlightKey,
+        string TeamColor,
+        string? UnitColor,
+        int AliveCount,
+        int CurrentKills);
+}

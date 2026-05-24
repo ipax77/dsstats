@@ -22,6 +22,44 @@ public class ReplayRepository(IHttpClientFactory httpClientFactory) : IReplayRep
         }
     }
 
+    public async Task<byte[]?> GetReplaySpawnPlayback(string replayHash, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api10/Replays/{replayHash}/spawn-playback", token);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsByteArrayAsync(token);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    public async Task<ReplaySpawnPositionsDto?> GetReplaySpawnPositions(string replayHash, CancellationToken token = default)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api10/Replays/{replayHash}/spawn-positions", token);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<ReplaySpawnPositionsDto>(cancellationToken: token);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     public async Task<ReplayRatingDto?> GetReplayRating(string replayHash)
     {
         try

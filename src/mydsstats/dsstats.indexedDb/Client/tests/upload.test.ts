@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { closeDB, openDB } from '../db-core';
-import { exportUnuploadedReplays, exportUnuploadedReplays10, getReplayByHash, markReplaysAsUploaded, saveReplayFull } from '../dsstatsDb';
+import { closeDB, DB_NAME, openDB, STORES } from '../db-core';
+import { exportUnuploadedReplays, exportUnuploadedReplays10, getReplayByHash, getReplaySpawnPlayback, markReplaysAsUploaded, saveReplayFull } from '../dsstatsDb';
 import { getTestReplay, getTestReplayList, getTestReplayMeta } from './replays.test';
 
 vi.mock("pako", () => ({
-  gzip: (content: string) => new TextEncoder().encode(content),
+  gzip: (content: string | Uint8Array) =>
+    typeof content === "string"
+      ? new TextEncoder().encode(content)
+      : new Uint8Array(content),
   ungzip: (binary: Uint8Array) => new TextDecoder().decode(binary),
 }));
 
@@ -16,7 +19,7 @@ describe("dsstats IndexedDb Upload Flow", () => {
     afterEach(async () => {
         closeDB();
         await new Promise<void>((resolve, reject) => {
-            const deleteRequest = indexedDB.deleteDatabase("DsstatsDB");
+            const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
             deleteRequest.onsuccess = () => resolve();
             deleteRequest.onerror = () => reject(deleteRequest.error);
             deleteRequest.onblocked = () => {
@@ -109,6 +112,218 @@ describe("dsstats IndexedDb Upload Flow", () => {
         expect(storedReplay?.players.map(player => player.isUploader)).toEqual([false, false]);
     });
 
+    it("should Brotli-compress raw spawn playback sidecars before upload request exports", async () => {
+        const replay = getTestReplay();
+        const meta = getTestReplayMeta(replay);
+        const rawSidecar = new Uint8Array([0x44, 0x53, 0x50, 0x42, 1, 2, 3, 4]);
+        meta.uploaded = 0;
+        replay.spawnPlayback = {
+            available: true,
+            formatVersion: 3,
+            compression: 1,
+            compressedLength: rawSidecar.length,
+            uncompressedLength: rawSidecar.length,
+            unitCount: 1,
+        };
+
+        await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta, rawSidecar);
+
+        const storedReplay = await getReplayByHash(replay.compatHash);
+        expect(storedReplay?.spawnPlayback?.compression).toBe(1);
+        expect(storedReplay?.spawnPlayback?.compressedLength).toBe(3);
+        expect(storedReplay?.spawnPlayback?.uncompressedLength).toBe(rawSidecar.length);
+
+        const exported = await exportUnuploadedReplays10({
+            appGuid: "test-app",
+            appVersion: "1.0.0",
+            requestNames: [],
+            replays: []
+        });
+
+        expect(exported.sidecars.length).toBe(1);
+        expect(exported.sidecars[0].compression).toBe(1);
+        expect(exported.sidecars[0].compressedLength).toBe(3);
+        expect(exported.sidecars[0].uncompressedLength).toBe(rawSidecar.length);
+        expect(Array.from(exported.sidecars[0].payload)).toEqual([7, 8, 9]);
+    });
+
+    it("should preserve existing gzip spawn playback sidecars in upload request exports", async () => {
+        const replay = getTestReplay();
+        const meta = getTestReplayMeta(replay);
+        const gzipSidecar = new Uint8Array([9, 8, 7]);
+        meta.uploaded = 0;
+        replay.spawnPlayback = {
+            available: true,
+            formatVersion: 3,
+            compression: 2,
+            compressedLength: gzipSidecar.length,
+            uncompressedLength: 8,
+            unitCount: 1,
+        };
+
+        await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta, gzipSidecar);
+
+        const exported = await exportUnuploadedReplays10({
+            appGuid: "test-app",
+            appVersion: "1.0.0",
+            requestNames: [],
+            replays: []
+        });
+
+        expect(exported.sidecars.length).toBe(1);
+        expect(exported.sidecars[0].compression).toBe(2);
+        expect(exported.sidecars[0].compressedLength).toBe(gzipSidecar.length);
+        expect(exported.sidecars[0].uncompressedLength).toBe(8);
+        expect(Array.from(exported.sidecars[0].payload)).toEqual([9, 8, 7]);
+    });
+
+    it("should export a bounded newest-first upload request with matching sidecars", async () => {
+        for (let id = 1; id <= 3; id++) {
+            const replay = getTestReplay(id);
+            const meta = getTestReplayMeta(replay);
+            const gzipSidecar = new Uint8Array([id, id + 1, id + 2]);
+            meta.uploaded = 0;
+            replay.spawnPlayback = {
+                available: true,
+                formatVersion: 3,
+                compression: 2,
+                compressedLength: gzipSidecar.length,
+                uncompressedLength: 8,
+                unitCount: id,
+            };
+
+            await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta, gzipSidecar);
+        }
+
+        const exported = await exportUnuploadedReplays10({
+            appGuid: "test-app",
+            appVersion: "1.0.0",
+            requestNames: [],
+            replays: []
+        }, 2);
+        const uploadRequest = JSON.parse(new TextDecoder().decode(exported.payload));
+
+        expect(exported.hashes).toEqual([getTestReplay(3).compatHash, getTestReplay(2).compatHash]);
+        expect(uploadRequest.replays.map((replay: { compatHash: string }) => replay.compatHash)).toEqual(exported.hashes);
+        expect(exported.sidecars.map(sidecar => sidecar.replayHash)).toEqual(exported.hashes);
+        expect(exported.sidecars.map(sidecar => sidecar.partName)).toEqual(["sidecar-0", "sidecar-1"]);
+        expect(exported.sidecars.map(sidecar => Array.from(sidecar.payload))).toEqual([[3, 4, 5], [2, 3, 4]]);
+    });
+
+    it("should not store zero-unit spawn playback sidecars", async () => {
+        const replay = getTestReplay();
+        const meta = getTestReplayMeta(replay);
+        const sidecar = new Uint8Array([9, 8, 7]);
+        meta.uploaded = 0;
+        replay.spawnPlayback = {
+            available: true,
+            formatVersion: 3,
+            compression: 2,
+            compressedLength: sidecar.length,
+            uncompressedLength: 8,
+            unitCount: 0,
+        };
+
+        await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta, sidecar);
+
+        const storedReplay = await getReplayByHash(replay.compatHash);
+        const storedSidecar = await getReplaySpawnPlayback(replay.compatHash);
+        expect(storedReplay?.spawnPlayback).toBeUndefined();
+        expect(storedSidecar).toBeUndefined();
+
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+        let exported;
+        try {
+            exported = await exportUnuploadedReplays10({
+                appGuid: "test-app",
+                appVersion: "1.0.0",
+                requestNames: [],
+                replays: []
+            });
+            expect(warnSpy).not.toHaveBeenCalled();
+        } finally {
+            warnSpy.mockRestore();
+        }
+
+        const uploadRequest = JSON.parse(new TextDecoder().decode(exported.payload));
+        expect(exported.hashes).toEqual([replay.compatHash]);
+        expect(exported.sidecars).toEqual([]);
+        expect(uploadRequest.replays[0].compatHash).toBe(replay.compatHash);
+        expect(uploadRequest.replays[0].spawnPlayback).toBeUndefined();
+    });
+
+    it("should not store spawn playback sidecars for ineligible replay shapes", async () => {
+        const replay = getTestReplay();
+        const meta = getTestReplayMeta(replay);
+        const sidecar = new Uint8Array([9, 8, 7]);
+        meta.uploaded = 0;
+        replay.duration = 300;
+        replay.spawnPlayback = {
+            available: true,
+            formatVersion: 3,
+            compression: 2,
+            compressedLength: sidecar.length,
+            uncompressedLength: 8,
+            unitCount: 1,
+        };
+
+        await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta, sidecar);
+
+        expect((await getReplayByHash(replay.compatHash))?.spawnPlayback).toBeUndefined();
+        expect(await getReplaySpawnPlayback(replay.compatHash)).toBeUndefined();
+    });
+
+    it("should skip legacy malformed sidecars without blocking replay upload exports", async () => {
+        const replay = getTestReplay();
+        const meta = getTestReplayMeta(replay);
+        const sidecar = new Uint8Array([9, 8, 7]);
+        meta.uploaded = 0;
+
+        await saveReplayFull(replay.compatHash, replay, getTestReplayList(replay), meta);
+        await putLegacySpawnPlayback(replay.compatHash, {
+            available: true,
+            formatVersion: 3,
+            compression: 2,
+            compressedLength: sidecar.length,
+            uncompressedLength: 8,
+            unitCount: 0,
+        }, sidecar);
+
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+        let exported;
+        let warning = "";
+        try {
+            exported = await exportUnuploadedReplays10({
+                appGuid: "test-app",
+                appVersion: "1.0.0",
+                requestNames: [],
+                replays: []
+            });
+            expect(warnSpy).toHaveBeenCalledOnce();
+            warning = warnSpy.mock.calls[0][0] as string;
+        } finally {
+            warnSpy.mockRestore();
+        }
+        const uploadRequest = JSON.parse(new TextDecoder().decode(exported.payload));
+
+        expect(exported.hashes).toEqual([replay.compatHash]);
+        expect(exported.sidecars).toEqual([]);
+        expect(uploadRequest.replays[0].compatHash).toBe(replay.compatHash);
+        expect(uploadRequest.replays[0].spawnPlayback).toBeUndefined();
+        expect(warning).toContain(`Skipping spawn playback sidecar for ${replay.compatHash}: invalid metadata.`);
+        expect(warning).toContain(`fileName=${replay.fileName}`);
+        expect(warning).toContain(`title=${replay.title}`);
+        expect(warning).toContain(`duration=${replay.duration}`);
+        expect(warning).toContain(`playerCount=${replay.players.length}`);
+        expect(warning).toContain("available=true");
+        expect(warning).toContain("compression=2");
+        expect(warning).toContain("formatVersion=3");
+        expect(warning).toContain("compressedLength=3");
+        expect(warning).toContain("payloadLength=3");
+        expect(warning).toContain("uncompressedLength=8");
+        expect(warning).toContain("unitCount=0");
+    });
+
     it("should not export uploaded replays", async () => {
         const replay = getTestReplay();
         const meta = getTestReplayMeta(replay);
@@ -137,3 +352,33 @@ describe("dsstats IndexedDb Upload Flow", () => {
         expect(exported.hashes).not.toContain(replay.compatHash);
     });
 });
+
+async function putLegacySpawnPlayback(
+    replayHash: string,
+    spawnPlayback: {
+        available: boolean;
+        formatVersion: number;
+        compression: number;
+        compressedLength: number;
+        uncompressedLength: number;
+        unitCount: number;
+    },
+    payload: Uint8Array
+): Promise<void> {
+    const database = await openDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = database.transaction([STORES.replays, STORES.spawnPlayback], "readwrite");
+        const replayStore = tx.objectStore(STORES.replays);
+        const replayRequest = replayStore.get(replayHash);
+
+        replayRequest.onsuccess = () => {
+            const replay = replayRequest.result;
+            replayStore.put({ ...replay, spawnPlayback });
+            tx.objectStore(STORES.spawnPlayback).put({ replayHash, payload });
+        };
+        replayRequest.onerror = () => reject(replayRequest.error);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}

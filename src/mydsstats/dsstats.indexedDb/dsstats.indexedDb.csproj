@@ -4,9 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>1.0.2</Version>
-    <AssemblyVersion>1.0.2.0</AssemblyVersion>
-    <FileVersion>1.0.2.0</FileVersion>
+    <Version>1.0.3</Version>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
   </PropertyGroup>
 
   <Target Name="RunWebpack" BeforeTargets="Build">
@@ -25,6 +25,19 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="package.json;package-lock.json;tsconfig.json;vite.config.ts;webpack.config.js">
+      <Pack>False</Pack>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+    <Content Update="package.json;package-lock.json;tsconfig.json;vite.config.ts;webpack.config.js">
+      <Pack>False</Pack>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

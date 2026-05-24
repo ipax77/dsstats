@@ -5,7 +5,7 @@ export default defineConfig({
     // some paths to your test files
     include: ['Client/tests/**/*.test.ts'],
     // setup files
-    setupFiles: ['Client/setup.ts'],
+    setupFiles: ['Client/tests/setup.ts'],
     // test environment
     environment: 'happy-dom', // or 'jsdom', 'node'
     watch: false,

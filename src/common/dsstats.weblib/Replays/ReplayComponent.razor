@@ -1,4 +1,5 @@
 ﻿@using dsstats.shared
+@using dsstats.play
 
 <div class="card border-light mb-3 d-inline-block" style="width: fit-content !important;">
 	<div class="card-header bgchart2">
@@ -144,7 +145,7 @@
 						</span>
 					</div>
 				</div>
-				<ReplayTeamTableComponent TeamId="1" Players="ReplayDetails.Replay.Players.Where(x => x.TeamId == 1).OrderBy(o => o.GamePos).ToList()"
+				<ReplayTeamTableComponent TeamId="1" Players="team1Players"
 										  ReplayHelper="_replayHelper" RequestBuild="_replayHelper.ToggleBuild" RequestStats="RequestPlayerStats" />
 			</div>
 			<div class="col-auto">
@@ -168,7 +169,7 @@
 						</span>
 					</div>
 				</div>
-				<ReplayTeamTableComponent TeamId="2" Players="ReplayDetails.Replay.Players.Where(x => x.TeamId == 2).OrderBy(o => o.GamePos).ToList()"
+				<ReplayTeamTableComponent TeamId="2" Players="team2Players"
 										  ReplayHelper="_replayHelper" RequestBuild="_replayHelper.ToggleBuild" RequestStats="RequestPlayerStats" />
 			</div>
 		</div>
@@ -255,14 +256,80 @@
 				}
 			</div>
 		</div>
+		@if (showSpawnPlayback)
+		{
+			<div class="mt-3">
+				@if (loadingSpawnPlayback)
+				{
+					<div class="d-flex align-items-center gap-2 text-light">
+						<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+						<span>Loading playback...</span>
+					</div>
+				}
+				else if (spawnPlaybackSidecar is not null)
+				{
+					<SpawnPlaybackCanvas Replay="ReplayDetails.Replay" Sidecar="spawnPlaybackSidecar" />
+				}
+				else if (spawnPlaybackLoadFailed)
+				{
+					<div class="alert alert-warning py-2 mb-0" role="alert">
+						Spawn playback is unavailable for this replay.
+					</div>
+				}
+			</div>
+		}
 
 	</div>
 	<div class="card-footer bgchart2">
-		<div class="row">
+		<div class="row g-2 align-items-center">
+			@if (HasSpawnPlayback)
+			{
+				<div class="col-auto">
+					<button type="button"
+							class="btn btn-sm @(showSpawnPlayback ? "btn-outline-light" : "btn-outline-success")"
+							disabled="@loadingSpawnPlayback"
+							@onclick="ToggleSpawnPlayback">
+						@if (loadingSpawnPlayback)
+						{
+							<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+						}
+						else
+						{
+							<i class="bi @(showSpawnPlayback ? "bi-chevron-up" : "bi-play-fill") me-1"></i>
+						}
+						@(showSpawnPlayback ? "Hide Playback" : "Play")
+					</button>
+				</div>
+			}
 			@if (IsCloseable)
 			{
 				<div class="col-auto">
 					<button class="btn btn-sm btn-danger" @onclick="Close">Close</button>
+				</div>
+			}
+			@if (IsReplayUserRatingEnabled)
+			{
+				<div class="col-auto ms-auto">
+					<div class="d-flex align-items-center gap-2">
+						<div class="btn-group" role="group" aria-label="Rate replay" @onmouseleave="() => replayUserRatingHoverScore = 0">
+							@for (var i = 1; i <= 5; i++)
+							{
+								var score = i;
+								<button type="button"
+										class="btn btn-sm btn-link p-0 text-warning"
+										style="width: 1.35rem; text-decoration: none;"
+										title="Rate replay @score"
+										disabled="@replayUserRatingSubmitting"
+										@onmouseover="() => replayUserRatingHoverScore = score"
+										@onfocus="() => replayUserRatingHoverScore = score"
+										@onblur="() => replayUserRatingHoverScore = 0"
+										@onclick="() => SubmitReplayUserRatingAsync(score)">
+									<i class="bi @GetReplayUserRatingStarClass(score)"></i>
+								</button>
+							}
+						</div>
+						<span class="small text-light" style="min-width: 6.5rem; text-align: right;">@GetReplayUserRatingText()</span>
+					</div>
 				</div>
 			}
 		</div>

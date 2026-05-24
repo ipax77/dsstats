@@ -1,0 +1,35 @@
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JSRuntime
+
+<div @ref="rootElement" class="@Class">
+    @ChildContent
+</div>
+
+@code {
+    private ElementReference rootElement;
+    private IJSObjectReference? module;
+
+    [Parameter, EditorRequired]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
+            "import",
+            "./_content/dsstats.play/spawnPlayback.js");
+
+        await module.InvokeVoidAsync("hydrateUnitIcons", rootElement);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (module is not null)
+        {
+            await module.DisposeAsync();
+        }
+    }
+}

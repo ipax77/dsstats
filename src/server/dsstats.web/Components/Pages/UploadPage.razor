@@ -9,6 +9,7 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject IReplayRepository ReplayRepository
 @inject ILogger<UploadPage> Logger
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <PageTitle>dsstats - upload</PageTitle>
@@ -44,7 +45,13 @@
 	else if (!string.IsNullOrEmpty(result))
 	{
 		<div class="alert alert-success mb-4" style="max-width: 600px;">
-			@result
+			<div>@result</div>
+			@if (!string.IsNullOrEmpty(replayLink))
+			{
+				<div class="mt-2">
+					<a href="@replayLink">@replayLink</a>
+				</div>
+			}
 		</div>
 	}
 
@@ -209,6 +216,7 @@
 	private int maxAllowedFiles = 1;
 	private bool isLoading;
 	string result = string.Empty;
+	string? replayLink;
 
 	Guid Guid;
 	private HubConnection? hubConnection;
@@ -229,8 +237,10 @@
 		{
 			decodeFinished = e;
 			result = e.Error ?? "Decode completed";
+			replayLink = null;
 			if (!string.IsNullOrEmpty(e.ReplayHash))
 			{
+				replayLink = NavigationManager.ToAbsoluteUri($"replays?Replay={Uri.EscapeDataString(e.ReplayHash)}").ToString();
 				_ = LoadReplay(e.ReplayHash);
 			}
 			isLoading = false;
@@ -249,11 +259,14 @@
 	{
 		isLoading = true;
 		result = string.Empty;
+		replayLink = null;
+		replayDetails = null;
 		await InvokeAsync(StateHasChanged);
 
 		var file = e.GetMultipleFiles(maxAllowedFiles).FirstOrDefault();
 		if (file == null || hubConnection == null)
 		{
+			isLoading = false;
 			return;
 		}
 		try
