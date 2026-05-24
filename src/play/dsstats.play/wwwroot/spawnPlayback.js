@@ -41,25 +41,112 @@ const TEAM_SPAWN_AREAS = [
     }
 ];
 
-export function initializeSpawnPlayback(canvas, replay) {
+export function initializeSpawnPlayback(
+    canvas,
+    replay,
+    callbackRef,
+    gameloopsPerSecond,
+    speedMultiplier) {
     const state = {
-        replay,
+        replay: normalizeReplay(replay),
+        callbackRef,
+        gameloopsPerSecond: Number.isFinite(gameloopsPerSecond) && gameloopsPerSecond > 0
+            ? gameloopsPerSecond
+            : 22.4,
+        speedMultiplier: Number.isFinite(speedMultiplier) && speedMultiplier > 0
+            ? speedMultiplier
+            : 1,
         resizeObserver: null,
         currentGameloop: 0,
+        running: false,
+        animationFrameId: 0,
+        lastFrameTimestamp: 0,
+        lastProgressTimestamp: 0,
+        activeUnits: [],
+        nextUnitIndex: 0,
+        lastActiveGameloop: Number.NEGATIVE_INFINITY,
         staticGeometry: null,
+        renderCache: null,
+        staticBackgroundCanvas: null,
         staticCanvasWidth: 0,
-        staticCanvasHeight: 0
+        staticCanvasHeight: 0,
+        unitSpriteCache: new Map()
     };
 
     const oldState = states.get(canvas);
-    if (oldState?.resizeObserver) {
-        oldState.resizeObserver.disconnect();
-    }
+    disposeState(oldState);
 
     state.resizeObserver = new ResizeObserver(() => drawSpawnPlayback(canvas, state.currentGameloop));
     state.resizeObserver.observe(canvas);
     states.set(canvas, state);
     resizeCanvas(canvas);
+}
+
+export function startSpawnPlayback(canvas, currentGameloop, speedMultiplier) {
+    const state = states.get(canvas);
+    if (!state?.replay) {
+        return;
+    }
+
+    if (Number.isFinite(currentGameloop)) {
+        state.currentGameloop = clampGameloop(state, currentGameloop);
+    }
+
+    if (Number.isFinite(speedMultiplier) && speedMultiplier > 0) {
+        state.speedMultiplier = speedMultiplier;
+    }
+
+    state.running = true;
+    state.lastFrameTimestamp = 0;
+    state.lastProgressTimestamp = 0;
+    cancelAnimation(state);
+    notifyProgress(state, "playing");
+    state.animationFrameId = requestAnimationFrame(timestamp => animateSpawnPlayback(canvas, timestamp));
+}
+
+export function pauseSpawnPlayback(canvas, notify = true) {
+    const state = states.get(canvas);
+    if (!state) {
+        return 0;
+    }
+
+    state.running = false;
+    cancelAnimation(state);
+    if (notify) {
+        notifyProgress(state, "paused");
+    }
+
+    return state.currentGameloop;
+}
+
+export function stopSpawnPlayback(canvas, notify = true) {
+    const state = states.get(canvas);
+    if (!state) {
+        return 0;
+    }
+
+    state.running = false;
+    cancelAnimation(state);
+    if (notify) {
+        notifyProgress(state, "stopped");
+    }
+
+    return state.currentGameloop;
+}
+
+export function setSpawnPlaybackSpeed(canvas, speedMultiplier) {
+    const state = states.get(canvas);
+    if (!state || !Number.isFinite(speedMultiplier) || speedMultiplier <= 0) {
+        return;
+    }
+
+    state.speedMultiplier = speedMultiplier;
+}
+
+export function disposeSpawnPlayback(canvas) {
+    const state = states.get(canvas);
+    disposeState(state);
+    states.delete(canvas);
 }
 
 export function drawSpawnPlayback(canvas, currentGameloop) {
@@ -71,31 +158,207 @@ export function drawSpawnPlayback(canvas, currentGameloop) {
     const resized = resizeCanvas(canvas);
     const ctx = canvas.getContext("2d");
     const replay = state.replay;
-    const bounds = replay.bounds ?? replay.Bounds;
+    const bounds = replay.bounds;
     if (!bounds) {
         return;
     }
 
-    state.currentGameloop = currentGameloop;
-    const stepGameloops = replay.stepGameloops ?? replay.StepGameloops ?? 112;
-    const players = replay.players ?? replay.Players ?? [];
-
+    state.currentGameloop = clampGameloop(state, currentGameloop);
     if (resized
         || !state.staticGeometry
+        || !state.renderCache
         || state.staticCanvasWidth !== canvas.width
         || state.staticCanvasHeight !== canvas.height) {
+        state.renderCache = createRenderCache(state, bounds, canvas);
         state.staticGeometry = createStaticGeometry(replay, bounds, canvas);
+        state.staticBackgroundCanvas = createStaticBackgroundCanvas(canvas, state.staticGeometry);
         state.staticCanvasWidth = canvas.width;
         state.staticCanvasHeight = canvas.height;
+        state.activeUnits.length = 0;
+        state.nextUnitIndex = 0;
+        state.lastActiveGameloop = Number.NEGATIVE_INFINITY;
     }
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawStaticMapLayer(ctx, canvas, state.staticGeometry, currentGameloop);
-    const drawnUnits = drawUnitLayer(ctx, canvas, bounds, players, currentGameloop, stepGameloops);
+    ctx.drawImage(state.staticBackgroundCanvas, 0, 0);
+    drawDynamicMapLayer(ctx, canvas, state.staticGeometry, state.currentGameloop);
+    const activeUnits = getActiveUnits(state, state.currentGameloop);
+    const drawnUnits = drawUnitLayer(ctx, canvas, activeUnits, state.currentGameloop);
 
     if (drawnUnits === 0) {
         drawEmptyState(ctx, canvas);
     }
+}
+
+function animateSpawnPlayback(canvas, timestamp) {
+    const state = states.get(canvas);
+    if (!state?.running) {
+        return;
+    }
+
+    if (state.lastFrameTimestamp === 0) {
+        state.lastFrameTimestamp = timestamp;
+    }
+
+    const elapsedSeconds = Math.max(0, timestamp - state.lastFrameTimestamp) / 1000;
+    state.lastFrameTimestamp = timestamp;
+    state.currentGameloop = clampGameloop(
+        state,
+        state.currentGameloop + elapsedSeconds * state.gameloopsPerSecond * state.speedMultiplier);
+
+    drawSpawnPlayback(canvas, state.currentGameloop);
+
+    if (state.currentGameloop >= state.replay.durationGameloop) {
+        state.running = false;
+        state.animationFrameId = 0;
+        notifyProgress(state, "ended");
+        return;
+    }
+
+    if (timestamp - state.lastProgressTimestamp >= 250) {
+        state.lastProgressTimestamp = timestamp;
+        notifyProgress(state, "playing");
+    }
+
+    state.animationFrameId = requestAnimationFrame(nextTimestamp => animateSpawnPlayback(canvas, nextTimestamp));
+}
+
+function notifyProgress(state, status) {
+    state.callbackRef?.invokeMethodAsync(
+        "ReceiveSpawnPlaybackProgress",
+        Math.round(state.currentGameloop),
+        status).catch(() => { });
+}
+
+function disposeState(state) {
+    if (!state) {
+        return;
+    }
+
+    state.running = false;
+    cancelAnimation(state);
+    if (state.resizeObserver) {
+        state.resizeObserver.disconnect();
+        state.resizeObserver = null;
+    }
+}
+
+function cancelAnimation(state) {
+    if (state?.animationFrameId) {
+        cancelAnimationFrame(state.animationFrameId);
+        state.animationFrameId = 0;
+    }
+}
+
+function clampGameloop(state, gameloop) {
+    const duration = state.replay.durationGameloop ?? 0;
+    return clamp(Number.isFinite(gameloop) ? gameloop : 0, 0, duration);
+}
+
+function createRenderCache(state, bounds, canvas) {
+    const projection = createProjection(bounds, canvas);
+    state.unitSpriteCache.clear();
+    for (const unit of state.replay.units) {
+        const radius = Math.max(3, unit.radius * deviceScale(canvas) * 0.55);
+        unit.render = {
+            radius,
+            sprite: getUnitSprite(state, unit.color, unit.teamId, radius)
+        };
+    }
+
+    return { projection };
+}
+
+function createStaticBackgroundCanvas(canvas, geometry) {
+    const backgroundCanvas = createLayerCanvas(canvas.width, canvas.height);
+    const ctx = backgroundCanvas.getContext("2d");
+    drawStaticBackgroundLayer(ctx, canvas, geometry);
+    return backgroundCanvas;
+}
+
+function createLayerCanvas(width, height) {
+    if (typeof OffscreenCanvas !== "undefined") {
+        return new OffscreenCanvas(width, height);
+    }
+
+    const layer = document.createElement("canvas");
+    layer.width = width;
+    layer.height = height;
+    return layer;
+}
+
+function getUnitSprite(state, color, teamId, radius) {
+    const key = `${teamId}|${color}|${Math.round(radius * 10)}`;
+    const cached = state.unitSpriteCache.get(key);
+    if (cached) {
+        return cached;
+    }
+
+    const scale = Math.max(1, radius / 3);
+    const padding = Math.ceil(3 * scale);
+    const size = Math.ceil((radius + padding) * 2);
+    const sprite = createLayerCanvas(size, size);
+    const ctx = sprite.getContext("2d");
+    const center = size / 2;
+    ctx.save();
+    ctx.globalAlpha = teamId === 1 ? 0.92 : 0.78;
+    ctx.fillStyle = withAlpha(color, "99");
+    ctx.strokeStyle = withAlpha(color, "EE");
+    ctx.lineWidth = Math.max(1.5, 1.5 * scale);
+    ctx.beginPath();
+    ctx.arc(center, center, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+    state.unitSpriteCache.set(key, sprite);
+    return sprite;
+}
+
+function getActiveUnits(state, currentGameloop) {
+    if (currentGameloop < state.lastActiveGameloop) {
+        rebuildActiveUnits(state, currentGameloop);
+        return state.activeUnits;
+    }
+
+    const units = state.replay.units;
+    while (state.nextUnitIndex < units.length && units[state.nextUnitIndex].spawnGameloop <= currentGameloop) {
+        state.activeUnits.push(units[state.nextUnitIndex]);
+        state.nextUnitIndex++;
+    }
+
+    compactActiveUnits(state, currentGameloop);
+    state.lastActiveGameloop = currentGameloop;
+    return state.activeUnits;
+}
+
+function rebuildActiveUnits(state, currentGameloop) {
+    state.activeUnits.length = 0;
+    const units = state.replay.units;
+    let index = 0;
+    while (index < units.length && units[index].spawnGameloop <= currentGameloop) {
+        const unit = units[index];
+        if (unit.expiresGameloop > currentGameloop) {
+            state.activeUnits.push(unit);
+        }
+
+        index++;
+    }
+
+    state.nextUnitIndex = index;
+    state.lastActiveGameloop = currentGameloop;
+}
+
+function compactActiveUnits(state, currentGameloop) {
+    const activeUnits = state.activeUnits;
+    let writeIndex = 0;
+    for (let readIndex = 0; readIndex < activeUnits.length; readIndex++) {
+        const unit = activeUnits[readIndex];
+        if (unit.expiresGameloop > currentGameloop) {
+            activeUnits[writeIndex] = unit;
+            writeIndex++;
+        }
+    }
+
+    activeUnits.length = writeIndex;
 }
 
 function resizeCanvas(canvas) {
@@ -112,6 +375,68 @@ function resizeCanvas(canvas) {
     }
 
     return false;
+}
+
+function normalizeReplay(replay) {
+    const bounds = normalizeBounds(replay.bounds ?? replay.Bounds);
+    const rawPlayers = replay.players ?? replay.Players ?? [];
+    const players = [];
+    const units = [];
+
+    for (const rawPlayer of rawPlayers) {
+        const player = {
+            name: rawPlayer.name ?? rawPlayer.Name ?? "",
+            teamId: rawPlayer.teamId ?? rawPlayer.TeamId ?? 0,
+            gamePos: rawPlayer.gamePos ?? rawPlayer.GamePos ?? 0,
+            commander: rawPlayer.commander ?? rawPlayer.Commander ?? "",
+            refineryGameloops: normalizeRefineryGameloops(rawPlayer),
+            units: []
+        };
+
+        const rawUnits = rawPlayer.units ?? rawPlayer.Units ?? [];
+        for (const rawUnit of rawUnits) {
+            const spawnGameloop = rawUnit.spawnGameloop ?? rawUnit.SpawnGameloop ?? 0;
+            const expiresGameloop = rawUnit.expiresGameloop
+                ?? rawUnit.ExpiresGameloop
+                ?? spawnGameloop + MAX_UNIT_LIFETIME_GAMELOOPS;
+            const spawnX = rawUnit.spawnX ?? rawUnit.SpawnX ?? 0;
+            const spawnY = rawUnit.spawnY ?? rawUnit.SpawnY ?? 0;
+            const targetX = rawUnit.targetX ?? rawUnit.TargetX ?? spawnX;
+            const targetY = rawUnit.targetY ?? rawUnit.TargetY ?? spawnY;
+            const unit = {
+                spawnGameloop,
+                expiresGameloop,
+                spawnX,
+                spawnY,
+                deltaX: targetX - spawnX,
+                deltaY: targetY - spawnY,
+                inverseLifetime: 1 / Math.max(1, expiresGameloop - spawnGameloop),
+                radius: rawUnit.radius ?? rawUnit.Radius ?? 8,
+                color: rawUnit.color ?? rawUnit.Color ?? "#EC7063",
+                teamId: player.teamId,
+                render: null
+            };
+            player.units.push(unit);
+            units.push(unit);
+        }
+
+        players.push(player);
+    }
+
+    units.sort((left, right) => left.spawnGameloop - right.spawnGameloop || left.expiresGameloop - right.expiresGameloop);
+
+    return {
+        durationGameloop: replay.durationGameloop ?? replay.DurationGameloop ?? 0,
+        stepGameloops: replay.stepGameloops ?? replay.StepGameloops ?? 112,
+        bounds,
+        stats: replay.stats ?? replay.Stats,
+        middleControl: normalizeMiddleControl(replay),
+        landmarks: replay.landmarks ?? replay.Landmarks ?? [],
+        buildUnits: replay.buildUnits ?? replay.BuildUnits ?? [],
+        snapshots: replay.snapshots ?? replay.Snapshots ?? [],
+        players,
+        units
+    };
 }
 
 function createStaticGeometry(replay, bounds, canvas) {
@@ -326,7 +651,7 @@ function normalizeRefineryGameloops(player) {
         .sort((left, right) => left - right);
 }
 
-function drawStaticMapLayer(ctx, canvas, geometry, currentGameloop) {
+function drawStaticBackgroundLayer(ctx, canvas, geometry) {
     ctx.save();
     ctx.fillStyle = "#071015";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -334,6 +659,9 @@ function drawStaticMapLayer(ctx, canvas, geometry, currentGameloop) {
 
     drawGrid(ctx, canvas, geometry.gridLines);
     drawSpawnAreas(ctx, canvas, geometry.spawnAreas);
+}
+
+function drawDynamicMapLayer(ctx, canvas, geometry, currentGameloop) {
     drawPlayerGasBadges(ctx, canvas, geometry.playerGasBadges, currentGameloop);
     drawMiddleLine(ctx, canvas, geometry.middleLine, geometry.middleControl, currentGameloop);
 
@@ -564,48 +892,45 @@ function drawLandmark(ctx, canvas, landmark) {
     ctx.restore();
 }
 
-function drawUnitLayer(ctx, canvas, bounds, players, currentGameloop, stepGameloops) {
+function drawUnitLayer(ctx, canvas, activeUnits, currentGameloop) {
     let drawnUnits = 0;
-    for (const player of players) {
-        const units = player.units ?? player.Units ?? [];
-        const teamId = player.teamId ?? player.TeamId;
-        for (const unit of units) {
-            if (drawUnit(ctx, canvas, bounds, unit, teamId, currentGameloop, stepGameloops)) {
-                drawnUnits++;
-            }
+    const state = states.get(canvas);
+    if (!state?.renderCache) {
+        return 0;
+    }
+
+    for (const unit of activeUnits) {
+        if (drawUnit(ctx, state.renderCache.projection, unit, currentGameloop)) {
+            drawnUnits++;
         }
     }
 
     return drawnUnits;
 }
 
-function drawUnit(ctx, canvas, bounds, unit, teamId, currentGameloop, stepGameloops) {
-    const spawnGameloop = unit.spawnGameloop ?? unit.SpawnGameloop;
-    if (currentGameloop < spawnGameloop) {
+function drawUnit(ctx, projection, unit, currentGameloop) {
+    if (currentGameloop < unit.spawnGameloop) {
         return false;
     }
 
-    const expiresGameloop = unit.expiresGameloop ?? unit.ExpiresGameloop ?? spawnGameloop + MAX_UNIT_LIFETIME_GAMELOOPS;
-    if (expiresGameloop <= currentGameloop) {
+    if (unit.expiresGameloop <= currentGameloop) {
         return false;
     }
 
-    const position = getUnitPosition(unit, currentGameloop, expiresGameloop);
-    const projected = project(position.x, position.y, bounds, canvas);
-    const radius = Math.max(3, (unit.radius ?? unit.Radius ?? 8) * deviceScale(canvas) * 0.55);
-    const color = unit.color ?? unit.Color ?? "#EC7063";
+    const progress = clamp((currentGameloop - unit.spawnGameloop) * unit.inverseLifetime, 0, 1);
+    const x = projectX(projection, unit.spawnX + unit.deltaX * progress);
+    const y = projectY(projection, unit.spawnY + unit.deltaY * progress);
+    const sprite = unit.render?.sprite;
+    const radius = unit.render?.radius ?? 3;
+    if (sprite) {
+        ctx.drawImage(sprite, x - sprite.width / 2, y - sprite.height / 2);
+    } else {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = withAlpha(unit.color, "99");
+        ctx.fill();
+    }
 
-    ctx.save();
-    ctx.globalAlpha = teamId === 1 ? 0.92 : 0.78;
-    ctx.fillStyle = withAlpha(color, "99");
-    ctx.strokeStyle = withAlpha(color, "EE");
-    ctx.lineWidth = Math.max(1.5, deviceScale(canvas) * 1.5);
-    ctx.beginPath();
-    ctx.arc(projected.x, projected.y, radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.restore();
     return true;
 }
 
@@ -619,20 +944,30 @@ function drawEmptyState(ctx, canvas) {
     ctx.restore();
 }
 
-function getUnitPosition(unit, currentGameloop, expiresGameloop) {
-    const spawnGameloop = unit.spawnGameloop ?? unit.SpawnGameloop;
-    const spawnX = unit.spawnX ?? unit.SpawnX;
-    const spawnY = unit.spawnY ?? unit.SpawnY;
-    const targetX = unit.targetX ?? unit.TargetX;
-    const targetY = unit.targetY ?? unit.TargetY;
-    const progress = clamp(
-        (currentGameloop - spawnGameloop) / Math.max(1, expiresGameloop - spawnGameloop),
-        0,
-        1);
+function createProjection(bounds, canvas) {
+    const minX = bounds.minX ?? bounds.MinX;
+    const minY = bounds.minY ?? bounds.MinY;
+    const maxX = bounds.maxX ?? bounds.MaxX;
+    const maxY = bounds.maxY ?? bounds.MaxY;
+    const padding = 24 * deviceScale(canvas);
+    const width = Math.max(1, maxX - minX);
+    const height = Math.max(1, maxY - minY);
     return {
-        x: lerp(spawnX, targetX, progress),
-        y: lerp(spawnY, targetY, progress)
+        minX,
+        minY,
+        scaleX: (canvas.width - padding * 2) / width,
+        scaleY: (canvas.height - padding * 2) / height,
+        left: padding,
+        bottom: canvas.height - padding
     };
+}
+
+function projectX(projection, x) {
+    return projection.left + (x - projection.minX) * projection.scaleX;
+}
+
+function projectY(projection, y) {
+    return projection.bottom - (y - projection.minY) * projection.scaleY;
 }
 
 function normalizeBounds(bounds) {
@@ -753,10 +1088,6 @@ function project(x, y, bounds, canvas) {
 
 function deviceScale(canvas) {
     return canvas.width / Math.max(1, canvas.clientWidth);
-}
-
-function lerp(start, end, amount) {
-    return start + (end - start) * amount;
 }
 
 function clamp(value, min, max) {

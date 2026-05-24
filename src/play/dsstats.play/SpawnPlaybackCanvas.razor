@@ -11,14 +11,35 @@
             <div>
                 <h5 class="mb-1 text-warning">Spawn Playback</h5>
                 <div class="small text-light">@CurrentTimeLabel</div>
+                <div class="small text-muted">@PlaybackStatusLabel</div>
             </div>
-            <div class="btn-group" role="group" aria-label="Spawn playback controls">
-                <button type="button" class="btn btn-sm btn-outline-light" title="Back 5 seconds" @onclick="StepBackward">
-                    <span class="bi bi-chevron-left"></span>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-light" title="Forward 5 seconds" @onclick="StepForward">
-                    <span class="bi bi-chevron-right"></span>
-                </button>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="btn-group" role="group" aria-label="Spawn playback controls">
+                    <button type="button" class="btn btn-sm btn-outline-light" title="Back 5 seconds" @onclick="StepBackward">
+                        <span class="bi bi-chevron-left"></span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light" title="@PlayPauseTitle" @onclick="TogglePlayback">
+                        <span class="bi @PlayPauseIcon"></span>
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-light"
+                            title="Stop"
+                            disabled="@(animationState == SpawnPlaybackAnimationState.Stopped)"
+                            @onclick="StopAnimation">
+                        <span class="bi bi-stop-fill"></span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light" title="Forward 5 seconds" @onclick="StepForward">
+                        <span class="bi bi-chevron-right"></span>
+                    </button>
+                </div>
+                <select class="form-select form-select-sm spawn-playback-speed"
+                        aria-label="Spawn playback speed"
+                        value="@selectedPlaybackSpeed"
+                        @onchange="SetPlaybackSpeed">
+                    <option value="slow">Slow</option>
+                    <option value="normal">Normal</option>
+                    <option value="fast">Fast</option>
+                </select>
             </div>
         </div>
         <div class="spawn-playback-body">
@@ -137,6 +158,7 @@
 
     private ElementReference canvasElement;
     private IJSObjectReference? module;
+    private DotNetObjectReference<SpawnPlaybackCanvas>? dotNetReference;
     private ReplayDto? currentReplay;
     private SpawnPlaybackSidecarDto? currentSidecar;
     private SpawnPlaybackReplay? playback;
@@ -152,6 +174,25 @@
     private int team1AliveCount;
     private int team2AliveCount;
     private int currentSpawnNumber;
+    private SpawnPlaybackAnimationState animationState = SpawnPlaybackAnimationState.Stopped;
+    private string selectedPlaybackSpeed = "normal";
+
+    private string PlayPauseTitle => animationState == SpawnPlaybackAnimationState.Playing
+        ? "Pause"
+        : animationState == SpawnPlaybackAnimationState.Paused
+            ? "Resume"
+            : "Play";
+
+    private string PlayPauseIcon => animationState == SpawnPlaybackAnimationState.Playing
+        ? "bi-pause-fill"
+        : "bi-play-fill";
+
+    private string PlaybackStatusLabel => animationState switch
+    {
+        SpawnPlaybackAnimationState.Playing => $"Playing {GetPlaybackSpeedMultiplier():0.##}x",
+        SpawnPlaybackAnimationState.Paused => "Paused",
+        _ => "Stopped"
+    };
 
     private string CurrentTimeLabel =>
         playback is null
@@ -185,6 +226,7 @@
             BuildPlaybackStops(playback);
             currentGameloop = GetFirstPlaybackGameloop(playback);
             currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(currentGameloop);
+            animationState = SpawnPlaybackAnimationState.Stopped;
             SetRenderGameloop(force: true);
         }
     }
@@ -199,11 +241,18 @@
         module ??= await JSRuntime.InvokeAsync<IJSObjectReference>(
             "import",
             "./_content/dsstats.play/spawnPlayback.js");
+        dotNetReference ??= DotNetObjectReference.Create(this);
 
         if (!ReferenceEquals(initializedReplay, playback))
         {
             initializedReplay = playback;
-            await module.InvokeVoidAsync("initializeSpawnPlayback", canvasElement, playback);
+            await module.InvokeVoidAsync(
+                "initializeSpawnPlayback",
+                canvasElement,
+                playback,
+                dotNetReference,
+                SpawnPlaybackFactory.GameloopsPerSecond,
+                GetPlaybackSpeedMultiplier());
             canvasDrawPending = true;
         }
 
@@ -214,52 +263,162 @@
         }
     }
 
-    private Task StepBackward()
+    private async Task TogglePlayback()
+    {
+        if (playback is null || module is null)
+        {
+            return;
+        }
+
+        if (animationState == SpawnPlaybackAnimationState.Playing)
+        {
+            await PauseAnimation();
+            return;
+        }
+
+        animationState = SpawnPlaybackAnimationState.Playing;
+        await module.InvokeVoidAsync(
+            "startSpawnPlayback",
+            canvasElement,
+            currentGameloop,
+            GetPlaybackSpeedMultiplier());
+    }
+
+    private async Task PauseAnimation()
+    {
+        if (module is null)
+        {
+            animationState = SpawnPlaybackAnimationState.Paused;
+            return;
+        }
+
+        double stoppedGameloop = await module.InvokeAsync<double>("pauseSpawnPlayback", canvasElement, false);
+        ApplyAnimationProgress(stoppedGameloop, SpawnPlaybackAnimationState.Paused, requestCanvasDraw: false);
+        StateHasChanged();
+    }
+
+    private async Task StopAnimation()
+    {
+        await StopAnimationAndSync(SpawnPlaybackAnimationState.Stopped);
+        StateHasChanged();
+    }
+
+    private async Task StepBackward()
     {
         if (playback is null)
         {
-            return Task.CompletedTask;
+            return;
         }
 
+        await StopAnimationAndSync(SpawnPlaybackAnimationState.Stopped);
         currentGameloop = Math.Max(GetFirstPlaybackGameloop(playback), currentGameloop - playback.StepGameloops);
         SetRenderGameloop();
         currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(renderGameloop);
-        return Task.CompletedTask;
     }
 
-    private Task StepForward()
+    private async Task StepForward()
     {
         if (playback is null)
         {
-            return Task.CompletedTask;
+            return;
         }
 
+        await StopAnimationAndSync(SpawnPlaybackAnimationState.Stopped);
         currentGameloop = Math.Min(playback.DurationGameloop, currentGameloop + playback.StepGameloops);
         SetRenderGameloop();
         currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(renderGameloop);
-        return Task.CompletedTask;
     }
 
-    private Task SeekPlaybackStop(ChangeEventArgs args)
+    private async Task SeekPlaybackStop(ChangeEventArgs args)
     {
         if (playback is null || playbackStops.Count == 0)
         {
-            return Task.CompletedTask;
+            return;
         }
 
+        await StopAnimationAndSync(SpawnPlaybackAnimationState.Stopped);
         int nextIndex = ParsePlaybackStopIndex(args.Value);
         if (nextIndex == currentPlaybackStopIndex && playbackStops[nextIndex] == currentGameloop)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         currentPlaybackStopIndex = nextIndex;
         currentGameloop = playbackStops[nextIndex];
         SetRenderGameloop();
-        return Task.CompletedTask;
     }
 
-    private bool SetRenderGameloop(bool force = false)
+    private async Task SetPlaybackSpeed(ChangeEventArgs args)
+    {
+        string nextSpeed = args.Value?.ToString() ?? "normal";
+        selectedPlaybackSpeed = nextSpeed is "slow" or "normal" or "fast"
+            ? nextSpeed
+            : "normal";
+
+        if (module is not null)
+        {
+            await module.InvokeVoidAsync("setSpawnPlaybackSpeed", canvasElement, GetPlaybackSpeedMultiplier());
+        }
+    }
+
+    private async Task StopAnimationAndSync(SpawnPlaybackAnimationState nextState)
+    {
+        animationState = nextState;
+        if (module is null)
+        {
+            return;
+        }
+
+        double stoppedGameloop = await module.InvokeAsync<double>("stopSpawnPlayback", canvasElement, false);
+        ApplyAnimationProgress(stoppedGameloop, nextState, requestCanvasDraw: false);
+    }
+
+    [JSInvokable]
+    public Task ReceiveSpawnPlaybackProgress(double gameloop, string state)
+    {
+        return InvokeAsync(() =>
+        {
+            SpawnPlaybackAnimationState nextState = state switch
+            {
+                "playing" => SpawnPlaybackAnimationState.Playing,
+                "paused" => SpawnPlaybackAnimationState.Paused,
+                _ => SpawnPlaybackAnimationState.Stopped
+            };
+            ApplyAnimationProgress(gameloop, nextState, requestCanvasDraw: false);
+            StateHasChanged();
+        });
+    }
+
+    private void ApplyAnimationProgress(
+        double gameloop,
+        SpawnPlaybackAnimationState nextState,
+        bool requestCanvasDraw)
+    {
+        if (playback is null)
+        {
+            animationState = SpawnPlaybackAnimationState.Stopped;
+            return;
+        }
+
+        int firstGameloop = GetFirstPlaybackGameloop(playback);
+        int nextGameloop = (int)Math.Round(gameloop);
+        currentGameloop = Math.Clamp(nextGameloop, firstGameloop, playback.DurationGameloop);
+        SetRenderGameloop(requestCanvasDraw: requestCanvasDraw);
+        currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(renderGameloop);
+        animationState = nextState;
+    }
+
+    private double GetPlaybackSpeedMultiplier()
+    {
+        return selectedPlaybackSpeed switch
+        {
+            "slow" => 0.5,
+            "fast" => 2,
+            _ => 1
+        };
+    }
+
+    private bool SetRenderGameloop(bool force = false, bool requestCanvasDraw = true)
     {
         int nextRenderGameloop = ResolveRenderGameloop(playback, currentGameloop);
         if (!force && nextRenderGameloop == renderGameloop)
@@ -269,7 +428,11 @@
 
         renderGameloop = nextRenderGameloop;
         UpdateAliveUnitRows();
-        canvasDrawPending = true;
+        if (requestCanvasDraw)
+        {
+            canvasDrawPending = true;
+        }
+
         return true;
     }
 
@@ -565,12 +728,22 @@
         {
             try
             {
+                await module.InvokeVoidAsync("disposeSpawnPlayback", canvasElement);
                 await module.DisposeAsync();
             }
             catch (JSDisconnectedException)
             {
             }
         }
+
+        dotNetReference?.Dispose();
+    }
+
+    private enum SpawnPlaybackAnimationState
+    {
+        Stopped,
+        Playing,
+        Paused
     }
 
     private sealed record AliveUnitRow(

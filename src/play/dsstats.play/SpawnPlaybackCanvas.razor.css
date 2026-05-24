@@ -26,6 +26,10 @@
     margin-top: 0.75rem;
 }
 
+.spawn-playback-speed {
+    width: 7.25rem;
+}
+
 .spawn-playback-range {
     display: block;
     margin-bottom: 0.25rem;
