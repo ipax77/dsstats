@@ -1,4 +1,5 @@
 import { TEAM_COLORS } from "./constants";
+import { protossUnits } from "./protossIcons";
 import { terranUnits } from "./terranIcons";
 import type {
     CanvasContext,
@@ -10,6 +11,7 @@ import type {
 import { zergUnits } from "./zergIcons";
 
 const definitions: UnitIconDefinition[] = [
+    ...Object.values(protossUnits),
     ...Object.values(terranUnits),
     ...Object.values(zergUnits)
 ];

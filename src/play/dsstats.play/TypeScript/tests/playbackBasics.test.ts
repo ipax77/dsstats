@@ -76,6 +76,7 @@ describe("spawn playback basics", () => {
         const reaper = unitIconCatalog.resolve("Terran", "ReaperLightweight");
         const marauder = unitIconCatalog.resolve("Terran", "Marauder Lightweight");
         const zergling = unitIconCatalog.resolve("zerg", "ZerglingLightweight");
+        const zealot = unitIconCatalog.resolve("protoss", "Zealot");
         const terranUnits = [
             "Marine",
             "Marauder",
@@ -104,18 +105,49 @@ describe("spawn playback basics", () => {
             ["WidowMine", "terran.widowMine"],
             ["ThorAP", "terran.thor"]
         ] as const;
+        const protossUnits = [
+            "Zealot",
+            "Sentry",
+            "Stalker",
+            "Adept",
+            "High Templar",
+            "Dark Templar",
+            "Archon",
+            "Immortal",
+            "Colossus",
+            "Disruptor",
+            "Observer",
+            "Oracle",
+            "Phoenix",
+            "Void Ray",
+            "Carrier",
+            "Tempest",
+            "Mothership"
+        ];
+        const protossAliases = [
+            ["HighTemplar", "protoss.highTemplar"],
+            ["DarkTemplar", "protoss.darkTemplar"],
+            ["VoidRay", "protoss.voidRay"]
+        ] as const;
 
         expect(marine?.id).toBe("terran.marine");
         expect(reaper?.id).toBe("terran.reaper");
         expect(marauder?.id).toBe("terran.marauder");
+        expect(zealot?.id).toBe("protoss.zealot");
         for (const unit of terranUnits) {
             expect(unitIconCatalog.resolve("Terran", unit), unit).not.toBeNull();
         }
         for (const [alias, id] of terranAliases) {
             expect(unitIconCatalog.resolve("Terran", alias)?.id).toBe(id);
         }
+        for (const unit of protossUnits) {
+            expect(unitIconCatalog.resolve("Protoss", unit), unit).not.toBeNull();
+        }
+        for (const [alias, id] of protossAliases) {
+            expect(unitIconCatalog.resolve("Protoss", alias)?.id).toBe(id);
+        }
         expect(zergling?.id).toBe("zerg.zergling");
-        expect(unitIconCatalog.resolve("protoss", "Zealot")).toBeNull();
+        expect(unitIconCatalog.resolve("protoss", "Probe")).toBeNull();
     });
 
     it("renders team-colored SVG for catalog icons", () => {

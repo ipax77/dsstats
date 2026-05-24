@@ -480,6 +480,973 @@ function deleteState(canvas) {
   states.delete(canvas);
 }
 
+// TypeScript/protossIcons.ts
+var protossTokens = {
+  armorFill: "#F4D372",
+  armorMid: "#C99732",
+  armorShade: "#76531C",
+  armorDark: "#2D2417",
+  ivoryFill: "#FFF1C2",
+  psiFill: "#6FE7FF",
+  psiMid: "#25A8E8",
+  psiDark: "#0B4A76",
+  bladeFill: "#A9F6FF",
+  bladeCore: "#E8FFFF",
+  shadowFill: "#171C28",
+  darkStroke: "#18130C"
+};
+var protossZealot = {
+  id: "protoss.zealot",
+  commander: "protoss",
+  aliases: ["Zealot"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 35, 34], ["C", 38, 22, 44, 15, 50, 13], ["C", 56, 15, 62, 22, 65, 34], ["L", 60, 48], ["L", 40, 48], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 40, 36], ["L", 60, 36], ["L", 57, 44], ["L", 43, 44], ["Z"]],
+      fill: "psiFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 35, 48], ["L", 65, 48], ["L", 70, 73], ["L", 57, 88], ["L", 43, 88], ["L", 30, 73], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 39, 56], ["L", 61, 56], ["L", 56, 74], ["L", 50, 82], ["L", 44, 74], ["Z"]],
+      fill: "ivoryFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 33, 55], ["L", 18, 65], ["L", 19, 75], ["L", 39, 66], ["Z"], ["M", 67, 55], ["L", 82, 65], ["L", 81, 75], ["L", 61, 66], ["Z"]],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 18, 72], ["C", 10, 82, 9, 92, 16, 97], ["C", 21, 87, 28, 79, 27, 70], ["Z"], ["M", 82, 72], ["C", 90, 82, 91, 92, 84, 97], ["C", 79, 87, 72, 79, 73, 70], ["Z"]],
+      fill: "bladeFill",
+      stroke: "psiDark",
+      strokeWidth: 2,
+      lineJoin: "round",
+      opacity: 0.9
+    },
+    {
+      type: "path",
+      commands: [["M", 15, 92], ["L", 25, 75], ["M", 85, 92], ["L", 75, 75]],
+      stroke: "bladeCore",
+      strokeWidth: 2.5,
+      lineCap: "round",
+      opacity: 0.8
+    }
+  ]
+};
+var protossSentry = {
+  id: "protoss.sentry",
+  commander: "protoss",
+  aliases: ["Sentry"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 50, 14], ["C", 68, 15, 83, 30, 84, 49], ["C", 83, 69, 68, 84, 50, 86], ["C", 32, 84, 17, 69, 16, 49], ["C", 17, 30, 32, 15, 50, 14], ["Z"]],
+      fill: "psiDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round",
+      opacity: 0.65
+    },
+    {
+      type: "path",
+      commands: [["M", 50, 20], ["L", 64, 40], ["L", 58, 68], ["L", 50, 82], ["L", 42, 68], ["L", 36, 40], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 28, 43], ["L", 41, 34], ["L", 43, 54], ["L", 31, 64], ["Z"], ["M", 72, 43], ["L", 59, 34], ["L", 57, 54], ["L", 69, 64], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 51,
+      r: 14,
+      fill: "psiFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      opacity: 0.9
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 51,
+      r: 7,
+      fill: "bladeCore",
+      stroke: "psiDark",
+      strokeWidth: 1.5
+    },
+    {
+      type: "path",
+      commands: [["M", 33, 76], ["L", 43, 64], ["M", 67, 76], ["L", 57, 64], ["M", 50, 68], ["L", 50, 89]],
+      stroke: "armorShade",
+      strokeWidth: 4,
+      lineCap: "round"
+    }
+  ]
+};
+var protossStalker = {
+  id: "protoss.stalker",
+  commander: "protoss",
+  aliases: ["Stalker"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 29, 45], ["L", 40, 29], ["L", 60, 29], ["L", 71, 45], ["L", 65, 67], ["L", 50, 76], ["L", 35, 67], ["Z"]],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 37, 41], ["L", 63, 41], ["L", 60, 60], ["L", 50, 67], ["L", 40, 60], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 51,
+      r: 8,
+      fill: "psiFill",
+      stroke: "darkStroke",
+      strokeWidth: 2
+    },
+    {
+      type: "path",
+      commands: [["M", 35, 62], ["L", 20, 79], ["L", 27, 85], ["L", 44, 68], ["Z"], ["M", 65, 62], ["L", 80, 79], ["L", 73, 85], ["L", 56, 68], ["Z"]],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 35, 50], ["L", 12, 44], ["L", 9, 52], ["L", 32, 59], ["Z"], ["M", 65, 50], ["L", 88, 44], ["L", 91, 52], ["L", 68, 59], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 41, 33], ["L", 50, 15], ["L", 59, 33]],
+      stroke: "psiMid",
+      strokeWidth: 4,
+      lineCap: "round",
+      lineJoin: "round"
+    }
+  ]
+};
+var protossAdept = {
+  id: "protoss.adept",
+  commander: "protoss",
+  aliases: ["Adept"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 38, 32], ["C", 40, 21, 45, 15, 50, 13], ["C", 55, 15, 60, 21, 62, 32], ["L", 58, 46], ["L", 42, 46], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 41, 35], ["L", 59, 35], ["L", 56, 43], ["L", 44, 43], ["Z"]],
+      fill: "psiFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 34, 48], ["L", 66, 48], ["L", 63, 73], ["L", 50, 88], ["L", 37, 73], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 39, 55], ["L", 61, 55], ["L", 56, 72], ["L", 50, 78], ["L", 44, 72], ["Z"]],
+      fill: "ivoryFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 33, 56], ["L", 14, 54], ["L", 8, 64], ["L", 31, 66], ["Z"], ["M", 67, 56], ["L", 86, 54], ["L", 92, 64], ["L", 69, 66], ["Z"]],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 14, 60], ["L", 5, 48], ["M", 86, 60], ["L", 95, 48]],
+      stroke: "bladeFill",
+      strokeWidth: 5,
+      lineCap: "round"
+    }
+  ]
+};
+var protossHighTemplar = {
+  id: "protoss.highTemplar",
+  commander: "protoss",
+  aliases: ["High Templar", "HighTemplar"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 35, 37], ["C", 38, 22, 44, 14, 50, 12], ["C", 56, 14, 62, 22, 65, 37], ["L", 59, 51], ["L", 41, 51], ["Z"]],
+      fill: "ivoryFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 39, 39], ["L", 61, 39], ["L", 57, 48], ["L", 43, 48], ["Z"]],
+      fill: "psiFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 34, 50], ["L", 66, 50], ["L", 78, 92], ["L", 22, 92], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 43, 55], ["L", 57, 55], ["L", 61, 87], ["L", 39, 87], ["Z"]],
+      fill: "ivoryFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 35, 59], ["L", 16, 68], ["L", 24, 79], ["L", 42, 65], ["Z"], ["M", 65, 59], ["L", 84, 68], ["L", 76, 79], ["L", 58, 65], ["Z"]],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 70,
+      r: 9,
+      fill: "psiFill",
+      stroke: "psiDark",
+      strokeWidth: 2,
+      opacity: 0.75
+    }
+  ]
+};
+var protossDarkTemplar = {
+  id: "protoss.darkTemplar",
+  commander: "protoss",
+  aliases: ["Dark Templar", "DarkTemplar"],
+  viewBox: { width: 100, height: 100 },
+  tokens: {
+    ...protossTokens,
+    armorFill: "#7462A8",
+    armorMid: "#44336F",
+    armorShade: "#271A44",
+    bladeFill: "#8FF9FF",
+    psiFill: "#45D7FF"
+  },
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 34, 35], ["C", 38, 20, 45, 13, 50, 11], ["C", 55, 13, 62, 20, 66, 35], ["L", 60, 50], ["L", 40, 50], ["Z"]],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 40, 36], ["L", 60, 36], ["L", 56, 45], ["L", 44, 45], ["Z"]],
+      fill: "psiFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 33, 49], ["L", 67, 49], ["L", 73, 82], ["L", 50, 93], ["L", 27, 82], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 38, 58], ["L", 62, 58], ["L", 56, 77], ["L", 50, 84], ["L", 44, 77], ["Z"]],
+      fill: "shadowFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 31, 59], ["L", 13, 75], ["L", 20, 82], ["L", 40, 66], ["Z"], ["M", 69, 59], ["L", 87, 75], ["L", 80, 82], ["L", 60, 66], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 14, 80], ["C", 8, 88, 8, 96, 15, 99], ["C", 20, 91, 27, 84, 25, 77], ["Z"], ["M", 86, 80], ["C", 92, 88, 92, 96, 85, 99], ["C", 80, 91, 73, 84, 75, 77], ["Z"]],
+      fill: "bladeFill",
+      stroke: "psiDark",
+      strokeWidth: 2,
+      lineJoin: "round",
+      opacity: 0.9
+    }
+  ]
+};
+var protossArchon = {
+  id: "protoss.archon",
+  commander: "protoss",
+  aliases: ["Archon"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 50, 9], ["C", 72, 15, 84, 34, 82, 58], ["C", 78, 82, 65, 95, 50, 96], ["C", 35, 95, 22, 82, 18, 58], ["C", 16, 34, 28, 15, 50, 9], ["Z"]],
+      fill: "psiDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 50, 18], ["C", 65, 24, 74, 40, 72, 58], ["C", 69, 76, 60, 87, 50, 88], ["C", 40, 87, 31, 76, 28, 58], ["C", 26, 40, 35, 24, 50, 18], ["Z"]],
+      fill: "psiFill",
+      stroke: "psiDark",
+      strokeWidth: 3,
+      opacity: 0.9
+    },
+    {
+      type: "path",
+      commands: [["M", 40, 35], ["L", 60, 35], ["L", 57, 48], ["L", 43, 48], ["Z"]],
+      fill: "bladeCore",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 28, 56], ["L", 11, 72], ["L", 23, 80], ["L", 39, 62], ["Z"], ["M", 72, 56], ["L", 89, 72], ["L", 77, 80], ["L", 61, 62], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 37, 72], ["L", 28, 92], ["M", 63, 72], ["L", 72, 92], ["M", 50, 73], ["L", 50, 96]],
+      stroke: "bladeCore",
+      strokeWidth: 4,
+      lineCap: "round",
+      opacity: 0.8
+    }
+  ]
+};
+var protossImmortal = {
+  id: "protoss.immortal",
+  commander: "protoss",
+  aliases: ["Immortal"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 25, 48], ["L", 36, 28], ["L", 64, 28], ["L", 75, 48], ["L", 70, 76], ["L", 50, 88], ["L", 30, 76], ["Z"]],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 18, 37], ["L", 35, 27], ["L", 39, 43], ["L", 23, 56], ["Z"], ["M", 82, 37], ["L", 65, 27], ["L", 61, 43], ["L", 77, 56], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 36, 43], ["L", 64, 43], ["L", 61, 66], ["L", 50, 75], ["L", 39, 66], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 55,
+      r: 8,
+      fill: "psiFill",
+      stroke: "darkStroke",
+      strokeWidth: 2
+    },
+    {
+      type: "path",
+      commands: [["M", 21, 47], ["L", 5, 43], ["L", 4, 52], ["L", 21, 57], ["Z"], ["M", 79, 47], ["L", 95, 43], ["L", 96, 52], ["L", 79, 57], ["Z"]],
+      fill: "ivoryFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 36, 76], ["L", 25, 91], ["L", 43, 92], ["L", 50, 80], ["Z"], ["M", 64, 76], ["L", 75, 91], ["L", 57, 92], ["L", 50, 80], ["Z"]],
+      fill: "armorShade",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    }
+  ]
+};
+var protossColossus = {
+  id: "protoss.colossus",
+  commander: "protoss",
+  aliases: ["Colossus"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 34, 29], ["L", 44, 16], ["L", 56, 16], ["L", 66, 29], ["L", 62, 53], ["L", 50, 64], ["L", 38, 53], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 38,
+      r: 8,
+      fill: "psiFill",
+      stroke: "darkStroke",
+      strokeWidth: 2
+    },
+    {
+      type: "path",
+      commands: [["M", 38, 51], ["L", 25, 79], ["L", 17, 94], ["M", 44, 57], ["L", 39, 84], ["L", 35, 96], ["M", 62, 51], ["L", 75, 79], ["L", 83, 94], ["M", 56, 57], ["L", 61, 84], ["L", 65, 96]],
+      stroke: "armorShade",
+      strokeWidth: 6,
+      lineCap: "round",
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 31, 28], ["L", 9, 19], ["L", 13, 27], ["L", 34, 35], ["Z"], ["M", 69, 28], ["L", 91, 19], ["L", 87, 27], ["L", 66, 35], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 14, 24], ["L", 5, 35], ["M", 86, 24], ["L", 95, 35]],
+      stroke: "bladeFill",
+      strokeWidth: 4,
+      lineCap: "round"
+    }
+  ]
+};
+var protossDisruptor = {
+  id: "protoss.disruptor",
+  commander: "protoss",
+  aliases: ["Disruptor"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 50, 18], ["L", 67, 33], ["L", 78, 50], ["L", 67, 67], ["L", 50, 82], ["L", 33, 67], ["L", 22, 50], ["L", 33, 33], ["Z"]],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 50,
+      r: 24,
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 3
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 50,
+      r: 15,
+      fill: "psiFill",
+      stroke: "psiDark",
+      strokeWidth: 3
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 50,
+      r: 7,
+      fill: "bladeCore",
+      opacity: 0.9
+    },
+    {
+      type: "path",
+      commands: [["M", 50, 19], ["L", 50, 32], ["M", 50, 68], ["L", 50, 81], ["M", 19, 50], ["L", 32, 50], ["M", 68, 50], ["L", 81, 50]],
+      stroke: "ivoryFill",
+      strokeWidth: 5,
+      lineCap: "round"
+    }
+  ]
+};
+var protossObserver = {
+  id: "protoss.observer",
+  commander: "protoss",
+  aliases: ["Observer"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 50, 18], ["L", 67, 39], ["L", 82, 50], ["L", 67, 61], ["L", 50, 82], ["L", 33, 61], ["L", 18, 50], ["L", 33, 39], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 50,
+      r: 18,
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 50,
+      r: 10,
+      fill: "psiFill",
+      stroke: "psiDark",
+      strokeWidth: 2.5
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 50,
+      r: 4,
+      fill: "bladeCore",
+      opacity: 0.9
+    },
+    {
+      type: "path",
+      commands: [["M", 32, 40], ["L", 20, 28], ["M", 68, 40], ["L", 80, 28], ["M", 32, 60], ["L", 20, 72], ["M", 68, 60], ["L", 80, 72]],
+      stroke: "armorShade",
+      strokeWidth: 4,
+      lineCap: "round"
+    }
+  ]
+};
+var protossOracle = {
+  id: "protoss.oracle",
+  commander: "protoss",
+  aliases: ["Oracle"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 50, 15], ["C", 70, 18, 84, 34, 85, 52], ["C", 72, 46, 59, 45, 50, 50], ["C", 41, 45, 28, 46, 15, 52], ["C", 16, 34, 30, 18, 50, 15], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 29, 53], ["C", 37, 68, 45, 80, 50, 90], ["C", 55, 80, 63, 68, 71, 53], ["C", 61, 58, 39, 58, 29, 53], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 51,
+      r: 11,
+      fill: "psiFill",
+      stroke: "psiDark",
+      strokeWidth: 2.5
+    },
+    {
+      type: "path",
+      commands: [["M", 23, 45], ["L", 7, 39], ["L", 18, 55], ["M", 77, 45], ["L", 93, 39], ["L", 82, 55]],
+      stroke: "armorShade",
+      strokeWidth: 5,
+      lineCap: "round",
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 42, 27], ["L", 50, 15], ["L", 58, 27]],
+      stroke: "psiMid",
+      strokeWidth: 4,
+      lineCap: "round"
+    }
+  ]
+};
+var protossPhoenix = {
+  id: "protoss.phoenix",
+  commander: "protoss",
+  aliases: ["Phoenix"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 50, 12], ["L", 62, 37], ["L", 91, 48], ["L", 80, 63], ["L", 61, 58], ["L", 57, 81], ["L", 50, 91], ["L", 43, 81], ["L", 39, 58], ["L", 20, 63], ["L", 9, 48], ["L", 38, 37], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 41, 34], ["L", 59, 34], ["L", 62, 54], ["L", 55, 70], ["L", 45, 70], ["L", 38, 54], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 48,
+      r: 7,
+      fill: "psiFill",
+      stroke: "darkStroke",
+      strokeWidth: 2
+    },
+    {
+      type: "path",
+      commands: [["M", 20, 52], ["L", 4, 57], ["L", 10, 66], ["L", 27, 58], ["Z"], ["M", 80, 52], ["L", 96, 57], ["L", 90, 66], ["L", 73, 58], ["Z"]],
+      fill: "ivoryFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 44, 76], ["L", 36, 92], ["M", 56, 76], ["L", 64, 92]],
+      stroke: "psiMid",
+      strokeWidth: 4,
+      lineCap: "round"
+    }
+  ]
+};
+var protossVoidRay = {
+  id: "protoss.voidRay",
+  commander: "protoss",
+  aliases: ["Void Ray", "VoidRay"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 50, 10], ["L", 62, 32], ["L", 83, 44], ["L", 72, 61], ["L", 60, 57], ["L", 57, 84], ["L", 50, 94], ["L", 43, 84], ["L", 40, 57], ["L", 28, 61], ["L", 17, 44], ["L", 38, 32], ["Z"]],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 41, 31], ["L", 59, 31], ["L", 64, 57], ["L", 56, 75], ["L", 44, 75], ["L", 36, 57], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 46, 28], ["L", 54, 28], ["L", 54, 75], ["L", 46, 75], ["Z"]],
+      fill: "psiFill",
+      stroke: "psiDark",
+      strokeWidth: 2,
+      lineJoin: "round",
+      opacity: 0.85
+    },
+    {
+      type: "path",
+      commands: [["M", 27, 47], ["L", 8, 41], ["L", 17, 55], ["M", 73, 47], ["L", 92, 41], ["L", 83, 55]],
+      stroke: "armorMid",
+      strokeWidth: 5,
+      lineCap: "round",
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 50, 75], ["L", 50, 96]],
+      stroke: "bladeCore",
+      strokeWidth: 4,
+      lineCap: "round"
+    }
+  ]
+};
+var protossCarrier = {
+  id: "protoss.carrier",
+  commander: "protoss",
+  aliases: ["Carrier"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 50, 8], ["L", 67, 32], ["L", 90, 45], ["L", 80, 67], ["L", 62, 63], ["L", 59, 84], ["L", 50, 96], ["L", 41, 84], ["L", 38, 63], ["L", 20, 67], ["L", 10, 45], ["L", 33, 32], ["Z"]],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 38, 29], ["L", 62, 29], ["L", 68, 57], ["L", 58, 78], ["L", 42, 78], ["L", 32, 57], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 39, 41], ["L", 61, 41], ["L", 64, 53], ["L", 36, 53], ["Z"]],
+      fill: "psiFill",
+      stroke: "psiDark",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 27,
+      cy: 56,
+      r: 4,
+      fill: "bladeCore",
+      stroke: "darkStroke",
+      strokeWidth: 1
+    },
+    {
+      type: "circle",
+      cx: 73,
+      cy: 56,
+      r: 4,
+      fill: "bladeCore",
+      stroke: "darkStroke",
+      strokeWidth: 1
+    },
+    {
+      type: "path",
+      commands: [["M", 41, 79], ["L", 35, 94], ["M", 50, 82], ["L", 50, 97], ["M", 59, 79], ["L", 65, 94]],
+      stroke: "psiMid",
+      strokeWidth: 4,
+      lineCap: "round"
+    }
+  ]
+};
+var protossTempest = {
+  id: "protoss.tempest",
+  commander: "protoss",
+  aliases: ["Tempest"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 50, 6], ["L", 60, 34], ["L", 83, 49], ["L", 73, 62], ["L", 59, 57], ["L", 55, 84], ["L", 50, 96], ["L", 45, 84], ["L", 41, 57], ["L", 27, 62], ["L", 17, 49], ["L", 40, 34], ["Z"]],
+      fill: "armorMid",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 43, 27], ["L", 57, 27], ["L", 60, 69], ["L", 53, 88], ["L", 47, 88], ["L", 40, 69], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 47, 16], ["L", 53, 16], ["L", 53, 87], ["L", 47, 87], ["Z"]],
+      fill: "psiFill",
+      stroke: "psiDark",
+      strokeWidth: 1.5,
+      opacity: 0.85
+    },
+    {
+      type: "path",
+      commands: [["M", 27, 50], ["L", 9, 48], ["L", 15, 58], ["L", 33, 56], ["Z"], ["M", 73, 50], ["L", 91, 48], ["L", 85, 58], ["L", 67, 56], ["Z"]],
+      fill: "ivoryFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 43,
+      r: 5,
+      fill: "bladeCore",
+      stroke: "darkStroke",
+      strokeWidth: 1.5
+    }
+  ]
+};
+var protossMothership = {
+  id: "protoss.mothership",
+  commander: "protoss",
+  aliases: ["Mothership"],
+  viewBox: { width: 100, height: 100 },
+  tokens: protossTokens,
+  layers: [
+    {
+      type: "path",
+      commands: [["M", 50, 6], ["L", 64, 25], ["L", 88, 30], ["L", 76, 49], ["L", 88, 70], ["L", 64, 75], ["L", 50, 94], ["L", 36, 75], ["L", 12, 70], ["L", 24, 49], ["L", 12, 30], ["L", 36, 25], ["Z"]],
+      fill: "armorDark",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 50, 18], ["L", 62, 35], ["L", 67, 58], ["L", 58, 78], ["L", 50, 86], ["L", 42, 78], ["L", 33, 58], ["L", 38, 35], ["Z"]],
+      fill: "armorFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 54,
+      r: 15,
+      fill: "psiFill",
+      stroke: "psiDark",
+      strokeWidth: 3,
+      opacity: 0.9
+    },
+    {
+      type: "circle",
+      cx: 50,
+      cy: 54,
+      r: 7,
+      fill: "bladeCore",
+      opacity: 0.9
+    },
+    {
+      type: "path",
+      commands: [["M", 25, 34], ["L", 7, 21], ["M", 75, 34], ["L", 93, 21], ["M", 24, 68], ["L", 6, 81], ["M", 76, 68], ["L", 94, 81], ["M", 50, 20], ["L", 50, 3], ["M", 50, 84], ["L", 50, 98]],
+      stroke: "armorMid",
+      strokeWidth: 5,
+      lineCap: "round"
+    },
+    {
+      type: "path",
+      commands: [["M", 18, 49], ["L", 5, 49], ["M", 82, 49], ["L", 95, 49]],
+      stroke: "psiMid",
+      strokeWidth: 4,
+      lineCap: "round"
+    }
+  ]
+};
+var protossUnits = {
+  zealot: protossZealot,
+  sentry: protossSentry,
+  stalker: protossStalker,
+  adept: protossAdept,
+  highTemplar: protossHighTemplar,
+  darkTemplar: protossDarkTemplar,
+  archon: protossArchon,
+  immortal: protossImmortal,
+  colossus: protossColossus,
+  disruptor: protossDisruptor,
+  observer: protossObserver,
+  oracle: protossOracle,
+  phoenix: protossPhoenix,
+  voidRay: protossVoidRay,
+  carrier: protossCarrier,
+  tempest: protossTempest,
+  mothership: protossMothership
+};
+
 // TypeScript/terranIcons.ts
 var terranMarine = {
   id: "terran.marine",
@@ -3776,14 +4743,2010 @@ var zergQueen = {
     }
   ]
 };
+var zergHydralisk = {
+  id: "zerg.hydralisk",
+  commander: "zerg",
+  aliases: ["Hydralisk", "HydraliskLightweight"],
+  viewBox: { width: 100, height: 100 },
+  tokens: {
+    skinFill: "#83508B",
+    skinMid: "#67396F",
+    skinShade: "#43234A",
+    carapaceFill: "#B98BCC",
+    carapaceMid: "#835E92",
+    carapaceShade: "#4D355C",
+    clawFill: "#E8D7B2",
+    spineFill: "#D6B4E5",
+    eyeFill: "#FF5A54",
+    acidFill: "#8EFF5A",
+    acidCore: "#D7FF75",
+    darkStroke: "#24122C"
+  },
+  layers: [
+    // Coiled lower tail shadow
+    {
+      type: "path",
+      commands: [
+        ["M", 29, 82],
+        ["C", 35, 72, 47, 69, 58, 73],
+        ["C", 70, 77, 75, 87, 67, 93],
+        ["C", 58, 99, 39, 97, 29, 89],
+        ["C", 24, 86, 24, 84, 29, 82],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Main serpent body
+    {
+      type: "path",
+      commands: [
+        ["M", 47, 88],
+        ["C", 43, 76, 43, 66, 47, 55],
+        ["C", 51, 44, 52, 34, 49, 24],
+        ["C", 46, 16, 50, 9, 57, 9],
+        ["C", 67, 10, 74, 22, 72, 35],
+        ["C", 70, 50, 63, 60, 62, 73],
+        ["C", 62, 83, 67, 89, 75, 92],
+        ["C", 65, 97, 53, 96, 47, 88],
+        ["Z"]
+      ],
+      fill: "skinFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Chest / belly plate
+    {
+      type: "path",
+      commands: [
+        ["M", 53, 35],
+        ["C", 58, 43, 58, 56, 55, 70],
+        ["C", 53, 80, 55, 87, 61, 92],
+        ["C", 55, 92, 51, 89, 50, 83],
+        ["C", 48, 70, 51, 55, 50, 44],
+        ["C", 50, 39, 50, 36, 53, 35],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    // Back carapace ridge
+    {
+      type: "path",
+      commands: [
+        ["M", 58, 12],
+        ["C", 65, 16, 68, 25, 67, 36],
+        ["C", 66, 50, 59, 61, 59, 74],
+        ["C", 59, 82, 63, 88, 69, 91],
+        ["C", 63, 92, 58, 90, 56, 84],
+        ["C", 53, 72, 57, 57, 59, 44],
+        ["C", 61, 31, 58, 21, 54, 14],
+        ["Z"]
+      ],
+      fill: "carapaceMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round",
+      opacity: 0.95
+    },
+    // Hood / head crest
+    {
+      type: "path",
+      commands: [
+        ["M", 39, 23],
+        ["C", 41, 11, 49, 4, 59, 5],
+        ["C", 72, 6, 83, 17, 84, 31],
+        ["C", 75, 25, 66, 23, 58, 26],
+        ["C", 51, 28, 45, 27, 39, 23],
+        ["Z"]
+      ],
+      fill: "carapaceFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Face / snout
+    {
+      type: "path",
+      commands: [
+        ["M", 50, 25],
+        ["C", 58, 20, 70, 23, 76, 32],
+        ["C", 79, 38, 75, 45, 67, 47],
+        ["C", 58, 48, 50, 42, 47, 34],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 3.5,
+      lineJoin: "round"
+    },
+    // Face plate / brow
+    {
+      type: "path",
+      commands: [
+        ["M", 56, 28],
+        ["C", 62, 26, 69, 29, 73, 34],
+        ["L", 67, 38],
+        ["C", 62, 35, 57, 35, 53, 37],
+        ["Z"]
+      ],
+      fill: "carapaceShade",
+      stroke: "darkStroke",
+      strokeWidth: 2.3,
+      lineJoin: "round"
+    },
+    // Eye
+    {
+      type: "circle",
+      cx: 65,
+      cy: 32,
+      r: 2.6,
+      fill: "eyeFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.4
+    },
+    // Mouth acid glow
+    {
+      type: "path",
+      commands: [
+        ["M", 67, 42],
+        ["C", 72, 41, 76, 44, 77, 48],
+        ["C", 73, 51, 67, 50, 63, 46],
+        ["Z"]
+      ],
+      fill: "acidFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 71,
+      cy: 46,
+      r: 2,
+      fill: "acidCore",
+      opacity: 0.9
+    },
+    // Left scythe arm
+    {
+      type: "path",
+      commands: [
+        ["M", 48, 47],
+        ["C", 39, 49, 31, 57, 27, 68],
+        ["L", 17, 73],
+        ["L", 24, 80],
+        ["L", 35, 72],
+        ["C", 40, 65, 45, 58, 51, 54],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Left blade
+    {
+      type: "path",
+      commands: [
+        ["M", 17, 73],
+        ["C", 10, 74, 6, 78, 4, 86],
+        ["C", 12, 84, 19, 82, 24, 80],
+        ["Z"]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    // Right scythe arm
+    {
+      type: "path",
+      commands: [
+        ["M", 67, 48],
+        ["C", 76, 51, 83, 59, 86, 70],
+        ["L", 96, 75],
+        ["L", 89, 82],
+        ["L", 78, 74],
+        ["C", 73, 66, 68, 60, 62, 55],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Right blade
+    {
+      type: "path",
+      commands: [
+        ["M", 96, 75],
+        ["C", 101, 78, 104, 84, 104, 91],
+        ["C", 97, 86, 92, 84, 89, 82],
+        ["Z"]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    // Dorsal quills / spines
+    {
+      type: "path",
+      commands: [
+        ["M", 45, 22],
+        ["L", 35, 10],
+        ["L", 50, 19],
+        ["Z"],
+        ["M", 53, 15],
+        ["L", 51, 1],
+        ["L", 60, 14],
+        ["Z"],
+        ["M", 66, 19],
+        ["L", 76, 8],
+        ["L", 72, 23],
+        ["Z"],
+        ["M", 58, 47],
+        ["L", 70, 42],
+        ["L", 61, 54],
+        ["Z"],
+        ["M", 56, 60],
+        ["L", 68, 59],
+        ["L", 58, 68],
+        ["Z"]
+      ],
+      fill: "spineFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.3,
+      lineJoin: "round"
+    },
+    // Chest / body segmentation
+    {
+      type: "path",
+      commands: [
+        ["M", 51, 43],
+        ["C", 56, 46, 61, 46, 66, 43],
+        ["M", 50, 55],
+        ["C", 54, 58, 59, 58, 63, 55],
+        ["M", 49, 67],
+        ["C", 53, 70, 58, 70, 62, 67],
+        ["M", 50, 79],
+        ["C", 54, 82, 60, 82, 65, 79]
+      ],
+      stroke: "carapaceShade",
+      strokeWidth: 2.5,
+      lineCap: "round",
+      opacity: 0.85
+    },
+    // Lower tail highlight
+    {
+      type: "path",
+      commands: [
+        ["M", 34, 84],
+        ["C", 43, 89, 57, 90, 68, 86]
+      ],
+      stroke: "skinMid",
+      strokeWidth: 4,
+      lineCap: "round",
+      opacity: 0.75
+    }
+  ]
+};
+var zergInfestor = {
+  id: "zerg.infestor",
+  commander: "zerg",
+  aliases: ["Infestor", "InfestorLightweight"],
+  viewBox: { width: 100, height: 100 },
+  tokens: {
+    skinFill: "#7E4B87",
+    skinMid: "#613568",
+    skinShade: "#402247",
+    carapaceFill: "#AA7BBC",
+    carapaceMid: "#7D5A8F",
+    carapaceShade: "#4B3158",
+    fungalFill: "#7DFF5A",
+    fungalCore: "#D7FF75",
+    fungalDark: "#3B9E43",
+    eyeFill: "#FF5A54",
+    clawFill: "#E8D7B2",
+    darkStroke: "#24122C"
+  },
+  layers: [
+    // Rear bloated body shadow
+    {
+      type: "path",
+      commands: [
+        ["M", 19, 62],
+        ["C", 19, 43, 34, 31, 53, 31],
+        ["C", 73, 31, 87, 44, 87, 62],
+        ["C", 87, 78, 72, 89, 52, 89],
+        ["C", 32, 89, 19, 78, 19, 62],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Main bloated body
+    {
+      type: "path",
+      commands: [
+        ["M", 24, 60],
+        ["C", 25, 45, 38, 35, 54, 35],
+        ["C", 70, 35, 82, 46, 82, 61],
+        ["C", 82, 74, 69, 83, 52, 83],
+        ["C", 35, 83, 24, 73, 24, 60],
+        ["Z"]
+      ],
+      fill: "skinFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Upper shell plate
+    {
+      type: "path",
+      commands: [
+        ["M", 30, 55],
+        ["C", 34, 42, 44, 36, 56, 37],
+        ["C", 68, 38, 77, 47, 79, 58],
+        ["C", 69, 61, 53, 62, 39, 60],
+        ["Z"]
+      ],
+      fill: "carapaceFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Shell plate segmentation
+    {
+      type: "path",
+      commands: [
+        ["M", 42, 39],
+        ["C", 39, 45, 39, 54, 43, 60],
+        ["M", 55, 37],
+        ["C", 52, 45, 52, 54, 56, 61],
+        ["M", 68, 43],
+        ["C", 64, 49, 64, 56, 69, 60]
+      ],
+      stroke: "carapaceShade",
+      strokeWidth: 2.8,
+      lineCap: "round",
+      opacity: 0.9
+    },
+    // Front head/mouth cluster
+    {
+      type: "path",
+      commands: [
+        ["M", 67, 54],
+        ["C", 76, 49, 88, 52, 94, 62],
+        ["C", 94, 70, 87, 75, 77, 73],
+        ["L", 66, 67],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3.5,
+      lineJoin: "round"
+    },
+    // Head brow / face plate
+    {
+      type: "path",
+      commands: [
+        ["M", 73, 56],
+        ["C", 80, 54, 87, 57, 91, 62],
+        ["L", 85, 66],
+        ["C", 81, 63, 76, 63, 72, 65],
+        ["Z"]
+      ],
+      fill: "carapaceMid",
+      stroke: "darkStroke",
+      strokeWidth: 2.3,
+      lineJoin: "round"
+    },
+    // Eyes
+    {
+      type: "circle",
+      cx: 82,
+      cy: 60,
+      r: 2.3,
+      fill: "eyeFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.3
+    },
+    {
+      type: "circle",
+      cx: 88,
+      cy: 64,
+      r: 1.8,
+      fill: "eyeFill",
+      stroke: "darkStroke",
+      strokeWidth: 1
+    },
+    // Mouth / mandibles
+    {
+      type: "path",
+      commands: [
+        ["M", 80, 69],
+        ["L", 75, 78],
+        ["L", 84, 72],
+        ["M", 88, 69],
+        ["L", 94, 76],
+        ["L", 85, 73]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineCap: "round",
+      lineJoin: "round"
+    },
+    // Left front tentacle
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 74],
+        ["C", 35, 80, 28, 88, 18, 90],
+        ["C", 25, 82, 30, 75, 39, 68],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Right front tentacle
+    {
+      type: "path",
+      commands: [
+        ["M", 59, 75],
+        ["C", 68, 80, 77, 87, 88, 88],
+        ["C", 80, 82, 72, 75, 63, 68],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Left side tentacle
+    {
+      type: "path",
+      commands: [
+        ["M", 29, 65],
+        ["C", 18, 66, 10, 72, 7, 82],
+        ["C", 17, 79, 25, 75, 34, 68],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 2.8,
+      lineJoin: "round"
+    },
+    // Rear right tentacle
+    {
+      type: "path",
+      commands: [
+        ["M", 70, 66],
+        ["C", 80, 66, 90, 70, 97, 78],
+        ["C", 86, 78, 76, 75, 67, 70],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 2.8,
+      lineJoin: "round"
+    },
+    // Tentacle claw/tips
+    {
+      type: "path",
+      commands: [
+        ["M", 18, 90],
+        ["L", 10, 94],
+        ["L", 23, 93],
+        ["Z"],
+        ["M", 88, 88],
+        ["L", 96, 92],
+        ["L", 83, 92],
+        ["Z"],
+        ["M", 7, 82],
+        ["L", 0, 86],
+        ["L", 12, 85],
+        ["Z"],
+        ["M", 97, 78],
+        ["L", 104, 81],
+        ["L", 92, 82],
+        ["Z"]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    // Large fungal sacs
+    {
+      type: "circle",
+      cx: 39,
+      cy: 56,
+      r: 5.2,
+      fill: "fungalFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    {
+      type: "circle",
+      cx: 53,
+      cy: 52,
+      r: 6,
+      fill: "fungalFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    {
+      type: "circle",
+      cx: 67,
+      cy: 57,
+      r: 5,
+      fill: "fungalFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    {
+      type: "circle",
+      cx: 46,
+      cy: 70,
+      r: 4.5,
+      fill: "fungalFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    {
+      type: "circle",
+      cx: 61,
+      cy: 69,
+      r: 4.2,
+      fill: "fungalFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    // Fungal sac cores / highlights
+    {
+      type: "path",
+      commands: [
+        ["M", 37, 54],
+        ["L", 41, 53],
+        ["M", 51, 49],
+        ["L", 56, 48],
+        ["M", 65, 55],
+        ["L", 69, 54],
+        ["M", 44, 68],
+        ["L", 48, 67],
+        ["M", 59, 67],
+        ["L", 63, 66]
+      ],
+      stroke: "fungalCore",
+      strokeWidth: 2,
+      lineCap: "round",
+      opacity: 0.85
+    },
+    // Belly shadow curve
+    {
+      type: "path",
+      commands: [
+        ["M", 30, 68],
+        ["C", 42, 76, 63, 77, 77, 69]
+      ],
+      stroke: "skinShade",
+      strokeWidth: 4,
+      lineCap: "round",
+      opacity: 0.6
+    },
+    // Small dark pores
+    {
+      type: "circle",
+      cx: 33,
+      cy: 62,
+      r: 1.5,
+      fill: "fungalDark",
+      opacity: 0.9
+    },
+    {
+      type: "circle",
+      cx: 57,
+      cy: 61,
+      r: 1.4,
+      fill: "fungalDark",
+      opacity: 0.9
+    },
+    {
+      type: "circle",
+      cx: 72,
+      cy: 64,
+      r: 1.5,
+      fill: "fungalDark",
+      opacity: 0.9
+    }
+  ]
+};
+var zergCorruptor = {
+  id: "zerg.corruptor",
+  commander: "zerg",
+  aliases: ["Corruptor", "CorruptorLightweight"],
+  viewBox: { width: 100, height: 100 },
+  tokens: {
+    skinFill: "#7E4B87",
+    skinMid: "#633769",
+    skinShade: "#402247",
+    carapaceFill: "#AD7FC0",
+    carapaceMid: "#7C5A8A",
+    carapaceShade: "#4B3158",
+    wingFill: "#8D5A98",
+    wingShade: "#56315F",
+    corruptionFill: "#8EFF5A",
+    corruptionCore: "#D7FF75",
+    corruptionDark: "#3B9E43",
+    eyeFill: "#FF5A54",
+    clawFill: "#E8D7B2",
+    darkStroke: "#24122C"
+  },
+  layers: [
+    // Left wing membrane
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 42],
+        ["C", 31, 30, 17, 27, 6, 34],
+        ["C", 14, 42, 21, 50, 25, 61],
+        ["C", 31, 56, 38, 51, 47, 49],
+        ["Z"]
+      ],
+      fill: "wingFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Right wing membrane
+    {
+      type: "path",
+      commands: [
+        ["M", 57, 42],
+        ["C", 69, 30, 83, 27, 94, 34],
+        ["C", 86, 42, 79, 50, 75, 61],
+        ["C", 69, 56, 62, 51, 53, 49],
+        ["Z"]
+      ],
+      fill: "wingFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Left wing dark inner fold
+    {
+      type: "path",
+      commands: [
+        ["M", 18, 38],
+        ["C", 24, 43, 30, 49, 34, 56],
+        ["M", 31, 33],
+        ["C", 35, 39, 40, 44, 45, 48]
+      ],
+      stroke: "wingShade",
+      strokeWidth: 3,
+      lineCap: "round",
+      opacity: 0.9
+    },
+    // Right wing dark inner fold
+    {
+      type: "path",
+      commands: [
+        ["M", 82, 38],
+        ["C", 76, 43, 70, 49, 66, 56],
+        ["M", 69, 33],
+        ["C", 65, 39, 60, 44, 55, 48]
+      ],
+      stroke: "wingShade",
+      strokeWidth: 3,
+      lineCap: "round",
+      opacity: 0.9
+    },
+    // Rear floating tail / stinger
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 66],
+        ["C", 43, 77, 47, 86, 50, 94],
+        ["C", 54, 86, 57, 77, 57, 66],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Main manta body
+    {
+      type: "path",
+      commands: [
+        ["M", 30, 48],
+        ["C", 33, 33, 42, 24, 50, 23],
+        ["C", 58, 24, 67, 33, 70, 48],
+        ["C", 72, 63, 63, 74, 50, 76],
+        ["C", 37, 74, 28, 63, 30, 48],
+        ["Z"]
+      ],
+      fill: "skinFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Upper carapace
+    {
+      type: "path",
+      commands: [
+        ["M", 35, 45],
+        ["C", 38, 32, 44, 26, 50, 26],
+        ["C", 56, 26, 62, 32, 65, 45],
+        ["C", 60, 51, 54, 54, 50, 55],
+        ["C", 46, 54, 40, 51, 35, 45],
+        ["Z"]
+      ],
+      fill: "carapaceFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Hooked head / beak
+    {
+      type: "path",
+      commands: [
+        ["M", 41, 29],
+        ["C", 44, 18, 50, 10, 57, 9],
+        ["C", 66, 9, 72, 18, 69, 28],
+        ["C", 67, 36, 59, 41, 50, 40],
+        ["C", 45, 39, 42, 35, 41, 29],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Face plate
+    {
+      type: "path",
+      commands: [
+        ["M", 50, 24],
+        ["C", 55, 20, 63, 22, 66, 28],
+        ["L", 61, 33],
+        ["C", 57, 30, 52, 30, 48, 33],
+        ["Z"]
+      ],
+      fill: "carapaceMid",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    // Eye
+    {
+      type: "circle",
+      cx: 59,
+      cy: 27,
+      r: 2.5,
+      fill: "eyeFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.4
+    },
+    // Corruption mouth sac
+    {
+      type: "path",
+      commands: [
+        ["M", 58, 36],
+        ["C", 65, 35, 70, 39, 70, 45],
+        ["C", 65, 48, 57, 46, 53, 41],
+        ["Z"]
+      ],
+      fill: "corruptionFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 63,
+      cy: 42,
+      r: 2.2,
+      fill: "corruptionCore",
+      opacity: 0.9
+    },
+    // Underside body plate
+    {
+      type: "path",
+      commands: [
+        ["M", 38, 57],
+        ["C", 45, 62, 55, 62, 62, 57],
+        ["L", 58, 70],
+        ["L", 50, 74],
+        ["L", 42, 70],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Back corruption sacs
+    {
+      type: "circle",
+      cx: 43,
+      cy: 49,
+      r: 4.2,
+      fill: "corruptionFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    {
+      type: "circle",
+      cx: 54,
+      cy: 48,
+      r: 4.8,
+      fill: "corruptionFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    {
+      type: "circle",
+      cx: 61,
+      cy: 57,
+      r: 3.7,
+      fill: "corruptionFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    // Sac highlights
+    {
+      type: "path",
+      commands: [
+        ["M", 42, 47],
+        ["L", 45, 46],
+        ["M", 53, 45],
+        ["L", 57, 44],
+        ["M", 60, 55],
+        ["L", 63, 54]
+      ],
+      stroke: "corruptionCore",
+      strokeWidth: 2,
+      lineCap: "round",
+      opacity: 0.8
+    },
+    // Lower tentacles
+    {
+      type: "path",
+      commands: [
+        ["M", 44, 70],
+        ["C", 39, 76, 36, 84, 32, 91],
+        ["M", 50, 73],
+        ["C", 49, 81, 49, 88, 47, 96],
+        ["M", 56, 70],
+        ["C", 62, 77, 65, 84, 69, 91]
+      ],
+      stroke: "skinShade",
+      strokeWidth: 4,
+      lineCap: "round",
+      opacity: 0.95
+    },
+    // Tentacle tips
+    {
+      type: "path",
+      commands: [
+        ["M", 32, 91],
+        ["L", 26, 96],
+        ["L", 36, 95],
+        ["Z"],
+        ["M", 47, 96],
+        ["L", 43, 101],
+        ["L", 52, 100],
+        ["Z"],
+        ["M", 69, 91],
+        ["L", 75, 96],
+        ["L", 65, 95],
+        ["Z"]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    // Outer wing claws/hooks
+    {
+      type: "path",
+      commands: [
+        ["M", 6, 34],
+        ["L", 0, 29],
+        ["L", 3, 42],
+        ["Z"],
+        ["M", 94, 34],
+        ["L", 100, 29],
+        ["L", 97, 42],
+        ["Z"]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    // Carapace seams
+    {
+      type: "path",
+      commands: [
+        ["M", 40, 41],
+        ["C", 46, 44, 54, 44, 60, 41],
+        ["M", 37, 53],
+        ["C", 45, 57, 56, 57, 64, 53],
+        ["M", 50, 29],
+        ["L", 50, 53]
+      ],
+      stroke: "carapaceShade",
+      strokeWidth: 2.4,
+      lineCap: "round",
+      opacity: 0.85
+    }
+  ]
+};
+var zergLurker = {
+  id: "zerg.lurker",
+  commander: "zerg",
+  aliases: ["Lurker", "LurkerLightweight"],
+  viewBox: { width: 100, height: 100 },
+  tokens: {
+    skinFill: "#7B4B83",
+    skinMid: "#633769",
+    skinShade: "#402247",
+    carapaceFill: "#A77CB7",
+    carapaceMid: "#7C5A8A",
+    carapaceShade: "#4E355B",
+    spineFill: "#D6B4E5",
+    spikeFill: "#E8D7B2",
+    eyeFill: "#FF5A54",
+    acidFill: "#8EFF5A",
+    acidCore: "#D7FF75",
+    darkStroke: "#24122C"
+  },
+  layers: [
+    // Underground shadow / burrow mound
+    {
+      type: "path",
+      commands: [
+        ["M", 15, 73],
+        ["C", 25, 63, 43, 58, 61, 60],
+        ["C", 78, 61, 91, 68, 96, 78],
+        ["C", 83, 86, 60, 90, 39, 87],
+        ["C", 24, 85, 14, 80, 15, 73],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round",
+      opacity: 0.95
+    },
+    // Rear abdomen taper
+    {
+      type: "path",
+      commands: [
+        ["M", 18, 59],
+        ["C", 10, 57, 8, 50, 14, 46],
+        ["C", 22, 41, 33, 47, 37, 55],
+        ["L", 33, 67],
+        ["C", 27, 65, 22, 62, 18, 59],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Main low body
+    {
+      type: "path",
+      commands: [
+        ["M", 25, 59],
+        ["C", 30, 43, 44, 34, 60, 36],
+        ["C", 75, 38, 87, 48, 90, 61],
+        ["C", 88, 72, 76, 78, 59, 78],
+        ["C", 41, 79, 29, 72, 25, 59],
+        ["Z"]
+      ],
+      fill: "skinFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Heavy armored shell
+    {
+      type: "path",
+      commands: [
+        ["M", 30, 55],
+        ["C", 35, 41, 47, 34, 61, 37],
+        ["C", 74, 39, 84, 48, 87, 59],
+        ["C", 77, 64, 64, 66, 50, 64],
+        ["C", 40, 63, 34, 60, 30, 55],
+        ["Z"]
+      ],
+      fill: "carapaceFill",
+      stroke: "darkStroke",
+      strokeWidth: 3.5,
+      lineJoin: "round"
+    },
+    // Shell side plates
+    {
+      type: "path",
+      commands: [
+        ["M", 38, 47],
+        ["C", 36, 53, 38, 59, 43, 63],
+        ["M", 51, 39],
+        ["C", 48, 47, 49, 57, 55, 65],
+        ["M", 66, 41],
+        ["C", 63, 49, 65, 58, 72, 63],
+        ["M", 78, 49],
+        ["C", 75, 54, 77, 59, 82, 61]
+      ],
+      stroke: "carapaceShade",
+      strokeWidth: 3,
+      lineCap: "round",
+      opacity: 0.9
+    },
+    // Long dorsal lurker spines
+    {
+      type: "path",
+      commands: [
+        ["M", 34, 49],
+        ["L", 27, 26],
+        ["L", 43, 45],
+        ["Z"],
+        ["M", 45, 42],
+        ["L", 43, 13],
+        ["L", 55, 41],
+        ["Z"],
+        ["M", 58, 39],
+        ["L", 64, 10],
+        ["L", 67, 43],
+        ["Z"],
+        ["M", 71, 44],
+        ["L", 84, 21],
+        ["L", 80, 50],
+        ["Z"]
+      ],
+      fill: "spineFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Front head
+    {
+      type: "path",
+      commands: [
+        ["M", 72, 55],
+        ["C", 80, 50, 90, 52, 95, 60],
+        ["C", 95, 67, 87, 72, 77, 70],
+        ["L", 67, 64],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 3.5,
+      lineJoin: "round"
+    },
+    // Head armor brow
+    {
+      type: "path",
+      commands: [
+        ["M", 77, 56],
+        ["C", 83, 54, 90, 56, 93, 61],
+        ["L", 87, 65],
+        ["C", 83, 62, 78, 62, 74, 64],
+        ["Z"]
+      ],
+      fill: "carapaceMid",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    // Eye
+    {
+      type: "circle",
+      cx: 86,
+      cy: 59,
+      r: 2.5,
+      fill: "eyeFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.4
+    },
+    // Front digging claw left
+    {
+      type: "path",
+      commands: [
+        ["M", 69, 68],
+        ["L", 80, 78],
+        ["L", 94, 80],
+        ["L", 88, 88],
+        ["L", 75, 83],
+        ["L", 63, 72],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Front digging claw right
+    {
+      type: "path",
+      commands: [
+        ["M", 58, 70],
+        ["L", 50, 84],
+        ["L", 39, 90],
+        ["L", 52, 93],
+        ["L", 65, 82],
+        ["L", 70, 72],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Rear stabilizing leg
+    {
+      type: "path",
+      commands: [
+        ["M", 34, 67],
+        ["L", 23, 80],
+        ["L", 12, 82],
+        ["L", 21, 88],
+        ["L", 35, 80],
+        ["L", 42, 69],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Claw tips
+    {
+      type: "path",
+      commands: [
+        ["M", 94, 80],
+        ["L", 101, 84],
+        ["L", 88, 88],
+        ["Z"],
+        ["M", 39, 90],
+        ["L", 31, 96],
+        ["L", 52, 93],
+        ["Z"],
+        ["M", 12, 82],
+        ["L", 5, 86],
+        ["L", 21, 88],
+        ["Z"]
+      ],
+      fill: "spikeFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    // Burrow attack spikes emerging from ground
+    {
+      type: "path",
+      commands: [
+        ["M", 24, 82],
+        ["L", 29, 63],
+        ["L", 34, 83],
+        ["Z"],
+        ["M", 48, 87],
+        ["L", 54, 67],
+        ["L", 59, 88],
+        ["Z"],
+        ["M", 76, 83],
+        ["L", 82, 65],
+        ["L", 87, 84],
+        ["Z"]
+      ],
+      fill: "spikeFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round",
+      opacity: 0.95
+    },
+    // Acid / sensory sacs
+    {
+      type: "circle",
+      cx: 47,
+      cy: 55,
+      r: 3.6,
+      fill: "acidFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.8,
+      opacity: 0.95
+    },
+    {
+      type: "circle",
+      cx: 62,
+      cy: 53,
+      r: 4.2,
+      fill: "acidFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.8,
+      opacity: 0.95
+    },
+    // Sac highlights
+    {
+      type: "path",
+      commands: [
+        ["M", 46, 53],
+        ["L", 49, 52],
+        ["M", 61, 51],
+        ["L", 64, 50]
+      ],
+      stroke: "acidCore",
+      strokeWidth: 2,
+      lineCap: "round",
+      opacity: 0.8
+    },
+    // Lower body shadow accent
+    {
+      type: "path",
+      commands: [
+        ["M", 31, 67],
+        ["C", 43, 73, 64, 74, 80, 67]
+      ],
+      stroke: "skinShade",
+      strokeWidth: 4,
+      lineCap: "round",
+      opacity: 0.65
+    }
+  ]
+};
+var zergMutalisk = {
+  id: "zerg.mutalisk",
+  commander: "zerg",
+  aliases: ["Mutalisk", "MutaliskLightweight", "ZergAir"],
+  viewBox: { width: 100, height: 100 },
+  tokens: {
+    skinFill: "#7E4B87",
+    skinMid: "#633769",
+    skinShade: "#402247",
+    wingFill: "#9A63A6",
+    wingMid: "#7B4D87",
+    wingShade: "#4D2B56",
+    carapaceFill: "#B98BCC",
+    carapaceMid: "#805A91",
+    carapaceShade: "#4A3158",
+    clawFill: "#E8D7B2",
+    spineFill: "#D6B4E5",
+    eyeFill: "#FF5A54",
+    glaiveFill: "#8EFF5A",
+    glaiveCore: "#D7FF75",
+    darkStroke: "#24122C"
+  },
+  layers: [
+    // Rear tail
+    {
+      type: "path",
+      commands: [
+        ["M", 42, 66],
+        ["C", 36, 78, 32, 88, 25, 97],
+        ["C", 38, 94, 48, 86, 53, 72],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Left wing outer crescent
+    {
+      type: "path",
+      commands: [
+        ["M", 44, 44],
+        ["C", 31, 25, 15, 17, 2, 22],
+        ["C", 8, 32, 14, 44, 18, 58],
+        ["C", 26, 53, 35, 49, 48, 50],
+        ["Z"]
+      ],
+      fill: "wingFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Right wing outer crescent
+    {
+      type: "path",
+      commands: [
+        ["M", 56, 44],
+        ["C", 69, 25, 85, 17, 98, 22],
+        ["C", 92, 32, 86, 44, 82, 58],
+        ["C", 74, 53, 65, 49, 52, 50],
+        ["Z"]
+      ],
+      fill: "wingFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Left inner wing fold
+    {
+      type: "path",
+      commands: [
+        ["M", 12, 27],
+        ["C", 20, 35, 27, 43, 33, 53],
+        ["M", 27, 24],
+        ["C", 31, 33, 38, 41, 46, 48]
+      ],
+      stroke: "wingShade",
+      strokeWidth: 3,
+      lineCap: "round",
+      opacity: 0.9
+    },
+    // Right inner wing fold
+    {
+      type: "path",
+      commands: [
+        ["M", 88, 27],
+        ["C", 80, 35, 73, 43, 67, 53],
+        ["M", 73, 24],
+        ["C", 69, 33, 62, 41, 54, 48]
+      ],
+      stroke: "wingShade",
+      strokeWidth: 3,
+      lineCap: "round",
+      opacity: 0.9
+    },
+    // Wing lower hooks
+    {
+      type: "path",
+      commands: [
+        ["M", 18, 58],
+        ["L", 9, 66],
+        ["L", 24, 64],
+        ["Z"],
+        ["M", 82, 58],
+        ["L", 91, 66],
+        ["L", 76, 64],
+        ["Z"]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    // Main body
+    {
+      type: "path",
+      commands: [
+        ["M", 34, 48],
+        ["C", 36, 35, 44, 27, 53, 27],
+        ["C", 63, 28, 70, 38, 69, 51],
+        ["C", 68, 64, 59, 73, 48, 73],
+        ["C", 39, 71, 33, 61, 34, 48],
+        ["Z"]
+      ],
+      fill: "skinFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Upper carapace
+    {
+      type: "path",
+      commands: [
+        ["M", 39, 46],
+        ["C", 42, 34, 48, 29, 54, 30],
+        ["C", 61, 31, 66, 39, 65, 49],
+        ["C", 60, 53, 52, 54, 44, 52],
+        ["Z"]
+      ],
+      fill: "carapaceFill",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Head / snout
+    {
+      type: "path",
+      commands: [
+        ["M", 48, 30],
+        ["C", 51, 18, 59, 10, 68, 11],
+        ["C", 76, 13, 80, 22, 77, 31],
+        ["C", 74, 40, 64, 43, 55, 39],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 3.5,
+      lineJoin: "round"
+    },
+    // Head plate
+    {
+      type: "path",
+      commands: [
+        ["M", 58, 24],
+        ["C", 63, 21, 70, 23, 74, 29],
+        ["L", 69, 34],
+        ["C", 65, 31, 60, 31, 56, 34],
+        ["Z"]
+      ],
+      fill: "carapaceMid",
+      stroke: "darkStroke",
+      strokeWidth: 2.4,
+      lineJoin: "round"
+    },
+    // Eye
+    {
+      type: "circle",
+      cx: 67,
+      cy: 28,
+      r: 2.5,
+      fill: "eyeFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.4
+    },
+    // Mouth / projectile sac
+    {
+      type: "path",
+      commands: [
+        ["M", 67, 38],
+        ["C", 73, 37, 78, 41, 78, 46],
+        ["C", 73, 49, 66, 47, 62, 43],
+        ["Z"]
+      ],
+      fill: "glaiveFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    {
+      type: "circle",
+      cx: 72,
+      cy: 43,
+      r: 2,
+      fill: "glaiveCore",
+      opacity: 0.9
+    },
+    // Lower body / abdomen
+    {
+      type: "path",
+      commands: [
+        ["M", 40, 58],
+        ["C", 46, 63, 56, 64, 63, 59],
+        ["L", 58, 70],
+        ["L", 49, 75],
+        ["L", 42, 70],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Body spines
+    {
+      type: "path",
+      commands: [
+        ["M", 42, 42],
+        ["L", 34, 30],
+        ["L", 47, 39],
+        ["Z"],
+        ["M", 52, 31],
+        ["L", 52, 16],
+        ["L", 60, 31],
+        ["Z"],
+        ["M", 62, 38],
+        ["L", 74, 27],
+        ["L", 68, 42],
+        ["Z"]
+      ],
+      fill: "spineFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.3,
+      lineJoin: "round"
+    },
+    // Wing claws / tips
+    {
+      type: "path",
+      commands: [
+        ["M", 2, 22],
+        ["L", -4, 17],
+        ["L", -1, 31],
+        ["Z"],
+        ["M", 98, 22],
+        ["L", 104, 17],
+        ["L", 101, 31],
+        ["Z"]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    // Small underside talons
+    {
+      type: "path",
+      commands: [
+        ["M", 45, 70],
+        ["L", 39, 80],
+        ["L", 48, 74],
+        ["M", 56, 70],
+        ["L", 62, 80],
+        ["L", 53, 74]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.2,
+      lineCap: "round",
+      lineJoin: "round"
+    },
+    // Glaive sacs on body
+    {
+      type: "circle",
+      cx: 47,
+      cy: 52,
+      r: 3.5,
+      fill: "glaiveFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.7,
+      opacity: 0.95
+    },
+    {
+      type: "circle",
+      cx: 59,
+      cy: 51,
+      r: 3.8,
+      fill: "glaiveFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.7,
+      opacity: 0.95
+    },
+    // Glaive sac highlights
+    {
+      type: "path",
+      commands: [
+        ["M", 46, 50],
+        ["L", 49, 49],
+        ["M", 58, 49],
+        ["L", 61, 48]
+      ],
+      stroke: "glaiveCore",
+      strokeWidth: 2,
+      lineCap: "round",
+      opacity: 0.8
+    },
+    // Body seams
+    {
+      type: "path",
+      commands: [
+        ["M", 43, 47],
+        ["C", 49, 50, 58, 50, 63, 47],
+        ["M", 42, 59],
+        ["C", 48, 63, 57, 63, 63, 59],
+        ["M", 51, 32],
+        ["L", 51, 57]
+      ],
+      stroke: "carapaceShade",
+      strokeWidth: 2.3,
+      lineCap: "round",
+      opacity: 0.85
+    }
+  ]
+};
+var zergSwarmHost = {
+  id: "zerg.swarm_host",
+  commander: "zerg",
+  aliases: ["SwarmHost", "SwarmHostLightweight"],
+  viewBox: { width: 100, height: 100 },
+  tokens: {
+    skinFill: "#7E4B87",
+    skinMid: "#633769",
+    skinShade: "#402247",
+    carapaceFill: "#AA7BBC",
+    carapaceMid: "#7D5A8F",
+    carapaceShade: "#4B3158",
+    spawnFill: "#8EFF5A",
+    spawnCore: "#D7FF75",
+    spawnDark: "#3B9E43",
+    locustFill: "#9A63A6",
+    clawFill: "#E8D7B2",
+    eyeFill: "#FF5A54",
+    darkStroke: "#24122C"
+  },
+  layers: [
+    // Rear abdomen shadow / brood sac mass
+    {
+      type: "path",
+      commands: [
+        ["M", 15, 63],
+        ["C", 15, 43, 31, 30, 53, 31],
+        ["C", 77, 32, 92, 47, 91, 66],
+        ["C", 90, 82, 74, 91, 52, 91],
+        ["C", 30, 91, 15, 81, 15, 63],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Main swollen body
+    {
+      type: "path",
+      commands: [
+        ["M", 22, 61],
+        ["C", 24, 45, 37, 35, 55, 36],
+        ["C", 73, 37, 85, 49, 85, 64],
+        ["C", 84, 77, 70, 85, 52, 85],
+        ["C", 34, 85, 22, 75, 22, 61],
+        ["Z"]
+      ],
+      fill: "skinFill",
+      stroke: "darkStroke",
+      strokeWidth: 4,
+      lineJoin: "round"
+    },
+    // Heavy upper carapace shell
+    {
+      type: "path",
+      commands: [
+        ["M", 27, 55],
+        ["C", 32, 40, 44, 32, 59, 35],
+        ["C", 73, 38, 82, 48, 84, 60],
+        ["C", 74, 64, 59, 66, 44, 64],
+        ["C", 35, 63, 30, 60, 27, 55],
+        ["Z"]
+      ],
+      fill: "carapaceFill",
+      stroke: "darkStroke",
+      strokeWidth: 3.5,
+      lineJoin: "round"
+    },
+    // Shell segmentation
+    {
+      type: "path",
+      commands: [
+        ["M", 38, 40],
+        ["C", 35, 47, 36, 57, 41, 63],
+        ["M", 52, 34],
+        ["C", 49, 44, 50, 56, 56, 65],
+        ["M", 67, 40],
+        ["C", 63, 48, 65, 57, 72, 62]
+      ],
+      stroke: "carapaceShade",
+      strokeWidth: 3,
+      lineCap: "round",
+      opacity: 0.9
+    },
+    // Head / front cluster
+    {
+      type: "path",
+      commands: [
+        ["M", 69, 55],
+        ["C", 78, 50, 90, 53, 95, 62],
+        ["C", 95, 70, 87, 76, 76, 74],
+        ["L", 66, 67],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3.5,
+      lineJoin: "round"
+    },
+    // Head brow
+    {
+      type: "path",
+      commands: [
+        ["M", 75, 57],
+        ["C", 82, 55, 90, 58, 93, 63],
+        ["L", 86, 67],
+        ["C", 82, 64, 77, 64, 73, 66],
+        ["Z"]
+      ],
+      fill: "carapaceMid",
+      stroke: "darkStroke",
+      strokeWidth: 2.3,
+      lineJoin: "round"
+    },
+    // Eye
+    {
+      type: "circle",
+      cx: 85,
+      cy: 61,
+      r: 2.4,
+      fill: "eyeFill",
+      stroke: "darkStroke",
+      strokeWidth: 1.3
+    },
+    // Large spawning sacs
+    {
+      type: "circle",
+      cx: 38,
+      cy: 60,
+      r: 5,
+      fill: "spawnFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    {
+      type: "circle",
+      cx: 52,
+      cy: 56,
+      r: 6,
+      fill: "spawnFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    {
+      type: "circle",
+      cx: 67,
+      cy: 61,
+      r: 5,
+      fill: "spawnFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    {
+      type: "circle",
+      cx: 45,
+      cy: 73,
+      r: 4.8,
+      fill: "spawnFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    {
+      type: "circle",
+      cx: 60,
+      cy: 73,
+      r: 4.5,
+      fill: "spawnFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      opacity: 0.96
+    },
+    // Spawn sac highlights
+    {
+      type: "path",
+      commands: [
+        ["M", 36, 58],
+        ["L", 40, 57],
+        ["M", 50, 53],
+        ["L", 55, 52],
+        ["M", 65, 59],
+        ["L", 69, 58],
+        ["M", 43, 71],
+        ["L", 47, 70],
+        ["M", 58, 71],
+        ["L", 62, 70]
+      ],
+      stroke: "spawnCore",
+      strokeWidth: 2,
+      lineCap: "round",
+      opacity: 0.85
+    },
+    // Left rear leg
+    {
+      type: "path",
+      commands: [
+        ["M", 31, 70],
+        ["L", 20, 81],
+        ["L", 9, 83],
+        ["L", 18, 90],
+        ["L", 32, 82],
+        ["L", 40, 72],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Right rear leg
+    {
+      type: "path",
+      commands: [
+        ["M", 70, 70],
+        ["L", 81, 81],
+        ["L", 92, 83],
+        ["L", 83, 90],
+        ["L", 69, 82],
+        ["L", 61, 72],
+        ["Z"]
+      ],
+      fill: "skinMid",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Left front digging leg
+    {
+      type: "path",
+      commands: [
+        ["M", 61, 73],
+        ["L", 50, 86],
+        ["L", 38, 91],
+        ["L", 51, 95],
+        ["L", 65, 84],
+        ["L", 72, 74],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Right front digging leg
+    {
+      type: "path",
+      commands: [
+        ["M", 75, 70],
+        ["L", 87, 78],
+        ["L", 98, 79],
+        ["L", 91, 87],
+        ["L", 78, 83],
+        ["L", 68, 74],
+        ["Z"]
+      ],
+      fill: "skinShade",
+      stroke: "darkStroke",
+      strokeWidth: 3,
+      lineJoin: "round"
+    },
+    // Claw tips
+    {
+      type: "path",
+      commands: [
+        ["M", 9, 83],
+        ["L", 2, 88],
+        ["L", 18, 90],
+        ["Z"],
+        ["M", 92, 83],
+        ["L", 99, 88],
+        ["L", 83, 90],
+        ["Z"],
+        ["M", 38, 91],
+        ["L", 30, 97],
+        ["L", 51, 95],
+        ["Z"],
+        ["M", 98, 79],
+        ["L", 105, 83],
+        ["L", 91, 87],
+        ["Z"]
+      ],
+      fill: "clawFill",
+      stroke: "darkStroke",
+      strokeWidth: 2,
+      lineJoin: "round"
+    },
+    // Dorsal spawn vents / small spines
+    {
+      type: "path",
+      commands: [
+        ["M", 34, 50],
+        ["L", 30, 35],
+        ["L", 41, 48],
+        ["Z"],
+        ["M", 49, 43],
+        ["L", 50, 25],
+        ["L", 58, 44],
+        ["Z"],
+        ["M", 65, 47],
+        ["L", 75, 32],
+        ["L", 72, 51],
+        ["Z"]
+      ],
+      fill: "carapaceMid",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round"
+    },
+    // Tiny locust silhouette emerging from back
+    {
+      type: "path",
+      commands: [
+        ["M", 47, 30],
+        ["C", 48, 22, 53, 18, 59, 19],
+        ["C", 64, 20, 67, 25, 65, 31],
+        ["L", 59, 36],
+        ["L", 51, 34],
+        ["Z"]
+      ],
+      fill: "locustFill",
+      stroke: "darkStroke",
+      strokeWidth: 2.5,
+      lineJoin: "round",
+      opacity: 0.95
+    },
+    {
+      type: "path",
+      commands: [
+        ["M", 52, 25],
+        ["L", 43, 18],
+        ["L", 49, 29],
+        ["M", 62, 26],
+        ["L", 73, 21],
+        ["L", 64, 31]
+      ],
+      stroke: "darkStroke",
+      strokeWidth: 2.2,
+      lineCap: "round",
+      lineJoin: "round"
+    },
+    // Belly shadow
+    {
+      type: "path",
+      commands: [
+        ["M", 28, 69],
+        ["C", 41, 78, 64, 79, 80, 70]
+      ],
+      stroke: "skinShade",
+      strokeWidth: 4,
+      lineCap: "round",
+      opacity: 0.6
+    },
+    // Small dark pores
+    {
+      type: "circle",
+      cx: 33,
+      cy: 65,
+      r: 1.4,
+      fill: "spawnDark",
+      opacity: 0.9
+    },
+    {
+      type: "circle",
+      cx: 56,
+      cy: 64,
+      r: 1.4,
+      fill: "spawnDark",
+      opacity: 0.9
+    },
+    {
+      type: "circle",
+      cx: 72,
+      cy: 67,
+      r: 1.4,
+      fill: "spawnDark",
+      opacity: 0.9
+    }
+  ]
+};
 var zergUnits = {
   zergling: zergZergling,
   roach: zergRoach,
-  queen: zergQueen
+  queen: zergQueen,
+  hydralisk: zergHydralisk,
+  infestor: zergInfestor,
+  corruptor: zergCorruptor,
+  lurker: zergLurker,
+  mutalisk: zergMutalisk,
+  swarmhost: zergSwarmHost
 };
 
 // TypeScript/unitIcons.ts
 var definitions = [
+  ...Object.values(protossUnits),
   ...Object.values(terranUnits),
   ...Object.values(zergUnits)
 ];
