@@ -1,3 +1,5 @@
+import { unitIconCatalog } from "./unitIconCatalog.js";
+
 const states = new WeakMap();
 
 const MAP_WIDTH = 256;
@@ -10,6 +12,7 @@ const GAS_BADGE_HEIGHT = 24;
 const GAS_BADGE_GAP = 8;
 const GAS_BADGE_CORNER_PADDING = 20;
 const MAX_UNIT_LIFETIME_GAMELOOPS = 2096;
+const MIN_CATALOG_ICON_CSS_SIZE = 18;
 const TEAM_COLORS = {
     1: "#5DADEC",
     2: "#F87171"
@@ -309,12 +312,18 @@ function clampGameloop(state, gameloop) {
 
 function createRenderCache(state, bounds, canvas) {
     const projection = createProjection(bounds, canvas);
+    const scale = deviceScale(canvas);
     state.unitSpriteCache.clear();
     for (const unit of state.replay.units) {
-        const radius = Math.max(3, unit.radius * deviceScale(canvas) * 0.55);
+        const radius = Math.max(3, unit.radius * scale * 0.55);
+        if (!unit.iconResolved) {
+            unit.iconDefinition = unitIconCatalog.resolve(unit.commander, unit.name);
+            unit.iconResolved = true;
+        }
+
         unit.render = {
             radius,
-            sprite: getUnitSprite(state, unit.color, unit.teamId, radius)
+            sprite: getUnitSprite(state, unit, radius, scale)
         };
     }
 
@@ -339,8 +348,13 @@ function createLayerCanvas(width, height) {
     return layer;
 }
 
-function getUnitSprite(state, color, teamId, radius) {
-    const key = `${teamId}|${color}|${Math.round(radius * 10)}`;
+function getUnitSprite(state, unit, radius, canvasScale) {
+    const color = unit.color;
+    const teamId = unit.teamId;
+    const iconDefinition = unit.iconDefinition;
+    const key = iconDefinition
+        ? `${iconDefinition.id}|${unit.commander}|${unit.name}|${teamId}|${color}|${Math.round(radius * 10)}`
+        : `${teamId}|${color}|${Math.round(radius * 10)}`;
     const cached = state.unitSpriteCache.get(key);
     if (cached) {
         return cached;
@@ -348,19 +362,32 @@ function getUnitSprite(state, color, teamId, radius) {
 
     const scale = Math.max(1, radius / 3);
     const padding = Math.ceil(3 * scale);
-    const size = Math.ceil((radius + padding) * 2);
+    const iconSize = iconDefinition
+        ? Math.max(radius * 2.6, MIN_CATALOG_ICON_CSS_SIZE * canvasScale)
+        : radius * 2;
+    const size = Math.ceil(iconSize + padding * 2);
     const sprite = createLayerCanvas(size, size);
     const ctx = sprite.getContext("2d");
     const center = size / 2;
     ctx.save();
     ctx.globalAlpha = teamId === 1 ? 0.92 : 0.78;
-    ctx.fillStyle = withAlpha(color, "99");
-    ctx.strokeStyle = withAlpha(color, "EE");
-    ctx.lineWidth = Math.max(1.5, 1.5 * scale);
-    ctx.beginPath();
-    ctx.arc(center, center, radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    if (iconDefinition) {
+        unitIconCatalog.render(ctx, iconDefinition, {
+            x: center,
+            y: center,
+            size: iconSize,
+            teamColor: color
+        });
+    } else {
+        ctx.fillStyle = withAlpha(color, "99");
+        ctx.strokeStyle = withAlpha(color, "EE");
+        ctx.lineWidth = Math.max(1.5, 1.5 * scale);
+        ctx.beginPath();
+        ctx.arc(center, center, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+    }
+
     ctx.restore();
     state.unitSpriteCache.set(key, sprite);
     return sprite;
@@ -449,6 +476,7 @@ function normalizeReplay(replay) {
 
         const rawUnits = rawPlayer.units ?? rawPlayer.Units ?? [];
         for (const rawUnit of rawUnits) {
+            const name = rawUnit.name ?? rawUnit.Name ?? "";
             const spawnGameloop = rawUnit.spawnGameloop ?? rawUnit.SpawnGameloop ?? 0;
             const expiresGameloop = rawUnit.expiresGameloop
                 ?? rawUnit.ExpiresGameloop
@@ -458,6 +486,8 @@ function normalizeReplay(replay) {
             const targetX = rawUnit.targetX ?? rawUnit.TargetX ?? spawnX;
             const targetY = rawUnit.targetY ?? rawUnit.TargetY ?? spawnY;
             const unit = {
+                name,
+                commander: player.commander,
                 spawnGameloop,
                 expiresGameloop,
                 spawnX,
@@ -468,6 +498,8 @@ function normalizeReplay(replay) {
                 radius: rawUnit.radius ?? rawUnit.Radius ?? 8,
                 color: rawUnit.color ?? rawUnit.Color ?? "#EC7063",
                 teamId: player.teamId,
+                iconDefinition: null,
+                iconResolved: false,
                 render: null
             };
             player.units.push(unit);
