@@ -1,4 +1,12 @@
-const terranMarine = {
+import type {
+    CanvasContext,
+    UnitIconDefinition,
+    UnitIconLayer,
+    UnitIconPathCommand,
+    UnitIconRenderOptions
+} from "./types";
+
+const terranMarine: UnitIconDefinition = {
     id: "terran.marine",
     commander: "terran",
     aliases: ["Marine", "MarineLightweight"],
@@ -63,7 +71,7 @@ const terranMarine = {
     ]
 };
 
-const zergZergling = {
+const zergZergling: UnitIconDefinition = {
     id: "zerg.zergling",
     commander: "zerg",
     aliases: ["Zergling", "ZerglingLightweight"],
@@ -137,12 +145,12 @@ export const zergUnits = {
     zergling: zergZergling
 };
 
-const definitions = [
+const definitions: UnitIconDefinition[] = [
     terranUnits.marine,
     zergUnits.zergling
 ];
 
-const aliases = new Map();
+const aliases = new Map<string, UnitIconDefinition>();
 
 for (const definition of definitions) {
     for (const alias of definition.aliases) {
@@ -151,16 +159,16 @@ for (const definition of definitions) {
 }
 
 export const unitIconCatalog = {
-    resolve(commander, unitName) {
+    resolve(commander: string, unitName: string): UnitIconDefinition | null {
         return aliases.get(getAliasKey(commander, unitName)) ?? null;
     },
 
-    render(ctx, definition, options) {
+    render(ctx: CanvasContext, definition: UnitIconDefinition, options: UnitIconRenderOptions): void {
         renderIcon(ctx, definition, options);
     }
 };
 
-function renderIcon(ctx, definition, options) {
+function renderIcon(ctx: CanvasContext, definition: UnitIconDefinition, options: UnitIconRenderOptions): void {
     const size = Math.max(1, options.size ?? 24);
     const x = options.x ?? size / 2;
     const y = options.y ?? size / 2;
@@ -179,7 +187,12 @@ function renderIcon(ctx, definition, options) {
     ctx.restore();
 }
 
-function drawLayer(ctx, layer, tokens, scaleX, scaleY) {
+function drawLayer(
+    ctx: CanvasContext,
+    layer: UnitIconLayer,
+    tokens: Record<string, string>,
+    scaleX: number,
+    scaleY: number): void {
     const inheritedAlpha = ctx.globalAlpha;
     ctx.save();
     ctx.globalAlpha = inheritedAlpha * (layer.opacity ?? 1);
@@ -208,7 +221,7 @@ function drawLayer(ctx, layer, tokens, scaleX, scaleY) {
     ctx.restore();
 }
 
-function applyPath(ctx, commands) {
+function applyPath(ctx: CanvasContext, commands: UnitIconPathCommand[]): void {
     ctx.beginPath();
     for (const command of commands) {
         switch (command[0]) {
@@ -228,8 +241,8 @@ function applyPath(ctx, commands) {
     }
 }
 
-function resolveTokens(definition, teamColor) {
-    if (typeof teamColor !== "string" || teamColor.length === 0) {
+function resolveTokens(definition: UnitIconDefinition, teamColor: string | undefined): Record<string, string> {
+    if (!teamColor) {
         return definition.tokens;
     }
 
@@ -239,14 +252,14 @@ function resolveTokens(definition, teamColor) {
     };
 }
 
-function resolvePaint(paint, tokens) {
+function resolvePaint(paint: string, tokens: Record<string, string>): string {
     return tokens[paint] ?? paint;
 }
 
-function getAliasKey(commander, unitName) {
+function getAliasKey(commander: string, unitName: string): string {
     return `${normalize(commander)}|${normalize(unitName)}`;
 }
 
-function normalize(value) {
-    return String(value ?? "").trim().toLowerCase().replaceAll(" ", "");
+function normalize(value: string): string {
+    return String(value ?? "").trim().toLowerCase().replace(/ /g, "");
 }
