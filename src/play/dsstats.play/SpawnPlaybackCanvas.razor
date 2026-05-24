@@ -73,6 +73,13 @@
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <button type="button"
+                                class="btn btn-sm btn-outline-light spawn-playback-clear-highlight"
+                                title="Clear unit highlight"
+                                aria-label="Clear unit highlight"
+                                data-spawn-playback-clear-highlight>
+                            <span class="bi bi-x-lg"></span>
+                        </button>
+                        <button type="button"
                                 class="btn btn-sm btn-outline-light"
                                 title="@AliveUnitsToggleTitle"
                                 aria-expanded="@showAliveUnits"
@@ -110,7 +117,14 @@
                                         {
                                             @foreach (var row in team1AliveUnitRows)
                                             {
-                                                <tr>
+                                                <tr class="spawn-playback-alive-row"
+                                                    @key="row.HighlightKey"
+                                                    role="button"
+                                                    tabindex="0"
+                                                    aria-pressed="false"
+                                                    title="Highlight @row.UnitName on the canvas"
+                                                    data-spawn-playback-alive-unit-row
+                                                    data-spawn-playback-highlight-key="@row.HighlightKey">
                                                     <td title="@row.UnitName">
                                                         <span class="spawn-playback-unit-cell">
                                                             <UnitIcon Class="spawn-playback-unit-icon"
@@ -156,7 +170,14 @@
                                         {
                                             @foreach (var row in team2AliveUnitRows)
                                             {
-                                                <tr>
+                                                <tr class="spawn-playback-alive-row"
+                                                    @key="row.HighlightKey"
+                                                    role="button"
+                                                    tabindex="0"
+                                                    aria-pressed="false"
+                                                    title="Highlight @row.UnitName on the canvas"
+                                                    data-spawn-playback-alive-unit-row
+                                                    data-spawn-playback-highlight-key="@row.HighlightKey">
                                                     <td title="@row.UnitName">
                                                         <span class="spawn-playback-unit-cell">
                                                             <UnitIcon Class="spawn-playback-unit-icon"
@@ -313,6 +334,7 @@
         if (showAliveUnits)
         {
             await module.InvokeVoidAsync("hydrateUnitIcons", playbackElement);
+            await module.InvokeVoidAsync("syncAliveUnitHighlightSelection", canvasElement);
         }
     }
 
@@ -720,6 +742,7 @@
                 pair.Key.TeamId,
                 pair.Key.Commander,
                 pair.Key.UnitName,
+                CreateAliveUnitHighlightKey(pair.Key.TeamId, pair.Key.Commander, pair.Key.UnitName),
                 GetTeamColor(pair.Key.TeamId),
                 pair.Value.AliveCount,
                 pair.Value.CurrentKills);
@@ -748,6 +771,11 @@
     private static string GetTeamColor(int teamId)
     {
         return teamId == 1 ? "#5DADEC" : "#F87171";
+    }
+
+    private static string CreateAliveUnitHighlightKey(int teamId, string commander, string unitName)
+    {
+        return $"{teamId}|{commander.Length}:{commander}|{unitName.Length}:{unitName}";
     }
 
     private readonly record struct AliveUnitKey(int TeamId, string Commander, string UnitName);
@@ -864,6 +892,7 @@
         int TeamId,
         string Commander,
         string UnitName,
+        string HighlightKey,
         string TeamColor,
         int AliveCount,
         int CurrentKills);

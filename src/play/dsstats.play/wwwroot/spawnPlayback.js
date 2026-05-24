@@ -215,6 +215,7 @@ function normalizeReplay(replayValue) {
       const unit = {
         name,
         commander: player.commander,
+        aliveUnitHighlightKey: createAliveUnitHighlightKey(player.teamId, player.commander, name),
         spawnGameloop,
         expiresGameloop,
         spawnX,
@@ -248,6 +249,9 @@ function normalizeReplay(replayValue) {
     players,
     units
   };
+}
+function createAliveUnitHighlightKey(teamId, commander, unitName) {
+  return `${teamId}|${commander.length}:${commander}|${unitName.length}:${unitName}`;
 }
 function normalizeSummary(replayValue) {
   const replay = asObject(replayValue);
@@ -8348,6 +8352,7 @@ var OBJECTIVE_DEATH_ANNOUNCEMENT_SECONDS = 28;
 var OBJECTIVE_DEATH_ANNOUNCEMENT_FADE_SECONDS = 7;
 var OBJECTIVE_DEATH_ANNOUNCEMENT_HOLD_SECONDS = 14;
 var OBJECTIVE_DEATH_LABELS = /* @__PURE__ */ new Set(["Bunker", "Cannon"]);
+var ALIVE_UNIT_HIGHLIGHT_COLOR = "#F8D34A";
 var FOREST_CLUSTERS = [
   { x: 0.21, y: 0.19, width: 0.18, height: 0.12, trees: 18 },
   { x: 0.27, y: 0.36, width: 0.15, height: 0.12, trees: 16 },
@@ -8393,6 +8398,15 @@ function drawSpawnPlayback(canvas, currentGameloop) {
   drawDynamicMapLayer(ctx, canvas, state.staticGeometry, state.currentGameloop);
   const activeUnits = getActiveUnits(state, state.currentGameloop);
   const drawnUnits = drawUnitLayer(ctx, state.renderCache.projection, activeUnits, state.currentGameloop);
+  if (state.highlightedAliveUnitKey !== null) {
+    drawAliveUnitHighlightLayer(
+      ctx,
+      state.renderCache.projection,
+      activeUnits,
+      state.currentGameloop,
+      state.highlightedAliveUnitKey
+    );
+  }
   if (drawnUnits === 0) {
     drawEmptyState(ctx, canvas);
   }
@@ -9255,6 +9269,26 @@ function drawUnit(ctx, projection, unit, currentGameloop) {
   }
   return true;
 }
+function drawAliveUnitHighlightLayer(ctx, projection, activeUnits, currentGameloop, highlightedAliveUnitKey) {
+  ctx.save();
+  ctx.strokeStyle = withAlpha(ALIVE_UNIT_HIGHLIGHT_COLOR, "EE");
+  ctx.shadowColor = withAlpha(ALIVE_UNIT_HIGHLIGHT_COLOR, "AA");
+  ctx.shadowBlur = 8;
+  for (const unit of activeUnits) {
+    if (unit.aliveUnitHighlightKey !== highlightedAliveUnitKey || currentGameloop < unit.spawnGameloop || unit.expiresGameloop <= currentGameloop) {
+      continue;
+    }
+    const progress = clamp((currentGameloop - unit.spawnGameloop) * unit.inverseLifetime, 0, 1);
+    const x = projectX(projection, unit.spawnX + unit.deltaX * progress);
+    const y = projectY(projection, unit.spawnY + unit.deltaY * progress);
+    const radius = unit.render?.radius ?? 3;
+    ctx.lineWidth = Math.max(2, radius * 0.36);
+    ctx.beginPath();
+    ctx.arc(x, y, radius + Math.max(4, radius * 0.45), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 function drawEmptyState(ctx, canvas) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.72)";
@@ -9266,6 +9300,9 @@ function drawEmptyState(ctx, canvas) {
 }
 
 // TypeScript/state.ts
+var ALIVE_UNIT_ROW_SELECTOR = "[data-spawn-playback-alive-unit-row]";
+var ALIVE_UNIT_CLEAR_SELECTOR = "[data-spawn-playback-clear-highlight]";
+var ALIVE_UNIT_SELECTED_CLASS = "spawn-playback-alive-row-selected";
 function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gameloopsPerSecond, speedMultiplier) {
   const state = {
     replay: normalizeReplay(replay),
@@ -9288,14 +9325,18 @@ function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gamel
     staticCanvasHeight: 0,
     objectiveDeathAnnouncements: [],
     unitSpriteCache: /* @__PURE__ */ new Map(),
+    highlightedAliveUnitKey: null,
     rootElement,
-    fullscreenListener: null
+    fullscreenListener: null,
+    aliveUnitClickListener: null,
+    aliveUnitKeydownListener: null
   };
   disposeState(getState(canvas));
   state.resizeObserver = new ResizeObserver(() => drawSpawnPlayback(canvas, state.currentGameloop));
   state.resizeObserver.observe(canvas);
   state.fullscreenListener = () => handleFullscreenChange(canvas);
   document.addEventListener("fullscreenchange", state.fullscreenListener);
+  initializeAliveUnitHighlightEvents(canvas, state);
   setState(canvas, state);
   resizeCanvas(canvas);
 }
@@ -9376,6 +9417,10 @@ function disposeSpawnPlayback(canvas) {
   disposeState(state);
   deleteState(canvas);
 }
+function syncAliveUnitHighlightSelection(canvas) {
+  const state = getState(canvas);
+  syncAliveUnitHighlightRows(state);
+}
 function animateSpawnPlayback(canvas, timestamp) {
   const state = getState(canvas);
   if (!state?.running) {
@@ -9425,6 +9470,7 @@ function disposeState(state) {
     document.removeEventListener("fullscreenchange", state.fullscreenListener);
     state.fullscreenListener = null;
   }
+  disposeAliveUnitHighlightEvents(state);
 }
 function cancelAnimation(state) {
   if (state?.animationFrameId) {
@@ -9447,6 +9493,104 @@ function notifyFullscreenChanged(state) {
   ).catch(() => {
   });
 }
+function initializeAliveUnitHighlightEvents(canvas, state) {
+  if (!state.rootElement) {
+    return;
+  }
+  state.aliveUnitClickListener = (event) => handleAliveUnitHighlightClick(canvas, event);
+  state.aliveUnitKeydownListener = (event) => handleAliveUnitHighlightKeydown(canvas, event);
+  state.rootElement.addEventListener("click", state.aliveUnitClickListener);
+  state.rootElement.addEventListener("keydown", state.aliveUnitKeydownListener);
+}
+function disposeAliveUnitHighlightEvents(state) {
+  if (!state.rootElement) {
+    return;
+  }
+  if (state.aliveUnitClickListener) {
+    state.rootElement.removeEventListener("click", state.aliveUnitClickListener);
+    state.aliveUnitClickListener = null;
+  }
+  if (state.aliveUnitKeydownListener) {
+    state.rootElement.removeEventListener("keydown", state.aliveUnitKeydownListener);
+    state.aliveUnitKeydownListener = null;
+  }
+}
+function handleAliveUnitHighlightClick(canvas, event) {
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+  if (target.closest(ALIVE_UNIT_CLEAR_SELECTOR)) {
+    setAliveUnitHighlight(canvas, null);
+    return;
+  }
+  const row = target.closest(ALIVE_UNIT_ROW_SELECTOR);
+  if (!row) {
+    return;
+  }
+  const key = row.dataset.spawnPlaybackHighlightKey;
+  if (key) {
+    toggleAliveUnitHighlight(canvas, key);
+  }
+}
+function handleAliveUnitHighlightKeydown(canvas, event) {
+  const keyboardEvent = event;
+  if (keyboardEvent.key !== "Enter" && keyboardEvent.key !== " ") {
+    return;
+  }
+  const target = keyboardEvent.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+  const row = target.closest(ALIVE_UNIT_ROW_SELECTOR);
+  if (!row) {
+    return;
+  }
+  const key = row.dataset.spawnPlaybackHighlightKey;
+  if (!key) {
+    return;
+  }
+  keyboardEvent.preventDefault();
+  toggleAliveUnitHighlight(canvas, key);
+}
+function toggleAliveUnitHighlight(canvas, key) {
+  const state = getState(canvas);
+  if (!state) {
+    return;
+  }
+  setAliveUnitHighlight(canvas, resolveAliveUnitHighlightToggle(state.highlightedAliveUnitKey, key));
+}
+function resolveAliveUnitHighlightToggle(currentKey, nextKey) {
+  return currentKey === nextKey ? null : nextKey;
+}
+function setAliveUnitHighlight(canvas, key) {
+  const state = getState(canvas);
+  if (!state || state.highlightedAliveUnitKey === key) {
+    return;
+  }
+  state.highlightedAliveUnitKey = key;
+  syncAliveUnitHighlightRows(state);
+  requestAliveUnitHighlightRedraw(canvas, state);
+}
+function syncAliveUnitHighlightRows(state) {
+  const rootElement = state?.rootElement;
+  if (!rootElement) {
+    return;
+  }
+  const selectedKey = state.highlightedAliveUnitKey;
+  const rows = rootElement.querySelectorAll(ALIVE_UNIT_ROW_SELECTOR);
+  for (const row of rows) {
+    const selected = selectedKey !== null && row.dataset.spawnPlaybackHighlightKey === selectedKey;
+    row.classList.toggle(ALIVE_UNIT_SELECTED_CLASS, selected);
+    row.setAttribute("aria-pressed", selected ? "true" : "false");
+  }
+}
+function requestAliveUnitHighlightRedraw(canvas, state) {
+  if (state.running) {
+    return;
+  }
+  requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop));
+}
 export {
   disposeSpawnPlayback,
   drawSpawnPlayback,
@@ -9456,5 +9600,6 @@ export {
   setSpawnPlaybackFullscreen,
   setSpawnPlaybackSpeed,
   startSpawnPlayback,
-  stopSpawnPlayback
+  stopSpawnPlayback,
+  syncAliveUnitHighlightSelection
 };

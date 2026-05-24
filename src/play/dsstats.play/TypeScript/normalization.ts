@@ -44,6 +44,7 @@ export function normalizeReplay(replayValue: unknown): NormalizedReplay {
             const unit: NormalizedUnit = {
                 name,
                 commander: player.commander,
+                aliveUnitHighlightKey: createAliveUnitHighlightKey(player.teamId, player.commander, name),
                 spawnGameloop,
                 expiresGameloop,
                 spawnX,
@@ -80,6 +81,10 @@ export function normalizeReplay(replayValue: unknown): NormalizedReplay {
         players,
         units
     };
+}
+
+export function createAliveUnitHighlightKey(teamId: number, commander: string, unitName: string): string {
+    return `${teamId}|${commander.length}:${commander}|${unitName.length}:${unitName}`;
 }
 
 export function normalizeSummary(replayValue: unknown): PlaybackSummary {

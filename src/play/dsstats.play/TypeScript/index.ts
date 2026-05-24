@@ -5,6 +5,7 @@ export {
     stopSpawnPlayback,
     setSpawnPlaybackSpeed,
     setSpawnPlaybackFullscreen,
+    syncAliveUnitHighlightSelection,
     disposeSpawnPlayback
 } from "./state";
 

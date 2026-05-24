@@ -94,6 +94,7 @@ export interface UnitRender {
 export interface NormalizedUnit {
     name: string;
     commander: string;
+    aliveUnitHighlightKey: string;
     spawnGameloop: number;
     expiresGameloop: number;
     spawnX: number;
@@ -243,6 +244,9 @@ export interface SpawnPlaybackState {
     staticCanvasHeight: number;
     objectiveDeathAnnouncements: ObjectiveDeathAnnouncement[];
     unitSpriteCache: Map<string, LayerCanvas>;
+    highlightedAliveUnitKey: string | null;
     rootElement: Element | null;
     fullscreenListener: (() => void) | null;
+    aliveUnitClickListener: ((event: Event) => void) | null;
+    aliveUnitKeydownListener: ((event: Event) => void) | null;
 }

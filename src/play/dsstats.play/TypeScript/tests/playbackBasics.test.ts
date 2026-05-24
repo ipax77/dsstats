@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { clipSumLine, clamp, withAlpha } from "../canvasUtils";
-import { normalizeMiddleControl, normalizeReplay, normalizeSummary } from "../normalization";
+import { createAliveUnitHighlightKey, normalizeMiddleControl, normalizeReplay, normalizeSummary } from "../normalization";
 import { createObjectiveDeathAnnouncements, fitText, isEndSummaryVisible } from "../rendering";
+import { resolveAliveUnitHighlightToggle, syncAliveUnitHighlightSelection } from "../state";
+import { deleteState, setState } from "../store";
 import type { LandmarkGeometry } from "../types";
 import { hydrateUnitIcons, unitIconCatalog } from "../unitIcons";
 
@@ -51,6 +53,7 @@ describe("spawn playback basics", () => {
         expect(replay.players[0].refineryGameloops).toEqual([100, 220]);
         expect(replay.players[0].tierUpgradeGameloops).toEqual([300, 450]);
         expect(replay.units.map(unit => unit.name)).toEqual(["Marine", "Marauder"]);
+        expect(replay.units[0].aliveUnitHighlightKey).toBe(createAliveUnitHighlightKey(1, "Terran", "Marine"));
         expect(replay.units[0].deltaX).toBe(0);
         expect(replay.units[0].deltaY).toBe(0);
         expect(replay.units[1].deltaX).toBe(100);
@@ -322,6 +325,47 @@ describe("spawn playback basics", () => {
         expect(fitText(ctx, "P3 NexusDS", 10)).toBe("");
         expect(fitText(ctx, "", 100)).toBe("");
     });
+
+    it("creates unambiguous alive-unit highlight keys", () => {
+        const key = createAliveUnitHighlightKey(2, "Terran|Prime", "10:Marine");
+
+        expect(key).toBe("2|12:Terran|Prime|9:10:Marine");
+    });
+
+    it("toggles an already selected alive-unit highlight off", () => {
+        const marineKey = createAliveUnitHighlightKey(1, "Terran", "Marine");
+        const zerglingKey = createAliveUnitHighlightKey(2, "Zerg", "Zergling");
+
+        expect(resolveAliveUnitHighlightToggle(null, marineKey)).toBe(marineKey);
+        expect(resolveAliveUnitHighlightToggle(marineKey, zerglingKey)).toBe(zerglingKey);
+        expect(resolveAliveUnitHighlightToggle(marineKey, marineKey)).toBeNull();
+    });
+
+    it("syncs alive-unit row selection from playback state", () => {
+        const selectedKey = createAliveUnitHighlightKey(1, "Terran", "Marine");
+        const rows = [
+            createHighlightRow(selectedKey),
+            createHighlightRow(createAliveUnitHighlightKey(2, "Zerg", "Zergling"))
+        ];
+        const root = {
+            querySelectorAll: () => rows
+        };
+        const canvas = {} as HTMLCanvasElement;
+
+        setState(canvas, {
+            rootElement: root,
+            highlightedAliveUnitKey: selectedKey
+        } as never);
+
+        syncAliveUnitHighlightSelection(canvas);
+
+        expect(rows[0].selected).toBe(true);
+        expect(rows[0].attributes["aria-pressed"]).toBe("true");
+        expect(rows[1].selected).toBe(false);
+        expect(rows[1].attributes["aria-pressed"]).toBe("false");
+
+        deleteState(canvas);
+    });
 });
 
 function createLandmark(label: string, diedGameloop: number | null, kills = 0): LandmarkGeometry {
@@ -343,4 +387,24 @@ function createMeasureContext() {
     return {
         measureText: (text: string) => ({ width: text.length * 8 }) as TextMetrics
     };
+}
+
+function createHighlightRow(key: string) {
+    const row = {
+        dataset: {
+            spawnPlaybackHighlightKey: key
+        },
+        selected: false,
+        attributes: {} as Record<string, string>,
+        classList: {
+            toggle: (_className: string, selected: boolean) => {
+                row.selected = selected;
+            }
+        },
+        setAttribute: (name: string, value: string) => {
+            row.attributes[name] = value;
+        }
+    };
+
+    return row;
 }

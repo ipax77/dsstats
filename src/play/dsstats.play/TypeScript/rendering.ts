@@ -43,6 +43,7 @@ const OBJECTIVE_DEATH_ANNOUNCEMENT_SECONDS = 28;
 const OBJECTIVE_DEATH_ANNOUNCEMENT_FADE_SECONDS = 7;
 const OBJECTIVE_DEATH_ANNOUNCEMENT_HOLD_SECONDS = 14;
 const OBJECTIVE_DEATH_LABELS = new Set(["Bunker", "Cannon"]);
+const ALIVE_UNIT_HIGHLIGHT_COLOR = "#F8D34A";
 const FOREST_CLUSTERS = [
     { x: 0.21, y: 0.19, width: 0.18, height: 0.12, trees: 18 },
     { x: 0.27, y: 0.36, width: 0.15, height: 0.12, trees: 16 },
@@ -96,6 +97,14 @@ export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: nu
     drawDynamicMapLayer(ctx, canvas, state.staticGeometry, state.currentGameloop);
     const activeUnits = getActiveUnits(state, state.currentGameloop);
     const drawnUnits = drawUnitLayer(ctx, state.renderCache.projection, activeUnits, state.currentGameloop);
+    if (state.highlightedAliveUnitKey !== null) {
+        drawAliveUnitHighlightLayer(
+            ctx,
+            state.renderCache.projection,
+            activeUnits,
+            state.currentGameloop,
+            state.highlightedAliveUnitKey);
+    }
 
     if (drawnUnits === 0) {
         drawEmptyState(ctx, canvas);
@@ -1245,6 +1254,38 @@ function drawUnit(ctx: CanvasContext, projection: Projection, unit: NormalizedUn
     }
 
     return true;
+}
+
+function drawAliveUnitHighlightLayer(
+    ctx: CanvasContext,
+    projection: Projection,
+    activeUnits: NormalizedUnit[],
+    currentGameloop: number,
+    highlightedAliveUnitKey: string): void {
+    ctx.save();
+    ctx.strokeStyle = withAlpha(ALIVE_UNIT_HIGHLIGHT_COLOR, "EE");
+    ctx.shadowColor = withAlpha(ALIVE_UNIT_HIGHLIGHT_COLOR, "AA");
+    ctx.shadowBlur = 8;
+
+    for (const unit of activeUnits) {
+        if (unit.aliveUnitHighlightKey !== highlightedAliveUnitKey
+            || currentGameloop < unit.spawnGameloop
+            || unit.expiresGameloop <= currentGameloop) {
+            continue;
+        }
+
+        const progress = clamp((currentGameloop - unit.spawnGameloop) * unit.inverseLifetime, 0, 1);
+        const x = projectX(projection, unit.spawnX + unit.deltaX * progress);
+        const y = projectY(projection, unit.spawnY + unit.deltaY * progress);
+        const radius = unit.render?.radius ?? 3;
+
+        ctx.lineWidth = Math.max(2, radius * 0.36);
+        ctx.beginPath();
+        ctx.arc(x, y, radius + Math.max(4, radius * 0.45), 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    ctx.restore();
 }
 
 function drawEmptyState(ctx: CanvasContext, canvas: HTMLCanvasElement): void {

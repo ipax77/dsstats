@@ -108,6 +108,31 @@
     z-index: 1;
 }
 
+.spawn-playback-alive-row {
+    cursor: pointer;
+}
+
+.spawn-playback-alive-row:focus {
+    outline: 2px solid rgba(248, 211, 74, 0.75);
+    outline-offset: -2px;
+}
+
+.spawn-playback-alive-row-selected > td {
+    background-color: rgba(248, 211, 74, 0.18) !important;
+}
+
+.spawn-playback-alive-row-selected > td:first-child {
+    box-shadow: inset 3px 0 0 #f8d34a;
+}
+
+.spawn-playback-clear-highlight {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .spawn-playback-unit-cell {
     display: flex;
     align-items: center;

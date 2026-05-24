@@ -4,6 +4,10 @@ import { clampGameloop, drawSpawnPlayback } from "./rendering";
 import { deleteState, getState, setState } from "./store";
 import type { DotNetCallbackRef, SpawnPlaybackState } from "./types";
 
+const ALIVE_UNIT_ROW_SELECTOR = "[data-spawn-playback-alive-unit-row]";
+const ALIVE_UNIT_CLEAR_SELECTOR = "[data-spawn-playback-clear-highlight]";
+const ALIVE_UNIT_SELECTED_CLASS = "spawn-playback-alive-row-selected";
+
 export function initializeSpawnPlayback(
     canvas: HTMLCanvasElement,
     rootElement: Element | null,
@@ -36,8 +40,11 @@ export function initializeSpawnPlayback(
         staticCanvasHeight: 0,
         objectiveDeathAnnouncements: [],
         unitSpriteCache: new Map(),
+        highlightedAliveUnitKey: null,
         rootElement,
-        fullscreenListener: null
+        fullscreenListener: null,
+        aliveUnitClickListener: null,
+        aliveUnitKeydownListener: null
     };
 
     disposeState(getState(canvas));
@@ -46,6 +53,7 @@ export function initializeSpawnPlayback(
     state.resizeObserver.observe(canvas);
     state.fullscreenListener = () => handleFullscreenChange(canvas);
     document.addEventListener("fullscreenchange", state.fullscreenListener);
+    initializeAliveUnitHighlightEvents(canvas, state);
     setState(canvas, state);
     resizeCanvas(canvas);
 }
@@ -150,6 +158,11 @@ export function disposeSpawnPlayback(canvas: HTMLCanvasElement): void {
     deleteState(canvas);
 }
 
+export function syncAliveUnitHighlightSelection(canvas: HTMLCanvasElement): void {
+    const state = getState(canvas);
+    syncAliveUnitHighlightRows(state);
+}
+
 function animateSpawnPlayback(canvas: HTMLCanvasElement, timestamp: number): void {
     const state = getState(canvas);
     if (!state?.running) {
@@ -206,6 +219,8 @@ function disposeState(state: SpawnPlaybackState | undefined): void {
         document.removeEventListener("fullscreenchange", state.fullscreenListener);
         state.fullscreenListener = null;
     }
+
+    disposeAliveUnitHighlightEvents(state);
 }
 
 function cancelAnimation(state: SpawnPlaybackState | undefined): void {
@@ -229,4 +244,125 @@ function notifyFullscreenChanged(state: SpawnPlaybackState): void {
     state.callbackRef?.invokeMethodAsync(
         "ReceiveSpawnPlaybackFullscreenChanged",
         document.fullscreenElement === state.rootElement).catch(() => { });
+}
+
+function initializeAliveUnitHighlightEvents(canvas: HTMLCanvasElement, state: SpawnPlaybackState): void {
+    if (!state.rootElement) {
+        return;
+    }
+
+    state.aliveUnitClickListener = event => handleAliveUnitHighlightClick(canvas, event);
+    state.aliveUnitKeydownListener = event => handleAliveUnitHighlightKeydown(canvas, event);
+    state.rootElement.addEventListener("click", state.aliveUnitClickListener);
+    state.rootElement.addEventListener("keydown", state.aliveUnitKeydownListener);
+}
+
+function disposeAliveUnitHighlightEvents(state: SpawnPlaybackState): void {
+    if (!state.rootElement) {
+        return;
+    }
+
+    if (state.aliveUnitClickListener) {
+        state.rootElement.removeEventListener("click", state.aliveUnitClickListener);
+        state.aliveUnitClickListener = null;
+    }
+
+    if (state.aliveUnitKeydownListener) {
+        state.rootElement.removeEventListener("keydown", state.aliveUnitKeydownListener);
+        state.aliveUnitKeydownListener = null;
+    }
+}
+
+function handleAliveUnitHighlightClick(canvas: HTMLCanvasElement, event: Event): void {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+        return;
+    }
+
+    if (target.closest(ALIVE_UNIT_CLEAR_SELECTOR)) {
+        setAliveUnitHighlight(canvas, null);
+        return;
+    }
+
+    const row = target.closest<HTMLElement>(ALIVE_UNIT_ROW_SELECTOR);
+    if (!row) {
+        return;
+    }
+
+    const key = row.dataset.spawnPlaybackHighlightKey;
+    if (key) {
+        toggleAliveUnitHighlight(canvas, key);
+    }
+}
+
+function handleAliveUnitHighlightKeydown(canvas: HTMLCanvasElement, event: Event): void {
+    const keyboardEvent = event as KeyboardEvent;
+    if (keyboardEvent.key !== "Enter" && keyboardEvent.key !== " ") {
+        return;
+    }
+
+    const target = keyboardEvent.target;
+    if (!(target instanceof Element)) {
+        return;
+    }
+
+    const row = target.closest<HTMLElement>(ALIVE_UNIT_ROW_SELECTOR);
+    if (!row) {
+        return;
+    }
+
+    const key = row.dataset.spawnPlaybackHighlightKey;
+    if (!key) {
+        return;
+    }
+
+    keyboardEvent.preventDefault();
+    toggleAliveUnitHighlight(canvas, key);
+}
+
+function toggleAliveUnitHighlight(canvas: HTMLCanvasElement, key: string): void {
+    const state = getState(canvas);
+    if (!state) {
+        return;
+    }
+
+    setAliveUnitHighlight(canvas, resolveAliveUnitHighlightToggle(state.highlightedAliveUnitKey, key));
+}
+
+export function resolveAliveUnitHighlightToggle(currentKey: string | null, nextKey: string): string | null {
+    return currentKey === nextKey ? null : nextKey;
+}
+
+function setAliveUnitHighlight(canvas: HTMLCanvasElement, key: string | null): void {
+    const state = getState(canvas);
+    if (!state || state.highlightedAliveUnitKey === key) {
+        return;
+    }
+
+    state.highlightedAliveUnitKey = key;
+    syncAliveUnitHighlightRows(state);
+    requestAliveUnitHighlightRedraw(canvas, state);
+}
+
+function syncAliveUnitHighlightRows(state: SpawnPlaybackState | undefined): void {
+    const rootElement = state?.rootElement;
+    if (!rootElement) {
+        return;
+    }
+
+    const selectedKey = state.highlightedAliveUnitKey;
+    const rows = rootElement.querySelectorAll<HTMLElement>(ALIVE_UNIT_ROW_SELECTOR);
+    for (const row of rows) {
+        const selected = selectedKey !== null && row.dataset.spawnPlaybackHighlightKey === selectedKey;
+        row.classList.toggle(ALIVE_UNIT_SELECTED_CLASS, selected);
+        row.setAttribute("aria-pressed", selected ? "true" : "false");
+    }
+}
+
+function requestAliveUnitHighlightRedraw(canvas: HTMLCanvasElement, state: SpawnPlaybackState): void {
+    if (state.running) {
+        return;
+    }
+
+    requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop));
 }
