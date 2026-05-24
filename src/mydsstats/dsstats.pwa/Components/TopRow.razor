@@ -39,6 +39,13 @@
 	</span>
 
 	<span class="badge bg-info text-dark">Decoded in DB: @totalReplayCount</span>
+	@if (storageEstimate is not null && storageEstimate.Quota > 0)
+	{
+		<span class="badge @GetStorageBadgeClass()"
+			  title="@GetStorageTooltip()">
+			Storage: @FormatBytes(storageEstimate.Usage) / @FormatBytes(storageEstimate.Quota) (@FormatStoragePercent())
+		</span>
+	}
 
 	@if (decodeInfo != null)
 	{
@@ -144,6 +151,7 @@
 	private bool isApplyingUpdate;
 	private int totalReplayCount;
 	private int? decodeStartReplayCount;
+	private StorageEstimateDto? storageEstimate;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -211,7 +219,65 @@
 		var entries = await DbService.GetAllDirectoryHandleEntries();
 		hasDirHandles = entries.Count > 0;
 		totalReplayCount = await DbService.GetTotalReplayCountAsync();
+		storageEstimate = await DbService.GetStorageEstimateAsync();
 		await InvokeAsync(StateHasChanged);
+	}
+
+	private string GetStorageBadgeClass()
+	{
+		var percent = GetStorageUsageRatio();
+		if (percent >= 0.9)
+		{
+			return "bg-danger";
+		}
+
+		if (percent >= 0.75)
+		{
+			return "bg-warning text-dark";
+		}
+
+		return "bg-info text-dark";
+	}
+
+	private string GetStorageTooltip()
+	{
+		if (storageEstimate is null)
+		{
+			return string.Empty;
+		}
+
+		return $"Browser storage used by this app origin. Usage: {FormatBytes(storageEstimate.Usage)}. Quota: {FormatBytes(storageEstimate.Quota)}.";
+	}
+
+	private string FormatStoragePercent()
+	{
+		return GetStorageUsageRatio().ToString("P1");
+	}
+
+	private double GetStorageUsageRatio()
+	{
+		if (storageEstimate is null || storageEstimate.Quota <= 0)
+		{
+			return 0;
+		}
+
+		return Math.Clamp(storageEstimate.Usage / storageEstimate.Quota, 0, 1);
+	}
+
+	private static string FormatBytes(double bytes)
+	{
+		string[] units = ["B", "KB", "MB", "GB", "TB"];
+		var value = Math.Max(0, bytes);
+		var unitIndex = 0;
+		while (value >= 1024 && unitIndex < units.Length - 1)
+		{
+			value /= 1024;
+			unitIndex++;
+		}
+
+		return unitIndex == 0
+			? $"{value:N0} {units[unitIndex]}"
+			: $"{value:N1} {units[unitIndex]}";
 	}
 
 	private async Task DecodeAll()

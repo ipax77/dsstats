@@ -63,6 +63,12 @@ public class IndexedDbService
         return await module.InvokeAsync<byte[]?>("getReplaySpawnPlayback", replayHash);
     }
 
+    public async Task<StorageEstimateDto?> GetStorageEstimateAsync()
+    {
+        var module = await _moduleTask;
+        return await module.InvokeAsync<StorageEstimateDto?>("getStorageEstimate");
+    }
+
     public async Task SaveReplayRatingAsync(string replayHash, ReplayRatingDto rating)
     {
         var module = await _moduleTask;
@@ -470,6 +476,12 @@ public sealed class SpawnPlaybackExportDto
     public int CompressedLength { get; set; }
     public int UncompressedLength { get; set; }
     public int UnitCount { get; set; }
+}
+
+public sealed class StorageEstimateDto
+{
+    public double Usage { get; set; }
+    public double Quota { get; set; }
 }
 
 public sealed class MyPlayerStats

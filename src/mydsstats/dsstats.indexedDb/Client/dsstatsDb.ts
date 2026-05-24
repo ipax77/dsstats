@@ -138,6 +138,18 @@ export async function getReplaySpawnPlayback(replayHash: string): Promise<Uint8A
     });
 }
 
+export async function getStorageEstimate(): Promise<{ usage: number; quota: number } | undefined> {
+    if (!navigator.storage?.estimate) {
+        return undefined;
+    }
+
+    const estimate = await navigator.storage.estimate();
+    return {
+        usage: estimate.usage ?? 0,
+        quota: estimate.quota ?? 0,
+    };
+}
+
 /**
  * Get the latest N unuploaded replays and return their hashes + gzipped data.
  */
