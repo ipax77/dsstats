@@ -1,0 +1,30 @@
+<span class="@Class"
+      title="@Title"
+      data-unit-icon="@UnitName"
+      data-unit-commander="@Commander"
+      data-unit-size="@Size"
+      data-team-id="@TeamId"
+      data-team-color="@TeamColor"></span>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Commander { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string UnitName { get; set; } = string.Empty;
+
+    [Parameter]
+    public int Size { get; set; } = 20;
+
+    [Parameter]
+    public int? TeamId { get; set; }
+
+    [Parameter]
+    public string? TeamColor { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; }
+}

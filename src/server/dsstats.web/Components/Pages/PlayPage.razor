@@ -30,6 +30,38 @@
         </div>
     </div>
 
+    <UnitIconHydrator Class="unit-icon-preview bgchart border border-dark rounded p-3 mb-4">
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-3">
+            <div>
+                <h5 class="text-warning mb-1">Unit Icon Preview</h5>
+                <div class="small text-muted">All standard units rendered at 3x playback table size.</div>
+            </div>
+            <span class="badge text-bg-dark border border-secondary">@IconPreviewCount icons</span>
+        </div>
+        @foreach (var group in IconPreviewGroups)
+        {
+            <section class="unit-icon-preview-group" style="--unit-preview-accent: @group.AccentColor;">
+                <div class="unit-icon-preview-heading">
+                    <span class="unit-icon-preview-dot"></span>
+                    <span>@group.Name</span>
+                </div>
+                <div class="unit-icon-preview-grid">
+                    @foreach (var unit in group.Units)
+                    {
+                        <div class="unit-icon-preview-item" title="@unit.Name">
+                            <UnitIcon Class="unit-icon-preview-glyph"
+                                      Commander="@group.Name"
+                                      UnitName="@unit.Name"
+                                      Size="@IconPreviewSize"
+                                      Title="@unit.Name" />
+                            <span class="unit-icon-preview-label">@unit.Name</span>
+                        </div>
+                    }
+                </div>
+            </section>
+        }
+    </UnitIconHydrator>
+
     @if (isLoading)
     {
         <div class="mb-4">
@@ -120,6 +152,70 @@
     private dsstats.shared.ReplayDto? replayDto;
     private SpawnPlaybackSidecarDto? spawnPlaybackSidecar;
     private SpawnPlaybackReplay? spawnPlayback;
+    private const int IconPreviewSize = 60;
+    private static readonly IconPreviewGroup[] IconPreviewGroups =
+    [
+        new("Protoss", "#F4D372",
+        [
+            new("Zealot"),
+            new("Sentry"),
+            new("Stalker"),
+            new("Adept"),
+            new("High Templar"),
+            new("Dark Templar"),
+            new("Archon"),
+            new("Immortal"),
+            new("Colossus"),
+            new("Disruptor"),
+            new("Observer"),
+            new("Oracle"),
+            new("Phoenix"),
+            new("Void Ray"),
+            new("Carrier"),
+            new("Tempest"),
+            new("Mothership"),
+        ]),
+        new("Terran", "#8FB6D6",
+        [
+            new("Marine"),
+            new("Marauder"),
+            new("Reaper"),
+            new("Ghost"),
+            new("Hellbat"),
+            new("Hellion"),
+            new("Medivac"),
+            new("Banshee"),
+            new("Viking"),
+            new("Raven"),
+            new("Siege Tank"),
+            new("Cyclone"),
+            new("Widow Mine"),
+            new("Liberator"),
+            new("Thor"),
+            new("Battlecruiser"),
+        ]),
+        new("Zerg", "#B487C8",
+        [
+            new("Zergling"),
+            new("Hydralisk"),
+            new("Infestor"),
+            new("Overseer"),
+            new("Corruptor"),
+            new("Lurker"),
+            new("Roach"),
+            new("Queen"),
+            new("Mutalisk"),
+            new("Swarm Host"),
+            new("Ultralisk"),
+            new("Ravager"),
+            new("Baneling"),
+            new("Viper"),
+            new("Brood Lord"),
+            new("Locust"),
+        ]),
+    ];
+
+    private static int IconPreviewCount => IconPreviewGroups.Sum(group => group.Units.Length);
 
     private async Task LoadReplay(InputFileChangeEventArgs e)
     {
@@ -676,4 +772,8 @@
     private readonly record struct UnitTag(int UnitTagIndex, int UnitTagRecycle);
 
     private readonly record struct PlaybackPoint(int X, int Y);
+
+    private sealed record IconPreviewGroup(string Name, string AccentColor, IconPreviewUnit[] Units);
+
+    private sealed record IconPreviewUnit(string Name);
 }
