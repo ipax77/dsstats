@@ -6,7 +6,6 @@ import type { DotNetCallbackRef, SpawnPlaybackState } from "./types";
 const ALIVE_UNIT_ROW_SELECTOR = "[data-spawn-playback-alive-unit-row]";
 const ALIVE_UNIT_CLEAR_SELECTOR = "[data-spawn-playback-clear-highlight]";
 const ALIVE_UNIT_SELECTED_CLASS = "spawn-playback-alive-row-selected";
-const longTaskObservers = new WeakMap<HTMLCanvasElement, PerformanceObserver>();
 
 export function initializeSpawnPlayback(
     canvas: HTMLCanvasElement,
@@ -15,18 +14,8 @@ export function initializeSpawnPlayback(
     callbackRef: DotNetCallbackRef | null,
     gameloopsPerSecond: number,
     speedMultiplier: number): void {
-    const startedAt = performance.now();
-    let stageStarted = startedAt;
-    const stages: string[] = [];
-    const markStage = (name: string): void => {
-        const now = performance.now();
-        stages.push(`${name}=${(now - stageStarted).toFixed(1)}ms`);
-        stageStarted = now;
-    };
-    const normalizedReplay = normalizeReplay(replay);
-    markStage("normalizeReplay");
     const state: SpawnPlaybackState = {
-        replay: normalizedReplay,
+        replay: normalizeReplay(replay),
         callbackRef,
         gameloopsPerSecond: Number.isFinite(gameloopsPerSecond) && gameloopsPerSecond > 0
             ? gameloopsPerSecond
@@ -61,37 +50,22 @@ export function initializeSpawnPlayback(
         aliveUnitClickListener: null,
         aliveUnitKeydownListener: null
     };
-    markStage("createState");
 
-    stopLongTaskObserver(canvas);
     disposeState(getState(canvas));
-    markStage("disposeExistingState");
 
     state.fullscreenListener = () => handleFullscreenChange(canvas);
     document.addEventListener("fullscreenchange", state.fullscreenListener);
-    markStage("addFullscreenListener");
     initializeAliveUnitHighlightEvents(canvas, state);
-    markStage("initializeAliveUnitEvents");
     setState(canvas, state);
-    markStage("setState");
-    startLongTaskObserver(canvas);
-    markStage("startLongTaskObserver");
-    logPlaybackDiagnostic(
-        `initializeSpawnPlayback units=${state.replay.units.length} players=${state.replay.players.length} stages=[${stages.join(", ")}]`,
-        startedAt);
 }
 
 export function observeSpawnPlaybackResize(canvas: HTMLCanvasElement): void {
-    const startedAt = performance.now();
     const state = getState(canvas);
     if (!state) {
-        logPlaybackDiagnostic("observe resize skipped reason=no-state", startedAt);
         return;
     }
 
-    const initialSkipReason = getResizeSkipReason(state, canvas);
-    if (initialSkipReason) {
-        logPlaybackDiagnostic(`observe resize skipped reason=${initialSkipReason}`, startedAt);
+    if (getResizeSkipReason(state, canvas)) {
         return;
     }
 
@@ -100,7 +74,7 @@ export function observeSpawnPlaybackResize(canvas: HTMLCanvasElement): void {
     }
 
     if (state.modalElement && !state.modalHideListener) {
-        state.modalHideListener = () => suspendSpawnPlayback(state, "modal-hide");
+        state.modalHideListener = () => suspendSpawnPlayback(state);
         state.modalElement.addEventListener("hide.bs.modal", state.modalHideListener);
     }
 
@@ -109,9 +83,6 @@ export function observeSpawnPlaybackResize(canvas: HTMLCanvasElement): void {
     }
 
     state.resizeObserver.observe(canvas);
-    logPlaybackDiagnostic(
-        `observe resize attached modal=${state.modalElement !== null} client=${canvas.clientWidth}x${canvas.clientHeight} backing=${canvas.width}x${canvas.height}`,
-        startedAt);
 }
 
 export function startSpawnPlayback(
@@ -209,19 +180,9 @@ export async function setSpawnPlaybackFullscreen(
 }
 
 export function disposeSpawnPlayback(canvas: HTMLCanvasElement): void {
-    const startedAt = performance.now();
     const state = getState(canvas);
-    console.log(`spawnPlayback dispose start hasState=${state !== undefined} frame=${state?.animationFrameId ?? 0} running=${state?.running ?? false} sprites=${state?.unitSpriteCache.size ?? 0} active=${state?.activeUnits.length ?? 0} hasStatic=${state?.staticBackgroundCanvas !== null} - ${Date.now()}`);
-    let stageStarted = performance.now();
-    stopLongTaskObserver(canvas);
-    logPlaybackStage("dispose stopLongTaskObserver", stageStarted);
-    stageStarted = performance.now();
     disposeState(state);
-    logPlaybackStage("dispose disposeState", stageStarted);
-    stageStarted = performance.now();
     deleteState(canvas);
-    logPlaybackStage("dispose deleteState", stageStarted);
-    logPlaybackDiagnostic("disposeSpawnPlayback", startedAt);
 }
 
 export function syncAliveUnitHighlightSelection(canvas: HTMLCanvasElement): void {
@@ -245,7 +206,7 @@ function animateSpawnPlayback(canvas: HTMLCanvasElement, timestamp: number): voi
         state,
         state.currentGameloop + elapsedSeconds * state.gameloopsPerSecond * state.speedMultiplier);
 
-    drawSpawnPlayback(canvas, state.currentGameloop, "animation-frame");
+    drawSpawnPlayback(canvas, state.currentGameloop);
 
     if (state.currentGameloop >= state.replay.durationGameloop) {
         state.running = false;
@@ -284,37 +245,25 @@ function disposeState(state: SpawnPlaybackState | undefined): void {
     state.isMounted = false;
     state.isDisposing = true;
     state.running = false;
-    let stageStarted = performance.now();
     cancelPendingResize(state);
-    logPlaybackStage("disposeState cancelPendingResize", stageStarted);
-    stageStarted = performance.now();
     cancelAnimation(state);
-    logPlaybackStage("disposeState cancelAnimation", stageStarted);
     if (state.resizeObserver) {
-        stageStarted = performance.now();
         state.resizeObserver.disconnect();
         state.resizeObserver = null;
-        logPlaybackStage("disposeState disconnectResizeObserver", stageStarted);
     }
 
     if (state.fullscreenListener) {
-        stageStarted = performance.now();
         document.removeEventListener("fullscreenchange", state.fullscreenListener);
         state.fullscreenListener = null;
-        logPlaybackStage("disposeState removeFullscreenListener", stageStarted);
     }
 
     if (state.modalElement && state.modalHideListener) {
-        stageStarted = performance.now();
         state.modalElement.removeEventListener("hide.bs.modal", state.modalHideListener);
         state.modalHideListener = null;
         state.modalElement = null;
-        logPlaybackStage("disposeState removeModalHideListener", stageStarted);
     }
 
-    stageStarted = performance.now();
     disposeAliveUnitHighlightEvents(state);
-    logPlaybackStage("disposeState disposeAliveUnitEvents", stageStarted);
 }
 
 function cancelAnimation(state: SpawnPlaybackState | undefined): void {
@@ -328,36 +277,24 @@ function handleResizeObserved(
     canvas: HTMLCanvasElement,
     state: SpawnPlaybackState,
     entries: ResizeObserverEntry[]): void {
-    const startedAt = performance.now();
     const entry = entries[0];
-    console.log(
-        `spawnPlayback resizeObserver start entries=${entries.length} content=${entry?.contentRect.width.toFixed(1) ?? "-"}x${entry?.contentRect.height.toFixed(1) ?? "-"} client=${canvas.clientWidth}x${canvas.clientHeight} backing=${canvas.width}x${canvas.height} contains=${document.contains(canvas)} ${getRootVisibilityDiagnostics(state.rootElement)} - ${Date.now()}`);
 
-    const skipReason = getResizeSkipReason(state, canvas, entry);
-    if (skipReason) {
-        logPlaybackDiagnostic(`resizeObserver skipped reason=${skipReason}`, startedAt);
+    if (getResizeSkipReason(state, canvas, entry)) {
         return;
     }
 
     if (state.pendingResizeRaf !== null) {
-        logPlaybackDiagnostic("resizeObserver skipped reason=pending-raf", startedAt);
         return;
     }
 
     state.pendingResizeRaf = requestAnimationFrame(() => {
         state.pendingResizeRaf = null;
-        const rafStartedAt = performance.now();
-        const rafSkipReason = getResizeSkipReason(state, canvas);
-        if (rafSkipReason) {
-            logPlaybackDiagnostic(`resizeObserver raf skipped reason=${rafSkipReason}`, rafStartedAt);
+        if (getResizeSkipReason(state, canvas)) {
             return;
         }
 
-        drawSpawnPlayback(canvas, state.currentGameloop, "resize-observer");
-        logPlaybackDiagnostic("resizeObserver raf draw", rafStartedAt);
+        drawSpawnPlayback(canvas, state.currentGameloop);
     });
-
-    logPlaybackDiagnostic("resizeObserver scheduled raf", startedAt);
 }
 
 function getResizeSkipReason(
@@ -413,8 +350,7 @@ function isRootOrModalHidden(rootElement: Element | null): boolean {
         || modal.getAttribute("aria-hidden") === "true";
 }
 
-function suspendSpawnPlayback(state: SpawnPlaybackState, reason: string): void {
-    const startedAt = performance.now();
+function suspendSpawnPlayback(state: SpawnPlaybackState): void {
     state.isDisposing = true;
     state.running = false;
     cancelPendingResize(state);
@@ -423,8 +359,6 @@ function suspendSpawnPlayback(state: SpawnPlaybackState, reason: string): void {
         state.resizeObserver.disconnect();
         state.resizeObserver = null;
     }
-
-    logPlaybackDiagnostic(`suspend reason=${reason}`, startedAt);
 }
 
 function cancelPendingResize(state: SpawnPlaybackState): void {
@@ -434,47 +368,6 @@ function cancelPendingResize(state: SpawnPlaybackState): void {
 
     cancelAnimationFrame(state.pendingResizeRaf);
     state.pendingResizeRaf = null;
-    console.log(`spawnPlayback pending resize raf canceled - ${Date.now()}`);
-}
-
-function startLongTaskObserver(canvas: HTMLCanvasElement): void {
-    if (!("PerformanceObserver" in window)) {
-        return;
-    }
-
-    const supportedTypes = PerformanceObserver.supportedEntryTypes ?? [];
-    if (!supportedTypes.includes("longtask")) {
-        return;
-    }
-
-    try {
-        const observer = new PerformanceObserver(list => {
-            for (const entry of list.getEntries()) {
-                console.log(`spawnPlayback longtask duration=${entry.duration.toFixed(1)}ms start=${entry.startTime.toFixed(1)} - ${Date.now()}`);
-            }
-        });
-        observer.observe({ entryTypes: ["longtask"] });
-        longTaskObservers.set(canvas, observer);
-    } catch {
-    }
-}
-
-function stopLongTaskObserver(canvas: HTMLCanvasElement): void {
-    const observer = longTaskObservers.get(canvas);
-    if (!observer) {
-        return;
-    }
-
-    observer.disconnect();
-    longTaskObservers.delete(canvas);
-}
-
-function logPlaybackStage(message: string, startedAt: number): void {
-    console.log(`spawnPlayback ${message} elapsed=${(performance.now() - startedAt).toFixed(1)}ms - ${Date.now()}`);
-}
-
-function logPlaybackDiagnostic(message: string, startedAt: number): void {
-    console.log(`spawnPlayback ${message} elapsed=${(performance.now() - startedAt).toFixed(1)}ms - ${Date.now()}`);
 }
 
 function handleFullscreenChange(canvas: HTMLCanvasElement): void {
@@ -489,7 +382,7 @@ function handleFullscreenChange(canvas: HTMLCanvasElement): void {
             return;
         }
 
-        drawSpawnPlayback(canvas, state.currentGameloop, "fullscreen-change");
+        drawSpawnPlayback(canvas, state.currentGameloop);
     });
 }
 
@@ -622,24 +515,6 @@ function requestAliveUnitHighlightRedraw(canvas: HTMLCanvasElement, state: Spawn
             return;
         }
 
-        drawSpawnPlayback(canvas, state.currentGameloop, "alive-highlight");
+        drawSpawnPlayback(canvas, state.currentGameloop);
     });
-}
-
-function getRootVisibilityDiagnostics(rootElement: Element | null): string {
-    if (!rootElement) {
-        return "root=null";
-    }
-
-    const modal = rootElement.closest(".modal");
-    const rootStyle = rootElement instanceof HTMLElement ? getComputedStyle(rootElement) : null;
-    const modalStyle = modal instanceof HTMLElement ? getComputedStyle(modal) : null;
-    return [
-        `rootConnected=${rootElement.isConnected}`,
-        `rootDisplay=${rootStyle?.display ?? "-"}`,
-        `rootVisibility=${rootStyle?.visibility ?? "-"}`,
-        `modalShow=${modal?.classList.contains("show") ?? false}`,
-        `modalAriaHidden=${modal?.getAttribute("aria-hidden") ?? "-"}`,
-        `modalDisplay=${modalStyle?.display ?? "-"}`
-    ].join(" ");
 }

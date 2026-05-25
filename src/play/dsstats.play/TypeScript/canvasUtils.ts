@@ -15,24 +15,20 @@ export function getCanvasContext(canvas: LayerCanvas | HTMLCanvasElement): Canva
     return canvas.getContext("2d") as CanvasContext | null;
 }
 
-export function resizeCanvas(canvas: HTMLCanvasElement, source = "unknown"): boolean {
+export function resizeCanvas(canvas: HTMLCanvasElement): boolean {
     const width = Math.max(320, Math.floor(canvas.clientWidth));
     const height = Math.max(240, Math.floor(canvas.clientHeight));
     const scale = window.devicePixelRatio || 1;
     const targetWidth = Math.floor(width * scale);
     const targetHeight = Math.floor(height * scale);
-    const oldWidth = canvas.width;
-    const oldHeight = canvas.height;
-    const resized = oldWidth !== targetWidth || oldHeight !== targetHeight;
 
-    if (resized) {
+    if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
         canvas.width = targetWidth;
         canvas.height = targetHeight;
+        return true;
     }
 
-    console.log(
-        `spawnPlayback resizeCanvas source=${source} resized=${resized} client=${canvas.clientWidth}x${canvas.clientHeight} target=${targetWidth}x${targetHeight} old=${oldWidth}x${oldHeight} scale=${scale.toFixed(2)} contains=${document.contains(canvas)} - ${Date.now()}`);
-    return resized;
+    return false;
 }
 
 export function deviceScale(canvas: HTMLCanvasElement): number {
