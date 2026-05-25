@@ -63,7 +63,14 @@ export function initializeSpawnPlayback(
     disposeState(getState(canvas));
     markStage("disposeExistingState");
 
-    state.resizeObserver = new ResizeObserver(() => drawSpawnPlayback(canvas, state.currentGameloop));
+    state.resizeObserver = new ResizeObserver(entries => {
+        const startedAt = performance.now();
+        const entry = entries[0];
+        console.log(
+            `spawnPlayback resizeObserver start entries=${entries.length} content=${entry?.contentRect.width.toFixed(1) ?? "-"}x${entry?.contentRect.height.toFixed(1) ?? "-"} client=${canvas.clientWidth}x${canvas.clientHeight} backing=${canvas.width}x${canvas.height} contains=${document.contains(canvas)} ${getRootVisibilityDiagnostics(state.rootElement)} - ${Date.now()}`);
+        drawSpawnPlayback(canvas, state.currentGameloop, "resize-observer");
+        logPlaybackDiagnostic("resizeObserver end", startedAt);
+    });
     state.resizeObserver.observe(canvas);
     markStage("observeResize");
     state.fullscreenListener = () => handleFullscreenChange(canvas);
@@ -75,7 +82,7 @@ export function initializeSpawnPlayback(
     markStage("setState");
     startLongTaskObserver(canvas);
     markStage("startLongTaskObserver");
-    resizeCanvas(canvas);
+    resizeCanvas(canvas, "initializeSpawnPlayback");
     markStage("resizeCanvas");
     logPlaybackDiagnostic(
         `initializeSpawnPlayback units=${state.replay.units.length} players=${state.replay.players.length} stages=[${stages.join(", ")}]`,
@@ -213,7 +220,7 @@ function animateSpawnPlayback(canvas: HTMLCanvasElement, timestamp: number): voi
         state,
         state.currentGameloop + elapsedSeconds * state.gameloopsPerSecond * state.speedMultiplier);
 
-    drawSpawnPlayback(canvas, state.currentGameloop);
+    drawSpawnPlayback(canvas, state.currentGameloop, "animation-frame");
 
     if (state.currentGameloop >= state.replay.durationGameloop) {
         state.running = false;
@@ -319,7 +326,7 @@ function handleFullscreenChange(canvas: HTMLCanvasElement): void {
     }
 
     notifyFullscreenChanged(state);
-    requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop));
+    requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop, "fullscreen-change"));
 }
 
 function notifyFullscreenChanged(state: SpawnPlaybackState): void {
@@ -446,5 +453,23 @@ function requestAliveUnitHighlightRedraw(canvas: HTMLCanvasElement, state: Spawn
         return;
     }
 
-    requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop));
+    requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop, "alive-highlight"));
+}
+
+function getRootVisibilityDiagnostics(rootElement: Element | null): string {
+    if (!rootElement) {
+        return "root=null";
+    }
+
+    const modal = rootElement.closest(".modal");
+    const rootStyle = rootElement instanceof HTMLElement ? getComputedStyle(rootElement) : null;
+    const modalStyle = modal instanceof HTMLElement ? getComputedStyle(modal) : null;
+    return [
+        `rootConnected=${rootElement.isConnected}`,
+        `rootDisplay=${rootStyle?.display ?? "-"}`,
+        `rootVisibility=${rootStyle?.visibility ?? "-"}`,
+        `modalShow=${modal?.classList.contains("show") ?? false}`,
+        `modalAriaHidden=${modal?.getAttribute("aria-hidden") ?? "-"}`,
+        `modalDisplay=${modalStyle?.display ?? "-"}`
+    ].join(" ");
 }

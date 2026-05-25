@@ -11,18 +11,23 @@ function createLayerCanvas(width, height) {
 function getCanvasContext(canvas) {
   return canvas.getContext("2d");
 }
-function resizeCanvas(canvas) {
+function resizeCanvas(canvas, source = "unknown") {
   const width = Math.max(320, Math.floor(canvas.clientWidth));
   const height = Math.max(240, Math.floor(canvas.clientHeight));
   const scale = window.devicePixelRatio || 1;
   const targetWidth = Math.floor(width * scale);
   const targetHeight = Math.floor(height * scale);
-  if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+  const oldWidth = canvas.width;
+  const oldHeight = canvas.height;
+  const resized = oldWidth !== targetWidth || oldHeight !== targetHeight;
+  if (resized) {
     canvas.width = targetWidth;
     canvas.height = targetHeight;
-    return true;
   }
-  return false;
+  console.log(
+    `spawnPlayback resizeCanvas source=${source} resized=${resized} client=${canvas.clientWidth}x${canvas.clientHeight} target=${targetWidth}x${targetHeight} old=${oldWidth}x${oldHeight} scale=${scale.toFixed(2)} contains=${document.contains(canvas)} - ${Date.now()}`
+  );
+  return resized;
 }
 function deviceScale(canvas) {
   return canvas.width / Math.max(1, canvas.clientWidth);
@@ -8402,7 +8407,7 @@ var FOREST_CLUSTERS = [
 var DRAW_DIAGNOSTIC_FIRST_DRAWS = 5;
 var DRAW_DIAGNOSTIC_SLOW_MS = 16;
 var drawDiagnosticCounts = /* @__PURE__ */ new WeakMap();
-function drawSpawnPlayback(canvas, currentGameloop) {
+function drawSpawnPlayback(canvas, currentGameloop, source = "unknown") {
   const drawStarted = performance.now();
   const stages = [];
   let stageStarted = drawStarted;
@@ -8416,14 +8421,14 @@ function drawSpawnPlayback(canvas, currentGameloop) {
   if (!state?.replay) {
     return;
   }
-  const resized = resizeCanvas(canvas);
+  const resized = resizeCanvas(canvas, source);
   markStage("resizeCanvas");
   const ctx = getCanvasContext(canvas);
   markStage("getContext");
   const replay = state.replay;
   const bounds = replay.bounds;
   if (!ctx || !bounds) {
-    logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing context/bounds");
+    logDrawDiagnostic(canvas, source, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing context/bounds");
     return;
   }
   state.currentGameloop = clampGameloop(state, currentGameloop);
@@ -8451,7 +8456,7 @@ function drawSpawnPlayback(canvas, currentGameloop) {
     markStage("prepareUnitSprites");
   }
   if (!state.staticBackgroundCanvas || !state.staticGeometry || !state.renderCache) {
-    logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing cache");
+    logDrawDiagnostic(canvas, source, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing cache");
     return;
   }
   ctx.drawImage(state.staticBackgroundCanvas, 0, 0);
@@ -8480,7 +8485,7 @@ function drawSpawnPlayback(canvas, currentGameloop) {
   markStage("drawObjectiveDeathAnnouncements");
   drawEndOfReplaySummary(ctx, canvas, replay.summary, state.currentGameloop, replay.durationGameloop);
   markStage("drawEndOfReplaySummary");
-  logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, activeUnits.length);
+  logDrawDiagnostic(canvas, source, drawStarted, stages, resized, rebuiltStaticCache, activeUnits.length);
 }
 function clampGameloop(state, gameloop) {
   const duration = state.replay.durationGameloop ?? 0;
@@ -8501,7 +8506,7 @@ function prepareUnitSprites(state, canvas) {
     };
   }
 }
-function logDrawDiagnostic(canvas, startedAt, stages, resized, rebuiltStaticCache, activeUnitCount, note = "") {
+function logDrawDiagnostic(canvas, source, startedAt, stages, resized, rebuiltStaticCache, activeUnitCount, note = "") {
   const elapsed = performance.now() - startedAt;
   const drawCount = (drawDiagnosticCounts.get(canvas) ?? 0) + 1;
   drawDiagnosticCounts.set(canvas, drawCount);
@@ -8510,7 +8515,7 @@ function logDrawDiagnostic(canvas, startedAt, stages, resized, rebuiltStaticCach
   }
   const suffix = note ? ` ${note}` : "";
   console.log(
-    `spawnPlayback draw #${drawCount} elapsed=${elapsed.toFixed(1)}ms resized=${resized} rebuilt=${rebuiltStaticCache} active=${activeUnitCount}${suffix} stages=[${stages.join(", ")}] - ${Date.now()}`
+    `spawnPlayback draw #${drawCount} source=${source} elapsed=${elapsed.toFixed(1)}ms resized=${resized} rebuilt=${rebuiltStaticCache} active=${activeUnitCount}${suffix} stages=[${stages.join(", ")}] - ${Date.now()}`
   );
 }
 function createStaticBackgroundCanvas(canvas, geometry) {
@@ -9427,7 +9432,15 @@ function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gamel
   stopLongTaskObserver(canvas);
   disposeState(getState(canvas));
   markStage("disposeExistingState");
-  state.resizeObserver = new ResizeObserver(() => drawSpawnPlayback(canvas, state.currentGameloop));
+  state.resizeObserver = new ResizeObserver((entries) => {
+    const startedAt2 = performance.now();
+    const entry = entries[0];
+    console.log(
+      `spawnPlayback resizeObserver start entries=${entries.length} content=${entry?.contentRect.width.toFixed(1) ?? "-"}x${entry?.contentRect.height.toFixed(1) ?? "-"} client=${canvas.clientWidth}x${canvas.clientHeight} backing=${canvas.width}x${canvas.height} contains=${document.contains(canvas)} ${getRootVisibilityDiagnostics(state.rootElement)} - ${Date.now()}`
+    );
+    drawSpawnPlayback(canvas, state.currentGameloop, "resize-observer");
+    logPlaybackDiagnostic("resizeObserver end", startedAt2);
+  });
   state.resizeObserver.observe(canvas);
   markStage("observeResize");
   state.fullscreenListener = () => handleFullscreenChange(canvas);
@@ -9439,7 +9452,7 @@ function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gamel
   markStage("setState");
   startLongTaskObserver(canvas);
   markStage("startLongTaskObserver");
-  resizeCanvas(canvas);
+  resizeCanvas(canvas, "initializeSpawnPlayback");
   markStage("resizeCanvas");
   logPlaybackDiagnostic(
     `initializeSpawnPlayback units=${state.replay.units.length} players=${state.replay.players.length} stages=[${stages.join(", ")}]`,
@@ -9551,7 +9564,7 @@ function animateSpawnPlayback(canvas, timestamp) {
     state,
     state.currentGameloop + elapsedSeconds * state.gameloopsPerSecond * state.speedMultiplier
   );
-  drawSpawnPlayback(canvas, state.currentGameloop);
+  drawSpawnPlayback(canvas, state.currentGameloop, "animation-frame");
   if (state.currentGameloop >= state.replay.durationGameloop) {
     state.running = false;
     state.animationFrameId = 0;
@@ -9641,7 +9654,7 @@ function handleFullscreenChange(canvas) {
     return;
   }
   notifyFullscreenChanged(state);
-  requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop));
+  requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop, "fullscreen-change"));
 }
 function notifyFullscreenChanged(state) {
   state.callbackRef?.invokeMethodAsync(
@@ -9746,7 +9759,23 @@ function requestAliveUnitHighlightRedraw(canvas, state) {
   if (state.running) {
     return;
   }
-  requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop));
+  requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop, "alive-highlight"));
+}
+function getRootVisibilityDiagnostics(rootElement) {
+  if (!rootElement) {
+    return "root=null";
+  }
+  const modal = rootElement.closest(".modal");
+  const rootStyle = rootElement instanceof HTMLElement ? getComputedStyle(rootElement) : null;
+  const modalStyle = modal instanceof HTMLElement ? getComputedStyle(modal) : null;
+  return [
+    `rootConnected=${rootElement.isConnected}`,
+    `rootDisplay=${rootStyle?.display ?? "-"}`,
+    `rootVisibility=${rootStyle?.visibility ?? "-"}`,
+    `modalShow=${modal?.classList.contains("show") ?? false}`,
+    `modalAriaHidden=${modal?.getAttribute("aria-hidden") ?? "-"}`,
+    `modalDisplay=${modalStyle?.display ?? "-"}`
+  ].join(" ");
 }
 export {
   disposeSpawnPlayback,

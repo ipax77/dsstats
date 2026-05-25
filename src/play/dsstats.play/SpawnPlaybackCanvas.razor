@@ -345,7 +345,7 @@
         if (canvasDrawPending)
         {
             var stageStarted = Stopwatch.GetTimestamp();
-            await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
+            await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop, "initial-csharp-draw");
             LogPlaybackDiagnostic("after render drawSpawnPlayback", stageStarted);
             canvasDrawPending = false;
         }

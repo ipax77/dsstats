@@ -57,7 +57,7 @@ const DRAW_DIAGNOSTIC_FIRST_DRAWS = 5;
 const DRAW_DIAGNOSTIC_SLOW_MS = 16;
 const drawDiagnosticCounts = new WeakMap<HTMLCanvasElement, number>();
 
-export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: number): void {
+export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: number, source = "unknown"): void {
     const drawStarted = performance.now();
     const stages: string[] = [];
     let stageStarted = drawStarted;
@@ -73,14 +73,14 @@ export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: nu
         return;
     }
 
-    const resized = resizeCanvas(canvas);
+    const resized = resizeCanvas(canvas, source);
     markStage("resizeCanvas");
     const ctx = getCanvasContext(canvas);
     markStage("getContext");
     const replay = state.replay;
     const bounds = replay.bounds;
     if (!ctx || !bounds) {
-        logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing context/bounds");
+        logDrawDiagnostic(canvas, source, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing context/bounds");
         return;
     }
 
@@ -113,7 +113,7 @@ export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: nu
     }
 
     if (!state.staticBackgroundCanvas || !state.staticGeometry || !state.renderCache) {
-        logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing cache");
+        logDrawDiagnostic(canvas, source, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing cache");
         return;
     }
 
@@ -144,7 +144,7 @@ export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: nu
     markStage("drawObjectiveDeathAnnouncements");
     drawEndOfReplaySummary(ctx, canvas, replay.summary, state.currentGameloop, replay.durationGameloop);
     markStage("drawEndOfReplaySummary");
-    logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, activeUnits.length);
+    logDrawDiagnostic(canvas, source, drawStarted, stages, resized, rebuiltStaticCache, activeUnits.length);
 }
 
 export function clampGameloop(state: SpawnPlaybackState, gameloop: number): number {
@@ -171,6 +171,7 @@ function prepareUnitSprites(state: SpawnPlaybackState, canvas: HTMLCanvasElement
 
 function logDrawDiagnostic(
     canvas: HTMLCanvasElement,
+    source: string,
     startedAt: number,
     stages: string[],
     resized: boolean,
@@ -186,7 +187,7 @@ function logDrawDiagnostic(
 
     const suffix = note ? ` ${note}` : "";
     console.log(
-        `spawnPlayback draw #${drawCount} elapsed=${elapsed.toFixed(1)}ms resized=${resized} rebuilt=${rebuiltStaticCache} active=${activeUnitCount}${suffix} stages=[${stages.join(", ")}] - ${Date.now()}`);
+        `spawnPlayback draw #${drawCount} source=${source} elapsed=${elapsed.toFixed(1)}ms resized=${resized} rebuilt=${rebuiltStaticCache} active=${activeUnitCount}${suffix} stages=[${stages.join(", ")}] - ${Date.now()}`);
 }
 
 function createStaticBackgroundCanvas(canvas: HTMLCanvasElement, geometry: StaticGeometry): LayerCanvas | null {
