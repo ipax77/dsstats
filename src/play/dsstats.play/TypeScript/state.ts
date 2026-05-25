@@ -1,4 +1,3 @@
-import { resizeCanvas } from "./canvasUtils";
 import { normalizeReplay } from "./normalization";
 import { clampGameloop, drawSpawnPlayback } from "./rendering";
 import { deleteState, getState, setState } from "./store";
@@ -25,6 +24,9 @@ export function initializeSpawnPlayback(
             ? speedMultiplier
             : 1,
         resizeObserver: null,
+        isMounted: true,
+        isDisposing: false,
+        pendingResizeRaf: null,
         currentGameloop: 0,
         running: false,
         animationFrameId: 0,
@@ -42,6 +44,8 @@ export function initializeSpawnPlayback(
         unitSpriteCache: new Map(),
         highlightedAliveUnitKey: null,
         rootElement,
+        modalElement: null,
+        modalHideListener: null,
         fullscreenListener: null,
         aliveUnitClickListener: null,
         aliveUnitKeydownListener: null
@@ -49,13 +53,36 @@ export function initializeSpawnPlayback(
 
     disposeState(getState(canvas));
 
-    state.resizeObserver = new ResizeObserver(() => drawSpawnPlayback(canvas, state.currentGameloop));
-    state.resizeObserver.observe(canvas);
     state.fullscreenListener = () => handleFullscreenChange(canvas);
     document.addEventListener("fullscreenchange", state.fullscreenListener);
     initializeAliveUnitHighlightEvents(canvas, state);
     setState(canvas, state);
-    resizeCanvas(canvas);
+}
+
+export function observeSpawnPlaybackResize(canvas: HTMLCanvasElement): void {
+    const state = getState(canvas);
+    if (!state) {
+        return;
+    }
+
+    if (getResizeSkipReason(state, canvas)) {
+        return;
+    }
+
+    if (!state.modalElement) {
+        state.modalElement = state.rootElement?.closest(".modal") ?? null;
+    }
+
+    if (state.modalElement && !state.modalHideListener) {
+        state.modalHideListener = () => suspendSpawnPlayback(state);
+        state.modalElement.addEventListener("hide.bs.modal", state.modalHideListener);
+    }
+
+    if (!state.resizeObserver) {
+        state.resizeObserver = new ResizeObserver(entries => handleResizeObserved(canvas, state, entries));
+    }
+
+    state.resizeObserver.observe(canvas);
 }
 
 export function startSpawnPlayback(
@@ -63,7 +90,7 @@ export function startSpawnPlayback(
     currentGameloop: number,
     speedMultiplier: number): void {
     const state = getState(canvas);
-    if (!state?.replay) {
+    if (!state?.replay || !state.isMounted || state.isDisposing) {
         return;
     }
 
@@ -85,7 +112,7 @@ export function startSpawnPlayback(
 
 export function pauseSpawnPlayback(canvas: HTMLCanvasElement, notify = true): number {
     const state = getState(canvas);
-    if (!state) {
+    if (!state || state.isDisposing) {
         return 0;
     }
 
@@ -100,7 +127,7 @@ export function pauseSpawnPlayback(canvas: HTMLCanvasElement, notify = true): nu
 
 export function stopSpawnPlayback(canvas: HTMLCanvasElement, notify = true): number {
     const state = getState(canvas);
-    if (!state) {
+    if (!state || state.isDisposing) {
         return 0;
     }
 
@@ -115,7 +142,7 @@ export function stopSpawnPlayback(canvas: HTMLCanvasElement, notify = true): num
 
 export function setSpawnPlaybackSpeed(canvas: HTMLCanvasElement, speedMultiplier: number): void {
     const state = getState(canvas);
-    if (!state || !Number.isFinite(speedMultiplier) || speedMultiplier <= 0) {
+    if (!state || state.isDisposing || !Number.isFinite(speedMultiplier) || speedMultiplier <= 0) {
         return;
     }
 
@@ -127,7 +154,7 @@ export async function setSpawnPlaybackFullscreen(
     rootElement: Element | null,
     fullscreen: boolean): Promise<void> {
     const state = getState(canvas);
-    if (!state) {
+    if (!state || state.isDisposing) {
         return;
     }
 
@@ -165,7 +192,7 @@ export function syncAliveUnitHighlightSelection(canvas: HTMLCanvasElement): void
 
 function animateSpawnPlayback(canvas: HTMLCanvasElement, timestamp: number): void {
     const state = getState(canvas);
-    if (!state?.running) {
+    if (!state?.running || !state.isMounted || state.isDisposing) {
         return;
     }
 
@@ -193,7 +220,14 @@ function animateSpawnPlayback(canvas: HTMLCanvasElement, timestamp: number): voi
         notifyProgress(state, "playing");
     }
 
-    state.animationFrameId = requestAnimationFrame(nextTimestamp => animateSpawnPlayback(canvas, nextTimestamp));
+    state.animationFrameId = requestAnimationFrame(nextTimestamp => {
+        const nextState = getState(canvas);
+        if (!nextState?.isMounted || nextState.isDisposing) {
+            return;
+        }
+
+        animateSpawnPlayback(canvas, nextTimestamp);
+    });
 }
 
 function notifyProgress(state: SpawnPlaybackState, status: string): void {
@@ -208,7 +242,10 @@ function disposeState(state: SpawnPlaybackState | undefined): void {
         return;
     }
 
+    state.isMounted = false;
+    state.isDisposing = true;
     state.running = false;
+    cancelPendingResize(state);
     cancelAnimation(state);
     if (state.resizeObserver) {
         state.resizeObserver.disconnect();
@@ -218,6 +255,12 @@ function disposeState(state: SpawnPlaybackState | undefined): void {
     if (state.fullscreenListener) {
         document.removeEventListener("fullscreenchange", state.fullscreenListener);
         state.fullscreenListener = null;
+    }
+
+    if (state.modalElement && state.modalHideListener) {
+        state.modalElement.removeEventListener("hide.bs.modal", state.modalHideListener);
+        state.modalHideListener = null;
+        state.modalElement = null;
     }
 
     disposeAliveUnitHighlightEvents(state);
@@ -230,14 +273,117 @@ function cancelAnimation(state: SpawnPlaybackState | undefined): void {
     }
 }
 
+function handleResizeObserved(
+    canvas: HTMLCanvasElement,
+    state: SpawnPlaybackState,
+    entries: ResizeObserverEntry[]): void {
+    const entry = entries[0];
+
+    if (getResizeSkipReason(state, canvas, entry)) {
+        return;
+    }
+
+    if (state.pendingResizeRaf !== null) {
+        return;
+    }
+
+    state.pendingResizeRaf = requestAnimationFrame(() => {
+        state.pendingResizeRaf = null;
+        if (getResizeSkipReason(state, canvas)) {
+            return;
+        }
+
+        drawSpawnPlayback(canvas, state.currentGameloop);
+    });
+}
+
+function getResizeSkipReason(
+    state: SpawnPlaybackState,
+    canvas: HTMLCanvasElement,
+    entry?: ResizeObserverEntry): string | null {
+    if (!state.isMounted) {
+        return "not-mounted";
+    }
+
+    if (state.isDisposing) {
+        return "disposing";
+    }
+
+    if (!canvas.isConnected || !document.contains(canvas)) {
+        return "disconnected";
+    }
+
+    if (entry && (entry.contentRect.width <= 0 || entry.contentRect.height <= 0)) {
+        return "zero-content";
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0 || canvas.clientWidth <= 0 || canvas.clientHeight <= 0) {
+        return "zero-client";
+    }
+
+    if (isRootOrModalHidden(state.rootElement)) {
+        return "hidden";
+    }
+
+    return null;
+}
+
+function isRootOrModalHidden(rootElement: Element | null): boolean {
+    if (!rootElement || !rootElement.isConnected) {
+        return true;
+    }
+
+    const rootStyle = rootElement instanceof HTMLElement ? getComputedStyle(rootElement) : null;
+    if (rootStyle?.display === "none" || rootStyle?.visibility === "hidden") {
+        return true;
+    }
+
+    const modal = rootElement.closest(".modal");
+    if (!(modal instanceof HTMLElement)) {
+        return false;
+    }
+
+    const modalStyle = getComputedStyle(modal);
+    return modalStyle.display === "none"
+        || modalStyle.visibility === "hidden"
+        || modal.getAttribute("aria-hidden") === "true";
+}
+
+function suspendSpawnPlayback(state: SpawnPlaybackState): void {
+    state.isDisposing = true;
+    state.running = false;
+    cancelPendingResize(state);
+    cancelAnimation(state);
+    if (state.resizeObserver) {
+        state.resizeObserver.disconnect();
+        state.resizeObserver = null;
+    }
+}
+
+function cancelPendingResize(state: SpawnPlaybackState): void {
+    if (state.pendingResizeRaf === null) {
+        return;
+    }
+
+    cancelAnimationFrame(state.pendingResizeRaf);
+    state.pendingResizeRaf = null;
+}
+
 function handleFullscreenChange(canvas: HTMLCanvasElement): void {
     const state = getState(canvas);
-    if (!state) {
+    if (!state || !state.isMounted || state.isDisposing) {
         return;
     }
 
     notifyFullscreenChanged(state);
-    requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop));
+    requestAnimationFrame(() => {
+        if (!state.isMounted || state.isDisposing) {
+            return;
+        }
+
+        drawSpawnPlayback(canvas, state.currentGameloop);
+    });
 }
 
 function notifyFullscreenChanged(state: SpawnPlaybackState): void {
@@ -360,9 +506,15 @@ function syncAliveUnitHighlightRows(state: SpawnPlaybackState | undefined): void
 }
 
 function requestAliveUnitHighlightRedraw(canvas: HTMLCanvasElement, state: SpawnPlaybackState): void {
-    if (state.running) {
+    if (state.running || !state.isMounted || state.isDisposing) {
         return;
     }
 
-    requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop));
+    requestAnimationFrame(() => {
+        if (!state.isMounted || state.isDisposing) {
+            return;
+        }
+
+        drawSpawnPlayback(canvas, state.currentGameloop);
+    });
 }

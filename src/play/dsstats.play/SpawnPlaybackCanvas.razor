@@ -310,8 +310,15 @@
             return;
         }
 
-        module ??= await ImportModuleAsync();
-        dotNetReference ??= DotNetObjectReference.Create(this);
+        if (module is null)
+        {
+            module = await ImportModuleAsync();
+        }
+
+        if (dotNetReference is null)
+        {
+            dotNetReference = DotNetObjectReference.Create(this);
+        }
 
         if (!ReferenceEquals(initializedReplay, playback))
         {
@@ -330,6 +337,7 @@
         if (canvasDrawPending)
         {
             await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
+            await module.InvokeVoidAsync("observeSpawnPlaybackResize", canvasElement);
             canvasDrawPending = false;
         }
 
