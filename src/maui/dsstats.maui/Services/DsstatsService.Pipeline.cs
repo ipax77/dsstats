@@ -4,6 +4,7 @@ using dsstats.dbServices;
 using dsstats.maui.Services.Models;
 using dsstats.parser;
 using dsstats.shared;
+using System.IO.Compression;
 using System.Threading.Channels;
 
 namespace dsstats.maui.Services;
@@ -63,7 +64,7 @@ public sealed partial class DsstatsService
     {
         using var progressCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-        var channel = Channel.CreateBounded<ReplayDto>(
+        var channel = Channel.CreateBounded<ReplayImportDto>(
             new BoundedChannelOptions(DecodeBacklogCapacity)
             {
                 SingleWriter = false,
@@ -128,7 +129,7 @@ public sealed partial class DsstatsService
     private async Task DecodeToChannelAsync(
         MauiConfig config,
         List<string> replayPaths,
-        ChannelWriter<ReplayDto> writer,
+        ChannelWriter<ReplayImportDto> writer,
         CancellationToken ct)
     {
         try
@@ -144,14 +145,14 @@ public sealed partial class DsstatsService
                 async (replayPath, token) =>
                 {
                     var result = await DecodeReplayDtoAsync(replayPath, uploaders, token).ConfigureAwait(false);
-                    if (result.Replay is null)
+                    if (result.Import is null)
                     {
                         Interlocked.Increment(ref _errors);
                         _replayErrors.Add(new(result.Error ?? "failed decoding", replayPath));
                         return;
                     }
 
-                    await writer.WriteAsync(result.Replay, token).ConfigureAwait(false);
+                    await writer.WriteAsync(result.Import, token).ConfigureAwait(false);
                     Interlocked.Increment(ref _decoded);
                 }).ConfigureAwait(false);
         }
@@ -184,15 +185,19 @@ public sealed partial class DsstatsService
                 return new(null, "failed decoding");
             }
 
-            var dto = DsstatsParser.ParseReplay(sc2Replay);
-            if (dto is null)
+            var replayImport = DsstatsParser.ParseReplayImport(
+                sc2Replay,
+                spawnPlaybackEncoder: sidecar => SpawnPlaybackSidecarCodec.EncodeWithMetadata(
+                    sidecar,
+                    CompressionLevel.Fastest));
+            if (replayImport.Replay is null)
             {
                 return new(null, "failed parsing");
             }
 
-            dto.FileName = replayPath;
-            dto.SetUploader(uploaders);
-            return new(dto, null);
+            replayImport.Replay.FileName = replayPath;
+            replayImport.Replay.SetUploader(uploaders);
+            return new(replayImport, null);
         }
         catch (OperationCanceledException)
         {
@@ -209,10 +214,10 @@ public sealed partial class DsstatsService
     #region Import Stage (Consumer)
 
     private async Task ImportFromChannelAsync(
-        ChannelReader<ReplayDto> reader,
+        ChannelReader<ReplayImportDto> reader,
         CancellationToken ct)
     {
-        var batch = new List<ReplayDto>(ImportBatchSize);
+        var batch = new List<ReplayImportDto>(ImportBatchSize);
 
         try
         {
@@ -243,7 +248,7 @@ public sealed partial class DsstatsService
     }
 
     private async Task ImportBatchAsync(
-        List<ReplayDto> batch,
+        List<ReplayImportDto> batch,
         CancellationToken ct)
     {
         await _dbSemaphore.WaitAsync(ct).ConfigureAwait(false);
@@ -251,7 +256,7 @@ public sealed partial class DsstatsService
         {
             using var scope = scopeFactory.CreateScope();
             var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
-            await importService.InsertReplays(batch).ConfigureAwait(false);
+            await importService.InsertReplayImports(batch).ConfigureAwait(false);
         }
         finally
         {
@@ -271,5 +276,5 @@ public sealed partial class DsstatsService
 
     #endregion
 
-    private sealed record DecodeReplayResult(ReplayDto? Replay, string? Error);
+    private sealed record DecodeReplayResult(ReplayImportDto? Import, string? Error);
 }
