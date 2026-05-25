@@ -36,6 +36,8 @@ We really like people helping us with the project. Nevertheless, take your time 
 <details open="open"><summary>v3.0.7</summary>
 
 >- Add Build Details feature. Thanks to TOMage for the suggestion.
+>- Fix maui player stats
+>- Add dsplay
 
 </details>
 
@@ -69,7 +71,7 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 </details>
 
-<details open="open"><summary>v3.0.0</summary>
+<details><summary>v3.0.0</summary>
 
 >- Complete rewrite/upgrade to .NET 10
 >- RatingType 'All' includes all Direct Strike games (1v1, brawl, ...)
