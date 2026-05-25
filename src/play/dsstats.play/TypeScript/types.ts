@@ -229,6 +229,9 @@ export interface SpawnPlaybackState {
     gameloopsPerSecond: number;
     speedMultiplier: number;
     resizeObserver: ResizeObserver | null;
+    isMounted: boolean;
+    isDisposing: boolean;
+    pendingResizeRaf: number | null;
     currentGameloop: number;
     running: boolean;
     animationFrameId: number;
@@ -246,6 +249,8 @@ export interface SpawnPlaybackState {
     unitSpriteCache: Map<string, LayerCanvas>;
     highlightedAliveUnitKey: string | null;
     rootElement: Element | null;
+    modalElement: Element | null;
+    modalHideListener: ((event: Event) => void) | null;
     fullscreenListener: (() => void) | null;
     aliveUnitClickListener: ((event: Event) => void) | null;
     aliveUnitKeydownListener: ((event: Event) => void) | null;

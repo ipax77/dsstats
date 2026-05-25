@@ -1,151 +1,3 @@
-// TypeScript/canvasUtils.ts
-function createLayerCanvas(width, height) {
-  if (typeof OffscreenCanvas !== "undefined") {
-    return new OffscreenCanvas(width, height);
-  }
-  const layer = document.createElement("canvas");
-  layer.width = width;
-  layer.height = height;
-  return layer;
-}
-function getCanvasContext(canvas) {
-  return canvas.getContext("2d");
-}
-function resizeCanvas(canvas, source = "unknown") {
-  const width = Math.max(320, Math.floor(canvas.clientWidth));
-  const height = Math.max(240, Math.floor(canvas.clientHeight));
-  const scale = window.devicePixelRatio || 1;
-  const targetWidth = Math.floor(width * scale);
-  const targetHeight = Math.floor(height * scale);
-  const oldWidth = canvas.width;
-  const oldHeight = canvas.height;
-  const resized = oldWidth !== targetWidth || oldHeight !== targetHeight;
-  if (resized) {
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
-  }
-  console.log(
-    `spawnPlayback resizeCanvas source=${source} resized=${resized} client=${canvas.clientWidth}x${canvas.clientHeight} target=${targetWidth}x${targetHeight} old=${oldWidth}x${oldHeight} scale=${scale.toFixed(2)} contains=${document.contains(canvas)} - ${Date.now()}`
-  );
-  return resized;
-}
-function deviceScale(canvas) {
-  return canvas.width / Math.max(1, canvas.clientWidth);
-}
-function createProjection(bounds, canvas) {
-  const padding = 24 * deviceScale(canvas);
-  const width = Math.max(1, bounds.maxX - bounds.minX);
-  const height = Math.max(1, bounds.maxY - bounds.minY);
-  return {
-    minX: bounds.minX,
-    minY: bounds.minY,
-    scaleX: (canvas.width - padding * 2) / width,
-    scaleY: (canvas.height - padding * 2) / height,
-    left: padding,
-    bottom: canvas.height - padding
-  };
-}
-function projectX(projection, x) {
-  return projection.left + (x - projection.minX) * projection.scaleX;
-}
-function projectY(projection, y) {
-  return projection.bottom - (y - projection.minY) * projection.scaleY;
-}
-function project(x, y, bounds, canvas) {
-  const padding = 24 * deviceScale(canvas);
-  const width = Math.max(1, bounds.maxX - bounds.minX);
-  const height = Math.max(1, bounds.maxY - bounds.minY);
-  return {
-    x: padding + (x - bounds.minX) / width * (canvas.width - padding * 2),
-    y: canvas.height - padding - (y - bounds.minY) / height * (canvas.height - padding * 2)
-  };
-}
-function projectSegment(segment, bounds, canvas) {
-  return {
-    start: project(segment.start.x, segment.start.y, bounds, canvas),
-    end: project(segment.end.x, segment.end.y, bounds, canvas)
-  };
-}
-function clipSumLine(bounds, sum) {
-  return createSegmentFromIntersections([
-    { x: bounds.minX, y: sum - bounds.minX },
-    { x: bounds.maxX, y: sum - bounds.maxX },
-    { x: sum - bounds.minY, y: bounds.minY },
-    { x: sum - bounds.maxY, y: bounds.maxY }
-  ], bounds);
-}
-function clipDiffLine(bounds, diff) {
-  return createSegmentFromIntersections([
-    { x: bounds.minX, y: bounds.minX - diff },
-    { x: bounds.maxX, y: bounds.maxX - diff },
-    { x: bounds.minY + diff, y: bounds.minY },
-    { x: bounds.maxY + diff, y: bounds.maxY }
-  ], bounds);
-}
-function isPointInBounds(point, bounds) {
-  const epsilon = 1e-3;
-  return point.x >= bounds.minX - epsilon && point.x <= bounds.maxX + epsilon && point.y >= bounds.minY - epsilon && point.y <= bounds.maxY + epsilon;
-}
-function containsPoint(points, point) {
-  return points.some((existing) => Math.abs(existing.x - point.x) < 1e-3 && Math.abs(existing.y - point.y) < 1e-3);
-}
-function distanceSquared(left, right) {
-  const x = left.x - right.x;
-  const y = left.y - right.y;
-  return x * x + y * y;
-}
-function roundUpToInterval(value, interval) {
-  return Math.ceil(value / interval) * interval;
-}
-function drawRoundedRect(ctx, x, y, width, height, radius) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-}
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
-function withAlpha(color, alpha) {
-  if (color.startsWith("#") && color.length === 7) {
-    return `${color}${alpha}`;
-  }
-  return color;
-}
-function createSegmentFromIntersections(candidates, bounds) {
-  const points = [];
-  for (const point of candidates) {
-    if (!isPointInBounds(point, bounds) || containsPoint(points, point)) {
-      continue;
-    }
-    points.push(point);
-  }
-  if (points.length < 2) {
-    return null;
-  }
-  let start = points[0];
-  let end = points[1];
-  let maxDistance = distanceSquared(start, end);
-  for (let i = 0; i < points.length - 1; i++) {
-    for (let j = i + 1; j < points.length; j++) {
-      const distance = distanceSquared(points[i], points[j]);
-      if (distance > maxDistance) {
-        start = points[i];
-        end = points[j];
-        maxDistance = distance;
-      }
-    }
-  }
-  return { start, end };
-}
-
 // TypeScript/constants.ts
 var MAP_WIDTH = 256;
 var MAP_HEIGHT = 240;
@@ -344,6 +196,154 @@ function isFiniteNumber(value) {
 }
 function compareNumber(left, right) {
   return left - right;
+}
+
+// TypeScript/canvasUtils.ts
+function createLayerCanvas(width, height) {
+  if (typeof OffscreenCanvas !== "undefined") {
+    return new OffscreenCanvas(width, height);
+  }
+  const layer = document.createElement("canvas");
+  layer.width = width;
+  layer.height = height;
+  return layer;
+}
+function getCanvasContext(canvas) {
+  return canvas.getContext("2d");
+}
+function resizeCanvas(canvas, source = "unknown") {
+  const width = Math.max(320, Math.floor(canvas.clientWidth));
+  const height = Math.max(240, Math.floor(canvas.clientHeight));
+  const scale = window.devicePixelRatio || 1;
+  const targetWidth = Math.floor(width * scale);
+  const targetHeight = Math.floor(height * scale);
+  const oldWidth = canvas.width;
+  const oldHeight = canvas.height;
+  const resized = oldWidth !== targetWidth || oldHeight !== targetHeight;
+  if (resized) {
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+  }
+  console.log(
+    `spawnPlayback resizeCanvas source=${source} resized=${resized} client=${canvas.clientWidth}x${canvas.clientHeight} target=${targetWidth}x${targetHeight} old=${oldWidth}x${oldHeight} scale=${scale.toFixed(2)} contains=${document.contains(canvas)} - ${Date.now()}`
+  );
+  return resized;
+}
+function deviceScale(canvas) {
+  return canvas.width / Math.max(1, canvas.clientWidth);
+}
+function createProjection(bounds, canvas) {
+  const padding = 24 * deviceScale(canvas);
+  const width = Math.max(1, bounds.maxX - bounds.minX);
+  const height = Math.max(1, bounds.maxY - bounds.minY);
+  return {
+    minX: bounds.minX,
+    minY: bounds.minY,
+    scaleX: (canvas.width - padding * 2) / width,
+    scaleY: (canvas.height - padding * 2) / height,
+    left: padding,
+    bottom: canvas.height - padding
+  };
+}
+function projectX(projection, x) {
+  return projection.left + (x - projection.minX) * projection.scaleX;
+}
+function projectY(projection, y) {
+  return projection.bottom - (y - projection.minY) * projection.scaleY;
+}
+function project(x, y, bounds, canvas) {
+  const padding = 24 * deviceScale(canvas);
+  const width = Math.max(1, bounds.maxX - bounds.minX);
+  const height = Math.max(1, bounds.maxY - bounds.minY);
+  return {
+    x: padding + (x - bounds.minX) / width * (canvas.width - padding * 2),
+    y: canvas.height - padding - (y - bounds.minY) / height * (canvas.height - padding * 2)
+  };
+}
+function projectSegment(segment, bounds, canvas) {
+  return {
+    start: project(segment.start.x, segment.start.y, bounds, canvas),
+    end: project(segment.end.x, segment.end.y, bounds, canvas)
+  };
+}
+function clipSumLine(bounds, sum) {
+  return createSegmentFromIntersections([
+    { x: bounds.minX, y: sum - bounds.minX },
+    { x: bounds.maxX, y: sum - bounds.maxX },
+    { x: sum - bounds.minY, y: bounds.minY },
+    { x: sum - bounds.maxY, y: bounds.maxY }
+  ], bounds);
+}
+function clipDiffLine(bounds, diff) {
+  return createSegmentFromIntersections([
+    { x: bounds.minX, y: bounds.minX - diff },
+    { x: bounds.maxX, y: bounds.maxX - diff },
+    { x: bounds.minY + diff, y: bounds.minY },
+    { x: bounds.maxY + diff, y: bounds.maxY }
+  ], bounds);
+}
+function isPointInBounds(point, bounds) {
+  const epsilon = 1e-3;
+  return point.x >= bounds.minX - epsilon && point.x <= bounds.maxX + epsilon && point.y >= bounds.minY - epsilon && point.y <= bounds.maxY + epsilon;
+}
+function containsPoint(points, point) {
+  return points.some((existing) => Math.abs(existing.x - point.x) < 1e-3 && Math.abs(existing.y - point.y) < 1e-3);
+}
+function distanceSquared(left, right) {
+  const x = left.x - right.x;
+  const y = left.y - right.y;
+  return x * x + y * y;
+}
+function roundUpToInterval(value, interval) {
+  return Math.ceil(value / interval) * interval;
+}
+function drawRoundedRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+function withAlpha(color, alpha) {
+  if (color.startsWith("#") && color.length === 7) {
+    return `${color}${alpha}`;
+  }
+  return color;
+}
+function createSegmentFromIntersections(candidates, bounds) {
+  const points = [];
+  for (const point of candidates) {
+    if (!isPointInBounds(point, bounds) || containsPoint(points, point)) {
+      continue;
+    }
+    points.push(point);
+  }
+  if (points.length < 2) {
+    return null;
+  }
+  let start = points[0];
+  let end = points[1];
+  let maxDistance = distanceSquared(start, end);
+  for (let i = 0; i < points.length - 1; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      const distance = distanceSquared(points[i], points[j]);
+      if (distance > maxDistance) {
+        start = points[i];
+        end = points[j];
+        maxDistance = distance;
+      }
+    }
+  }
+  return { start, end };
 }
 
 // TypeScript/geometry.ts
@@ -9407,6 +9407,9 @@ function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gamel
     gameloopsPerSecond: Number.isFinite(gameloopsPerSecond) && gameloopsPerSecond > 0 ? gameloopsPerSecond : 22.4,
     speedMultiplier: Number.isFinite(speedMultiplier) && speedMultiplier > 0 ? speedMultiplier : 1,
     resizeObserver: null,
+    isMounted: true,
+    isDisposing: false,
+    pendingResizeRaf: null,
     currentGameloop: 0,
     running: false,
     animationFrameId: 0,
@@ -9424,6 +9427,8 @@ function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gamel
     unitSpriteCache: /* @__PURE__ */ new Map(),
     highlightedAliveUnitKey: null,
     rootElement,
+    modalElement: null,
+    modalHideListener: null,
     fullscreenListener: null,
     aliveUnitClickListener: null,
     aliveUnitKeydownListener: null
@@ -9432,17 +9437,6 @@ function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gamel
   stopLongTaskObserver(canvas);
   disposeState(getState(canvas));
   markStage("disposeExistingState");
-  state.resizeObserver = new ResizeObserver((entries) => {
-    const startedAt2 = performance.now();
-    const entry = entries[0];
-    console.log(
-      `spawnPlayback resizeObserver start entries=${entries.length} content=${entry?.contentRect.width.toFixed(1) ?? "-"}x${entry?.contentRect.height.toFixed(1) ?? "-"} client=${canvas.clientWidth}x${canvas.clientHeight} backing=${canvas.width}x${canvas.height} contains=${document.contains(canvas)} ${getRootVisibilityDiagnostics(state.rootElement)} - ${Date.now()}`
-    );
-    drawSpawnPlayback(canvas, state.currentGameloop, "resize-observer");
-    logPlaybackDiagnostic("resizeObserver end", startedAt2);
-  });
-  state.resizeObserver.observe(canvas);
-  markStage("observeResize");
   state.fullscreenListener = () => handleFullscreenChange(canvas);
   document.addEventListener("fullscreenchange", state.fullscreenListener);
   markStage("addFullscreenListener");
@@ -9452,16 +9446,42 @@ function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gamel
   markStage("setState");
   startLongTaskObserver(canvas);
   markStage("startLongTaskObserver");
-  resizeCanvas(canvas, "initializeSpawnPlayback");
-  markStage("resizeCanvas");
   logPlaybackDiagnostic(
     `initializeSpawnPlayback units=${state.replay.units.length} players=${state.replay.players.length} stages=[${stages.join(", ")}]`,
     startedAt
   );
 }
+function observeSpawnPlaybackResize(canvas) {
+  const startedAt = performance.now();
+  const state = getState(canvas);
+  if (!state) {
+    logPlaybackDiagnostic("observe resize skipped reason=no-state", startedAt);
+    return;
+  }
+  const initialSkipReason = getResizeSkipReason(state, canvas);
+  if (initialSkipReason) {
+    logPlaybackDiagnostic(`observe resize skipped reason=${initialSkipReason}`, startedAt);
+    return;
+  }
+  if (!state.modalElement) {
+    state.modalElement = state.rootElement?.closest(".modal") ?? null;
+  }
+  if (state.modalElement && !state.modalHideListener) {
+    state.modalHideListener = () => suspendSpawnPlayback(state, "modal-hide");
+    state.modalElement.addEventListener("hide.bs.modal", state.modalHideListener);
+  }
+  if (!state.resizeObserver) {
+    state.resizeObserver = new ResizeObserver((entries) => handleResizeObserved(canvas, state, entries));
+  }
+  state.resizeObserver.observe(canvas);
+  logPlaybackDiagnostic(
+    `observe resize attached modal=${state.modalElement !== null} client=${canvas.clientWidth}x${canvas.clientHeight} backing=${canvas.width}x${canvas.height}`,
+    startedAt
+  );
+}
 function startSpawnPlayback(canvas, currentGameloop, speedMultiplier) {
   const state = getState(canvas);
-  if (!state?.replay) {
+  if (!state?.replay || !state.isMounted || state.isDisposing) {
     return;
   }
   if (Number.isFinite(currentGameloop)) {
@@ -9479,7 +9499,7 @@ function startSpawnPlayback(canvas, currentGameloop, speedMultiplier) {
 }
 function pauseSpawnPlayback(canvas, notify = true) {
   const state = getState(canvas);
-  if (!state) {
+  if (!state || state.isDisposing) {
     return 0;
   }
   state.running = false;
@@ -9491,7 +9511,7 @@ function pauseSpawnPlayback(canvas, notify = true) {
 }
 function stopSpawnPlayback(canvas, notify = true) {
   const state = getState(canvas);
-  if (!state) {
+  if (!state || state.isDisposing) {
     return 0;
   }
   state.running = false;
@@ -9503,14 +9523,14 @@ function stopSpawnPlayback(canvas, notify = true) {
 }
 function setSpawnPlaybackSpeed(canvas, speedMultiplier) {
   const state = getState(canvas);
-  if (!state || !Number.isFinite(speedMultiplier) || speedMultiplier <= 0) {
+  if (!state || state.isDisposing || !Number.isFinite(speedMultiplier) || speedMultiplier <= 0) {
     return;
   }
   state.speedMultiplier = speedMultiplier;
 }
 async function setSpawnPlaybackFullscreen(canvas, rootElement, fullscreen) {
   const state = getState(canvas);
-  if (!state) {
+  if (!state || state.isDisposing) {
     return;
   }
   if (rootElement) {
@@ -9552,7 +9572,7 @@ function syncAliveUnitHighlightSelection(canvas) {
 }
 function animateSpawnPlayback(canvas, timestamp) {
   const state = getState(canvas);
-  if (!state?.running) {
+  if (!state?.running || !state.isMounted || state.isDisposing) {
     return;
   }
   if (state.lastFrameTimestamp === 0) {
@@ -9575,7 +9595,13 @@ function animateSpawnPlayback(canvas, timestamp) {
     state.lastProgressTimestamp = timestamp;
     notifyProgress(state, "playing");
   }
-  state.animationFrameId = requestAnimationFrame((nextTimestamp) => animateSpawnPlayback(canvas, nextTimestamp));
+  state.animationFrameId = requestAnimationFrame((nextTimestamp) => {
+    const nextState = getState(canvas);
+    if (!nextState?.isMounted || nextState.isDisposing) {
+      return;
+    }
+    animateSpawnPlayback(canvas, nextTimestamp);
+  });
 }
 function notifyProgress(state, status) {
   state.callbackRef?.invokeMethodAsync(
@@ -9589,8 +9615,13 @@ function disposeState(state) {
   if (!state) {
     return;
   }
+  state.isMounted = false;
+  state.isDisposing = true;
   state.running = false;
   let stageStarted = performance.now();
+  cancelPendingResize(state);
+  logPlaybackStage("disposeState cancelPendingResize", stageStarted);
+  stageStarted = performance.now();
   cancelAnimation(state);
   logPlaybackStage("disposeState cancelAnimation", stageStarted);
   if (state.resizeObserver) {
@@ -9605,6 +9636,13 @@ function disposeState(state) {
     state.fullscreenListener = null;
     logPlaybackStage("disposeState removeFullscreenListener", stageStarted);
   }
+  if (state.modalElement && state.modalHideListener) {
+    stageStarted = performance.now();
+    state.modalElement.removeEventListener("hide.bs.modal", state.modalHideListener);
+    state.modalHideListener = null;
+    state.modalElement = null;
+    logPlaybackStage("disposeState removeModalHideListener", stageStarted);
+  }
   stageStarted = performance.now();
   disposeAliveUnitHighlightEvents(state);
   logPlaybackStage("disposeState disposeAliveUnitEvents", stageStarted);
@@ -9614,6 +9652,91 @@ function cancelAnimation(state) {
     cancelAnimationFrame(state.animationFrameId);
     state.animationFrameId = 0;
   }
+}
+function handleResizeObserved(canvas, state, entries) {
+  const startedAt = performance.now();
+  const entry = entries[0];
+  console.log(
+    `spawnPlayback resizeObserver start entries=${entries.length} content=${entry?.contentRect.width.toFixed(1) ?? "-"}x${entry?.contentRect.height.toFixed(1) ?? "-"} client=${canvas.clientWidth}x${canvas.clientHeight} backing=${canvas.width}x${canvas.height} contains=${document.contains(canvas)} ${getRootVisibilityDiagnostics(state.rootElement)} - ${Date.now()}`
+  );
+  const skipReason = getResizeSkipReason(state, canvas, entry);
+  if (skipReason) {
+    logPlaybackDiagnostic(`resizeObserver skipped reason=${skipReason}`, startedAt);
+    return;
+  }
+  if (state.pendingResizeRaf !== null) {
+    logPlaybackDiagnostic("resizeObserver skipped reason=pending-raf", startedAt);
+    return;
+  }
+  state.pendingResizeRaf = requestAnimationFrame(() => {
+    state.pendingResizeRaf = null;
+    const rafStartedAt = performance.now();
+    const rafSkipReason = getResizeSkipReason(state, canvas);
+    if (rafSkipReason) {
+      logPlaybackDiagnostic(`resizeObserver raf skipped reason=${rafSkipReason}`, rafStartedAt);
+      return;
+    }
+    drawSpawnPlayback(canvas, state.currentGameloop, "resize-observer");
+    logPlaybackDiagnostic("resizeObserver raf draw", rafStartedAt);
+  });
+  logPlaybackDiagnostic("resizeObserver scheduled raf", startedAt);
+}
+function getResizeSkipReason(state, canvas, entry) {
+  if (!state.isMounted) {
+    return "not-mounted";
+  }
+  if (state.isDisposing) {
+    return "disposing";
+  }
+  if (!canvas.isConnected || !document.contains(canvas)) {
+    return "disconnected";
+  }
+  if (entry && (entry.contentRect.width <= 0 || entry.contentRect.height <= 0)) {
+    return "zero-content";
+  }
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0 || canvas.clientWidth <= 0 || canvas.clientHeight <= 0) {
+    return "zero-client";
+  }
+  if (isRootOrModalHidden(state.rootElement)) {
+    return "hidden";
+  }
+  return null;
+}
+function isRootOrModalHidden(rootElement) {
+  if (!rootElement || !rootElement.isConnected) {
+    return true;
+  }
+  const rootStyle = rootElement instanceof HTMLElement ? getComputedStyle(rootElement) : null;
+  if (rootStyle?.display === "none" || rootStyle?.visibility === "hidden") {
+    return true;
+  }
+  const modal = rootElement.closest(".modal");
+  if (!(modal instanceof HTMLElement)) {
+    return false;
+  }
+  const modalStyle = getComputedStyle(modal);
+  return modalStyle.display === "none" || modalStyle.visibility === "hidden" || modal.getAttribute("aria-hidden") === "true";
+}
+function suspendSpawnPlayback(state, reason) {
+  const startedAt = performance.now();
+  state.isDisposing = true;
+  state.running = false;
+  cancelPendingResize(state);
+  cancelAnimation(state);
+  if (state.resizeObserver) {
+    state.resizeObserver.disconnect();
+    state.resizeObserver = null;
+  }
+  logPlaybackDiagnostic(`suspend reason=${reason}`, startedAt);
+}
+function cancelPendingResize(state) {
+  if (state.pendingResizeRaf === null) {
+    return;
+  }
+  cancelAnimationFrame(state.pendingResizeRaf);
+  state.pendingResizeRaf = null;
+  console.log(`spawnPlayback pending resize raf canceled - ${Date.now()}`);
 }
 function startLongTaskObserver(canvas) {
   if (!("PerformanceObserver" in window)) {
@@ -9650,11 +9773,16 @@ function logPlaybackDiagnostic(message, startedAt) {
 }
 function handleFullscreenChange(canvas) {
   const state = getState(canvas);
-  if (!state) {
+  if (!state || !state.isMounted || state.isDisposing) {
     return;
   }
   notifyFullscreenChanged(state);
-  requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop, "fullscreen-change"));
+  requestAnimationFrame(() => {
+    if (!state.isMounted || state.isDisposing) {
+      return;
+    }
+    drawSpawnPlayback(canvas, state.currentGameloop, "fullscreen-change");
+  });
 }
 function notifyFullscreenChanged(state) {
   state.callbackRef?.invokeMethodAsync(
@@ -9756,10 +9884,15 @@ function syncAliveUnitHighlightRows(state) {
   }
 }
 function requestAliveUnitHighlightRedraw(canvas, state) {
-  if (state.running) {
+  if (state.running || !state.isMounted || state.isDisposing) {
     return;
   }
-  requestAnimationFrame(() => drawSpawnPlayback(canvas, state.currentGameloop, "alive-highlight"));
+  requestAnimationFrame(() => {
+    if (!state.isMounted || state.isDisposing) {
+      return;
+    }
+    drawSpawnPlayback(canvas, state.currentGameloop, "alive-highlight");
+  });
 }
 function getRootVisibilityDiagnostics(rootElement) {
   if (!rootElement) {
@@ -9782,6 +9915,7 @@ export {
   drawSpawnPlayback,
   hydrateUnitIcons,
   initializeSpawnPlayback,
+  observeSpawnPlaybackResize,
   pauseSpawnPlayback,
   setSpawnPlaybackFullscreen,
   setSpawnPlaybackSpeed,
