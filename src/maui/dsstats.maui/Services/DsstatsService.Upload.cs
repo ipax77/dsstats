@@ -72,7 +72,7 @@ public partial class DsstatsService
                 UploadRequestDto upload = new()
                 {
                     AppGuid = config.AppGuid,
-                    AppVersion = config.Version,
+                    AppVersion = "ma3.7",
                     RequestNames = config.Sc2Profiles
                         .Where(x => x.ToonId.Id > 0)
                         .Select(s => new RequestNames()

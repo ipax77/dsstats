@@ -87,6 +87,7 @@ namespace dsstats.maui
 
             builder.Services.AddSingleton<IRatingService, RatingsService>();
             builder.Services.AddScoped<IPlayerService, apiServices.PlayerService>();
+            builder.Services.AddScoped<IStatsService, apiServices.StatsService>();
 
             builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
             builder.Services.AddKeyedScoped<IReplayRepository, apiServices.ReplayRepository>("api");
