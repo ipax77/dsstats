@@ -177,7 +177,7 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
 
         replay.Replay.SpawnPlayback = await context.ReplaySpawnPlaybacks
             .AsNoTracking()
-            .Where(x => x.Replay!.ReplayHash == replayHash)
+            .Where(x => x.ReplayId == replayEntity.ReplayId)
             .Select(x => new SpawnPlaybackInfoDto
             {
                 Available = true,
