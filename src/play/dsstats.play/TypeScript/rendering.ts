@@ -53,50 +53,78 @@ const FOREST_CLUSTERS = [
     { x: 0.72, y: 0.62, width: 0.13, height: 0.17, trees: 18 },
     { x: 0.87, y: 0.41, width: 0.09, height: 0.12, trees: 10 }
 ];
+const DRAW_DIAGNOSTIC_FIRST_DRAWS = 5;
+const DRAW_DIAGNOSTIC_SLOW_MS = 16;
+const drawDiagnosticCounts = new WeakMap<HTMLCanvasElement, number>();
 
 export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: number): void {
+    const drawStarted = performance.now();
+    const stages: string[] = [];
+    let stageStarted = drawStarted;
+    let rebuiltStaticCache = false;
+    const markStage = (name: string): void => {
+        const now = performance.now();
+        stages.push(`${name}=${(now - stageStarted).toFixed(1)}ms`);
+        stageStarted = now;
+    };
+
     const state = getState(canvas);
     if (!state?.replay) {
         return;
     }
 
     const resized = resizeCanvas(canvas);
+    markStage("resizeCanvas");
     const ctx = getCanvasContext(canvas);
+    markStage("getContext");
     const replay = state.replay;
     const bounds = replay.bounds;
     if (!ctx || !bounds) {
+        logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing context/bounds");
         return;
     }
 
     state.currentGameloop = clampGameloop(state, currentGameloop);
+    markStage("clampGameloop");
     if (resized
         || !state.staticGeometry
         || !state.renderCache
         || state.staticCanvasWidth !== canvas.width
         || state.staticCanvasHeight !== canvas.height) {
+        rebuiltStaticCache = true;
         state.renderCache = createRenderCache(bounds, canvas);
+        markStage("createRenderCache");
         state.staticGeometry = createStaticGeometry(replay, bounds, canvas);
+        markStage("createStaticGeometry");
         state.staticBackgroundCanvas = createStaticBackgroundCanvas(canvas, state.staticGeometry);
+        markStage("createStaticBackgroundCanvas");
         state.objectiveDeathAnnouncements = createObjectiveDeathAnnouncements(
             state.staticGeometry.landmarks,
             replay.stepGameloops,
             state.gameloopsPerSecond);
+        markStage("createObjectiveAnnouncements");
         state.staticCanvasWidth = canvas.width;
         state.staticCanvasHeight = canvas.height;
         state.activeUnits.length = 0;
         state.nextUnitIndex = 0;
         state.lastActiveGameloop = Number.NEGATIVE_INFINITY;
         prepareUnitSprites(state, canvas);
+        markStage("prepareUnitSprites");
     }
 
     if (!state.staticBackgroundCanvas || !state.staticGeometry || !state.renderCache) {
+        logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing cache");
         return;
     }
 
     ctx.drawImage(state.staticBackgroundCanvas, 0, 0);
+    markStage("drawStaticBackground");
     drawDynamicMapLayer(ctx, canvas, state.staticGeometry, state.currentGameloop);
+    markStage("drawDynamicMapLayer");
     const activeUnits = getActiveUnits(state, state.currentGameloop);
+    markStage("getActiveUnits");
     const drawnUnits = drawUnitLayer(ctx, state.renderCache.projection, activeUnits, state.currentGameloop);
+    markStage("drawUnitLayer");
     if (state.highlightedAliveUnitKey !== null) {
         drawAliveUnitHighlightLayer(
             ctx,
@@ -104,14 +132,19 @@ export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: nu
             activeUnits,
             state.currentGameloop,
             state.highlightedAliveUnitKey);
+        markStage("drawAliveUnitHighlightLayer");
     }
 
     if (drawnUnits === 0) {
         drawEmptyState(ctx, canvas);
+        markStage("drawEmptyState");
     }
 
     drawObjectiveDeathAnnouncements(ctx, canvas, state.objectiveDeathAnnouncements, state.currentGameloop);
+    markStage("drawObjectiveDeathAnnouncements");
     drawEndOfReplaySummary(ctx, canvas, replay.summary, state.currentGameloop, replay.durationGameloop);
+    markStage("drawEndOfReplaySummary");
+    logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, activeUnits.length);
 }
 
 export function clampGameloop(state: SpawnPlaybackState, gameloop: number): number {
@@ -134,6 +167,26 @@ function prepareUnitSprites(state: SpawnPlaybackState, canvas: HTMLCanvasElement
             sprite: getUnitSprite(state, unit, radius, scale)
         };
     }
+}
+
+function logDrawDiagnostic(
+    canvas: HTMLCanvasElement,
+    startedAt: number,
+    stages: string[],
+    resized: boolean,
+    rebuiltStaticCache: boolean,
+    activeUnitCount: number,
+    note = ""): void {
+    const elapsed = performance.now() - startedAt;
+    const drawCount = (drawDiagnosticCounts.get(canvas) ?? 0) + 1;
+    drawDiagnosticCounts.set(canvas, drawCount);
+    if (!rebuiltStaticCache && drawCount > DRAW_DIAGNOSTIC_FIRST_DRAWS && elapsed < DRAW_DIAGNOSTIC_SLOW_MS) {
+        return;
+    }
+
+    const suffix = note ? ` ${note}` : "";
+    console.log(
+        `spawnPlayback draw #${drawCount} elapsed=${elapsed.toFixed(1)}ms resized=${resized} rebuilt=${rebuiltStaticCache} active=${activeUnitCount}${suffix} stages=[${stages.join(", ")}] - ${Date.now()}`);
 }
 
 function createStaticBackgroundCanvas(canvas: HTMLCanvasElement, geometry: StaticGeometry): LayerCanvas | null {

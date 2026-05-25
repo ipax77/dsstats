@@ -7,6 +7,7 @@ import type { DotNetCallbackRef, SpawnPlaybackState } from "./types";
 const ALIVE_UNIT_ROW_SELECTOR = "[data-spawn-playback-alive-unit-row]";
 const ALIVE_UNIT_CLEAR_SELECTOR = "[data-spawn-playback-clear-highlight]";
 const ALIVE_UNIT_SELECTED_CLASS = "spawn-playback-alive-row-selected";
+const longTaskObservers = new WeakMap<HTMLCanvasElement, PerformanceObserver>();
 
 export function initializeSpawnPlayback(
     canvas: HTMLCanvasElement,
@@ -15,8 +16,18 @@ export function initializeSpawnPlayback(
     callbackRef: DotNetCallbackRef | null,
     gameloopsPerSecond: number,
     speedMultiplier: number): void {
+    const startedAt = performance.now();
+    let stageStarted = startedAt;
+    const stages: string[] = [];
+    const markStage = (name: string): void => {
+        const now = performance.now();
+        stages.push(`${name}=${(now - stageStarted).toFixed(1)}ms`);
+        stageStarted = now;
+    };
+    const normalizedReplay = normalizeReplay(replay);
+    markStage("normalizeReplay");
     const state: SpawnPlaybackState = {
-        replay: normalizeReplay(replay),
+        replay: normalizedReplay,
         callbackRef,
         gameloopsPerSecond: Number.isFinite(gameloopsPerSecond) && gameloopsPerSecond > 0
             ? gameloopsPerSecond
@@ -46,16 +57,29 @@ export function initializeSpawnPlayback(
         aliveUnitClickListener: null,
         aliveUnitKeydownListener: null
     };
+    markStage("createState");
 
+    stopLongTaskObserver(canvas);
     disposeState(getState(canvas));
+    markStage("disposeExistingState");
 
     state.resizeObserver = new ResizeObserver(() => drawSpawnPlayback(canvas, state.currentGameloop));
     state.resizeObserver.observe(canvas);
+    markStage("observeResize");
     state.fullscreenListener = () => handleFullscreenChange(canvas);
     document.addEventListener("fullscreenchange", state.fullscreenListener);
+    markStage("addFullscreenListener");
     initializeAliveUnitHighlightEvents(canvas, state);
+    markStage("initializeAliveUnitEvents");
     setState(canvas, state);
+    markStage("setState");
+    startLongTaskObserver(canvas);
+    markStage("startLongTaskObserver");
     resizeCanvas(canvas);
+    markStage("resizeCanvas");
+    logPlaybackDiagnostic(
+        `initializeSpawnPlayback units=${state.replay.units.length} players=${state.replay.players.length} stages=[${stages.join(", ")}]`,
+        startedAt);
 }
 
 export function startSpawnPlayback(
@@ -153,9 +177,19 @@ export async function setSpawnPlaybackFullscreen(
 }
 
 export function disposeSpawnPlayback(canvas: HTMLCanvasElement): void {
+    const startedAt = performance.now();
     const state = getState(canvas);
+    console.log(`spawnPlayback dispose start hasState=${state !== undefined} frame=${state?.animationFrameId ?? 0} running=${state?.running ?? false} sprites=${state?.unitSpriteCache.size ?? 0} active=${state?.activeUnits.length ?? 0} hasStatic=${state?.staticBackgroundCanvas !== null} - ${Date.now()}`);
+    let stageStarted = performance.now();
+    stopLongTaskObserver(canvas);
+    logPlaybackStage("dispose stopLongTaskObserver", stageStarted);
+    stageStarted = performance.now();
     disposeState(state);
+    logPlaybackStage("dispose disposeState", stageStarted);
+    stageStarted = performance.now();
     deleteState(canvas);
+    logPlaybackStage("dispose deleteState", stageStarted);
+    logPlaybackDiagnostic("disposeSpawnPlayback", startedAt);
 }
 
 export function syncAliveUnitHighlightSelection(canvas: HTMLCanvasElement): void {
@@ -209,18 +243,26 @@ function disposeState(state: SpawnPlaybackState | undefined): void {
     }
 
     state.running = false;
+    let stageStarted = performance.now();
     cancelAnimation(state);
+    logPlaybackStage("disposeState cancelAnimation", stageStarted);
     if (state.resizeObserver) {
+        stageStarted = performance.now();
         state.resizeObserver.disconnect();
         state.resizeObserver = null;
+        logPlaybackStage("disposeState disconnectResizeObserver", stageStarted);
     }
 
     if (state.fullscreenListener) {
+        stageStarted = performance.now();
         document.removeEventListener("fullscreenchange", state.fullscreenListener);
         state.fullscreenListener = null;
+        logPlaybackStage("disposeState removeFullscreenListener", stageStarted);
     }
 
+    stageStarted = performance.now();
     disposeAliveUnitHighlightEvents(state);
+    logPlaybackStage("disposeState disposeAliveUnitEvents", stageStarted);
 }
 
 function cancelAnimation(state: SpawnPlaybackState | undefined): void {
@@ -228,6 +270,46 @@ function cancelAnimation(state: SpawnPlaybackState | undefined): void {
         cancelAnimationFrame(state.animationFrameId);
         state.animationFrameId = 0;
     }
+}
+
+function startLongTaskObserver(canvas: HTMLCanvasElement): void {
+    if (!("PerformanceObserver" in window)) {
+        return;
+    }
+
+    const supportedTypes = PerformanceObserver.supportedEntryTypes ?? [];
+    if (!supportedTypes.includes("longtask")) {
+        return;
+    }
+
+    try {
+        const observer = new PerformanceObserver(list => {
+            for (const entry of list.getEntries()) {
+                console.log(`spawnPlayback longtask duration=${entry.duration.toFixed(1)}ms start=${entry.startTime.toFixed(1)} - ${Date.now()}`);
+            }
+        });
+        observer.observe({ entryTypes: ["longtask"] });
+        longTaskObservers.set(canvas, observer);
+    } catch {
+    }
+}
+
+function stopLongTaskObserver(canvas: HTMLCanvasElement): void {
+    const observer = longTaskObservers.get(canvas);
+    if (!observer) {
+        return;
+    }
+
+    observer.disconnect();
+    longTaskObservers.delete(canvas);
+}
+
+function logPlaybackStage(message: string, startedAt: number): void {
+    console.log(`spawnPlayback ${message} elapsed=${(performance.now() - startedAt).toFixed(1)}ms - ${Date.now()}`);
+}
+
+function logPlaybackDiagnostic(message: string, startedAt: number): void {
+    console.log(`spawnPlayback ${message} elapsed=${(performance.now() - startedAt).toFixed(1)}ms - ${Date.now()}`);
 }
 
 function handleFullscreenChange(canvas: HTMLCanvasElement): void {

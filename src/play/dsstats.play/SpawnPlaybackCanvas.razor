@@ -1,5 +1,6 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
+@using System.Diagnostics
 @using dsstats.shared
 @implements IAsyncDisposable
 @inject IJSRuntime JSRuntime
@@ -305,17 +306,30 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        var renderStarted = Stopwatch.GetTimestamp();
         if (playback is null)
         {
             return;
         }
 
-        module ??= await ImportModuleAsync();
-        dotNetReference ??= DotNetObjectReference.Create(this);
+        if (module is null)
+        {
+            var stageStarted = Stopwatch.GetTimestamp();
+            module = await ImportModuleAsync();
+            LogPlaybackDiagnostic("after render import module", stageStarted);
+        }
+
+        if (dotNetReference is null)
+        {
+            var stageStarted = Stopwatch.GetTimestamp();
+            dotNetReference = DotNetObjectReference.Create(this);
+            LogPlaybackDiagnostic("after render dotnet ref", stageStarted);
+        }
 
         if (!ReferenceEquals(initializedReplay, playback))
         {
             initializedReplay = playback;
+            var stageStarted = Stopwatch.GetTimestamp();
             await module.InvokeVoidAsync(
                 "initializeSpawnPlayback",
                 canvasElement,
@@ -324,20 +338,29 @@
                 dotNetReference,
                 SpawnPlaybackFactory.GameloopsPerSecond,
                 GetPlaybackSpeedMultiplier());
+            LogPlaybackDiagnostic("after render initializeSpawnPlayback", stageStarted);
             canvasDrawPending = true;
         }
 
         if (canvasDrawPending)
         {
+            var stageStarted = Stopwatch.GetTimestamp();
             await module.InvokeVoidAsync("drawSpawnPlayback", canvasElement, renderGameloop);
+            LogPlaybackDiagnostic("after render drawSpawnPlayback", stageStarted);
             canvasDrawPending = false;
         }
 
         if (showAliveUnits)
         {
+            var stageStarted = Stopwatch.GetTimestamp();
             await module.InvokeVoidAsync("hydrateUnitIcons", playbackElement);
+            LogPlaybackDiagnostic("after render hydrateUnitIcons", stageStarted);
+            stageStarted = Stopwatch.GetTimestamp();
             await module.InvokeVoidAsync("syncAliveUnitHighlightSelection", canvasElement);
+            LogPlaybackDiagnostic("after render syncAliveUnitHighlightSelection", stageStarted);
         }
+
+        LogPlaybackDiagnostic($"after render total first={firstRender}", renderStarted);
     }
 
     private ValueTask<IJSObjectReference> ImportModuleAsync()
@@ -869,19 +892,33 @@
 
     public async ValueTask DisposeAsync()
     {
+        var disposeStarted = Stopwatch.GetTimestamp();
+        Console.WriteLine($"play canvas dispose start - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
         if (module is not null)
         {
             try
             {
+                var stageStarted = Stopwatch.GetTimestamp();
                 await module.InvokeVoidAsync("disposeSpawnPlayback", canvasElement);
+                LogPlaybackDiagnostic("dispose JS disposeSpawnPlayback", stageStarted);
+                stageStarted = Stopwatch.GetTimestamp();
                 await module.DisposeAsync();
+                LogPlaybackDiagnostic("dispose module dispose", stageStarted);
             }
             catch (JSDisconnectedException)
             {
             }
         }
 
+        var dotNetDisposeStarted = Stopwatch.GetTimestamp();
         dotNetReference?.Dispose();
+        LogPlaybackDiagnostic("dispose dotnet ref", dotNetDisposeStarted);
+        LogPlaybackDiagnostic("dispose total", disposeStarted);
+    }
+
+    private static void LogPlaybackDiagnostic(string stage, long started)
+    {
+        Console.WriteLine($"play canvas {stage} elapsed={Stopwatch.GetElapsedTime(started).TotalMilliseconds:N1}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
     }
 
     private enum SpawnPlaybackAnimationState

@@ -1,0 +1,842 @@
+diff --git a/src/common/dsstats.weblib/Replays/ArcadeReplaysComponent.razor b/src/common/dsstats.weblib/Replays/ArcadeReplaysComponent.razor
+index 530242fb..6a2b643f 100644
+--- a/src/common/dsstats.weblib/Replays/ArcadeReplaysComponent.razor
++++ b/src/common/dsstats.weblib/Replays/ArcadeReplaysComponent.razor
+@@ -98,6 +98,8 @@
+ 	PlayerModal? playerModal;
+ 
+ 	bool isLoading = true;
++	bool closeRenderPending;
++	long closeRenderStarted;
+ 
+ 	protected override void OnInitialized()
+ 	{
+@@ -111,6 +113,11 @@
+ 		{
+ 			await LoadReplay(ReplaysRequest.ReplayHash);
+ 		}
++		if (closeRenderPending && ReplayDetails is null && string.IsNullOrWhiteSpace(ReplaysRequest.ReplayHash))
++		{
++			closeRenderPending = false;
++			Console.WriteLine($"arcade replays cleared render elapsed={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - closeRenderStarted}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
++		}
+ 	}
+ 
+ 	private async Task SetCount()
+@@ -188,15 +195,20 @@
+ 		}
+ 	}
+ 
+-	private void CloseReplay()
++	private async Task CloseReplay()
+ 	{
++		closeRenderStarted = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
++		Console.WriteLine("start closing arcade replays - " + closeRenderStarted);
+ 		ReplayDetails = null;
+ 		ReplaysRequest.ReplayHash = null;
+-		OnRequestChanged.InvokeAsync(ReplaysRequest);
++		closeRenderPending = true;
++		await OnRequestChanged.InvokeAsync(ReplaysRequest);
++		await InvokeAsync(StateHasChanged);
++		Console.WriteLine("start closing arcade replays end - " + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+ 	}
+ 
+ 	public void Dispose()
+ 	{
+ 		cts.Dispose();
+ 	}
+-}
+\ No newline at end of file
++}
+diff --git a/src/common/dsstats.weblib/Replays/ReplayComponent.razor.cs b/src/common/dsstats.weblib/Replays/ReplayComponent.razor.cs
+index 186f8104..0770346b 100644
+--- a/src/common/dsstats.weblib/Replays/ReplayComponent.razor.cs
++++ b/src/common/dsstats.weblib/Replays/ReplayComponent.razor.cs
+@@ -299,9 +299,10 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
+         }
+     }
+ 
+-    public void Close()
++    public async Task Close()
+     {
+-        OnClose.InvokeAsync();
++        Console.WriteLine("start closing - " + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
++        await OnClose.InvokeAsync();
+     }
+ 
+     public async ValueTask DisposeAsync()
+diff --git a/src/common/dsstats.weblib/Replays/ReplayModal.razor b/src/common/dsstats.weblib/Replays/ReplayModal.razor
+index 8ef44acb..42980463 100644
+--- a/src/common/dsstats.weblib/Replays/ReplayModal.razor
++++ b/src/common/dsstats.weblib/Replays/ReplayModal.razor
+@@ -19,6 +19,8 @@
+     private string modalId = "replayModal";
+ 
+     private ReplayDetails? ReplayDetails = null;
++    private bool closeRenderPending;
++    private long closeRenderStarted;
+ 
+     [Parameter]
+     public bool IsScrollable { get; set; }
+@@ -32,6 +34,17 @@
+     [Parameter]
+     public EventCallback OnClose { get; set; }
+ 
++    protected override async Task OnAfterRenderAsync(bool firstRender)
++    {
++        if (closeRenderPending && ReplayDetails is null)
++        {
++            closeRenderPending = false;
++            Console.WriteLine($"replay modal cleared render elapsed={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - closeRenderStarted}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
++        }
++
++        await base.OnAfterRenderAsync(firstRender);
++    }
++
+     public void Show(ReplayDetails replayDetails)
+     {
+         ReplayDetails = replayDetails;
+@@ -39,10 +52,16 @@
+         JSRuntime.InvokeVoidAsync("openModalById", modalId);
+     }
+ 
+-    public void Close()
++    public async Task Close()
+     {
+-        JSRuntime.InvokeVoidAsync("closeModalById", modalId);
+-        OnClose.InvokeAsync();
++        closeRenderStarted = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
++        Console.WriteLine("start closing modal - " + closeRenderStarted);
++        await JSRuntime.InvokeVoidAsync("closeModalByIdAndWait", modalId);
++        Console.WriteLine("start closing modal hidden - " + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
++        await OnClose.InvokeAsync();
+         ReplayDetails = null;
++        closeRenderPending = true;
++        await InvokeAsync(StateHasChanged);
++        Console.WriteLine("start closing modal end - " + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+     }
+ }
+diff --git a/src/common/dsstats.weblib/Replays/ReplaysComponent.razor b/src/common/dsstats.weblib/Replays/ReplaysComponent.razor
+index 2d8b70ee..bad5279c 100644
+--- a/src/common/dsstats.weblib/Replays/ReplaysComponent.razor
++++ b/src/common/dsstats.weblib/Replays/ReplaysComponent.razor
+@@ -112,6 +112,8 @@
+ 	ReplayModal? replayModal;
+ 	PlayerModal? playerModal;
+ 	bool isLoading = true;
++	bool closeRenderPending;
++	long closeRenderStarted;
+ 
+ 	protected override void OnInitialized()
+ 	{
+@@ -125,6 +127,11 @@
+ 		{
+ 			await LoadReplay(ReplaysRequest.ReplayHash);
+ 		}
++		if (closeRenderPending && ReplayDetails is null && string.IsNullOrWhiteSpace(ReplaysRequest.ReplayHash))
++		{
++			closeRenderPending = false;
++			Console.WriteLine($"replays cleared render elapsed={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - closeRenderStarted}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
++		}
+ 		await base.OnAfterRenderAsync(firstRender);
+ 	}
+ 
+@@ -204,11 +211,16 @@
+ 		}
+ 	}
+ 
+-	private void CloseReplay()
++	private async Task CloseReplay()
+ 	{
++		closeRenderStarted = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
++		Console.WriteLine("start closing replays - " + closeRenderStarted);
+ 		ReplayDetails = null;
+ 		ReplaysRequest.ReplayHash = null;
+-		OnRequestChanged.InvokeAsync(ReplaysRequest);
++		closeRenderPending = true;
++		await OnRequestChanged.InvokeAsync(ReplaysRequest);
++		await InvokeAsync(StateHasChanged);
++		Console.WriteLine("start closing replays end - " + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+ 	}
+ 
+ 	private async Task LoadNextReplay(bool next)
+diff --git a/src/common/dsstats.weblib/wwwroot/js/dsstats.js b/src/common/dsstats.weblib/wwwroot/js/dsstats.js
+index 4826f009..7d5afd96 100644
+--- a/src/common/dsstats.weblib/wwwroot/js/dsstats.js
++++ b/src/common/dsstats.weblib/wwwroot/js/dsstats.js
+@@ -14,6 +14,7 @@ function openModalById(id) {
+ }
+ 
+ function closeModalById(id) {
++    console.log("colosing modal - " + Date.now());
+     const modalElement = document.getElementById(id);
+     if (!modalElement) return;
+ 
+@@ -21,6 +22,50 @@ function closeModalById(id) {
+     if (modal) {
+         modal.hide();
+     }
++    console.log("colosing modal done - " + Date.now());
++}
++
++function closeModalByIdAndWait(id) {
++    const started = performance.now();
++    console.log("closing modal wait - " + Date.now());
++    const modalElement = document.getElementById(id);
++    if (!modalElement) {
++        console.log("closing modal wait missing - " + Date.now());
++        return Promise.resolve();
++    }
++
++    return new Promise(resolve => {
++        let resolved = false;
++        const timeoutId = setTimeout(() => finish("timeout"), 1500);
++
++        const finish = (reason) => {
++            if (resolved) return;
++
++            resolved = true;
++            clearTimeout(timeoutId);
++            modalElement.removeEventListener('hidden.bs.modal', onHidden);
++            requestAnimationFrame(() => {
++                console.log(`closing modal ${reason} raf elapsed=${(performance.now() - started).toFixed(1)}ms - ${Date.now()}`);
++                resolve();
++            });
++        };
++
++        const onHidden = () => {
++            console.log(`closing modal hidden elapsed=${(performance.now() - started).toFixed(1)}ms - ${Date.now()}`);
++            finish("hidden");
++        };
++
++        modalElement.addEventListener('hidden.bs.modal', onHidden, { once: true });
++
++        const modal = bootstrap.Modal.getInstance(modalElement);
++        if (modal && modalElement.classList.contains('show')) {
++            modal.hide();
++            console.log(`closing modal hide requested elapsed=${(performance.now() - started).toFixed(1)}ms - ${Date.now()}`);
++        } else {
++            console.log(`closing modal no instance elapsed=${(performance.now() - started).toFixed(1)}ms - ${Date.now()}`);
++            finish("no instance");
++        }
++    });
+ }
+ 
+ function scrollModalToTop(modalId) {
+diff --git a/src/play/dsstats.play/SpawnPlaybackCanvas.razor b/src/play/dsstats.play/SpawnPlaybackCanvas.razor
+index db249d59..41630fce 100644
+--- a/src/play/dsstats.play/SpawnPlaybackCanvas.razor
++++ b/src/play/dsstats.play/SpawnPlaybackCanvas.razor
+@@ -1,5 +1,6 @@
+ @using Microsoft.AspNetCore.Components.Web
+ @using Microsoft.JSInterop
++@using System.Diagnostics
+ @using dsstats.shared
+ @implements IAsyncDisposable
+ @inject IJSRuntime JSRuntime
+@@ -238,6 +239,8 @@
+     private bool showAliveUnits = true;
+     private SpawnPlaybackAnimationState animationState = SpawnPlaybackAnimationState.Stopped;
+     private string selectedPlaybackSpeed = "normal";
++    private long lastProgressUiRenderTimestamp;
++    private const double ProgressUiRenderIntervalMilliseconds = 1000;
+ 
+     private string PlayPauseTitle => animationState == SpawnPlaybackAnimationState.Playing
+         ? "Pause"
+@@ -287,6 +290,8 @@
+     {
+         if (!ReferenceEquals(currentReplay, Replay) || !ReferenceEquals(currentSidecar, Sidecar))
+         {
++            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
++            Console.WriteLine($"play canvas parameters changed - {timestamp}");
+             currentReplay = Replay;
+             currentSidecar = Sidecar;
+             playback = Replay is not null && Sidecar is not null
+@@ -300,11 +305,14 @@
+             isFullscreen = false;
+             showAliveUnits = true;
+             SetRenderGameloop(force: true);
++            lastProgressUiRenderTimestamp = Stopwatch.GetTimestamp();
++            Console.WriteLine($"play canvas parameters changed done - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+         }
+     }
+ 
+     protected override async Task OnAfterRenderAsync(bool firstRender)
+     {
++        var elapsedTimestamp = Stopwatch.GetTimestamp();
+         if (playback is null)
+         {
+             return;
+@@ -338,6 +346,8 @@
+             await module.InvokeVoidAsync("hydrateUnitIcons", playbackElement);
+             await module.InvokeVoidAsync("syncAliveUnitHighlightSelection", canvasElement);
+         }
++
++        Console.WriteLine($"play canvas after render first={firstRender} elapsed={Stopwatch.GetElapsedTime(elapsedTimestamp).TotalMilliseconds:N1}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+     }
+ 
+     private ValueTask<IJSObjectReference> ImportModuleAsync()
+@@ -361,6 +371,7 @@
+         }
+ 
+         animationState = SpawnPlaybackAnimationState.Playing;
++        lastProgressUiRenderTimestamp = Stopwatch.GetTimestamp();
+         await module.InvokeVoidAsync(
+             "startSpawnPlayback",
+             canvasElement,
+@@ -377,7 +388,7 @@
+         }
+ 
+         double stoppedGameloop = await module.InvokeAsync<double>("pauseSpawnPlayback", canvasElement, false);
+-        ApplyAnimationProgress(stoppedGameloop, SpawnPlaybackAnimationState.Paused, requestCanvasDraw: false);
++        ApplyAnimationProgress(stoppedGameloop, SpawnPlaybackAnimationState.Paused, requestCanvasDraw: false, updateAliveUnits: true);
+         StateHasChanged();
+     }
+ 
+@@ -477,12 +488,13 @@
+         }
+ 
+         double stoppedGameloop = await module.InvokeAsync<double>("stopSpawnPlayback", canvasElement, false);
+-        ApplyAnimationProgress(stoppedGameloop, nextState, requestCanvasDraw: false);
++        ApplyAnimationProgress(stoppedGameloop, nextState, requestCanvasDraw: false, updateAliveUnits: true);
+     }
+ 
+     [JSInvokable]
+     public Task ReceiveSpawnPlaybackProgress(double gameloop, string state)
+     {
++        var elapsedTimestamp = Stopwatch.GetTimestamp();
+         return InvokeAsync(() =>
+         {
+             SpawnPlaybackAnimationState nextState = state switch
+@@ -491,8 +503,16 @@
+                 "paused" => SpawnPlaybackAnimationState.Paused,
+                 _ => SpawnPlaybackAnimationState.Stopped
+             };
+-            ApplyAnimationProgress(gameloop, nextState, requestCanvasDraw: false);
+-            StateHasChanged();
++
++            var shouldUpdateAliveUnits = nextState != SpawnPlaybackAnimationState.Playing
++                || WillCrossPlaybackStopBoundary(gameloop);
++            ApplyAnimationProgress(gameloop, nextState, requestCanvasDraw: false, updateAliveUnits: shouldUpdateAliveUnits);
++
++            if (shouldUpdateAliveUnits || ShouldRenderProgressUi())
++            {
++                Console.WriteLine($"play canvas progress state={state} aliveRefresh={shouldUpdateAliveUnits} elapsed={Stopwatch.GetElapsedTime(elapsedTimestamp).TotalMilliseconds:N1}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
++                StateHasChanged();
++            }
+         });
+     }
+ 
+@@ -510,7 +530,8 @@
+     private void ApplyAnimationProgress(
+         double gameloop,
+         SpawnPlaybackAnimationState nextState,
+-        bool requestCanvasDraw)
++        bool requestCanvasDraw,
++        bool updateAliveUnits)
+     {
+         if (playback is null)
+         {
+@@ -521,7 +542,7 @@
+         int firstGameloop = GetFirstPlaybackGameloop(playback);
+         int nextGameloop = (int)Math.Round(gameloop);
+         currentGameloop = Math.Clamp(nextGameloop, firstGameloop, playback.DurationGameloop);
+-        SetRenderGameloop(requestCanvasDraw: requestCanvasDraw);
++        SetRenderGameloop(requestCanvasDraw: requestCanvasDraw, updateAliveUnits: updateAliveUnits);
+         currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(renderGameloop);
+         animationState = nextState;
+     }
+@@ -536,7 +557,7 @@
+         };
+     }
+ 
+-    private bool SetRenderGameloop(bool force = false, bool requestCanvasDraw = true)
++    private bool SetRenderGameloop(bool force = false, bool requestCanvasDraw = true, bool updateAliveUnits = true)
+     {
+         int nextRenderGameloop = ResolveRenderGameloop(playback, currentGameloop);
+         if (!force && nextRenderGameloop == renderGameloop)
+@@ -545,7 +566,11 @@
+         }
+ 
+         renderGameloop = nextRenderGameloop;
+-        UpdateAliveUnitRows();
++        if (updateAliveUnits)
++        {
++            UpdateAliveUnitRows();
++        }
++
+         if (requestCanvasDraw)
+         {
+             canvasDrawPending = true;
+@@ -554,6 +579,31 @@
+         return true;
+     }
+ 
++    private bool WillCrossPlaybackStopBoundary(double gameloop)
++    {
++        if (playback is null || playbackStops.Count == 0)
++        {
++            return false;
++        }
++
++        int firstGameloop = GetFirstPlaybackGameloop(playback);
++        int nextGameloop = Math.Clamp((int)Math.Round(gameloop), firstGameloop, playback.DurationGameloop);
++        int nextRenderGameloop = ResolveRenderGameloop(playback, nextGameloop);
++        return FindPlaybackStopIndexAtOrBefore(nextRenderGameloop) != currentPlaybackStopIndex;
++    }
++
++    private bool ShouldRenderProgressUi()
++    {
++        var now = Stopwatch.GetTimestamp();
++        if (Stopwatch.GetElapsedTime(lastProgressUiRenderTimestamp, now).TotalMilliseconds < ProgressUiRenderIntervalMilliseconds)
++        {
++            return false;
++        }
++
++        lastProgressUiRenderTimestamp = now;
++        return true;
++    }
++
+     private void BuildPlaybackStops(SpawnPlaybackReplay? replay)
+     {
+         playbackStops.Clear();
+@@ -685,6 +735,8 @@
+ 
+     private void UpdateAliveUnitRows()
+     {
++        var elapsedTimestamp = Stopwatch.GetTimestamp();
++        var scannedUnits = 0;
+         team1AliveUnitRows.Clear();
+         team2AliveUnitRows.Clear();
+         aliveUnitAccumulators.Clear();
+@@ -694,6 +746,7 @@
+         currentSpawnNumber = 0;
+         if (playback is null)
+         {
++            Console.WriteLine($"play canvas alive rows units=0 alive=0 rows=0 elapsed={Stopwatch.GetElapsedTime(elapsedTimestamp).TotalMilliseconds:N1}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+             return;
+         }
+ 
+@@ -701,6 +754,7 @@
+         {
+             foreach (var unit in player.Units)
+             {
++                scannedUnits++;
+                 if (unit.SpawnGameloop > renderGameloop)
+                 {
+                     continue;
+@@ -735,6 +789,7 @@
+ 
+         if (!showAliveUnits)
+         {
++            Console.WriteLine($"play canvas alive rows units={scannedUnits:N0} alive={aliveUnitCount:N0} rows=0 collapsed=true elapsed={Stopwatch.GetElapsedTime(elapsedTimestamp).TotalMilliseconds:N1}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+             return;
+         }
+ 
+@@ -761,6 +816,7 @@
+ 
+         team1AliveUnitRows.Sort(CompareAliveUnitRows);
+         team2AliveUnitRows.Sort(CompareAliveUnitRows);
++        Console.WriteLine($"play canvas alive rows units={scannedUnits:N0} alive={aliveUnitCount:N0} rows={team1AliveUnitRows.Count + team2AliveUnitRows.Count:N0} elapsed={Stopwatch.GetElapsedTime(elapsedTimestamp).TotalMilliseconds:N1}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+     }
+ 
+     private static int CompareAliveUnitRows(AliveUnitRow left, AliveUnitRow right)
+@@ -867,21 +923,51 @@
+         return renderGameloop;
+     }
+ 
+-    public async ValueTask DisposeAsync()
++    public ValueTask DisposeAsync()
+     {
+-        if (module is not null)
++        var elapsedTimestamp = Stopwatch.GetTimestamp();
++        Console.WriteLine($"play canvas dispose - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
++        var moduleToDispose = module;
++        var canvasToDispose = canvasElement;
++        var dotNetReferenceToDispose = dotNetReference;
++        module = null;
++        dotNetReference = null;
++
++        if (moduleToDispose is null)
+         {
+-            try
+-            {
+-                await module.InvokeVoidAsync("disposeSpawnPlayback", canvasElement);
+-                await module.DisposeAsync();
+-            }
+-            catch (JSDisconnectedException)
+-            {
+-            }
++            dotNetReferenceToDispose?.Dispose();
++            Console.WriteLine($"play canvas dispose done elapsed={Stopwatch.GetElapsedTime(elapsedTimestamp).TotalMilliseconds:N1}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
++            return ValueTask.CompletedTask;
+         }
+ 
+-        dotNetReference?.Dispose();
++        _ = DisposeJsResourcesAsync(moduleToDispose, canvasToDispose, dotNetReferenceToDispose, elapsedTimestamp);
++        Console.WriteLine($"play canvas dispose scheduled elapsed={Stopwatch.GetElapsedTime(elapsedTimestamp).TotalMilliseconds:N1}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
++        return ValueTask.CompletedTask;
++    }
++
++    private static async Task DisposeJsResourcesAsync(
++        IJSObjectReference moduleToDispose,
++        ElementReference canvasToDispose,
++        DotNetObjectReference<SpawnPlaybackCanvas>? dotNetReferenceToDispose,
++        long elapsedTimestamp)
++    {
++        try
++        {
++            await Task.Delay(250).ConfigureAwait(false);
++            await moduleToDispose.InvokeVoidAsync("disposeSpawnPlayback", canvasToDispose);
++            await moduleToDispose.DisposeAsync();
++        }
++        catch (JSDisconnectedException)
++        {
++        }
++        catch (TaskCanceledException)
++        {
++        }
++        finally
++        {
++            dotNetReferenceToDispose?.Dispose();
++            Console.WriteLine($"play canvas dispose done elapsed={Stopwatch.GetElapsedTime(elapsedTimestamp).TotalMilliseconds:N1}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
++        }
+     }
+ 
+     private enum SpawnPlaybackAnimationState
+diff --git a/src/play/dsstats.play/TypeScript/state.ts b/src/play/dsstats.play/TypeScript/state.ts
+index 26aaeef2..7025ffce 100644
+--- a/src/play/dsstats.play/TypeScript/state.ts
++++ b/src/play/dsstats.play/TypeScript/state.ts
+@@ -27,7 +27,9 @@ export function initializeSpawnPlayback(
+         resizeObserver: null,
+         currentGameloop: 0,
+         running: false,
++        disposed: false,
+         animationFrameId: 0,
++        pendingProgressCallbacks: 0,
+         lastFrameTimestamp: 0,
+         lastProgressTimestamp: 0,
+         activeUnits: [],
+@@ -62,8 +64,10 @@ export function startSpawnPlayback(
+     canvas: HTMLCanvasElement,
+     currentGameloop: number,
+     speedMultiplier: number): void {
++    const startedAt = performance.now();
+     const state = getState(canvas);
+     if (!state?.replay) {
++        logPlaybackDiagnostic("startSpawnPlayback skipped; no state", startedAt);
+         return;
+     }
+ 
+@@ -81,11 +85,16 @@ export function startSpawnPlayback(
+     cancelAnimation(state);
+     notifyProgress(state, "playing");
+     state.animationFrameId = requestAnimationFrame(timestamp => animateSpawnPlayback(canvas, timestamp));
++    logPlaybackDiagnostic(
++        `startSpawnPlayback frame=${state.animationFrameId} callbacks=${state.pendingProgressCallbacks}`,
++        startedAt);
+ }
+ 
+ export function pauseSpawnPlayback(canvas: HTMLCanvasElement, notify = true): number {
++    const startedAt = performance.now();
+     const state = getState(canvas);
+     if (!state) {
++        logPlaybackDiagnostic("pauseSpawnPlayback skipped; no state", startedAt);
+         return 0;
+     }
+ 
+@@ -95,12 +104,17 @@ export function pauseSpawnPlayback(canvas: HTMLCanvasElement, notify = true): nu
+         notifyProgress(state, "paused");
+     }
+ 
++    logPlaybackDiagnostic(
++        `pauseSpawnPlayback frame=${state.animationFrameId} callbacks=${state.pendingProgressCallbacks}`,
++        startedAt);
+     return state.currentGameloop;
+ }
+ 
+ export function stopSpawnPlayback(canvas: HTMLCanvasElement, notify = true): number {
++    const startedAt = performance.now();
+     const state = getState(canvas);
+     if (!state) {
++        logPlaybackDiagnostic("stopSpawnPlayback skipped; no state", startedAt);
+         return 0;
+     }
+ 
+@@ -110,6 +124,9 @@ export function stopSpawnPlayback(canvas: HTMLCanvasElement, notify = true): num
+         notifyProgress(state, "stopped");
+     }
+ 
++    logPlaybackDiagnostic(
++        `stopSpawnPlayback frame=${state.animationFrameId} callbacks=${state.pendingProgressCallbacks}`,
++        startedAt);
+     return state.currentGameloop;
+ }
+ 
+@@ -153,9 +170,14 @@ export async function setSpawnPlaybackFullscreen(
+ }
+ 
+ export function disposeSpawnPlayback(canvas: HTMLCanvasElement): void {
++    const startedAt = performance.now();
+     const state = getState(canvas);
++    console.log(`disposing canvas - ${Date.now()} frame=${state?.animationFrameId ?? 0} callbacks=${state?.pendingProgressCallbacks ?? 0}`);
+     disposeState(state);
+     deleteState(canvas);
++    logPlaybackDiagnostic(
++        `disposing canvas done frame=${state?.animationFrameId ?? 0} callbacks=${state?.pendingProgressCallbacks ?? 0}`,
++        startedAt);
+ }
+ 
+ export function syncAliveUnitHighlightSelection(canvas: HTMLCanvasElement): void {
+@@ -197,10 +219,24 @@ function animateSpawnPlayback(canvas: HTMLCanvasElement, timestamp: number): voi
+ }
+ 
+ function notifyProgress(state: SpawnPlaybackState, status: string): void {
+-    state.callbackRef?.invokeMethodAsync(
++    if (state.disposed || !state.callbackRef) {
++        return;
++    }
++
++    const startedAt = performance.now();
++    state.pendingProgressCallbacks++;
++    const callbackRef = state.callbackRef;
++    callbackRef.invokeMethodAsync(
+         "ReceiveSpawnPlaybackProgress",
+         Math.round(state.currentGameloop),
+-        status).catch(() => { });
++        status)
++        .catch(() => { })
++        .finally(() => {
++            state.pendingProgressCallbacks = Math.max(0, state.pendingProgressCallbacks - 1);
++            logPlaybackDiagnostic(
++                `notifyProgress ${status} callbacks=${state.pendingProgressCallbacks} disposed=${state.disposed}`,
++                startedAt);
++        });
+ }
+ 
+ function disposeState(state: SpawnPlaybackState | undefined): void {
+@@ -208,8 +244,10 @@ function disposeState(state: SpawnPlaybackState | undefined): void {
+         return;
+     }
+ 
++    state.disposed = true;
+     state.running = false;
+     cancelAnimation(state);
++    state.callbackRef = null;
+     if (state.resizeObserver) {
+         state.resizeObserver.disconnect();
+         state.resizeObserver = null;
+@@ -230,6 +268,10 @@ function cancelAnimation(state: SpawnPlaybackState | undefined): void {
+     }
+ }
+ 
++function logPlaybackDiagnostic(message: string, startedAt: number): void {
++    console.log(`${message} elapsed=${(performance.now() - startedAt).toFixed(1)}ms - ${Date.now()}`);
++}
++
+ function handleFullscreenChange(canvas: HTMLCanvasElement): void {
+     const state = getState(canvas);
+     if (!state) {
+diff --git a/src/play/dsstats.play/TypeScript/types.ts b/src/play/dsstats.play/TypeScript/types.ts
+index 756b484a..bff621cc 100644
+--- a/src/play/dsstats.play/TypeScript/types.ts
++++ b/src/play/dsstats.play/TypeScript/types.ts
+@@ -231,7 +231,9 @@ export interface SpawnPlaybackState {
+     resizeObserver: ResizeObserver | null;
+     currentGameloop: number;
+     running: boolean;
++    disposed: boolean;
+     animationFrameId: number;
++    pendingProgressCallbacks: number;
+     lastFrameTimestamp: number;
+     lastProgressTimestamp: number;
+     activeUnits: NormalizedUnit[];
+diff --git a/src/play/dsstats.play/wwwroot/spawnPlayback.js b/src/play/dsstats.play/wwwroot/spawnPlayback.js
+index 8e0b656b..729428b4 100644
+--- a/src/play/dsstats.play/wwwroot/spawnPlayback.js
++++ b/src/play/dsstats.play/wwwroot/spawnPlayback.js
+@@ -9349,7 +9349,9 @@ function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gamel
+     resizeObserver: null,
+     currentGameloop: 0,
+     running: false,
++    disposed: false,
+     animationFrameId: 0,
++    pendingProgressCallbacks: 0,
+     lastFrameTimestamp: 0,
+     lastProgressTimestamp: 0,
+     activeUnits: [],
+@@ -9378,8 +9380,10 @@ function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gamel
+   resizeCanvas(canvas);
+ }
+ function startSpawnPlayback(canvas, currentGameloop, speedMultiplier) {
++  const startedAt = performance.now();
+   const state = getState(canvas);
+   if (!state?.replay) {
++    logPlaybackDiagnostic("startSpawnPlayback skipped; no state", startedAt);
+     return;
+   }
+   if (Number.isFinite(currentGameloop)) {
+@@ -9394,10 +9398,16 @@ function startSpawnPlayback(canvas, currentGameloop, speedMultiplier) {
+   cancelAnimation(state);
+   notifyProgress(state, "playing");
+   state.animationFrameId = requestAnimationFrame((timestamp) => animateSpawnPlayback(canvas, timestamp));
++  logPlaybackDiagnostic(
++    `startSpawnPlayback frame=${state.animationFrameId} callbacks=${state.pendingProgressCallbacks}`,
++    startedAt
++  );
+ }
+ function pauseSpawnPlayback(canvas, notify = true) {
++  const startedAt = performance.now();
+   const state = getState(canvas);
+   if (!state) {
++    logPlaybackDiagnostic("pauseSpawnPlayback skipped; no state", startedAt);
+     return 0;
+   }
+   state.running = false;
+@@ -9405,11 +9415,17 @@ function pauseSpawnPlayback(canvas, notify = true) {
+   if (notify) {
+     notifyProgress(state, "paused");
+   }
++  logPlaybackDiagnostic(
++    `pauseSpawnPlayback frame=${state.animationFrameId} callbacks=${state.pendingProgressCallbacks}`,
++    startedAt
++  );
+   return state.currentGameloop;
+ }
+ function stopSpawnPlayback(canvas, notify = true) {
++  const startedAt = performance.now();
+   const state = getState(canvas);
+   if (!state) {
++    logPlaybackDiagnostic("stopSpawnPlayback skipped; no state", startedAt);
+     return 0;
+   }
+   state.running = false;
+@@ -9417,6 +9433,10 @@ function stopSpawnPlayback(canvas, notify = true) {
+   if (notify) {
+     notifyProgress(state, "stopped");
+   }
++  logPlaybackDiagnostic(
++    `stopSpawnPlayback frame=${state.animationFrameId} callbacks=${state.pendingProgressCallbacks}`,
++    startedAt
++  );
+   return state.currentGameloop;
+ }
+ function setSpawnPlaybackSpeed(canvas, speedMultiplier) {
+@@ -9450,9 +9470,15 @@ async function setSpawnPlaybackFullscreen(canvas, rootElement, fullscreen) {
+   }
+ }
+ function disposeSpawnPlayback(canvas) {
++  const startedAt = performance.now();
+   const state = getState(canvas);
++  console.log(`disposing canvas - ${Date.now()} frame=${state?.animationFrameId ?? 0} callbacks=${state?.pendingProgressCallbacks ?? 0}`);
+   disposeState(state);
+   deleteState(canvas);
++  logPlaybackDiagnostic(
++    `disposing canvas done frame=${state?.animationFrameId ?? 0} callbacks=${state?.pendingProgressCallbacks ?? 0}`,
++    startedAt
++  );
+ }
+ function syncAliveUnitHighlightSelection(canvas) {
+   const state = getState(canvas);
+@@ -9486,19 +9512,33 @@ function animateSpawnPlayback(canvas, timestamp) {
+   state.animationFrameId = requestAnimationFrame((nextTimestamp) => animateSpawnPlayback(canvas, nextTimestamp));
+ }
+ function notifyProgress(state, status) {
+-  state.callbackRef?.invokeMethodAsync(
++  if (state.disposed || !state.callbackRef) {
++    return;
++  }
++  const startedAt = performance.now();
++  state.pendingProgressCallbacks++;
++  const callbackRef = state.callbackRef;
++  callbackRef.invokeMethodAsync(
+     "ReceiveSpawnPlaybackProgress",
+     Math.round(state.currentGameloop),
+     status
+   ).catch(() => {
++  }).finally(() => {
++    state.pendingProgressCallbacks = Math.max(0, state.pendingProgressCallbacks - 1);
++    logPlaybackDiagnostic(
++      `notifyProgress ${status} callbacks=${state.pendingProgressCallbacks} disposed=${state.disposed}`,
++      startedAt
++    );
+   });
+ }
+ function disposeState(state) {
+   if (!state) {
+     return;
+   }
++  state.disposed = true;
+   state.running = false;
+   cancelAnimation(state);
++  state.callbackRef = null;
+   if (state.resizeObserver) {
+     state.resizeObserver.disconnect();
+     state.resizeObserver = null;
+@@ -9515,6 +9555,9 @@ function cancelAnimation(state) {
+     state.animationFrameId = 0;
+   }
+ }
++function logPlaybackDiagnostic(message, startedAt) {
++  console.log(`${message} elapsed=${(performance.now() - startedAt).toFixed(1)}ms - ${Date.now()}`);
++}
+ function handleFullscreenChange(canvas) {
+   const state = getState(canvas);
+   if (!state) {
+diff --git a/src/server/dsstats.web/Components/Pages/PlayPage.razor b/src/server/dsstats.web/Components/Pages/PlayPage.razor
+index 6ebb062a..70fa2d8b 100644
+--- a/src/server/dsstats.web/Components/Pages/PlayPage.razor
++++ b/src/server/dsstats.web/Components/Pages/PlayPage.razor
+@@ -1,4 +1,5 @@
+ @page "/te/play"
++@using System.Diagnostics
+ @using dsstats.parser
+ @using dsstats.play
+ @using dsstats.shared
+@@ -153,6 +154,8 @@
+     private dsstats.shared.ReplayDto? replayDto;
+     private SpawnPlaybackSidecarDto? spawnPlaybackSidecar;
+     private SpawnPlaybackReplay? spawnPlayback;
++    private bool clearRenderPending;
++    private long clearRenderTimestamp;
+     private const int IconPreviewSize = 60;
+     private static readonly IconPreviewGroup[] IconPreviewGroups =
+     [
+@@ -227,6 +230,10 @@
+ 
+     private async Task LoadReplay(InputFileChangeEventArgs e)
+     {
++        var clearTimestamp = Stopwatch.GetTimestamp();
++        clearRenderTimestamp = clearTimestamp;
++        clearRenderPending = true;
++        Console.WriteLine($"play load clear replay - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+         isLoading = true;
+         error = string.Empty;
+         importStatus = string.Empty;
+@@ -234,6 +241,7 @@
+         spawnPlaybackSidecar = null;
+         spawnPlayback = null;
+         await InvokeAsync(StateHasChanged);
++        Console.WriteLine($"play load clear replay done elapsed={Stopwatch.GetElapsedTime(clearTimestamp).TotalMilliseconds:N1}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+ 
+         var file = e.GetMultipleFiles(1).FirstOrDefault();
+         if (file is null)
+@@ -303,6 +311,17 @@
+         }
+     }
+ 
++    protected override Task OnAfterRenderAsync(bool firstRender)
++    {
++        if (clearRenderPending)
++        {
++            clearRenderPending = false;
++            Console.WriteLine($"play load clear render done elapsed={Stopwatch.GetElapsedTime(clearRenderTimestamp).TotalMilliseconds:N1}ms - {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
++        }
++
++        return Task.CompletedTask;
++    }
++
+     private static PlaybackMetadata GetPlaybackMetadata(Sc2Replay replay, DirectStrikeReplay directStrikeReplay)
+     {
+         var bornEvents = replay.TrackerEvents?.SUnitBornEvents;

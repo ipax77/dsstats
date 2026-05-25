@@ -8399,42 +8399,69 @@ var FOREST_CLUSTERS = [
   { x: 0.72, y: 0.62, width: 0.13, height: 0.17, trees: 18 },
   { x: 0.87, y: 0.41, width: 0.09, height: 0.12, trees: 10 }
 ];
+var DRAW_DIAGNOSTIC_FIRST_DRAWS = 5;
+var DRAW_DIAGNOSTIC_SLOW_MS = 16;
+var drawDiagnosticCounts = /* @__PURE__ */ new WeakMap();
 function drawSpawnPlayback(canvas, currentGameloop) {
+  const drawStarted = performance.now();
+  const stages = [];
+  let stageStarted = drawStarted;
+  let rebuiltStaticCache = false;
+  const markStage = (name) => {
+    const now = performance.now();
+    stages.push(`${name}=${(now - stageStarted).toFixed(1)}ms`);
+    stageStarted = now;
+  };
   const state = getState(canvas);
   if (!state?.replay) {
     return;
   }
   const resized = resizeCanvas(canvas);
+  markStage("resizeCanvas");
   const ctx = getCanvasContext(canvas);
+  markStage("getContext");
   const replay = state.replay;
   const bounds = replay.bounds;
   if (!ctx || !bounds) {
+    logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing context/bounds");
     return;
   }
   state.currentGameloop = clampGameloop(state, currentGameloop);
+  markStage("clampGameloop");
   if (resized || !state.staticGeometry || !state.renderCache || state.staticCanvasWidth !== canvas.width || state.staticCanvasHeight !== canvas.height) {
+    rebuiltStaticCache = true;
     state.renderCache = createRenderCache(bounds, canvas);
+    markStage("createRenderCache");
     state.staticGeometry = createStaticGeometry(replay, bounds, canvas);
+    markStage("createStaticGeometry");
     state.staticBackgroundCanvas = createStaticBackgroundCanvas(canvas, state.staticGeometry);
+    markStage("createStaticBackgroundCanvas");
     state.objectiveDeathAnnouncements = createObjectiveDeathAnnouncements(
       state.staticGeometry.landmarks,
       replay.stepGameloops,
       state.gameloopsPerSecond
     );
+    markStage("createObjectiveAnnouncements");
     state.staticCanvasWidth = canvas.width;
     state.staticCanvasHeight = canvas.height;
     state.activeUnits.length = 0;
     state.nextUnitIndex = 0;
     state.lastActiveGameloop = Number.NEGATIVE_INFINITY;
     prepareUnitSprites(state, canvas);
+    markStage("prepareUnitSprites");
   }
   if (!state.staticBackgroundCanvas || !state.staticGeometry || !state.renderCache) {
+    logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, 0, "missing cache");
     return;
   }
   ctx.drawImage(state.staticBackgroundCanvas, 0, 0);
+  markStage("drawStaticBackground");
   drawDynamicMapLayer(ctx, canvas, state.staticGeometry, state.currentGameloop);
+  markStage("drawDynamicMapLayer");
   const activeUnits = getActiveUnits(state, state.currentGameloop);
+  markStage("getActiveUnits");
   const drawnUnits = drawUnitLayer(ctx, state.renderCache.projection, activeUnits, state.currentGameloop);
+  markStage("drawUnitLayer");
   if (state.highlightedAliveUnitKey !== null) {
     drawAliveUnitHighlightLayer(
       ctx,
@@ -8443,12 +8470,17 @@ function drawSpawnPlayback(canvas, currentGameloop) {
       state.currentGameloop,
       state.highlightedAliveUnitKey
     );
+    markStage("drawAliveUnitHighlightLayer");
   }
   if (drawnUnits === 0) {
     drawEmptyState(ctx, canvas);
+    markStage("drawEmptyState");
   }
   drawObjectiveDeathAnnouncements(ctx, canvas, state.objectiveDeathAnnouncements, state.currentGameloop);
+  markStage("drawObjectiveDeathAnnouncements");
   drawEndOfReplaySummary(ctx, canvas, replay.summary, state.currentGameloop, replay.durationGameloop);
+  markStage("drawEndOfReplaySummary");
+  logDrawDiagnostic(canvas, drawStarted, stages, resized, rebuiltStaticCache, activeUnits.length);
 }
 function clampGameloop(state, gameloop) {
   const duration = state.replay.durationGameloop ?? 0;
@@ -8468,6 +8500,18 @@ function prepareUnitSprites(state, canvas) {
       sprite: getUnitSprite(state, unit, radius, scale)
     };
   }
+}
+function logDrawDiagnostic(canvas, startedAt, stages, resized, rebuiltStaticCache, activeUnitCount, note = "") {
+  const elapsed = performance.now() - startedAt;
+  const drawCount = (drawDiagnosticCounts.get(canvas) ?? 0) + 1;
+  drawDiagnosticCounts.set(canvas, drawCount);
+  if (!rebuiltStaticCache && drawCount > DRAW_DIAGNOSTIC_FIRST_DRAWS && elapsed < DRAW_DIAGNOSTIC_SLOW_MS) {
+    return;
+  }
+  const suffix = note ? ` ${note}` : "";
+  console.log(
+    `spawnPlayback draw #${drawCount} elapsed=${elapsed.toFixed(1)}ms resized=${resized} rebuilt=${rebuiltStaticCache} active=${activeUnitCount}${suffix} stages=[${stages.join(", ")}] - ${Date.now()}`
+  );
 }
 function createStaticBackgroundCanvas(canvas, geometry) {
   const backgroundCanvas = createLayerCanvas(canvas.width, canvas.height);
@@ -9340,9 +9384,20 @@ function drawEmptyState(ctx, canvas) {
 var ALIVE_UNIT_ROW_SELECTOR = "[data-spawn-playback-alive-unit-row]";
 var ALIVE_UNIT_CLEAR_SELECTOR = "[data-spawn-playback-clear-highlight]";
 var ALIVE_UNIT_SELECTED_CLASS = "spawn-playback-alive-row-selected";
+var longTaskObservers = /* @__PURE__ */ new WeakMap();
 function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gameloopsPerSecond, speedMultiplier) {
+  const startedAt = performance.now();
+  let stageStarted = startedAt;
+  const stages = [];
+  const markStage = (name) => {
+    const now = performance.now();
+    stages.push(`${name}=${(now - stageStarted).toFixed(1)}ms`);
+    stageStarted = now;
+  };
+  const normalizedReplay = normalizeReplay(replay);
+  markStage("normalizeReplay");
   const state = {
-    replay: normalizeReplay(replay),
+    replay: normalizedReplay,
     callbackRef,
     gameloopsPerSecond: Number.isFinite(gameloopsPerSecond) && gameloopsPerSecond > 0 ? gameloopsPerSecond : 22.4,
     speedMultiplier: Number.isFinite(speedMultiplier) && speedMultiplier > 0 ? speedMultiplier : 1,
@@ -9368,14 +9423,28 @@ function initializeSpawnPlayback(canvas, rootElement, replay, callbackRef, gamel
     aliveUnitClickListener: null,
     aliveUnitKeydownListener: null
   };
+  markStage("createState");
+  stopLongTaskObserver(canvas);
   disposeState(getState(canvas));
+  markStage("disposeExistingState");
   state.resizeObserver = new ResizeObserver(() => drawSpawnPlayback(canvas, state.currentGameloop));
   state.resizeObserver.observe(canvas);
+  markStage("observeResize");
   state.fullscreenListener = () => handleFullscreenChange(canvas);
   document.addEventListener("fullscreenchange", state.fullscreenListener);
+  markStage("addFullscreenListener");
   initializeAliveUnitHighlightEvents(canvas, state);
+  markStage("initializeAliveUnitEvents");
   setState(canvas, state);
+  markStage("setState");
+  startLongTaskObserver(canvas);
+  markStage("startLongTaskObserver");
   resizeCanvas(canvas);
+  markStage("resizeCanvas");
+  logPlaybackDiagnostic(
+    `initializeSpawnPlayback units=${state.replay.units.length} players=${state.replay.players.length} stages=[${stages.join(", ")}]`,
+    startedAt
+  );
 }
 function startSpawnPlayback(canvas, currentGameloop, speedMultiplier) {
   const state = getState(canvas);
@@ -9450,9 +9519,19 @@ async function setSpawnPlaybackFullscreen(canvas, rootElement, fullscreen) {
   }
 }
 function disposeSpawnPlayback(canvas) {
+  const startedAt = performance.now();
   const state = getState(canvas);
+  console.log(`spawnPlayback dispose start hasState=${state !== void 0} frame=${state?.animationFrameId ?? 0} running=${state?.running ?? false} sprites=${state?.unitSpriteCache.size ?? 0} active=${state?.activeUnits.length ?? 0} hasStatic=${state?.staticBackgroundCanvas !== null} - ${Date.now()}`);
+  let stageStarted = performance.now();
+  stopLongTaskObserver(canvas);
+  logPlaybackStage("dispose stopLongTaskObserver", stageStarted);
+  stageStarted = performance.now();
   disposeState(state);
+  logPlaybackStage("dispose disposeState", stageStarted);
+  stageStarted = performance.now();
   deleteState(canvas);
+  logPlaybackStage("dispose deleteState", stageStarted);
+  logPlaybackDiagnostic("disposeSpawnPlayback", startedAt);
 }
 function syncAliveUnitHighlightSelection(canvas) {
   const state = getState(canvas);
@@ -9498,22 +9577,63 @@ function disposeState(state) {
     return;
   }
   state.running = false;
+  let stageStarted = performance.now();
   cancelAnimation(state);
+  logPlaybackStage("disposeState cancelAnimation", stageStarted);
   if (state.resizeObserver) {
+    stageStarted = performance.now();
     state.resizeObserver.disconnect();
     state.resizeObserver = null;
+    logPlaybackStage("disposeState disconnectResizeObserver", stageStarted);
   }
   if (state.fullscreenListener) {
+    stageStarted = performance.now();
     document.removeEventListener("fullscreenchange", state.fullscreenListener);
     state.fullscreenListener = null;
+    logPlaybackStage("disposeState removeFullscreenListener", stageStarted);
   }
+  stageStarted = performance.now();
   disposeAliveUnitHighlightEvents(state);
+  logPlaybackStage("disposeState disposeAliveUnitEvents", stageStarted);
 }
 function cancelAnimation(state) {
   if (state?.animationFrameId) {
     cancelAnimationFrame(state.animationFrameId);
     state.animationFrameId = 0;
   }
+}
+function startLongTaskObserver(canvas) {
+  if (!("PerformanceObserver" in window)) {
+    return;
+  }
+  const supportedTypes = PerformanceObserver.supportedEntryTypes ?? [];
+  if (!supportedTypes.includes("longtask")) {
+    return;
+  }
+  try {
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        console.log(`spawnPlayback longtask duration=${entry.duration.toFixed(1)}ms start=${entry.startTime.toFixed(1)} - ${Date.now()}`);
+      }
+    });
+    observer.observe({ entryTypes: ["longtask"] });
+    longTaskObservers.set(canvas, observer);
+  } catch {
+  }
+}
+function stopLongTaskObserver(canvas) {
+  const observer = longTaskObservers.get(canvas);
+  if (!observer) {
+    return;
+  }
+  observer.disconnect();
+  longTaskObservers.delete(canvas);
+}
+function logPlaybackStage(message, startedAt) {
+  console.log(`spawnPlayback ${message} elapsed=${(performance.now() - startedAt).toFixed(1)}ms - ${Date.now()}`);
+}
+function logPlaybackDiagnostic(message, startedAt) {
+  console.log(`spawnPlayback ${message} elapsed=${(performance.now() - startedAt).toFixed(1)}ms - ${Date.now()}`);
 }
 function handleFullscreenChange(canvas) {
   const state = getState(canvas);
