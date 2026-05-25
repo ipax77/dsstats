@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using dsstats.api.InHouse;
 using dsstats.shared.InHouse;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -118,10 +119,13 @@ public sealed class AuthController(IInHouseAuthService authService) : Controller
     [HttpPost("device-link/options")]
     public async Task<ActionResult<object>> DeviceLinkOptions(InHouseDeviceLinkOptionsRequest request, CancellationToken token)
     {
-        if (string.IsNullOrWhiteSpace(request.Code)
-            && int.TryParse(User.FindFirstValue(InHouseClaims.UserId), out var userId))
+        if (string.IsNullOrWhiteSpace(request.Code))
         {
-            return await ExecuteObjectAsync(() => authService.CreateDeviceLinkCodeAsync(userId, token));
+            var userId = await GetOptionalAuthenticatedUserIdAsync();
+            if (userId is not null)
+            {
+                return await ExecuteObjectAsync(() => authService.CreateDeviceLinkCodeAsync(userId.Value, token));
+            }
         }
 
         return await ExecuteObjectAsync(() => authService.BeginDeviceLinkAsync(request, token));
@@ -163,5 +167,19 @@ public sealed class AuthController(IInHouseAuthService authService) : Controller
         return authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
             ? authorization["Bearer ".Length..].Trim()
             : null;
+    }
+
+    private async Task<int?> GetOptionalAuthenticatedUserIdAsync()
+    {
+        if (string.IsNullOrWhiteSpace(GetBearerToken()))
+        {
+            return null;
+        }
+
+        var result = await HttpContext.AuthenticateAsync(Authentication.InHouseBearerAuthenticationHandler.SchemeName);
+        return result.Succeeded
+            && int.TryParse(result.Principal?.FindFirstValue(InHouseClaims.UserId), out var userId)
+                ? userId
+                : null;
     }
 }

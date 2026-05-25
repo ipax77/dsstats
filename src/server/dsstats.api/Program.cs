@@ -133,7 +133,7 @@ builder.Services.AddFido2(fidoOptions =>
 });
 
 builder.Services
-    .AddAuthentication(InHouseBearerAuthenticationHandler.SchemeName)
+    .AddAuthentication()
     .AddScheme<AuthenticationSchemeOptions, InHouseBearerAuthenticationHandler>(
         InHouseBearerAuthenticationHandler.SchemeName,
         _ => { });

@@ -1,5 +1,4 @@
-﻿
-using dsstats.api.Hubs;
+﻿using dsstats.api.Hubs;
 using dsstats.dbServices;
 using dsstats.dbServices.BuildDetails;
 using dsstats.dbServices.InHouse;
@@ -18,14 +17,12 @@ public class TimedHostedService(
     ILogger<TimedHostedService> logger) : BackgroundService
 {
     private static readonly TimeSpan InHouseInactivityLimit = TimeSpan.FromHours(12);
-    private static readonly TimeSpan ReplayUserRatingCollectInterval = TimeSpan.FromMinutes(5);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var timedWork = RunTimedWorkAsync(stoppingToken);
-        var replayUserRatingCollection = RunReplayUserRatingCollectionAsync(stoppingToken);
 
-        await Task.WhenAll(timedWork, replayUserRatingCollection);
+        await Task.WhenAll(timedWork);
     }
 
     private async Task RunTimedWorkAsync(CancellationToken stoppingToken)
@@ -54,53 +51,6 @@ public class TimedHostedService(
         }
     }
 
-    private async Task RunReplayUserRatingCollectionAsync(CancellationToken stoppingToken)
-    {
-        try
-        {
-            await replayUserRatingService.RebuildPendingOverlayAsync(stoppingToken);
-            using PeriodicTimer timer = new(ReplayUserRatingCollectInterval);
-            while (await timer.WaitForNextTickAsync(stoppingToken))
-            {
-                await CollectReplayUserRatingsAsync(stoppingToken);
-            }
-        }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-        {
-            logger.LogInformation("Replay user rating collection is stopping.");
-        }
-        finally
-        {
-            try
-            {
-                await CollectReplayUserRatingsAsync(CancellationToken.None);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "An error occurred while collecting replay user ratings during shutdown.");
-            }
-        }
-    }
-
-    private async Task CollectReplayUserRatingsAsync(CancellationToken token)
-    {
-        try
-        {
-            var collected = await replayUserRatingService.CollectPendingVotesAsync(token);
-            if (collected > 0)
-            {
-                logger.LogInformation("Collected {Count} replay user ratings.", collected);
-            }
-        }
-        catch (OperationCanceledException) when (token.IsCancellationRequested)
-        {
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "An error occurred while collecting replay user ratings.");
-        }
-    }
-
     private async Task DoWork(CancellationToken token)
     {
         try
@@ -122,6 +72,7 @@ public class TimedHostedService(
             else
             {
                 await ratingService.ContinueRatings();
+                await CollectReplayUserRatingsAsync(token);
             }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -149,5 +100,24 @@ public class TimedHostedService(
         }
 
         await hubContext.Clients.All.SendAsync(InHouseHub.ActiveSessionsChangedEvent, token);
+    }
+
+    private async Task CollectReplayUserRatingsAsync(CancellationToken token)
+    {
+        try
+        {
+            var collected = await replayUserRatingService.CollectPendingVotesAsync(token);
+            if (collected > 0)
+            {
+                logger.LogWarning("Collected {Count} replay user ratings.", collected);
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while collecting replay user ratings.");
+        }
     }
 }
