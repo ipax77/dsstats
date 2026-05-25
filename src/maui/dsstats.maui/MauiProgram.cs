@@ -55,7 +55,7 @@ namespace dsstats.maui
             );
             builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<DsstatsContext>>().CreateDbContext());
 
-            var apiUrl = "http://localhost:5279"; // "https://dsstats.pax77.org"; // "http://localhost:5279";
+            var apiUrl = "https://dsstats.pax77.org"; // "http://localhost:5279";
             builder.Services.AddHttpClient("api", httpClient =>
             {
                 httpClient.BaseAddress = new Uri(apiUrl);

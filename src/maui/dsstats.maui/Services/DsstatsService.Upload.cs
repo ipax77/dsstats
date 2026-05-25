@@ -91,8 +91,14 @@ public partial class DsstatsService
                         throw new InvalidOperationException("Upload succeeded but did not confirm any replay hashes.");
                     }
 
+                    var uploadedReplayIds = GetUploadedReplayIds(batch, uploadedHashes);
+                    if (uploadedReplayIds.Count == 0)
+                    {
+                        throw new InvalidOperationException("Upload succeeded but did not match any local replay hashes.");
+                    }
+
                     await context.Replays
-                        .Where(x => uploadedHashes.Contains(x.ReplayHash))
+                        .Where(x => uploadedReplayIds.Contains(x.ReplayId))
                         .ExecuteUpdateAsync(e => e.SetProperty(p => p.Uploaded, true), token)
                         .ConfigureAwait(false);
                 }
@@ -182,6 +188,7 @@ public partial class DsstatsService
         List<Replay> replays)
     {
         List<int> replayIds = new(replays.Count);
+        List<UploadReplayHash> replayHashes = new(replays.Count);
         List<ReplayDto> replayDtos = new(replays.Count);
         List<MauiUploadSidecar> sidecars = [];
 
@@ -191,8 +198,10 @@ public partial class DsstatsService
 
             var replayDto = replay.ToDto();
             replayDto.FileName = string.Empty;
+            var payloadReplayHash = replayDto.ComputeHash();
+            replayHashes.Add(new(replay.ReplayId, payloadReplayHash));
 
-            var sidecar = CreateUploadSidecar(replay, sidecars.Count);
+            var sidecar = CreateUploadSidecar(replay, payloadReplayHash, sidecars.Count);
             if (sidecar is not null)
             {
                 replayDto.SpawnPlayback = new()
@@ -219,10 +228,14 @@ public partial class DsstatsService
                 Replays = replayDtos,
             },
             replayIds,
+            replayHashes,
             sidecars);
     }
 
-    private static MauiUploadSidecar? CreateUploadSidecar(Replay replay, int sidecarIndex)
+    private static MauiUploadSidecar? CreateUploadSidecar(
+        Replay replay,
+        string payloadReplayHash,
+        int sidecarIndex)
     {
         var sidecar = replay.SpawnPlayback;
         if (sidecar is null
@@ -239,7 +252,7 @@ public partial class DsstatsService
         }
 
         return new(
-            replay.ReplayHash,
+            payloadReplayHash,
             $"sidecar-{sidecarIndex}",
             sidecar.Payload,
             sidecar.FormatVersion,
@@ -318,6 +331,15 @@ public partial class DsstatsService
         return result?.ReplayHashes.Count > 0 ? result.ReplayHashes : [];
     }
 
+    private static List<int> GetUploadedReplayIds(MauiUploadBatch batch, List<string> uploadedHashes)
+    {
+        var uploadedHashSet = uploadedHashes.ToHashSet(StringComparer.Ordinal);
+        return batch.ReplayHashes
+            .Where(replay => uploadedHashSet.Contains(replay.PayloadReplayHash))
+            .Select(replay => replay.ReplayId)
+            .ToList();
+    }
+
     private static async Task EnsureUploadSuccess(HttpResponseMessage response, CancellationToken token)
     {
         if (response.IsSuccessStatusCode)
@@ -364,7 +386,10 @@ public partial class DsstatsService
     private sealed record MauiUploadBatch(
         UploadRequestDto Request,
         List<int> ReplayIds,
+        List<UploadReplayHash> ReplayHashes,
         List<MauiUploadSidecar> Sidecars);
+
+    private sealed record UploadReplayHash(int ReplayId, string PayloadReplayHash);
 
     private sealed record MauiUploadSidecar(
         string ReplayHash,
