@@ -1,5 +1,6 @@
 using dsstats.db;
 using dsstats.dbServices;
+using dsstats.parser;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
 using dsstats.shared.Upload;
@@ -15,6 +16,39 @@ namespace dsstats.tests;
 [TestClass]
 public sealed class SpawnPlaybackImportServiceTests
 {
+    [TestMethod]
+    [DeploymentItem("testdata/Direct Strike (8607).SC2Replay")]
+    public async Task ParseReplayImport_WithFastestBrotliSidecar_StoresPayload()
+    {
+        using var serviceProvider = BuildServiceProvider(out var connection);
+        try
+        {
+            var sc2Replay = await DsstatsParser.GetSc2Replay("Direct Strike (8607).SC2Replay");
+            Assert.IsNotNull(sc2Replay);
+
+            var replayImport = DsstatsParser.ParseReplayImport(
+                sc2Replay,
+                spawnPlaybackEncoder: sidecar => SpawnPlaybackSidecarCodec.EncodeWithMetadata(
+                    sidecar,
+                    CompressionLevel.Fastest));
+            Assert.IsNotNull(replayImport.SpawnPlayback);
+
+            var importService = serviceProvider.GetRequiredService<IImportService>();
+            await importService.InsertReplayImports([replayImport]);
+
+            var stored = await GetOnlySidecar(serviceProvider);
+            Assert.AreEqual(SpawnPlaybackCompression.Brotli, stored.Compression);
+            Assert.AreEqual(replayImport.SpawnPlayback.CompressedLength, stored.CompressedLength);
+            Assert.AreEqual(replayImport.SpawnPlayback.UncompressedLength, stored.UncompressedLength);
+            Assert.AreEqual(replayImport.SpawnPlayback.UnitCount, stored.UnitCount);
+            CollectionAssert.AreEqual(replayImport.SpawnPlayback.Payload, stored.Payload);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
     [TestMethod]
     public async Task InsertReplayImports_NewReplayWithSidecar_StoresPayload()
     {
