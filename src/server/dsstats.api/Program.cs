@@ -38,8 +38,11 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         ForwardedHeaders.XForwardedProto |
         ForwardedHeaders.XForwardedHost;
 
-    options.KnownProxies.Add(IPAddress.Parse("127.0.0.1"));
-    options.KnownProxies.Add(IPAddress.IPv6Loopback);
+    options.KnownProxies.Add(IPAddress.Parse("172.22.0.1"));
+    // options.KnownIPNetworks.Add(
+    //     IPNetwork.Parse("172.22.0.0/16")
+    // );
+
     options.ForwardLimit = 1;
 });
 
