@@ -685,6 +685,12 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
                 .Any(s => s.ReplayId == r.ReplayId && s.VoteCount > 0));
         }
 
+        if (request.Filter.WithSpawnPlayback)
+        {
+            query = query.Where(r => context.ReplaySpawnPlaybacks
+                .Any(s => s.ReplayId == r.ReplayId));
+        }
+
         if (request.Filter.GameModes.Count > 0
             && !request.Filter.GameModes.Contains(GameMode.None))
         {

@@ -24,6 +24,7 @@ public class ReplaysFilter
     public int Playercount { get; set; }
     public bool TournamentEdition { get; set; }
     public bool RatedOnly { get; set; }
+    public bool WithSpawnPlayback { get; set; }
     public List<GameMode> GameModes { get; set; } = [];
     public List<ReplaysPosFilter> PosFilters { get; set; } = [];
 
@@ -32,6 +33,7 @@ public class ReplaysFilter
         Playercount = 0;
         TournamentEdition = false;
         RatedOnly = false;
+        WithSpawnPlayback = false;
         GameModes = new() { GameMode.None };
         PosFilters.Clear();
     }
