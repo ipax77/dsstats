@@ -13,9 +13,11 @@ using dsstats.ratings;
 using dsstats.shared.InHouse;
 using dsstats.shared.Interfaces;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using sc2arcade.crawler;
+using System.Net;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 
@@ -29,7 +31,17 @@ if (builder.Environment.IsProduction())
     builder.Configuration.AddJsonFile("/data/localserverconfig.json", optional: true, reloadOnChange: false);
 }
 builder.Services.AddLogging(l => l.AddSimpleConsole(o => o.TimestampFormat = "yyyy-MM-dd HH:mm:ss: "));
-builder.Services.AddDsstatsForwardedHeaders();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+
+    options.KnownProxies.Add(IPAddress.Parse("127.0.0.1"));
+    options.KnownProxies.Add(IPAddress.IPv6Loopback);
+    options.ForwardLimit = 1;
+});
 
 builder.Services.AddCors(options =>
 {
