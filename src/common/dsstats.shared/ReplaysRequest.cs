@@ -13,6 +13,7 @@ public class ReplaysRequest
     public int PageSize { get; set; } = 20_000;
     public int Skip { get; set; }
     public int Take { get; set; }
+    public bool IncludeReplayUserRatings { get; set; }
     public ReplaysFilter? Filter { get; set; }
     [JsonIgnore]
     public string? ReplayHash { get; set; }
@@ -22,6 +23,7 @@ public class ReplaysFilter
 {
     public int Playercount { get; set; }
     public bool TournamentEdition { get; set; }
+    public bool RatedOnly { get; set; }
     public List<GameMode> GameModes { get; set; } = [];
     public List<ReplaysPosFilter> PosFilters { get; set; } = [];
 
@@ -29,6 +31,7 @@ public class ReplaysFilter
     {
         Playercount = 0;
         TournamentEdition = false;
+        RatedOnly = false;
         GameModes = new() { GameMode.None };
         PosFilters.Clear();
     }

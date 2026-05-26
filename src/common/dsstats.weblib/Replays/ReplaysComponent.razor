@@ -1,27 +1,34 @@
 ﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.Extensions.Options
 @using Microsoft.JSInterop
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @using dsstats.weblib.Players
 @inject IReplayRepository ReplayRepository
 @inject IJSRuntime JSRuntime
+@inject IOptions<HostOptions> HostOptions
 @implements IDisposable
 
 <div>
 	<div style="max-width: 1060px;">
 		<ReplaysRequestComponent Request="ReplaysRequest" ReplaysCount="replaysCount" IsLoading="isLoading" OnRequestChanged="Reload" />
 	</div>
-	<div class="table-responsive" style="max-height: 76vh; max-width: 1060px; overflow-x: auto; overflow-y: auto;">
+	<div class="table-responsive" style="max-height: 76vh; max-width: 1160px; overflow-x: auto; overflow-y: auto;">
 		<table class="tptable">
 			<colgroup>
-				<col width="12%" />
-				<col width="20%" />
-				<col width="10%" />
-				<col width="17.5%" />
-				<col width="17.5%" />
+				<col width="11%" />
+				<col width="15%" />
+				<col width="8%" />
+				<col width="15%" />
+				<col width="15%" />
 				<col width="6%" />
-				<col width="5%" />
-				<col width="12%" />
+				<col width="6%" />
+				@if (IsServerHost)
+				{
+					<col width="5%" />
+					<col width="10%" />
+				}
+				<col width="9%" />
 			</colgroup>
 			<CascadingValue Value="ReplaysRequest.TableOrders">
 				<thead class="user-select-none">
@@ -47,6 +54,15 @@
 						<th scope="col" class="pointer" @onclick="@(e => SortList(e, "AvgRating"))">
 							<SortArrow Column="AvgRating">AvgRating</SortArrow>
 						</th>
+						@if (IsServerHost)
+						{
+							<th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(ReplayListDto.ReplayUserVoteCount)))">
+								<SortArrow Column="@nameof(ReplayListDto.ReplayUserVoteCount)">Votes</SortArrow>
+							</th>
+							<th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(ReplayListDto.ReplayUserScore)))">
+								<SortArrow Column="@nameof(ReplayListDto.ReplayUserScore)">Score</SortArrow>
+							</th>
+						}
 						<th scope="col" class="pointer" @onclick="@(e => SortList(e, "LeaverType"))">
 							<SortArrow Column="LeaverType">LeaverType</SortArrow>
 						</th>
@@ -71,6 +87,25 @@
 								</td>
 								<td class="@(replay.Exp2Win >= 0.5 ? "text-success" : "text-danger")">@replay.Exp2Win?.ToString("p0")</td>
 								<td>@replay.AvgRating</td>
+								@if (IsServerHost)
+								{
+									<td>@(replay.ReplayUserVoteCount?.ToString("N0") ?? "-")</td>
+									<td>
+										@if (replay.ReplayUserScore is double score)
+										{
+											<span class="text-warning text-nowrap" title="@score.ToString("N2")">
+												@for (var i = 1; i <= 5; i++)
+												{
+													<i class="bi @GetReplayUserRatingStarClass(score, i)"></i>
+												}
+											</span>
+										}
+										else
+										{
+											<span>-</span>
+										}
+									</td>
+								}
 								<td>@replay.LeaverType</td>
 							</tr>
 						</ItemContent>
@@ -112,6 +147,7 @@
 	ReplayModal? replayModal;
 	PlayerModal? playerModal;
 	bool isLoading = true;
+	bool IsServerHost => HostOptions.Value.Kind == HostAppKind.BlazorServer;
 
 	protected override void OnInitialized()
 	{
@@ -130,6 +166,7 @@
 
 	private async Task SetCount()
 	{
+		SetReplayUserRatingRequestOptions();
 		replaysCount = await ReplayRepository.GetReplaysCount(ReplaysRequest);
 		isLoading = false;
 		await InvokeAsync(StateHasChanged);
@@ -139,6 +176,7 @@
 	{
 		isLoading = true;
 		await InvokeAsync(StateHasChanged);
+		SetReplayUserRatingRequestOptions();
 		replaysCount = await ReplayRepository.GetReplaysCount(ReplaysRequest);
 		ReplaysRequest.Page = 1;
 		if (virtualizeComponent != null)
@@ -158,6 +196,7 @@
 		var numReplays = Math.Min(request.Count, replaysCount - request.StartIndex);
 		ReplaysRequest.Skip = request.StartIndex;
 		ReplaysRequest.Take = numReplays;
+		SetReplayUserRatingRequestOptions();
 		var replays = await ReplayRepository.GetReplays(ReplaysRequest, request.CancellationToken);
 		latestResponse = replays;
 		return new ItemsProviderResult<ReplayListDto>(replays, Math.Min(replaysCount, ReplaysRequest.PageSize));
@@ -204,6 +243,11 @@
 		}
 	}
 
+	private void SetReplayUserRatingRequestOptions()
+	{
+		ReplaysRequest.IncludeReplayUserRatings = IsServerHost;
+	}
+
 	private void CloseReplay()
 	{
 		ReplayDetails = null;
@@ -245,6 +289,16 @@
 		await JSRuntime.InvokeVoidAsync("scrollToElementId", newElement?.ReplayHash);
 
 		await LoadReplay(newElement?.ReplayHash ?? "");
+	}
+
+	private static string GetReplayUserRatingStarClass(double score, int star)
+	{
+		if (score >= star - 0.25)
+		{
+			return "bi-star-fill";
+		}
+
+		return score >= star - 0.75 ? "bi-star-half" : "bi-star";
 	}
 
 	public void Dispose()

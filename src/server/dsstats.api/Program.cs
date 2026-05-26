@@ -208,8 +208,8 @@ dbContext.Database.Migrate();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    //var ratingsService = scope.ServiceProvider.GetRequiredService<IRatingService>();
-    //ratingsService.CreateRatings().Wait();
+    var replayUserRatingService = scope.ServiceProvider.GetRequiredService<ReplayUserRatingService>();
+    replayUserRatingService.CollectPendingVotesAsync().Wait();
 }
 
 app.Use(async (httpContext, next) =>

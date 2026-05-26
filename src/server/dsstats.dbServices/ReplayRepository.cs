@@ -322,9 +322,14 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
 
             var filteredReplays = GetFilteredReplays(request, context);
             bool requiresRatingJoin = RequiresRatingJoin(request);
-            IQueryable<ReplayList> query = requiresRatingJoin
-                ? GetReplaysQueriableWithRatings(filteredReplays, context, request.RatingType)
-                : GetReplaysQueriable(filteredReplays);
+            bool requiresReplayUserRatingJoin = RequiresReplayUserRatingJoin(request);
+            IQueryable<ReplayList> query = (requiresRatingJoin, requiresReplayUserRatingJoin) switch
+            {
+                (true, true) => GetReplaysQueriableWithRatingsAndReplayUserRatings(filteredReplays, context, request.RatingType),
+                (true, false) => GetReplaysQueriableWithRatings(filteredReplays, context, request.RatingType),
+                (false, true) => GetReplaysQueriableWithReplayUserRatings(filteredReplays, context),
+                _ => GetReplaysQueriable(filteredReplays)
+            };
 
             IOrderedQueryable<ReplayList> ordered = GetOrderedReplays(query, request);
             List<ReplayList> list = await ordered
@@ -405,9 +410,42 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
                         ? (order.Ascending ? query.OrderBy(x => x.Exp2Win ?? 0) : query.OrderByDescending(x => x.Exp2Win ?? 0))
                         : (order.Ascending ? orderedQuery.ThenBy(x => x.Exp2Win ?? 0) : orderedQuery.ThenByDescending(x => x.Exp2Win ?? 0));
                     break;
+                case nameof(ReplayListDto.ReplayUserVoteCount):
+                    orderedQuery = orderedQuery == null
+                        ? (order.Ascending ? query.OrderBy(x => x.ReplayUserVoteCount ?? 0) : query.OrderByDescending(x => x.ReplayUserVoteCount ?? 0))
+                        : (order.Ascending ? orderedQuery.ThenBy(x => x.ReplayUserVoteCount ?? 0) : orderedQuery.ThenByDescending(x => x.ReplayUserVoteCount ?? 0));
+                    break;
+                case nameof(ReplayListDto.ReplayUserScore):
+                    orderedQuery = ApplyReplayUserScoreOrdering(query, orderedQuery, order.Ascending);
+                    break;
             }
         }
         return orderedQuery ?? query.OrderByDescending(x => x.GameTime);
+    }
+
+    private static IOrderedQueryable<ReplayList> ApplyReplayUserScoreOrdering(
+        IQueryable<ReplayList> query,
+        IOrderedQueryable<ReplayList>? orderedQuery,
+        bool ascending)
+    {
+        if (orderedQuery is null)
+        {
+            return ascending
+                ? query.OrderBy(x => x.ReplayUserScore ?? 0)
+                    .ThenBy(x => x.ReplayUserVoteCount ?? 0)
+                    .ThenBy(x => x.GameTime)
+                : query.OrderByDescending(x => x.ReplayUserScore ?? 0)
+                    .ThenByDescending(x => x.ReplayUserVoteCount ?? 0)
+                    .ThenByDescending(x => x.GameTime);
+        }
+
+        return ascending
+            ? orderedQuery.ThenBy(x => x.ReplayUserScore ?? 0)
+                .ThenBy(x => x.ReplayUserVoteCount ?? 0)
+                .ThenBy(x => x.GameTime)
+            : orderedQuery.ThenByDescending(x => x.ReplayUserScore ?? 0)
+                .ThenByDescending(x => x.ReplayUserVoteCount ?? 0)
+                .ThenByDescending(x => x.GameTime);
     }
 
     private static bool RequiresRatingJoin(ReplaysRequest request)
@@ -416,6 +454,15 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
             nameof(ReplayList.LeaverType) or
             nameof(ReplayList.AvgRating) or
             nameof(ReplayList.Exp2Win)) == true;
+    }
+
+    private static bool RequiresReplayUserRatingJoin(ReplaysRequest request)
+    {
+        return request.IncludeReplayUserRatings
+            || request.Filter?.RatedOnly == true
+            || request.TableOrders?.Any(order => order.Column is
+                nameof(ReplayListDto.ReplayUserVoteCount) or
+                nameof(ReplayListDto.ReplayUserScore)) == true;
     }
 
     private static IQueryable<ReplayList> GetReplaysQueriable(IQueryable<Replay> replays)
@@ -462,6 +509,68 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
                    Exp2Win = rr == null ? null : rr.ExpectedWinProbability,
                    AvgRating = rr == null ? null : rr.AvgRating,
                    LeaverType = rr == null ? LeaverType.None : rr.LeaverType,
+               };
+    }
+
+    private static IQueryable<ReplayList> GetReplaysQueriableWithReplayUserRatings(IQueryable<Replay> replays, DsstatsContext context)
+    {
+        return from r in replays
+               from urs in context.ReplayUserRatingSummaries
+                   .AsNoTracking()
+                   .Where(x => x.ReplayId == r.ReplayId)
+                   .DefaultIfEmpty()
+               select new ReplayList()
+               {
+                   ReplayId = r.ReplayId,
+                   ReplayHash = r.ReplayHash,
+                   GameTime = r.Gametime,
+                   GameMode = r.GameMode,
+                   Duration = r.Duration,
+                   WinnerTeam = r.WinnerTeam,
+                   Players = r.Players.Select(s => new ReplayPlayerList()
+                   {
+                       Name = s.Name,
+                       Race = s.Race,
+                       Team = s.TeamId,
+                   }).ToList(),
+                   ReplayUserVoteCount = urs == null || urs.VoteCount <= 0 ? null : urs.VoteCount,
+                   ReplayUserScore = urs == null || urs.VoteCount <= 0 ? null : urs.ScoreSum / (double)urs.VoteCount,
+               };
+    }
+
+    private static IQueryable<ReplayList> GetReplaysQueriableWithRatingsAndReplayUserRatings(
+        IQueryable<Replay> replays,
+        DsstatsContext context,
+        RatingType ratingType)
+    {
+        return from r in replays
+               from rr in context.ReplayRatings
+                   .AsNoTracking()
+                   .Where(x => x.ReplayId == r.ReplayId && x.RatingType == ratingType)
+                   .DefaultIfEmpty()
+               from urs in context.ReplayUserRatingSummaries
+                   .AsNoTracking()
+                   .Where(x => x.ReplayId == r.ReplayId)
+                   .DefaultIfEmpty()
+               select new ReplayList()
+               {
+                   ReplayId = r.ReplayId,
+                   ReplayHash = r.ReplayHash,
+                   GameTime = r.Gametime,
+                   GameMode = r.GameMode,
+                   Duration = r.Duration,
+                   WinnerTeam = r.WinnerTeam,
+                   Players = r.Players.Select(s => new ReplayPlayerList()
+                   {
+                       Name = s.Name,
+                       Race = s.Race,
+                       Team = s.TeamId,
+                   }).ToList(),
+                   Exp2Win = rr == null ? null : rr.ExpectedWinProbability,
+                   AvgRating = rr == null ? null : rr.AvgRating,
+                   LeaverType = rr == null ? LeaverType.None : rr.LeaverType,
+                   ReplayUserVoteCount = urs == null || urs.VoteCount <= 0 ? null : urs.VoteCount,
+                   ReplayUserScore = urs == null || urs.VoteCount <= 0 ? null : urs.ScoreSum / (double)urs.VoteCount,
                };
     }
 
@@ -568,6 +677,12 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
         if (request.Filter.TournamentEdition)
         {
             query = query.Where(x => x.TE);
+        }
+
+        if (request.Filter.RatedOnly)
+        {
+            query = query.Where(r => context.ReplayUserRatingSummaries
+                .Any(s => s.ReplayId == r.ReplayId && s.VoteCount > 0));
         }
 
         if (request.Filter.GameModes.Count > 0
@@ -691,6 +806,8 @@ internal sealed class ReplayList
     public double? Exp2Win { get; set; }
     public int? AvgRating { get; set; }
     public LeaverType LeaverType { get; set; }
+    public int? ReplayUserVoteCount { get; set; }
+    public double? ReplayUserScore { get; set; }
 
     public ReplayListDto GetDto()
     {
@@ -706,6 +823,8 @@ internal sealed class ReplayList
             Exp2Win = Exp2Win,
             AvgRating = AvgRating,
             LeaverType = LeaverType,
+            ReplayUserVoteCount = ReplayUserVoteCount,
+            ReplayUserScore = ReplayUserScore,
             PlayerPos = PlayerPos,
         };
     }
