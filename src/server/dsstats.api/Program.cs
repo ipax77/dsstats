@@ -123,6 +123,7 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddDbConfig(builder.Configuration);
 builder.Services.AddUploadChannels();
+builder.Services.Configure<UploadStorageOptions>(builder.Configuration.GetSection(UploadStorageOptions.SectionName));
 builder.Services.Configure<InHouseAuthOptions>(builder.Configuration.GetSection(InHouseAuthOptions.SectionName));
 builder.Services.AddOptions<ReplayUserRatingOptions>()
     .Bind(builder.Configuration.GetSection("ReplayUserRating"));

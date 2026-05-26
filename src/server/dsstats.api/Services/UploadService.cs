@@ -2,6 +2,7 @@
 using dsstats.dbServices;
 using dsstats.shared.Upload;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System.Threading.Channels;
 
 namespace dsstats.api.Services;
@@ -11,8 +12,11 @@ public partial class UploadService(
     Channel<UploadJob> uploadChannel,
     Channel<ReplayUploadJob> replaysChannel,
     IImportService importService,
+    IOptions<UploadStorageOptions> uploadStorageOptions,
     ILogger<UploadService> logger)
 {
+    private readonly UploadStorageOptions storageOptions = uploadStorageOptions.Value;
+
     public async Task<bool> ProcessUploadAsync(UploadDto uploadDto)
     {
         await using var context = await contextFactory.CreateDbContextAsync();

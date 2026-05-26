@@ -6,12 +6,9 @@ namespace dsstats.api.Services;
 
 public partial class UploadService
 {
-    private readonly string blobBaseDir = "/data/ds/replayblobs";
-    private readonly string replayBaseDir = "/data/ds/replayblobs";
-
     private async Task<string> StoreBlob(UploadDto upload)
     {
-        var appDir = Path.Combine(blobBaseDir, upload.AppGuid.ToString("N"));
+        var appDir = Path.Combine(storageOptions.BlobBaseDir, upload.AppGuid.ToString("N"));
         Directory.CreateDirectory(appDir);
         var blobFileName = $"{Guid.NewGuid():N}.blob";
         var blobFilePath = Path.Combine(appDir, blobFileName);
@@ -22,7 +19,7 @@ public partial class UploadService
 
     private async Task<string> StoreBlob(UploadRequestDto request)
     {
-        var appDir = Path.Combine(blobBaseDir, request.AppGuid.ToString("N"));
+        var appDir = Path.Combine(storageOptions.BlobBaseDir, request.AppGuid.ToString("N"));
         Directory.CreateDirectory(appDir);
 
         var fileName = $"{Guid.NewGuid():N}.json.gz";
@@ -37,7 +34,7 @@ public partial class UploadService
 
     private async Task<string> StoreReplay(Guid guid, IFormFile file)
     {
-        var appDir = Path.Combine(replayBaseDir);
+        var appDir = Path.Combine(storageOptions.ReplayBaseDir);
         Directory.CreateDirectory(appDir);
         var blobFileName = $"{guid}_{Guid.NewGuid():N}.SC2Replay";
         var replayFilePath = Path.Combine(appDir, blobFileName);
