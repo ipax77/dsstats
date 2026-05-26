@@ -129,6 +129,8 @@ public class ReplayListDto
     public double? Exp2Win { get; init; }
     public int? AvgRating { get; init; }
     public LeaverType LeaverType { get; init; }
+    public int? ReplayUserVoteCount { get; init; }
+    public double? ReplayUserScore { get; init; }
     public int PlayerPos { get; set; }
     public double PlayerGain { get; set; }
 }

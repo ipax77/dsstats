@@ -3,6 +3,7 @@ using dsstats.dbServices;
 using dsstats.shared;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -108,6 +109,352 @@ public sealed class ReplayRepositoryTests
     }
 
     [TestMethod]
+    public async Task GetReplays_DefaultGameTimeSort_LoadsReplayUserRatingsOnlyWhenRequested()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: new DateTime(2026, 5, 1),
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 8);
+
+        var defaultReplays = await fixture.Repository.GetReplays(new ReplaysRequest
+        {
+            RatingType = RatingType.Commanders,
+            Take = 10
+        });
+
+        Assert.IsNull(defaultReplays[0].ReplayUserVoteCount);
+        Assert.IsNull(defaultReplays[0].ReplayUserScore);
+
+        var requestedReplays = await fixture.Repository.GetReplays(new ReplaysRequest
+        {
+            RatingType = RatingType.Commanders,
+            IncludeReplayUserRatings = true,
+            Take = 10
+        });
+
+        Assert.AreEqual(2, requestedReplays[0].ReplayUserVoteCount);
+        Assert.AreEqual(4.0, requestedReplays[0].ReplayUserScore);
+    }
+
+    [TestMethod]
+    public async Task GetReplays_RatedOnly_ExcludesUnratedAndZeroVoteReplays()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: new DateTime(2026, 5, 1),
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 8);
+        await SeedReplayAsync(fixture.Context, replayId: 2, gametime: new DateTime(2026, 5, 2));
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 3,
+            gametime: new DateTime(2026, 5, 3),
+            replayUserVoteCount: 0,
+            replayUserScoreSum: 0);
+
+        var request = new ReplaysRequest
+        {
+            IncludeReplayUserRatings = true,
+            Filter = new() { RatedOnly = true },
+            Take = 10
+        };
+
+        var count = await fixture.Repository.GetReplaysCount(request);
+        var replays = await fixture.Repository.GetReplays(request);
+
+        Assert.AreEqual(1, count);
+        Assert.AreEqual(1, replays.Count);
+        Assert.AreEqual("hash-1", replays[0].ReplayHash);
+        Assert.AreEqual(2, replays[0].ReplayUserVoteCount);
+        Assert.AreEqual(4.0, replays[0].ReplayUserScore);
+    }
+
+    [TestMethod]
+    public async Task GetReplays_TimePeriod_ComposesWithRatedOnly()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        var timeInfo = Data.GetTimePeriodInfo(TimePeriod.Last90Days);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: timeInfo.Start.AddDays(-1),
+            replayUserVoteCount: 10,
+            replayUserScoreSum: 50);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 2,
+            gametime: timeInfo.Start,
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 8);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 3,
+            gametime: timeInfo.Start.AddDays(1));
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 4,
+            gametime: timeInfo.Start.AddDays(2),
+            replayUserVoteCount: 0,
+            replayUserScoreSum: 0);
+
+        var request = new ReplaysRequest
+        {
+            IncludeReplayUserRatings = true,
+            Filter = new()
+            {
+                RatedOnly = true,
+                TimePeriod = TimePeriod.Last90Days
+            },
+            Take = 10,
+            TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserScore), Ascending = false }]
+        };
+
+        var count = await fixture.Repository.GetReplaysCount(request);
+        var replays = await fixture.Repository.GetReplays(request);
+
+        Assert.AreEqual(1, count);
+        Assert.AreEqual(1, replays.Count);
+        Assert.AreEqual("hash-2", replays[0].ReplayHash);
+        Assert.AreEqual(2, replays[0].ReplayUserVoteCount);
+        Assert.AreEqual(4.0, replays[0].ReplayUserScore);
+    }
+
+    [TestMethod]
+    public async Task GetReplays_AllTimeTimePeriod_DoesNotFilterByDate()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        var timeInfo = Data.GetTimePeriodInfo(TimePeriod.Last90Days);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: timeInfo.Start.AddDays(-1),
+            replayUserVoteCount: 10,
+            replayUserScoreSum: 50);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 2,
+            gametime: timeInfo.Start,
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 8);
+
+        var request = new ReplaysRequest
+        {
+            IncludeReplayUserRatings = true,
+            Filter = new()
+            {
+                RatedOnly = true,
+                TimePeriod = TimePeriod.AllTime
+            },
+            Take = 10,
+            TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserScore), Ascending = false }]
+        };
+
+        var count = await fixture.Repository.GetReplaysCount(request);
+        var replays = await fixture.Repository.GetReplays(request);
+
+        Assert.AreEqual(2, count);
+        CollectionAssert.AreEqual(
+            new[] { "hash-1", "hash-2" },
+            replays.Select(s => s.ReplayHash).ToArray());
+    }
+
+    [TestMethod]
+    public async Task GetReplays_TopRatedLandingPageRequest_UsesCache()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        var timeInfo = Data.GetTimePeriodInfo(TimePeriod.Last90Days);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: timeInfo.Start,
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 8);
+
+        var request = CreateTopRatedReplaysRequest();
+
+        var first = await fixture.Repository.GetReplays(request);
+
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 2,
+            gametime: timeInfo.Start.AddDays(1),
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 10);
+
+        var second = await fixture.Repository.GetReplays(request);
+
+        Assert.AreEqual(1, first.Count);
+        Assert.AreEqual("hash-1", first[0].ReplayHash);
+        Assert.AreEqual(1, second.Count);
+        Assert.AreEqual("hash-1", second[0].ReplayHash);
+    }
+
+    [TestMethod]
+    public async Task GetReplays_WithSpawnPlayback_ExcludesReplaysWithoutSpawnPlayback()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: new DateTime(2026, 5, 1),
+            seedSpawnPlayback: true);
+        await SeedReplayAsync(fixture.Context, replayId: 2, gametime: new DateTime(2026, 5, 2));
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 3,
+            gametime: new DateTime(2026, 5, 3),
+            seedSpawnPlayback: true);
+
+        var request = new ReplaysRequest
+        {
+            Filter = new() { WithSpawnPlayback = true },
+            Take = 10
+        };
+
+        var count = await fixture.Repository.GetReplaysCount(request);
+        var replays = await fixture.Repository.GetReplays(request);
+
+        Assert.AreEqual(2, count);
+        CollectionAssert.AreEqual(
+            new[] { "hash-3", "hash-1" },
+            replays.Select(s => s.ReplayHash).ToArray());
+    }
+
+    [TestMethod]
+    public async Task GetReplays_WithSpawnPlayback_ComposesWithRatedOnly()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: new DateTime(2026, 5, 1),
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 8,
+            seedSpawnPlayback: true);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 2,
+            gametime: new DateTime(2026, 5, 2),
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 10);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 3,
+            gametime: new DateTime(2026, 5, 3),
+            seedSpawnPlayback: true);
+
+        var request = new ReplaysRequest
+        {
+            IncludeReplayUserRatings = true,
+            Filter = new()
+            {
+                RatedOnly = true,
+                WithSpawnPlayback = true
+            },
+            Take = 10
+        };
+
+        var count = await fixture.Repository.GetReplaysCount(request);
+        var replays = await fixture.Repository.GetReplays(request);
+
+        Assert.AreEqual(1, count);
+        Assert.AreEqual(1, replays.Count);
+        Assert.AreEqual("hash-1", replays[0].ReplayHash);
+        Assert.AreEqual(2, replays[0].ReplayUserVoteCount);
+    }
+
+    [TestMethod]
+    public async Task GetReplays_SortsByReplayUserVoteCount()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: new DateTime(2026, 5, 1),
+            replayUserVoteCount: 1,
+            replayUserScoreSum: 5);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 2,
+            gametime: new DateTime(2026, 5, 2),
+            replayUserVoteCount: 5,
+            replayUserScoreSum: 20);
+
+        var ascending = await fixture.Repository.GetReplays(new ReplaysRequest
+        {
+            Filter = new() { RatedOnly = true },
+            Take = 10,
+            TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserVoteCount), Ascending = true }]
+        });
+
+        CollectionAssert.AreEqual(
+            new[] { "hash-1", "hash-2" },
+            ascending.Select(s => s.ReplayHash).ToArray());
+
+        var descending = await fixture.Repository.GetReplays(new ReplaysRequest
+        {
+            Filter = new() { RatedOnly = true },
+            Take = 10,
+            TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserVoteCount), Ascending = false }]
+        });
+
+        CollectionAssert.AreEqual(
+            new[] { "hash-2", "hash-1" },
+            descending.Select(s => s.ReplayHash).ToArray());
+    }
+
+    [TestMethod]
+    public async Task GetReplays_SortsByReplayUserScoreThenVoteCountAndGameTime()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: new DateTime(2026, 5, 1),
+            replayUserVoteCount: 1,
+            replayUserScoreSum: 5);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 2,
+            gametime: new DateTime(2026, 5, 2),
+            replayUserVoteCount: 3,
+            replayUserScoreSum: 15);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 3,
+            gametime: new DateTime(2026, 5, 3),
+            replayUserVoteCount: 10,
+            replayUserScoreSum: 45);
+
+        var descending = await fixture.Repository.GetReplays(new ReplaysRequest
+        {
+            Filter = new() { RatedOnly = true },
+            Take = 10,
+            TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserScore), Ascending = false }]
+        });
+
+        CollectionAssert.AreEqual(
+            new[] { "hash-2", "hash-1", "hash-3" },
+            descending.Select(s => s.ReplayHash).ToArray());
+
+        var ascending = await fixture.Repository.GetReplays(new ReplaysRequest
+        {
+            Filter = new() { RatedOnly = true },
+            Take = 10,
+            TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserScore), Ascending = true }]
+        });
+
+        CollectionAssert.AreEqual(
+            new[] { "hash-3", "hash-1", "hash-2" },
+            ascending.Select(s => s.ReplayHash).ToArray());
+    }
+
+    [TestMethod]
     public async Task GetReplays_NameFilter_DoesNotDuplicateReplayRows()
     {
         await using var fixture = await TestFixture.CreateAsync();
@@ -137,6 +484,24 @@ public sealed class ReplayRepositoryTests
         Assert.AreEqual("hash-1", replays[0].ReplayHash);
     }
 
+    private static ReplaysRequest CreateTopRatedReplaysRequest()
+    {
+        return new()
+        {
+            IncludeReplayUserRatings = true,
+            Page = 1,
+            PageSize = 7,
+            Skip = 0,
+            Take = 7,
+            Filter = new()
+            {
+                RatedOnly = true,
+                TimePeriod = TimePeriod.Last90Days
+            },
+            TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserScore), Ascending = false }]
+        };
+    }
+
     private static async Task SeedReplayAsync(
         DsstatsContext context,
         int replayId,
@@ -145,6 +510,9 @@ public sealed class ReplayRepositoryTests
         int avgRating = 1500,
         double exp2Win = 0.50,
         bool seedRating = true,
+        int? replayUserVoteCount = null,
+        int replayUserScoreSum = 0,
+        bool seedSpawnPlayback = false,
         string[]? playerNames = null)
     {
         playerNames ??= ["PlayerA", "PlayerB", "PlayerC", "PlayerD", "PlayerE", "PlayerF"];
@@ -234,6 +602,33 @@ public sealed class ReplayRepositoryTests
             });
         }
 
+        if (replayUserVoteCount.HasValue)
+        {
+            context.ReplayUserRatingSummaries.Add(new ReplayUserRatingSummary
+            {
+                ReplayUserRatingSummaryId = replayId * 100,
+                ReplayId = replayId,
+                VoteCount = replayUserVoteCount.Value,
+                ScoreSum = replayUserScoreSum,
+                UpdatedAt = gametime
+            });
+        }
+
+        if (seedSpawnPlayback)
+        {
+            context.ReplaySpawnPlaybacks.Add(new ReplaySpawnPlayback
+            {
+                ReplayId = replayId,
+                FormatVersion = SpawnPlaybackSidecarCodec.FormatVersion,
+                Compression = SpawnPlaybackCompression.Brotli,
+                CompressedLength = 3,
+                UncompressedLength = 10,
+                UnitCount = 1,
+                Payload = [1, 2, 3],
+                CreatedAt = gametime
+            });
+        }
+
         await context.SaveChangesAsync();
     }
 
@@ -246,6 +641,7 @@ public sealed class ReplayRepositoryTests
             Context = context;
             Repository = new ReplayRepository(
                 serviceProvider.GetRequiredService<IDbContextFactory<DsstatsContext>>(),
+                serviceProvider.GetRequiredService<IMemoryCache>(),
                 NullLogger<ReplayRepository>.Instance);
         }
 
@@ -260,6 +656,7 @@ public sealed class ReplayRepositoryTests
             await connection.OpenAsync();
 
             var services = new ServiceCollection();
+            services.AddMemoryCache();
             services.AddDbContextFactory<DsstatsContext>(options => options.UseSqlite(connection, sqlite =>
                 sqlite.MigrationsAssembly("dsstats.migrations.sqlite")));
 

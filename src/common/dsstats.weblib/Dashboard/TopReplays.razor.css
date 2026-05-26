@@ -1,0 +1,52 @@
+.top-replays-table {
+    min-width: 720px;
+}
+
+.top-replays-date {
+    width: 98px;
+}
+
+.top-replays-mode {
+    width: 110px;
+}
+
+.top-replays-duration {
+    width: 86px;
+}
+
+.top-replays-score {
+    width: 96px;
+}
+
+.top-replays-votes {
+    width: 64px;
+}
+
+.top-replays-team {
+    width: 128px;
+}
+
+@media (max-width: 575.98px) {
+    .top-replays-table {
+        min-width: 100%;
+        font-size: 0.875rem;
+    }
+
+    .top-replays-date {
+        width: 94px;
+    }
+
+    .top-replays-duration {
+        width: 78px;
+    }
+
+    .top-replays-score {
+        width: 74px;
+    }
+
+    .top-replays-mode-cell,
+    .top-replays-votes-cell,
+    .top-replays-team-cell {
+        display: none;
+    }
+}

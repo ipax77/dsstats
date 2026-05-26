@@ -16,6 +16,20 @@
 					<DataAnnotationsValidator />
 					<ValidationSummary />
 
+					@if (IsServerHost)
+					{
+						<!-- Time Period -->
+						<div class="mb-3">
+							<label class="form-label">Time Period</label>
+							<InputSelect class="form-select" @bind-Value="filter.TimePeriod">
+								@foreach (var timePeriod in Data.GetBasicTimePeriods())
+								{
+									<option value="@timePeriod">@Data.GetTimePeriodInfo(timePeriod).Name</option>
+								}
+							</InputSelect>
+						</div>
+					}
+
 					<!-- Player Count -->
 					<div class="mb-3">
 						<label class="form-label">Player Count</label>
@@ -34,6 +48,19 @@
 						<label class="form-check-label">Tournament Edition</label>
 					</div>
 
+					@if (IsServerHost)
+					{
+						<div class="form-check mb-3">
+							<InputCheckbox class="form-check-input" @bind-Value="filter.RatedOnly" />
+							<label class="form-check-label">Rated replays only</label>
+						</div>
+
+						<div class="form-check mb-3">
+							<InputCheckbox class="form-check-input" @bind-Value="filter.WithSpawnPlayback" />
+							<label class="form-check-label">With playback only</label>
+						</div>
+					}
+
 					<!-- Game Modes -->
 					<div class="mb-3">
 						<label class="form-label">Game Modes</label>
@@ -41,8 +68,7 @@
 							@foreach (var gm in Enum.GetValues<GameMode>())
 							{
 								<div class="form-check">
-									<input type="checkbox" class="form-check-input"
-										   checked="@filter.GameModes.Contains(gm)"
+									<input type="checkbox" class="form-check-input" checked="@filter.GameModes.Contains(gm)"
 										   @onchange="() => ToggleGameMode(gm)" />
 									<label class="form-check-label">@gm.ToString()</label>
 								</div>
@@ -60,9 +86,11 @@
 									<div class="d-flex justify-content-between align-items-center">
 										<div>
 											<label>Position (0 = Any)</label>
-											<InputNumber class="form-control" min="0" max="6" step="1" @bind-Value="pos.GamePos" />
+											<InputNumber class="form-control" min="0" max="6" step="1"
+														 @bind-Value="pos.GamePos" />
 										</div>
-										<button type="button" class="btn btn-sm btn-danger" @onclick="@(() => RemovePosFilter(pos))">Remove</button>
+										<button type="button" class="btn btn-sm btn-danger"
+												@onclick="@(() => RemovePosFilter(pos))">Remove</button>
 									</div>
 
 									<div class="mt-2">
@@ -129,30 +157,33 @@
 												</div>
 											</div>
 										}
-										<button type="button" class="btn btn-sm btn-outline-primary" @onclick="@(() => AddUnitFilter(pos))">+ Add Unit Filter</button>
+										<button type="button" class="btn btn-sm btn-outline-primary"
+												@onclick="@(() => AddUnitFilter(pos))">+ Add Unit Filter</button>
 									</div>
 								</div>
 							}
-							<button type="button" class="btn btn-outline-primary" @onclick="AddPosFilter">+ Add Position Filter</button>
+							<button type="button" class="btn btn-outline-primary" @onclick="AddPosFilter">+ Add Position
+								Filter</button>
+							</div>
 						</div>
-					</div>
 
-					<div class="d-flex justify-content-end gap-2 mt-4 bgchart2">
-						<button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
-						<button type="submit" class="btn btn-success">Apply</button>
-						<button type="button" class="btn btn-warning" @onclick="ResetFilter">Reset</button>
-					</div>
-				</EditForm>
+						<div class="d-flex justify-content-end gap-2 mt-4 bgchart2">
+							<button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+							<button type="submit" class="btn btn-success">Apply</button>
+							<button type="button" class="btn btn-warning" @onclick="ResetFilter">Reset</button>
+						</div>
+					</EditForm>
+				</div>
 			</div>
 		</div>
 	</div>
-</div>
 
 @code {
 	private string modalId = "replayFilterModal";
 	public ReplaysFilter filter = new();
 	private EditContext editContext = null!;
 
+	[Parameter] public bool IsServerHost { get; set; }
 	[Parameter] public EventCallback<ReplaysFilter?> OnRequest { get; set; }
 	[Parameter] public EventCallback OnClose { get; set; }
 
