@@ -21,7 +21,7 @@ public class ReplaysRequest
 
 public class ReplaysFilter
 {
-    public FilterRange<DateTime>? DateRange { get; set; }
+    public TimePeriod TimePeriod { get; set; } = TimePeriod.AllTime;
     public int Playercount { get; set; }
     public bool TournamentEdition { get; set; }
     public bool RatedOnly { get; set; }
@@ -31,7 +31,7 @@ public class ReplaysFilter
 
     public void Reset()
     {
-        DateRange = null;
+        TimePeriod = TimePeriod.AllTime;
         Playercount = 0;
         TournamentEdition = false;
         RatedOnly = false;

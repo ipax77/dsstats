@@ -404,13 +404,11 @@ public partial class ReplayRepository(
 
     private static string GetTopReplaysMemKey(ReplaysRequest request)
     {
-        var dateRange = request.Filter?.DateRange;
         return "topReplays_"
             + $"{request.RatingType}_"
             + $"{request.PageSize}_"
             + $"{request.Take}_"
-            + $"{dateRange?.From:yyyyMMdd}_"
-            + $"{dateRange?.To:yyyyMMdd}";
+            + $"{request.Filter?.TimePeriod}";
     }
 
     public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
@@ -730,16 +728,14 @@ public partial class ReplayRepository(
             return ApplyPlayerSearchFilters(query, request);
         }
 
-        if (request.Filter.DateRange is { } dateRange)
+        if (request.Filter.TimePeriod is not TimePeriod.None and not TimePeriod.AllTime and not TimePeriod.Custom)
         {
-            if (dateRange.From != default)
-            {
-                query = query.Where(x => x.Gametime >= dateRange.From);
-            }
+            var timeInfo = Data.GetTimePeriodInfo(request.Filter.TimePeriod);
+            query = query.Where(x => x.Gametime >= timeInfo.Start);
 
-            if (dateRange.To != default)
+            if (timeInfo.HasEnd)
             {
-                query = query.Where(x => x.Gametime <= dateRange.To);
+                query = query.Where(x => x.Gametime <= timeInfo.End);
             }
         }
 

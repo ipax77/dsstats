@@ -175,29 +175,30 @@ public sealed class ReplayRepositoryTests
     }
 
     [TestMethod]
-    public async Task GetReplays_DateRange_ComposesWithRatedOnly()
+    public async Task GetReplays_TimePeriod_ComposesWithRatedOnly()
     {
         await using var fixture = await TestFixture.CreateAsync();
+        var timeInfo = Data.GetTimePeriodInfo(TimePeriod.Last90Days);
         await SeedReplayAsync(
             fixture.Context,
             replayId: 1,
-            gametime: new DateTime(2026, 2, 24),
+            gametime: timeInfo.Start.AddDays(-1),
             replayUserVoteCount: 10,
             replayUserScoreSum: 50);
         await SeedReplayAsync(
             fixture.Context,
             replayId: 2,
-            gametime: new DateTime(2026, 2, 25),
+            gametime: timeInfo.Start,
             replayUserVoteCount: 2,
             replayUserScoreSum: 8);
         await SeedReplayAsync(
             fixture.Context,
             replayId: 3,
-            gametime: new DateTime(2026, 5, 26));
+            gametime: timeInfo.Start.AddDays(1));
         await SeedReplayAsync(
             fixture.Context,
             replayId: 4,
-            gametime: new DateTime(2026, 5, 20),
+            gametime: timeInfo.Start.AddDays(2),
             replayUserVoteCount: 0,
             replayUserScoreSum: 0);
 
@@ -207,10 +208,7 @@ public sealed class ReplayRepositoryTests
             Filter = new()
             {
                 RatedOnly = true,
-                DateRange = new()
-                {
-                    From = new DateTime(2026, 2, 25)
-                }
+                TimePeriod = TimePeriod.Last90Days
             },
             Take = 10,
             TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserScore), Ascending = false }]
@@ -227,13 +225,53 @@ public sealed class ReplayRepositoryTests
     }
 
     [TestMethod]
-    public async Task GetReplays_TopRatedLandingPageRequest_UsesCache()
+    public async Task GetReplays_AllTimeTimePeriod_DoesNotFilterByDate()
     {
         await using var fixture = await TestFixture.CreateAsync();
+        var timeInfo = Data.GetTimePeriodInfo(TimePeriod.Last90Days);
         await SeedReplayAsync(
             fixture.Context,
             replayId: 1,
-            gametime: new DateTime(2026, 5, 1),
+            gametime: timeInfo.Start.AddDays(-1),
+            replayUserVoteCount: 10,
+            replayUserScoreSum: 50);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 2,
+            gametime: timeInfo.Start,
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 8);
+
+        var request = new ReplaysRequest
+        {
+            IncludeReplayUserRatings = true,
+            Filter = new()
+            {
+                RatedOnly = true,
+                TimePeriod = TimePeriod.AllTime
+            },
+            Take = 10,
+            TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserScore), Ascending = false }]
+        };
+
+        var count = await fixture.Repository.GetReplaysCount(request);
+        var replays = await fixture.Repository.GetReplays(request);
+
+        Assert.AreEqual(2, count);
+        CollectionAssert.AreEqual(
+            new[] { "hash-1", "hash-2" },
+            replays.Select(s => s.ReplayHash).ToArray());
+    }
+
+    [TestMethod]
+    public async Task GetReplays_TopRatedLandingPageRequest_UsesCache()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        var timeInfo = Data.GetTimePeriodInfo(TimePeriod.Last90Days);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: timeInfo.Start,
             replayUserVoteCount: 2,
             replayUserScoreSum: 8);
 
@@ -244,7 +282,7 @@ public sealed class ReplayRepositoryTests
         await SeedReplayAsync(
             fixture.Context,
             replayId: 2,
-            gametime: new DateTime(2026, 5, 2),
+            gametime: timeInfo.Start.AddDays(1),
             replayUserVoteCount: 2,
             replayUserScoreSum: 10);
 
@@ -458,10 +496,7 @@ public sealed class ReplayRepositoryTests
             Filter = new()
             {
                 RatedOnly = true,
-                DateRange = new()
-                {
-                    From = new DateTime(2026, 2, 25)
-                }
+                TimePeriod = TimePeriod.Last90Days
             },
             TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserScore), Ascending = false }]
         };

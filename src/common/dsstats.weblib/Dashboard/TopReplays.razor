@@ -109,10 +109,7 @@
 			Filter = new()
 			{
 				RatedOnly = true,
-				DateRange = new()
-				{
-					From = DateTime.Today.AddDays(-90)
-				}
+				TimePeriod = TimePeriod.Last90Days
 			},
 			TableOrders =
 			[

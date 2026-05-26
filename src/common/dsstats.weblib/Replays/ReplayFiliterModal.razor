@@ -16,6 +16,17 @@
 					<DataAnnotationsValidator />
 					<ValidationSummary />
 
+					<!-- Time Period -->
+					<div class="mb-3">
+						<label class="form-label">Time Period</label>
+						<InputSelect class="form-select" @bind-Value="filter.TimePeriod">
+							@foreach (var timePeriod in Data.GetBasicTimePeriods())
+							{
+								<option value="@timePeriod">@Data.GetTimePeriodInfo(timePeriod).Name</option>
+							}
+						</InputSelect>
+					</div>
+
 					<!-- Player Count -->
 					<div class="mb-3">
 						<label class="form-label">Player Count</label>
