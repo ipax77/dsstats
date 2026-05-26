@@ -3,6 +3,7 @@ using dsstats.dbServices;
 using dsstats.shared;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -171,6 +172,88 @@ public sealed class ReplayRepositoryTests
         Assert.AreEqual("hash-1", replays[0].ReplayHash);
         Assert.AreEqual(2, replays[0].ReplayUserVoteCount);
         Assert.AreEqual(4.0, replays[0].ReplayUserScore);
+    }
+
+    [TestMethod]
+    public async Task GetReplays_DateRange_ComposesWithRatedOnly()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: new DateTime(2026, 2, 24),
+            replayUserVoteCount: 10,
+            replayUserScoreSum: 50);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 2,
+            gametime: new DateTime(2026, 2, 25),
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 8);
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 3,
+            gametime: new DateTime(2026, 5, 26));
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 4,
+            gametime: new DateTime(2026, 5, 20),
+            replayUserVoteCount: 0,
+            replayUserScoreSum: 0);
+
+        var request = new ReplaysRequest
+        {
+            IncludeReplayUserRatings = true,
+            Filter = new()
+            {
+                RatedOnly = true,
+                DateRange = new()
+                {
+                    From = new DateTime(2026, 2, 25)
+                }
+            },
+            Take = 10,
+            TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserScore), Ascending = false }]
+        };
+
+        var count = await fixture.Repository.GetReplaysCount(request);
+        var replays = await fixture.Repository.GetReplays(request);
+
+        Assert.AreEqual(1, count);
+        Assert.AreEqual(1, replays.Count);
+        Assert.AreEqual("hash-2", replays[0].ReplayHash);
+        Assert.AreEqual(2, replays[0].ReplayUserVoteCount);
+        Assert.AreEqual(4.0, replays[0].ReplayUserScore);
+    }
+
+    [TestMethod]
+    public async Task GetReplays_TopRatedLandingPageRequest_UsesCache()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 1,
+            gametime: new DateTime(2026, 5, 1),
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 8);
+
+        var request = CreateTopRatedReplaysRequest();
+
+        var first = await fixture.Repository.GetReplays(request);
+
+        await SeedReplayAsync(
+            fixture.Context,
+            replayId: 2,
+            gametime: new DateTime(2026, 5, 2),
+            replayUserVoteCount: 2,
+            replayUserScoreSum: 10);
+
+        var second = await fixture.Repository.GetReplays(request);
+
+        Assert.AreEqual(1, first.Count);
+        Assert.AreEqual("hash-1", first[0].ReplayHash);
+        Assert.AreEqual(1, second.Count);
+        Assert.AreEqual("hash-1", second[0].ReplayHash);
     }
 
     [TestMethod]
@@ -363,6 +446,27 @@ public sealed class ReplayRepositoryTests
         Assert.AreEqual("hash-1", replays[0].ReplayHash);
     }
 
+    private static ReplaysRequest CreateTopRatedReplaysRequest()
+    {
+        return new()
+        {
+            IncludeReplayUserRatings = true,
+            Page = 1,
+            PageSize = 7,
+            Skip = 0,
+            Take = 7,
+            Filter = new()
+            {
+                RatedOnly = true,
+                DateRange = new()
+                {
+                    From = new DateTime(2026, 2, 25)
+                }
+            },
+            TableOrders = [new() { Column = nameof(ReplayListDto.ReplayUserScore), Ascending = false }]
+        };
+    }
+
     private static async Task SeedReplayAsync(
         DsstatsContext context,
         int replayId,
@@ -502,6 +606,7 @@ public sealed class ReplayRepositoryTests
             Context = context;
             Repository = new ReplayRepository(
                 serviceProvider.GetRequiredService<IDbContextFactory<DsstatsContext>>(),
+                serviceProvider.GetRequiredService<IMemoryCache>(),
                 NullLogger<ReplayRepository>.Instance);
         }
 
@@ -516,6 +621,7 @@ public sealed class ReplayRepositoryTests
             await connection.OpenAsync();
 
             var services = new ServiceCollection();
+            services.AddMemoryCache();
             services.AddDbContextFactory<DsstatsContext>(options => options.UseSqlite(connection, sqlite =>
                 sqlite.MigrationsAssembly("dsstats.migrations.sqlite")));
 

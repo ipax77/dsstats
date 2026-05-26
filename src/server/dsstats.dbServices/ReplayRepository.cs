@@ -3,11 +3,15 @@ using dsstats.shared;
 using dsstats.shared.Interfaces;
 using LinqKit;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace dsstats.dbServices;
 
-public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextFactory, ILogger<ReplayRepository> logger) : IReplayRepository
+public partial class ReplayRepository(
+    IDbContextFactory<DsstatsContext> contextFactory,
+    IMemoryCache memoryCache,
+    ILogger<ReplayRepository> logger) : IReplayRepository
 {
     public async Task<ReplayDetails?> GetReplayDetails(string replayHash)
     {
@@ -310,6 +314,33 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
 
     public async Task<List<ReplayListDto>> GetReplays(ReplaysRequest request, CancellationToken token = default)
     {
+        if (IsTopReplaysRequest(request))
+        {
+            return await GetTopReplays(request, token);
+        }
+
+        return await GetReplaysUncached(request, token);
+    }
+
+    private async Task<List<ReplayListDto>> GetTopReplays(ReplaysRequest request, CancellationToken token)
+    {
+        var memKey = GetTopReplaysMemKey(request);
+        if (memoryCache.TryGetValue(memKey, out var value)
+            && value is List<ReplayListDto> items)
+        {
+            return items;
+        }
+
+        items = await GetReplaysUncached(request, token);
+        if (items.Count > 0)
+        {
+            memoryCache.Set(memKey, items, TimeSpan.FromHours(1));
+        }
+        return items;
+    }
+
+    private async Task<List<ReplayListDto>> GetReplaysUncached(ReplaysRequest request, CancellationToken token = default)
+    {
         await using var context = await contextFactory.CreateDbContextAsync(token);
         try
         {
@@ -350,6 +381,36 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
             logger.LogError("Error getting replays: {error}", ex.Message);
         }
         return [];
+    }
+
+    private static bool IsTopReplaysRequest(ReplaysRequest request)
+    {
+        var filter = request.Filter;
+        return request.PageSize < 10
+            && request.Page == 1
+            && request.Skip == 0
+            && request.IncludeReplayUserRatings
+            && filter?.RatedOnly == true
+            && request.TableOrders is [{ Column: nameof(ReplayListDto.ReplayUserScore), Ascending: false }]
+            && string.IsNullOrWhiteSpace(request.Name)
+            && string.IsNullOrWhiteSpace(request.Commander)
+            && !request.LinkCommanders
+            && filter.Playercount == 0
+            && !filter.TournamentEdition
+            && !filter.WithSpawnPlayback
+            && filter.GameModes.Count == 0
+            && filter.PosFilters.Count == 0;
+    }
+
+    private static string GetTopReplaysMemKey(ReplaysRequest request)
+    {
+        var dateRange = request.Filter?.DateRange;
+        return "topReplays_"
+            + $"{request.RatingType}_"
+            + $"{request.PageSize}_"
+            + $"{request.Take}_"
+            + $"{dateRange?.From:yyyyMMdd}_"
+            + $"{dateRange?.To:yyyyMMdd}";
     }
 
     public async Task<int> GetReplaysCount(ReplaysRequest request, CancellationToken token = default)
@@ -667,6 +728,19 @@ public partial class ReplayRepository(IDbContextFactory<DsstatsContext> contextF
         if (request.Filter is null)
         {
             return ApplyPlayerSearchFilters(query, request);
+        }
+
+        if (request.Filter.DateRange is { } dateRange)
+        {
+            if (dateRange.From != default)
+            {
+                query = query.Where(x => x.Gametime >= dateRange.From);
+            }
+
+            if (dateRange.To != default)
+            {
+                query = query.Where(x => x.Gametime <= dateRange.To);
+            }
         }
 
         if (request.Filter.Playercount != 0)

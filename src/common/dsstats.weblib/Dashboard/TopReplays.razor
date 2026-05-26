@@ -1,0 +1,145 @@
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Replays
+@inject IReplayRepository ReplayRepository
+@inject NavigationManager NavigationManager
+
+<div class="table-responsive">
+	<table class="tptable top-replays-table" aria-busy="@isLoading">
+		<colgroup>
+			<col class="top-replays-date" />
+			<col class="top-replays-mode" />
+			<col class="top-replays-duration" />
+			<col class="top-replays-score" />
+			<col class="top-replays-votes" />
+			<col class="top-replays-team" />
+			<col class="top-replays-team" />
+		</colgroup>
+		<thead class="user-select-none">
+			<tr>
+				<th>Gametime</th>
+				<th class="top-replays-mode-cell">Mode</th>
+				<th>Duration</th>
+				<th>Score</th>
+				<th class="top-replays-votes-cell">Votes</th>
+				<th class="top-replays-team-cell">Team1</th>
+				<th class="top-replays-team-cell">Team2</th>
+			</tr>
+		</thead>
+		<tbody role="status">
+			@if (isLoading)
+			{
+				@for (int i = 0; i < 7; i++)
+				{
+					<tr class="placeholder-wave">
+						<td><span class="placeholder w-100"></span></td>
+						<td class="top-replays-mode-cell"><span class="placeholder w-100 bg-warning"></span></td>
+						<td><span class="placeholder w-100"></span></td>
+						<td><span class="placeholder w-100 bg-warning"></span></td>
+						<td class="top-replays-votes-cell"><span class="placeholder w-100"></span></td>
+						<td class="top-replays-team-cell"><span class="placeholder w-100 bg-primary"></span></td>
+						<td class="top-replays-team-cell"><span class="placeholder w-100"></span></td>
+					</tr>
+				}
+			}
+			else
+			{
+				@foreach (var replay in replays)
+				{
+					<tr class="pointer text-nowrap" @onclick="() => NavigationManager.NavigateTo(GetReplayUrl(replay))">
+						<td>
+							@replay.Gametime.ToString("yyyy-MM-dd")
+						</td>
+						<td class="top-replays-mode-cell">@replay.GameMode</td>
+						<td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+						<td class="text-warning text-nowrap" title="@replay.ReplayUserScore?.ToString("N2")">
+							@if (replay.ReplayUserScore is double score)
+							{
+								@for (var i = 1; i <= 5; i++)
+								{
+									<i class="bi @GetReplayUserRatingStarClass(score, i)"></i>
+								}
+							}
+							else
+							{
+								<span>-</span>
+							}
+						</td>
+						<td class="top-replays-votes-cell">@(replay.ReplayUserVoteCount?.ToString("N0") ?? "-")</td>
+						<td class="top-replays-team-cell">
+							<div style="width: 104px;">
+								<ReplayTeamComponent Replay="replay" TeamNumber="1" />
+							</div>
+						</td>
+						<td class="top-replays-team-cell">
+							<div style="width: 104px;">
+								<ReplayTeamComponent Replay="replay" TeamNumber="2" />
+							</div>
+						</td>
+					</tr>
+				}
+			}
+		</tbody>
+	</table>
+</div>
+
+@code {
+	bool isLoading = true;
+	List<ReplayListDto> replays = [];
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await LoadData();
+			isLoading = false;
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private async Task LoadData()
+	{
+		ReplaysRequest request = new()
+		{
+			IncludeReplayUserRatings = true,
+			Page = 1,
+			PageSize = 7,
+			Skip = 0,
+			Take = 7,
+			Filter = new()
+			{
+				RatedOnly = true,
+				DateRange = new()
+				{
+					From = DateTime.Today.AddDays(-90)
+				}
+			},
+			TableOrders =
+			[
+				new() { Column = nameof(ReplayListDto.ReplayUserScore), Ascending = false }
+			]
+		};
+
+		replays = await ReplayRepository.GetReplays(request);
+	}
+
+	private static string GetReplayUrl(ReplayListDto replay)
+	{
+		return $"/replays?Replay={Uri.EscapeDataString(replay.ReplayHash)}";
+	}
+
+	private static string GetCommanders(ReplayListDto replay)
+	{
+		return $"{string.Join(", ", replay.CommandersTeam1)} vs {string.Join(", ", replay.CommandersTeam2)}";
+	}
+
+	private static string GetReplayUserRatingStarClass(double score, int star)
+	{
+		if (score >= star - 0.25)
+		{
+			return "bi-star-fill";
+		}
+
+		return score >= star - 0.75 ? "bi-star-half" : "bi-star";
+	}
+}
