@@ -1,6 +1,7 @@
 ﻿using dsstats.db;
 using dsstats.dbServices;
 using dsstats.shared;
+using dsstats.shared.Upload;
 using Microsoft.EntityFrameworkCore;
 using System.IO.Compression;
 using System.Text;
@@ -16,6 +17,8 @@ public class UploadProcessingService(
     IImportService importService
 ) : BackgroundService
 {
+    private static readonly JsonSerializerOptions UploadJsonOptions = new(JsonSerializerDefaults.Web);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("UploadProcessingService started");
@@ -54,11 +57,18 @@ public class UploadProcessingService(
 
         try
         {
-            // 1. Load blob
-            var replays = await LoadReplays(job.BlobFilePath);
+            if (Directory.Exists(job.BlobFilePath))
+            {
+                await ImportSpawnPlaybackPackage(job.BlobFilePath, token);
+            }
+            else
+            {
+                // 1. Load blob
+                var replays = await LoadReplays(job.BlobFilePath);
 
-            // 2. Insert into DB
-            await importService.InsertReplays(replays);
+                // 2. Insert into DB
+                await importService.InsertReplays(replays);
+            }
 
             // 3. Update job metadata
             var dbJob = await context.UploadJobs.FindAsync(job.UploadJobId);
@@ -150,5 +160,77 @@ public class UploadProcessingService(
                    ?? [];
         }
         return [];
+    }
+
+    private async Task ImportSpawnPlaybackPackage(string packageDirectory, CancellationToken token)
+    {
+        var requestPath = Path.Combine(packageDirectory, SpawnPlaybackUploadPackage.RequestFileName);
+        var manifestPath = Path.Combine(packageDirectory, SpawnPlaybackUploadPackage.ManifestFileName);
+
+        if (!File.Exists(requestPath))
+        {
+            throw new InvalidDataException("Spawn playback request file is missing.");
+        }
+
+        if (!File.Exists(manifestPath))
+        {
+            throw new InvalidDataException("Spawn playback manifest file is missing.");
+        }
+
+        UploadRequestDto? request;
+        await using (var requestStream = File.OpenRead(requestPath))
+        await using (var gzip = new GZipStream(requestStream, CompressionMode.Decompress))
+        {
+            request = await JsonSerializer.DeserializeAsync<UploadRequestDto>(
+                gzip,
+                UploadJsonOptions,
+                token);
+        }
+
+        if (request is null)
+        {
+            throw new InvalidDataException("Spawn playback request file is invalid.");
+        }
+
+        List<SpawnPlaybackUploadManifestEntryDto> manifestEntries;
+        await using (var manifestStream = File.OpenRead(manifestPath))
+        {
+            manifestEntries = await JsonSerializer.DeserializeAsync<List<SpawnPlaybackUploadManifestEntryDto>>(
+                manifestStream,
+                UploadJsonOptions,
+                token) ?? [];
+        }
+
+        Dictionary<string, SpawnPlaybackUploadPayload> payloadsByPartName = new(StringComparer.Ordinal);
+        foreach (var entry in manifestEntries)
+        {
+            if (string.IsNullOrWhiteSpace(entry.PartName)
+                || payloadsByPartName.ContainsKey(entry.PartName))
+            {
+                continue;
+            }
+
+            var payloadPath = SpawnPlaybackUploadPackage.GetPayloadFilePath(packageDirectory, entry.PartName);
+            if (!File.Exists(payloadPath))
+            {
+                continue;
+            }
+
+            var payloadLength = new FileInfo(payloadPath).Length;
+            payloadsByPartName.Add(
+                entry.PartName,
+                new(entry.PartName, payloadLength, () => File.OpenRead(payloadPath)));
+        }
+
+        var result = await importService.InsertReplayImportsWithSidecars(
+            request,
+            manifestEntries,
+            payloadsByPartName,
+            token);
+
+        if (!result.Success)
+        {
+            throw new InvalidOperationException(result.Error ?? "Spawn playback import failed.");
+        }
     }
 }
