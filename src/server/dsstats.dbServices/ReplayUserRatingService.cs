@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Buffers;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -46,9 +47,31 @@ public sealed class ReplayUserRatingService(
 
     public string GetIpHash(IPAddress? ipAddress)
     {
-        var normalized = NormalizeIpAddress(ipAddress);
-        var payload = $"{options.Value.IpHashSalt}\n{normalized}";
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload)));
+        var normalized = ClientIpAddress.Normalize(ipAddress);
+        var salt = options.Value.IpHashSalt;
+        var byteCount = Encoding.UTF8.GetByteCount(salt) + 1 + Encoding.UTF8.GetByteCount(normalized);
+        byte[]? rentedBytes = null;
+        Span<byte> payloadBytes = byteCount <= 256
+            ? stackalloc byte[byteCount]
+            : (rentedBytes = ArrayPool<byte>.Shared.Rent(byteCount)).AsSpan(0, byteCount);
+        Span<byte> hashBytes = stackalloc byte[SHA256.HashSizeInBytes];
+
+        try
+        {
+            var written = Encoding.UTF8.GetBytes(salt, payloadBytes);
+            payloadBytes[written++] = (byte)'\n';
+            written += Encoding.UTF8.GetBytes(normalized, payloadBytes[written..]);
+
+            SHA256.HashData(payloadBytes[..written], hashBytes);
+            return Convert.ToHexString(hashBytes);
+        }
+        finally
+        {
+            if (rentedBytes is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rentedBytes);
+            }
+        }
     }
 
     public async Task<ReplayUserRatingDto?> GetRatingAsync(
@@ -344,18 +367,6 @@ public sealed class ReplayUserRatingService(
         {
             logger.LogInformation("Deleted {Count} processed replay user rating collect rows.", deleted);
         }
-    }
-
-    private static string NormalizeIpAddress(IPAddress? ipAddress)
-    {
-        if (ipAddress is null)
-        {
-            return "unknown";
-        }
-
-        return ipAddress.IsIPv4MappedToIPv6
-            ? ipAddress.MapToIPv4().ToString()
-            : ipAddress.ToString();
     }
 
     private readonly record struct PendingReplayUserRating(int ReplayId, int Count, int ScoreSum);

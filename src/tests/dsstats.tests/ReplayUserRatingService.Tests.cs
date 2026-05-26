@@ -14,6 +14,18 @@ namespace dsstats.tests;
 public sealed class ReplayUserRatingServiceTests
 {
     [TestMethod]
+    public async Task GetIpHash_UsesNormalizedIpAddress()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        var ipv4Hash = fixture.Service.GetIpHash(IPAddress.Parse("127.0.0.1"));
+        var mappedIpv4Hash = fixture.Service.GetIpHash(IPAddress.Parse("::ffff:127.0.0.1"));
+        var otherIpv4Hash = fixture.Service.GetIpHash(IPAddress.Parse("127.0.0.2"));
+
+        Assert.AreEqual(ipv4Hash, mappedIpv4Hash);
+        Assert.AreNotEqual(ipv4Hash, otherIpv4Hash);
+    }
+
+    [TestMethod]
     public async Task SubmitRating_StoresDurableCollectRow_AndShowsPendingAverage()
     {
         await using var fixture = await TestFixture.CreateAsync();

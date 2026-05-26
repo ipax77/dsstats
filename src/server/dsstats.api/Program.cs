@@ -29,6 +29,7 @@ if (builder.Environment.IsProduction())
     builder.Configuration.AddJsonFile("/data/localserverconfig.json", optional: true, reloadOnChange: false);
 }
 builder.Services.AddLogging(l => l.AddSimpleConsole(o => o.TimestampFormat = "yyyy-MM-dd HH:mm:ss: "));
+builder.Services.AddDsstatsForwardedHeaders();
 
 builder.Services.AddCors(options =>
 {
@@ -78,7 +79,7 @@ builder.Services.AddRateLimiter(options =>
     });
 
     options.AddPolicy("replay-user-rating", httpContext =>
-        RateLimitPartition.GetFixedWindowLimiter(GetClientPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
+        RateLimitPartition.GetFixedWindowLimiter(ClientPartitionKeys.GetClientPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = 10,
             Window = TimeSpan.FromMinutes(1),
@@ -87,7 +88,7 @@ builder.Services.AddRateLimiter(options =>
         }));
 
     options.AddPolicy("inhouse-device-link-attempt", httpContext =>
-        RateLimitPartition.GetFixedWindowLimiter(GetClientPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
+        RateLimitPartition.GetFixedWindowLimiter(ClientPartitionKeys.GetClientPartitionKey(httpContext), _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = 2,
             Window = TimeSpan.FromMinutes(1),
@@ -231,14 +232,8 @@ app.MapHub<InHouseHub>("/hubs/inhouse");
 
 app.Run();
 
-static string GetClientPartitionKey(HttpContext httpContext)
-{
-    var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString();
-    return string.IsNullOrWhiteSpace(ipAddress) ? "unknown-client" : $"ip:{ipAddress}";
-}
-
 static string GetInHouseUserOrClientPartitionKey(HttpContext httpContext)
 {
     var userId = httpContext.User.FindFirstValue(InHouseClaims.UserId);
-    return string.IsNullOrWhiteSpace(userId) ? GetClientPartitionKey(httpContext) : $"inhouse-user:{userId}";
+    return string.IsNullOrWhiteSpace(userId) ? ClientPartitionKeys.GetClientPartitionKey(httpContext) : $"inhouse-user:{userId}";
 }
