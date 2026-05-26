@@ -10,8 +10,7 @@ namespace dsstats.api.Controllers;
 [Route("api10/[controller]")]
 public class ReplaysController(
     IReplayRepository replayRepository,
-    ReplayUserRatingService replayUserRatingService,
-    ILogger<ReplaysController> logger) : Controller
+    ReplayUserRatingService replayUserRatingService) : Controller
 {
     [EnableRateLimiting("fixed")]
     [HttpGet("{replayHash}")]
@@ -84,12 +83,6 @@ public class ReplaysController(
         [FromBody] ReplayUserRatingRequest request,
         CancellationToken token)
     {
-        logger.LogWarning(
-            "RemoteIpAddress={RemoteIpAddress}, XForwardedFor={XForwardedFor}, XOriginalFor={XOriginalFor}",
-            HttpContext.Connection.RemoteIpAddress,
-            HttpContext.Request.Headers["X-Forwarded-For"].ToString(),
-            HttpContext.Request.Headers["X-Original-For"].ToString());
-
         var ipHash = replayUserRatingService.GetIpHash(HttpContext.Connection.RemoteIpAddress);
         var result = await replayUserRatingService.SubmitRatingAsync(replayHash, ipHash, request.Score, token);
         return result.Status switch
