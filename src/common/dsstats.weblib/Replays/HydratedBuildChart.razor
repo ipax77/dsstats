@@ -54,6 +54,12 @@ else
     public Dictionary<string, (double Radius, string Color)>? UnitDisplayInfo { get; set; }
 
     [Parameter]
+    public SpawnDto? PositionedSpawn { get; set; }
+
+    [Parameter]
+    public string? ChartKeySuffix { get; set; }
+
+    [Parameter]
     public string LoadingText { get; set; } = "Loading build chart...";
 
     [Parameter]
@@ -73,9 +79,16 @@ else
         loadCts = new();
 
         var version = ++loadVersion;
-        chartKey = $"{ReplayDetails.ReplayHash}_{GamePos}_{(int)Breakpoint}_{Team}_{(int)Cmdr}";
+        chartKey = $"{ReplayDetails.ReplayHash}_{GamePos}_{(int)Breakpoint}_{Team}_{(int)Cmdr}_{ChartKeySuffix}";
         buildChart = null;
         positionedSpawn = null;
+
+        if (PositionedSpawn is not null)
+        {
+            positionedSpawn = PositionedSpawn;
+            isLoading = false;
+            return;
+        }
 
         var spawn = SpawnPositionHydrationService.GetSpawn(ReplayDetails.Replay, GamePos, Breakpoint);
         if (spawn is not null && SpawnPositionHydrationService.HasChartPositions(spawn))

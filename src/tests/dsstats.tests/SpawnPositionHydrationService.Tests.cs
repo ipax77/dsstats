@@ -85,6 +85,67 @@ public sealed class SpawnPositionHydrationServiceTests
         Assert.AreEqual(0, repository.SpawnPositionCalls);
     }
 
+    [TestMethod]
+    public void ProjectSpawnWaves_MultipleSpawnsAreSortedAndUnitsAreGrouped()
+    {
+        var waves = SpawnPositionHydrationService.ProjectSpawnWaves(CreateWaveSidecar(), 1);
+
+        Assert.AreEqual(2, waves.Count);
+        Assert.AreEqual(1, waves[0].SpawnNumber);
+        Assert.AreEqual(120, waves[0].StartGameloop);
+        Assert.AreEqual(120, waves[0].EndGameloop);
+        Assert.AreEqual(2, waves[1].SpawnNumber);
+        Assert.AreEqual(300, waves[1].StartGameloop);
+        Assert.AreEqual(302, waves[1].EndGameloop);
+
+        var marine = waves[1].Spawn.Units.Single(unit => unit.Name == "Marine");
+        Assert.AreEqual(2, marine.Count);
+        CollectionAssert.AreEqual(new[] { 165, 174, 166, 173 }, marine.Positions);
+
+        var marauder = waves[1].Spawn.Units.Single(unit => unit.Name == "Marauder");
+        Assert.AreEqual(1, marauder.Count);
+        CollectionAssert.AreEqual(new[] { 167, 172 }, marauder.Positions);
+    }
+
+    [TestMethod]
+    public void ProjectSpawnWaves_MissingPlayerReturnsEmptyList()
+    {
+        var waves = SpawnPositionHydrationService.ProjectSpawnWaves(CreateWaveSidecar(), 3);
+
+        Assert.AreEqual(0, waves.Count);
+    }
+
+    [TestMethod]
+    public void ProjectSpawnWaves_UsesPlayerSpecificUnitTimesWhenSpawnNumbersOverlap()
+    {
+        var sidecar = CreateWaveSidecar();
+
+        var playerOneWaves = SpawnPositionHydrationService.ProjectSpawnWaves(sidecar, 1);
+        var playerTwoWaves = SpawnPositionHydrationService.ProjectSpawnWaves(sidecar, 2);
+
+        Assert.AreEqual(120, playerOneWaves[0].StartGameloop);
+        Assert.AreEqual(110, playerTwoWaves[0].StartGameloop);
+    }
+
+    [TestMethod]
+    public async Task GetSpawnWavesAsync_RepeatedReplayPlayerRequestsReuseCachedSidecar()
+    {
+        var repository = new TestReplayRepository
+        {
+            SpawnPlaybackPayload = SpawnPlaybackSidecarCodec.Encode(CreateWaveSidecar())
+        };
+        var service = CreateService();
+        var replayDetails = CreateReplayDetails();
+
+        var first = await service.GetSpawnWavesAsync(replayDetails, 1, repository);
+        var second = await service.GetSpawnWavesAsync(replayDetails, 1, repository);
+
+        Assert.AreEqual(2, first.Count);
+        Assert.AreEqual(2, second.Count);
+        Assert.AreEqual(1, repository.SpawnPlaybackCalls);
+        Assert.AreEqual(0, repository.SpawnPositionCalls);
+    }
+
     private static SpawnPositionHydrationService CreateService()
     {
         return new(new SpawnPlaybackSidecarCache(new DotNetSpawnPlaybackSidecarDecoder()));
@@ -156,6 +217,30 @@ public sealed class SpawnPositionHydrationServiceTests
             ],
             [
                 new(1, 19_900, 20_160)
+            ]);
+    }
+
+    private static SpawnPlaybackSidecarDto CreateWaveSidecar()
+    {
+        return new(
+            1_000,
+            112,
+            [
+                new(1,
+                [
+                    new(1, "Marine", 2, 300, 165, 174, null, null, null, []),
+                    new(2, "Marine", 2, 301, 166, 173, null, null, null, []),
+                    new(3, "Marauder", 2, 302, 167, 172, null, null, null, []),
+                    new(4, "Reaper", 1, 120, 168, 171, null, null, null, [])
+                ]),
+                new(2,
+                [
+                    new(5, "Zealot", 1, 110, 90, 85, null, null, null, [])
+                ])
+            ],
+            [
+                new(1, 100, 180),
+                new(2, 280, 360)
             ]);
     }
 
