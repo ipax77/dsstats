@@ -160,7 +160,12 @@ public class SpawnPlaybackSidecarCodecTests
                     Unit(8, "Marauder", 3, 167, 172)
                 ])
             ],
-            []);
+            [
+                new(1, 6_200, 6_600),
+                new(2, 13_000, 13_500),
+                new(3, 19_800, 20_220),
+                new(4, 21_000, 21_500)
+            ]);
 
         var encoded = SpawnPlaybackSidecarCodec.EncodeWithMetadata(source);
         var decoded = SpawnPlaybackSidecarCodec.Decode(encoded.Payload);
@@ -286,6 +291,90 @@ public class SpawnPlaybackSidecarCodecTests
         CollectionAssert.AreEqual(
             new[] { 169, 170 },
             projected[new(1, Breakpoint.All)].Single(unit => unit.Name == "Thor").Positions.ToArray());
+    }
+
+    [TestMethod]
+    public void BreakpointProjector_ClosestSnapshotTieUsesEarlierEndGameloop()
+    {
+        var sidecar = new SpawnPlaybackSidecarDto(
+            10_000,
+            112,
+            [
+                new(1,
+                [
+                    new(1, "Marine", 1, 6_600, 165, 174, null, null, null, []),
+                    new(2, "Marauder", 2, 6_800, 166, 173, null, null, null, [])
+                ])
+            ],
+            [
+                new(1, 6_500, 6_700),
+                new(2, 6_700, 6_740)
+            ]);
+
+        var projected = SpawnPlaybackBreakpointProjector.Project(sidecar);
+
+        CollectionAssert.AreEqual(
+            new[] { 165, 174 },
+            projected[new(1, Breakpoint.Min5)].Single(unit => unit.Name == "Marine").Positions.ToArray());
+    }
+
+    [TestMethod]
+    public void BreakpointProjector_AllUsesEachPlayersLatestSpawn()
+    {
+        var sidecar = new SpawnPlaybackSidecarDto(
+            10_000,
+            112,
+            [
+                new(1,
+                [
+                    new(1, "Marine", 1, 6_600, 165, 174, null, null, null, [])
+                ]),
+                new(4,
+                [
+                    new(1, "Zealot", 1, 6_600, 84, 93, null, null, null, []),
+                    new(2, "Stalker", 2, 8_000, 85, 92, null, null, null, [])
+                ])
+            ],
+            [
+                new(1, 6_500, 6_700),
+                new(2, 8_000, 8_200)
+            ]);
+
+        var projected = SpawnPlaybackBreakpointProjector.Project(sidecar);
+
+        CollectionAssert.AreEqual(
+            new[] { 165, 174 },
+            projected[new(1, Breakpoint.All)].Single(unit => unit.Name == "Marine").Positions.ToArray());
+        CollectionAssert.AreEqual(
+            new[] { 85, 92 },
+            projected[new(4, Breakpoint.All)].Single(unit => unit.Name == "Stalker").Positions.ToArray());
+    }
+
+    [TestMethod]
+    public void BreakpointProjector_UsesSnapshotStartToAvoidGlobalSpawnNumberMixups()
+    {
+        var sidecar = new SpawnPlaybackSidecarDto(
+            22_000,
+            112,
+            [
+                new(4,
+                [
+                    new(1, "EarlyStalker", 1, 18_600, 84, 93, null, null, null, []),
+                    new(2, "Min15Stalker", 2, 19_950, 85, 92, null, null, null, [])
+                ])
+            ],
+            [
+                new(1, 18_600, 19_100),
+                new(2, 10_000, 13_440),
+                new(3, 19_950, 20_160)
+            ]);
+
+        var projected = SpawnPlaybackBreakpointProjector.Project(sidecar);
+
+        CollectionAssert.AreEqual(
+            new[] { 85, 92 },
+            projected[new(4, Breakpoint.Min15)].Single(unit => unit.Name == "Min15Stalker").Positions.ToArray());
+        Assert.IsFalse(projected[new(4, Breakpoint.Min15)].Any(unit => unit.Name == "EarlyStalker"));
     }
 
     [TestMethod]

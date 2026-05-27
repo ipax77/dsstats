@@ -74,6 +74,7 @@ builder.Services.AddSingleton<PwaUpdateService>();
 builder.Services.AddScoped<BackupService>();
 builder.Services.AddScoped<ISpawnPlaybackSidecarDecoder, BrowserSpawnPlaybackSidecarDecoder>();
 builder.Services.AddScoped<SpawnPlaybackSidecarCache>();
+builder.Services.AddScoped<SpawnPositionHydrationService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<RatingService>();
 builder.Services.AddScoped<SessionProgressService>();

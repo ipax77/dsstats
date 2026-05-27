@@ -93,6 +93,7 @@ namespace dsstats.maui
             builder.Services.AddKeyedScoped<IReplayRepository, apiServices.ReplayRepository>("api");
             builder.Services.AddScoped<ISpawnPlaybackSidecarDecoder, DotNetSpawnPlaybackSidecarDecoder>();
             builder.Services.AddScoped<SpawnPlaybackSidecarCache>();
+            builder.Services.AddScoped<SpawnPositionHydrationService>();
 
             var app = builder.Build();
             using var scope = app.Services.CreateScope();

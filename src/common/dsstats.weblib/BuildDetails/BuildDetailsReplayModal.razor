@@ -1,10 +1,7 @@
 @using Microsoft.JSInterop
 @using dsstats.shared
-@using dsstats.shared.Interfaces
 @using dsstats.weblib.Replays
 @inject IJSRuntime JSRuntime
-@inject IReplayRepository ReplayRepository
-@inject SpawnPlaybackSidecarCache SpawnPlaybackSidecarCache
 @implements IAsyncDisposable
 
 <div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@($"{modalId}Label")" tabindex="-1">
@@ -29,7 +26,14 @@
                 <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="Close"></button>
             </div>
             <div class="modal-body bgchart">
-                @if (compareModel?.Error is not null)
+                @if (isLoadingReplay)
+                {
+                    <div class="d-flex align-items-center justify-content-center gap-2 p-4 text-light">
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        <span>Loading replay...</span>
+                    </div>
+                }
+                else if (compareModel?.Error is not null)
                 {
                     <div class="alert alert-warning mb-0">
                         @compareModel.Error
@@ -38,8 +42,8 @@
                 else if (compareModel is not null)
                 {
                     <div class="row g-3">
-                        <BuildCompareSide @key="compareModel.Left.Key" Side="compareModel.Left" moduleTask="moduleTask" />
-                        <BuildCompareSide @key="compareModel.Right.Key" Side="compareModel.Right" moduleTask="moduleTask" />
+                        <BuildCompareSide @key="compareModel.Left.Key" Side="compareModel.Left" ReplayDetails="CurrentReplayDetails" moduleTask="moduleTask" />
+                        <BuildCompareSide @key="compareModel.Right.Key" Side="compareModel.Right" ReplayDetails="CurrentReplayDetails" moduleTask="moduleTask" />
                     </div>
                 }
             </div>
@@ -58,10 +62,11 @@
     private const string modalId = "buildDetailsReplayModal";
     private Lazy<Task<IJSObjectReference>> moduleTask = null!;
     private BuildCompareModel? compareModel;
-    private readonly SpawnPositionHydrationState spawnPositionHydration = new();
+    private bool isLoadingReplay;
 
     private ReplayDetails? ReplayDetails { get; set; }
     private BuildDetailsSampleReplay? Sample { get; set; }
+    private ReplayDetails CurrentReplayDetails => ReplayDetails ?? throw new InvalidOperationException("Replay details are required.");
 
     [Parameter]
     public EventCallback<ReplayDetails> OnFullReplayRequest { get; set; }
@@ -79,8 +84,28 @@
     {
         ReplayDetails = replayDetails;
         Sample = sample;
-        await spawnPositionHydration.EnsureHydrated(replayDetails, SpawnPlaybackSidecarCache, ReplayRepository);
+        isLoadingReplay = false;
         compareModel = CreateCompareModel(replayDetails, sample);
+        await InvokeAsync(StateHasChanged);
+        await JSRuntime.InvokeVoidAsync("openModalById", modalId);
+    }
+
+    public async Task BeginLoading()
+    {
+        ReplayDetails = null;
+        Sample = null;
+        compareModel = null;
+        isLoadingReplay = true;
+        await InvokeAsync(StateHasChanged);
+        await JSRuntime.InvokeVoidAsync("openModalById", modalId);
+    }
+
+    public async Task ShowError(string error)
+    {
+        ReplayDetails = null;
+        Sample = null;
+        compareModel = BuildCompareModel.WithError(error);
+        isLoadingReplay = false;
         await InvokeAsync(StateHasChanged);
         await JSRuntime.InvokeVoidAsync("openModalById", modalId);
     }
@@ -110,6 +135,7 @@
         ReplayDetails = null;
         Sample = null;
         compareModel = null;
+        isLoadingReplay = false;
     }
 
     private static BuildCompareModel CreateCompareModel(ReplayDetails replayDetails, BuildDetailsSampleReplay sample)

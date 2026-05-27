@@ -9,12 +9,10 @@ public sealed record SpawnPlaybackProjectedUnit(
 
 public static class SpawnPlaybackBreakpointProjector
 {
-    private const int Min5StartGameloop = 6240;
-    private const int Min5EndGameloop = 7209;
-    private const int Min10StartGameloop = 12960;
-    private const int Min10EndGameloop = 13928;
-    private const int Min15StartGameloop = 19680;
-    private const int Min15EndGameloop = 20649;
+    private const int Min5TargetGameloop = 6_720;
+    private const int Min10TargetGameloop = 13_440;
+    private const int Min15TargetGameloop = 20_160;
+    private const int SnapshotStartMatchWindowGameloops = 112;
 
     public static IReadOnlyDictionary<SpawnPlaybackBreakpointKey, IReadOnlyList<SpawnPlaybackProjectedUnit>> Project(
         SpawnPlaybackSidecarDto sidecar)
@@ -29,36 +27,96 @@ public static class SpawnPlaybackBreakpointProjector
                 continue;
             }
 
-            List<SpawnPlaybackUnitSidecarDto> units = [.. player.Units
-                .OrderBy(unit => unit.SpawnNumber)
-                .ThenBy(unit => unit.SpawnGameloop)
-                .ThenBy(unit => unit.UnitIndex)];
+            List<SpawnProjection> spawnProjections = [.. player.Units
+                .GroupBy(unit => unit.SpawnNumber)
+                .Select(group => new SpawnProjection(
+                    group.Key,
+                    group.Min(unit => unit.SpawnGameloop),
+                    CreateProjectedUnits(group
+                        .OrderBy(unit => unit.SpawnGameloop)
+                        .ThenBy(unit => unit.UnitIndex))))
+                .OrderBy(projection => projection.SpawnNumber)];
 
-            int index = 0;
-            while (index < units.Count)
+            if (spawnProjections.Count == 0)
             {
-                int spawnNumber = units[index].SpawnNumber;
-                int start = index;
-                int firstGameloop = units[index].SpawnGameloop;
+                continue;
+            }
 
-                while (index < units.Count && units[index].SpawnNumber == spawnNumber)
-                {
-                    firstGameloop = Math.Min(firstGameloop, units[index].SpawnGameloop);
-                    index++;
-                }
+            AddProjectedSpawn(result, player.GamePos, Breakpoint.Min5, spawnProjections, sidecar.Snapshots, Min5TargetGameloop);
+            AddProjectedSpawn(result, player.GamePos, Breakpoint.Min10, spawnProjections, sidecar.Snapshots, Min10TargetGameloop);
+            AddProjectedSpawn(result, player.GamePos, Breakpoint.Min15, spawnProjections, sidecar.Snapshots, Min15TargetGameloop);
 
-                var projectedUnits = CreateProjectedUnits(units, start, index);
-                var breakpoint = GetBreakpoint(firstGameloop);
+            result[new(player.GamePos, Breakpoint.All)] = spawnProjections[^1].Units;
+
+            if (sidecar.Snapshots.Count > 0)
+            {
+                continue;
+            }
+
+            foreach (var projection in spawnProjections)
+            {
+                var breakpoint = GetFallbackBreakpoint(projection.FirstGameloop);
                 if (breakpoint != Breakpoint.None)
                 {
-                    result.TryAdd(new(player.GamePos, breakpoint), projectedUnits);
+                    result.TryAdd(new(player.GamePos, breakpoint), projection.Units);
                 }
-
-                result[new(player.GamePos, Breakpoint.All)] = projectedUnits;
             }
         }
 
         return result;
+    }
+
+    public static bool ApplyToSpawn(
+        ReplayDto replay,
+        SpawnPlaybackBreakpointKey key,
+        IReadOnlyDictionary<SpawnPlaybackBreakpointKey, IReadOnlyList<SpawnPlaybackProjectedUnit>> projected)
+    {
+        ArgumentNullException.ThrowIfNull(replay);
+        ArgumentNullException.ThrowIfNull(projected);
+
+        if (!projected.TryGetValue(key, out var projectedUnits))
+        {
+            return false;
+        }
+
+        var player = replay.Players.FirstOrDefault(player => player.GamePos == key.GamePos);
+        var spawn = player?.Spawns.FirstOrDefault(spawn => spawn.Breakpoint == key.Breakpoint);
+        if (spawn is null)
+        {
+            return false;
+        }
+
+        ApplyUnits(spawn, projectedUnits);
+        return true;
+    }
+
+    public static bool ApplyToSpawn(
+        ReplayDto replay,
+        SpawnPlaybackBreakpointKey key,
+        ReplaySpawnPositionsDto positions)
+    {
+        ArgumentNullException.ThrowIfNull(replay);
+        ArgumentNullException.ThrowIfNull(positions);
+
+        var positionSpawn = positions.Players
+            .FirstOrDefault(player => player.GamePos == key.GamePos)?
+            .Spawns
+            .FirstOrDefault(spawn => spawn.Breakpoint == key.Breakpoint);
+
+        if (positionSpawn is null)
+        {
+            return false;
+        }
+
+        var player = replay.Players.FirstOrDefault(player => player.GamePos == key.GamePos);
+        var spawn = player?.Spawns.FirstOrDefault(spawn => spawn.Breakpoint == key.Breakpoint);
+        if (spawn is null)
+        {
+            return false;
+        }
+
+        ApplyUnits(spawn, positionSpawn.Units);
+        return true;
     }
 
     public static void ApplyToReplay(ReplayDto replay, SpawnPlaybackSidecarDto sidecar)
@@ -82,14 +140,7 @@ public static class SpawnPlaybackBreakpointProjector
                 continue;
             }
 
-            var unitsByName = projectedUnits.ToDictionary(unit => unit.Name, StringComparer.Ordinal);
-            foreach (var unit in spawn.Units)
-            {
-                if (unitsByName.TryGetValue(unit.Name, out var projectedUnit))
-                {
-                    unit.Positions = [.. projectedUnit.Positions];
-                }
-            }
+            ApplyUnits(spawn, projectedUnits);
         }
     }
 
@@ -114,27 +165,17 @@ public static class SpawnPlaybackBreakpointProjector
                     continue;
                 }
 
-                var unitsByName = positionSpawn.Units.ToDictionary(unit => unit.Name, StringComparer.Ordinal);
-                foreach (var unit in spawn.Units)
-                {
-                    if (unitsByName.TryGetValue(unit.Name, out var positionedUnit))
-                    {
-                        unit.Positions = [.. positionedUnit.Positions];
-                    }
-                }
+                ApplyUnits(spawn, positionSpawn.Units);
             }
         }
     }
 
     private static IReadOnlyList<SpawnPlaybackProjectedUnit> CreateProjectedUnits(
-        List<SpawnPlaybackUnitSidecarDto> units,
-        int start,
-        int end)
+        IEnumerable<SpawnPlaybackUnitSidecarDto> units)
     {
         Dictionary<string, List<int>> positionsByName = new(StringComparer.Ordinal);
-        for (int i = start; i < end; i++)
+        foreach (var unit in units)
         {
-            var unit = units[i];
             if (!positionsByName.TryGetValue(unit.Name, out var positions))
             {
                 positions = [];
@@ -154,14 +195,127 @@ public static class SpawnPlaybackBreakpointProjector
         return projected;
     }
 
-    private static Breakpoint GetBreakpoint(int gameloop)
+    private static void AddProjectedSpawn(
+        Dictionary<SpawnPlaybackBreakpointKey, IReadOnlyList<SpawnPlaybackProjectedUnit>> result,
+        int gamePos,
+        Breakpoint breakpoint,
+        List<SpawnProjection> spawnProjections,
+        IReadOnlyList<SpawnPlaybackSnapshotSidecarDto> snapshots,
+        int targetGameloop)
+    {
+        SpawnProjection? bestProjection = null;
+        int bestEndGameloop = 0;
+        int bestTargetDistance = int.MaxValue;
+        foreach (var projection in spawnProjections)
+        {
+            int endGameloop = GetClosestEndGameloop(projection, snapshots, targetGameloop);
+            int targetDistance = Math.Abs(endGameloop - targetGameloop);
+            if (bestProjection is null
+                || targetDistance < bestTargetDistance
+                || (targetDistance == bestTargetDistance && endGameloop < bestEndGameloop)
+                || (targetDistance == bestTargetDistance
+                    && endGameloop == bestEndGameloop
+                    && projection.SpawnNumber < bestProjection.SpawnNumber))
+            {
+                bestProjection = projection;
+                bestEndGameloop = endGameloop;
+                bestTargetDistance = targetDistance;
+            }
+        }
+
+        if (bestProjection is not null)
+        {
+            result[new(gamePos, breakpoint)] = bestProjection.Units;
+        }
+    }
+
+    private static int GetClosestEndGameloop(
+        SpawnProjection projection,
+        IReadOnlyList<SpawnPlaybackSnapshotSidecarDto> snapshots,
+        int targetGameloop)
+    {
+        if (snapshots.Count == 0)
+        {
+            return projection.FirstGameloop;
+        }
+
+        SpawnPlaybackSnapshotSidecarDto? bestSnapshot = null;
+        int bestWindowPenalty = int.MaxValue;
+        int bestStartDistance = int.MaxValue;
+        int bestSpawnNumberPenalty = int.MaxValue;
+        int bestTargetDistance = int.MaxValue;
+
+        foreach (var snapshot in snapshots)
+        {
+            int startDistance = Math.Abs(snapshot.StartGameloop - projection.FirstGameloop);
+            int windowPenalty = startDistance <= SnapshotStartMatchWindowGameloops ? 0 : 1;
+            int spawnNumberPenalty = snapshot.SpawnNumber == projection.SpawnNumber ? 0 : 1;
+            int targetDistance = Math.Abs(snapshot.EndGameloop - targetGameloop);
+
+            if (bestSnapshot is null
+                || windowPenalty < bestWindowPenalty
+                || (windowPenalty == bestWindowPenalty && startDistance < bestStartDistance)
+                || (windowPenalty == bestWindowPenalty
+                    && startDistance == bestStartDistance
+                    && spawnNumberPenalty < bestSpawnNumberPenalty)
+                || (windowPenalty == bestWindowPenalty
+                    && startDistance == bestStartDistance
+                    && spawnNumberPenalty == bestSpawnNumberPenalty
+                    && targetDistance < bestTargetDistance)
+                || (windowPenalty == bestWindowPenalty
+                    && startDistance == bestStartDistance
+                    && spawnNumberPenalty == bestSpawnNumberPenalty
+                    && targetDistance == bestTargetDistance
+                    && snapshot.EndGameloop < bestSnapshot.EndGameloop))
+            {
+                bestSnapshot = snapshot;
+                bestWindowPenalty = windowPenalty;
+                bestStartDistance = startDistance;
+                bestSpawnNumberPenalty = spawnNumberPenalty;
+                bestTargetDistance = targetDistance;
+            }
+        }
+
+        return bestSnapshot?.EndGameloop ?? projection.FirstGameloop;
+    }
+
+    private static Breakpoint GetFallbackBreakpoint(int gameloop)
     {
         return gameloop switch
         {
-            >= Min5StartGameloop and <= Min5EndGameloop => Breakpoint.Min5,
-            >= Min10StartGameloop and <= Min10EndGameloop => Breakpoint.Min10,
-            >= Min15StartGameloop and <= Min15EndGameloop => Breakpoint.Min15,
+            >= 6_240 and <= 7_209 => Breakpoint.Min5,
+            >= 12_960 and <= 13_928 => Breakpoint.Min10,
+            >= 19_680 and <= 20_649 => Breakpoint.Min15,
             _ => Breakpoint.None
         };
     }
+
+    private static void ApplyUnits(SpawnDto spawn, IReadOnlyList<SpawnPlaybackProjectedUnit> projectedUnits)
+    {
+        var unitsByName = projectedUnits.ToDictionary(unit => unit.Name, StringComparer.Ordinal);
+        foreach (var unit in spawn.Units)
+        {
+            if (unitsByName.TryGetValue(unit.Name, out var projectedUnit))
+            {
+                unit.Positions = [.. projectedUnit.Positions];
+            }
+        }
+    }
+
+    private static void ApplyUnits(SpawnDto spawn, IReadOnlyList<UnitPositionsDto> positionedUnits)
+    {
+        var unitsByName = positionedUnits.ToDictionary(unit => unit.Name, StringComparer.Ordinal);
+        foreach (var unit in spawn.Units)
+        {
+            if (unitsByName.TryGetValue(unit.Name, out var positionedUnit))
+            {
+                unit.Positions = [.. positionedUnit.Positions];
+            }
+        }
+    }
+
+    private sealed record SpawnProjection(
+        int SpawnNumber,
+        int FirstGameloop,
+        IReadOnlyList<SpawnPlaybackProjectedUnit> Units);
 }

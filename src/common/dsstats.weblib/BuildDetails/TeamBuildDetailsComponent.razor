@@ -150,6 +150,7 @@
     private bool overviewLoading;
     private bool samplesLoading;
     private int loadedRequestVersion = -1;
+    private int replayCompareLoadVersion;
 
     private IEnumerable<BuildDetailsTeamBuildOverviewRow> SortedOverviewRows => overviewOrders[0].Column switch
     {
@@ -261,7 +262,14 @@
 
     private async Task LoadReplayCompare(BuildDetailsTeamBuildSampleReplay sample)
     {
+        var version = ++replayCompareLoadVersion;
+        teamBuildReplayModal?.BeginLoading();
         replayDetails = await ReplayRepository.GetReplayDetails(sample.Replay.ReplayHash);
+        if (version != replayCompareLoadVersion)
+        {
+            return;
+        }
+
         if (replayDetails is not null && teamBuildReplayModal is not null)
         {
             await teamBuildReplayModal.Show(replayDetails, sample);
