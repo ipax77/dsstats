@@ -817,7 +817,11 @@
     private async Task LoadReplayCompare(BuildDetailsSampleReplay sample)
     {
         var version = ++replayCompareLoadVersion;
-        buildDetailsReplayModal?.BeginLoading();
+        if (buildDetailsReplayModal is not null)
+        {
+            await buildDetailsReplayModal.BeginLoading();
+        }
+
         replayDetails = await ReplayRepository.GetReplayDetails(sample.Replay.ReplayHash);
         if (version != replayCompareLoadVersion)
         {
@@ -827,6 +831,10 @@
         if (replayDetails is not null && buildDetailsReplayModal is not null)
         {
             await buildDetailsReplayModal.Show(replayDetails, sample);
+        }
+        else if (buildDetailsReplayModal is not null)
+        {
+            await buildDetailsReplayModal.ShowError("The sample replay could not be loaded.");
         }
     }
 

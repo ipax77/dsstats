@@ -78,13 +78,7 @@ else
         positionedSpawn = null;
 
         var spawn = SpawnPositionHydrationService.GetSpawn(ReplayDetails.Replay, GamePos, Breakpoint);
-        if (spawn is null)
-        {
-            isLoading = false;
-            return;
-        }
-
-        if (SpawnPositionHydrationService.HasChartPositions(spawn))
+        if (spawn is not null && SpawnPositionHydrationService.HasChartPositions(spawn))
         {
             positionedSpawn = spawn;
             isLoading = false;

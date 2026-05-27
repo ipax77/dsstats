@@ -90,13 +90,24 @@
         await JSRuntime.InvokeVoidAsync("openModalById", modalId);
     }
 
-    public void BeginLoading()
+    public async Task BeginLoading()
     {
         ReplayDetails = null;
         Sample = null;
         compareModel = null;
         isLoadingReplay = true;
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged);
+        await JSRuntime.InvokeVoidAsync("openModalById", modalId);
+    }
+
+    public async Task ShowError(string error)
+    {
+        ReplayDetails = null;
+        Sample = null;
+        compareModel = BuildCompareModel.WithError(error);
+        isLoadingReplay = false;
+        await InvokeAsync(StateHasChanged);
+        await JSRuntime.InvokeVoidAsync("openModalById", modalId);
     }
 
     private async Task Close()
