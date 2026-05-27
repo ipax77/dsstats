@@ -27,7 +27,7 @@ public sealed class SpawnPositionHydrationService
         ArgumentNullException.ThrowIfNull(replayRepository);
 
         var spawn = GetSpawn(replayDetails.Replay, gamePos, breakpoint);
-        if (spawn is null || HasChartPositions(spawn))
+        if (spawn is not null && HasCompleteChartPositions(spawn))
         {
             return spawn;
         }
@@ -38,8 +38,16 @@ public sealed class SpawnPositionHydrationService
         var projected = await GetProjectedPositions(entry, replayDetails, replayRepository).ConfigureAwait(false);
         if (projected is not null)
         {
-            SpawnPlaybackBreakpointProjector.ApplyToSpawn(replayDetails.Replay, key, projected);
-            if (HasChartPositions(spawn))
+            if (spawn is not null)
+            {
+                SpawnPlaybackBreakpointProjector.ApplyToSpawn(replayDetails.Replay, key, projected);
+            }
+            else
+            {
+                spawn = CreateChartSpawn(key, projected);
+            }
+
+            if (spawn is not null && HasCompleteChartPositions(spawn))
             {
                 return spawn;
             }
@@ -49,13 +57,27 @@ public sealed class SpawnPositionHydrationService
         var fallback = await GetFallbackPositions(entry, replayDetails.ReplayHash, replayRepository).ConfigureAwait(false);
         if (fallback is not null)
         {
-            SpawnPlaybackBreakpointProjector.ApplyToSpawn(replayDetails.Replay, key, fallback);
+            if (spawn is not null)
+            {
+                SpawnPlaybackBreakpointProjector.ApplyToSpawn(replayDetails.Replay, key, fallback);
+            }
+            else
+            {
+                spawn = CreateChartSpawn(key, fallback);
+            }
         }
 
         return spawn;
     }
 
     public static bool HasChartPositions(SpawnDto spawn)
+    {
+        return spawn.Units
+            .Where(unit => unit.Count > 0)
+            .Any(unit => unit.Positions is { Count: > 0 });
+    }
+
+    public static bool HasCompleteChartPositions(SpawnDto spawn)
     {
         return spawn.Units
             .Where(unit => unit.Count > 0)
@@ -68,6 +90,57 @@ public sealed class SpawnPositionHydrationService
             .FirstOrDefault(player => player.GamePos == gamePos)?
             .Spawns
             .FirstOrDefault(spawn => spawn.Breakpoint == breakpoint);
+    }
+
+    private static SpawnDto? CreateChartSpawn(
+        SpawnPlaybackBreakpointKey key,
+        IReadOnlyDictionary<SpawnPlaybackBreakpointKey, IReadOnlyList<SpawnPlaybackProjectedUnit>> projected)
+    {
+        if (!projected.TryGetValue(key, out var projectedUnits))
+        {
+            return null;
+        }
+
+        return new()
+        {
+            Breakpoint = key.Breakpoint,
+            Units = projectedUnits
+                .Where(unit => unit.Count > 0 && unit.Positions.Count > 0)
+                .Select(unit => new UnitDto
+                {
+                    Name = unit.Name,
+                    Count = unit.Count,
+                    Positions = [.. unit.Positions]
+                })
+                .ToList()
+        };
+    }
+
+    private static SpawnDto? CreateChartSpawn(SpawnPlaybackBreakpointKey key, ReplaySpawnPositionsDto positions)
+    {
+        var positionSpawn = positions.Players
+            .FirstOrDefault(player => player.GamePos == key.GamePos)?
+            .Spawns
+            .FirstOrDefault(spawn => spawn.Breakpoint == key.Breakpoint);
+
+        if (positionSpawn is null)
+        {
+            return null;
+        }
+
+        return new()
+        {
+            Breakpoint = key.Breakpoint,
+            Units = positionSpawn.Units
+                .Where(unit => unit.Positions.Count > 0)
+                .Select(unit => new UnitDto
+                {
+                    Name = unit.Name,
+                    Count = unit.Positions.Count / 2,
+                    Positions = [.. unit.Positions]
+                })
+                .ToList()
+        };
     }
 
     private ReplayHydrationEntry GetEntry(string replayHash)

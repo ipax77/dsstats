@@ -64,6 +64,27 @@ public sealed class SpawnPositionHydrationServiceTests
         Assert.AreEqual(1, repository.SpawnPositionCalls);
     }
 
+    [TestMethod]
+    public async Task EnsureChartSpawnAsync_CreatesChartSpawnWhenBreakpointSpawnIsMissing()
+    {
+        var repository = new TestReplayRepository
+        {
+            SpawnPlaybackPayload = SpawnPlaybackSidecarCodec.Encode(CreateMin15Sidecar())
+        };
+        var service = CreateService();
+        var replayDetails = CreateReplayDetails();
+
+        var spawn = await service.EnsureChartSpawnAsync(replayDetails, 1, Breakpoint.Min15, repository);
+
+        Assert.IsNotNull(spawn);
+        Assert.AreEqual(Breakpoint.Min15, spawn.Breakpoint);
+        Assert.AreEqual("Stalker", spawn.Units[0].Name);
+        Assert.AreEqual(2, spawn.Units[0].Count);
+        CollectionAssert.AreEqual(new[] { 165, 174, 166, 173 }, spawn.Units[0].Positions);
+        Assert.AreEqual(1, repository.SpawnPlaybackCalls);
+        Assert.AreEqual(0, repository.SpawnPositionCalls);
+    }
+
     private static SpawnPositionHydrationService CreateService()
     {
         return new(new SpawnPlaybackSidecarCache(new DotNetSpawnPlaybackSidecarDecoder()));
@@ -118,6 +139,23 @@ public sealed class SpawnPositionHydrationServiceTests
             ],
             [
                 new(1, 6_500, 6_700)
+            ]);
+    }
+
+    private static SpawnPlaybackSidecarDto CreateMin15Sidecar()
+    {
+        return new(
+            22_000,
+            112,
+            [
+                new(1,
+                [
+                    new(1, "Stalker", 1, 19_900, 165, 174, null, null, null, []),
+                    new(2, "Stalker", 1, 19_901, 166, 173, null, null, null, [])
+                ])
+            ],
+            [
+                new(1, 19_900, 20_160)
             ]);
     }
 
