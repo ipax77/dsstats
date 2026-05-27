@@ -1,8 +1,6 @@
 @using Microsoft.JSInterop
 @using dsstats.shared
-@using dsstats.shared.Interfaces
 @using dsstats.shared.Units
-@inject IReplayRepository ReplayRepository
 
 <div class="card bgchart w-auto">
     <div class="card-header bgchart2 rounded">
@@ -44,7 +42,15 @@
             <div class="bgchart" style="height: 600px; width: 500px;">
                 @if (showMap)
                 {
-                    <BuildChart @ref="buildChart" Spawn="spawn" Team="Player.TeamId" Cmdr="Player.Race" moduleTask="moduleTask" UnitDisplayInfo="_unitDisplayInfo" />
+                    <HydratedBuildChart @ref="buildChart"
+                                        @key="MapChartKey"
+                                        ReplayDetails="ReplayHelper.ReplayDetails"
+                                        GamePos="Player.GamePos"
+                                        Breakpoint="ReplayHelper.Breakpoint"
+                                        Team="Player.TeamId"
+                                        Cmdr="Player.Race"
+                                        moduleTask="moduleTask"
+                                        UnitDisplayInfo="_unitDisplayInfo" />
                 }
             </div>
         </div>
@@ -95,13 +101,18 @@
     [Parameter, EditorRequired]
     public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
 
-    BuildChart? buildChart;
+    HydratedBuildChart? buildChart;
     private bool showMap = false;
     private bool showGas = false;
     private bool showUpgrades = false;
 
     private SpawnDto? spawn => ReplayHelper.GetSpawn(Player);
     private string badgeClass => ReplayHelper.IsWinner(Player) ? "text-bg-success" : "text-bg-danger";
+    private string MapChartKey => BuildChartTarget.GetVisibleKey(
+        showMap,
+        ReplayHelper.ReplayDetails.ReplayHash,
+        Player.GamePos,
+        ReplayHelper.Breakpoint) ?? string.Empty;
 
     private Dictionary<string, (double Radius, string Color)> _unitDisplayInfo = [];
 
@@ -130,18 +141,13 @@
     private async Task ToggleMap()
     {
         showMap = !showMap;
-        if (showMap)
-        {
-            await ReplayHelper.EnsureSpawnPositionsAsync(ReplayRepository);
-            ComputeDisplayInfo();
-            await InvokeAsync(StateHasChanged);
-        }
+        ComputeDisplayInfo();
+        await InvokeAsync(StateHasChanged);
     }
 
     public void Update()
     {
         ComputeDisplayInfo();
         InvokeAsync(StateHasChanged);
-        buildChart?.Update(spawn, Player.Race, Player.TeamId, _unitDisplayInfo);
     }
 }

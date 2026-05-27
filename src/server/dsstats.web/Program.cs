@@ -44,6 +44,7 @@ builder.Services.Configure<ReplayUserRatingClientOptions>(options =>
 
 builder.Services.AddScoped<ISpawnPlaybackSidecarDecoder, DotNetSpawnPlaybackSidecarDecoder>();
 builder.Services.AddScoped<SpawnPlaybackSidecarCache>();
+builder.Services.AddScoped<SpawnPositionHydrationService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<IReplayImportService, ReplayImportService>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();

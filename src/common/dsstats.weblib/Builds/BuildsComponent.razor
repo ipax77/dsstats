@@ -235,9 +235,12 @@
 				<span class="bi @(showSpawns ? "bi-chevron-double-up" : "bi-chevron-double-down")"></span>
 				@(showSpawns ? "Hide" : "Show") Sample Build
 			</button>
-			<div class="@(showSpawns ? "" : "d-none")">
-				<BuildSpawnComponent @ref="buildSpawnComponent" Request="Request" ReplayHash="@replayHash" />
-			</div>
+			@if (showSpawns)
+			{
+				<div>
+					<BuildSpawnComponent @ref="buildSpawnComponent" Request="Request" ReplayHash="@replayHash" />
+				</div>
+			}
 			<div class="p-1 bgchart">
 				<h4 class="text-warning">Recent Replays</h4>
 				<small>Click row for sample build | Click <i class="bi bi-list-ul text-primary"></i> for replay details</small>
@@ -353,7 +356,10 @@
 		isLoading = false;
 		await InvokeAsync(StateHasChanged);
 		replayHash = response.Replays.FirstOrDefault()?.ReplayHash ?? string.Empty;
-		buildSpawnComponent?.Update(response.Replays.FirstOrDefault()?.ReplayHash ?? string.Empty, Request);
+		if (showSpawns)
+		{
+			buildSpawnComponent?.Update(response.Replays.FirstOrDefault()?.ReplayHash ?? string.Empty, Request);
+		}
 		if (!dry)
 		{
 			await OnRequestChanged.InvokeAsync(Request);

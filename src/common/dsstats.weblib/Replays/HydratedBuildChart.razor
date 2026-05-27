@@ -1,0 +1,146 @@
+@using Microsoft.JSInterop
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@inject IReplayRepository ReplayRepository
+@inject SpawnPositionHydrationService SpawnPositionHydration
+@implements IDisposable
+
+@if (isLoading)
+{
+    <div class="h-100 d-flex align-items-center justify-content-center text-light p-3">
+        <div class="d-flex align-items-center gap-2">
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <span>@LoadingText</span>
+        </div>
+    </div>
+}
+else if (positionedSpawn is not null)
+{
+    <BuildChart @ref="buildChart"
+                @key="chartKey"
+                Spawn="positionedSpawn"
+                Team="Team"
+                Cmdr="Cmdr"
+                moduleTask="moduleTask"
+                UnitDisplayInfo="UnitDisplayInfo" />
+}
+else
+{
+    <div class="h-100 d-flex align-items-center justify-content-center text-warning p-3 text-center">
+        @EmptyText
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public ReplayDetails ReplayDetails { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public int GamePos { get; set; }
+
+    [Parameter, EditorRequired]
+    public Breakpoint Breakpoint { get; set; }
+
+    [Parameter, EditorRequired]
+    public int Team { get; set; }
+
+    [Parameter, EditorRequired]
+    public Commander Cmdr { get; set; }
+
+    [Parameter, EditorRequired]
+    public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
+
+    [Parameter]
+    public Dictionary<string, (double Radius, string Color)>? UnitDisplayInfo { get; set; }
+
+    [Parameter]
+    public string LoadingText { get; set; } = "Loading build chart...";
+
+    [Parameter]
+    public string EmptyText { get; set; } = "No build chart data is available.";
+
+    private BuildChart? buildChart;
+    private CancellationTokenSource? loadCts;
+    private SpawnDto? positionedSpawn;
+    private string chartKey = string.Empty;
+    private int loadVersion;
+    private bool isLoading;
+
+    protected override void OnParametersSet()
+    {
+        loadCts?.Cancel();
+        loadCts?.Dispose();
+        loadCts = new();
+
+        var version = ++loadVersion;
+        chartKey = $"{ReplayDetails.ReplayHash}_{GamePos}_{(int)Breakpoint}_{Team}_{(int)Cmdr}";
+        buildChart = null;
+        positionedSpawn = null;
+
+        var spawn = SpawnPositionHydrationService.GetSpawn(ReplayDetails.Replay, GamePos, Breakpoint);
+        if (spawn is null)
+        {
+            isLoading = false;
+            return;
+        }
+
+        if (SpawnPositionHydrationService.HasChartPositions(spawn))
+        {
+            positionedSpawn = spawn;
+            isLoading = false;
+            return;
+        }
+
+        isLoading = true;
+        _ = LoadPositionedSpawn(version, ReplayDetails, GamePos, Breakpoint, loadCts.Token);
+    }
+
+    public Task HighlightUnits(string unitName)
+    {
+        return buildChart?.HighlightUnits(unitName) ?? Task.CompletedTask;
+    }
+
+    private async Task LoadPositionedSpawn(
+        int version,
+        ReplayDetails replayDetails,
+        int gamePos,
+        Breakpoint breakpoint,
+        CancellationToken token)
+    {
+        try
+        {
+            var spawn = await SpawnPositionHydration.EnsureChartSpawnAsync(
+                replayDetails,
+                gamePos,
+                breakpoint,
+                ReplayRepository,
+                token);
+
+            if (version != loadVersion || token.IsCancellationRequested)
+            {
+                return;
+            }
+
+            positionedSpawn = spawn is not null && SpawnPositionHydrationService.HasChartPositions(spawn)
+                ? spawn
+                : null;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            if (version == loadVersion && !token.IsCancellationRequested)
+            {
+                isLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        loadCts?.Cancel();
+        loadCts?.Dispose();
+    }
+}

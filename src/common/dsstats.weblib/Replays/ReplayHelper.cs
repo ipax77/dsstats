@@ -51,13 +51,6 @@ public class ReplayHelper
     public bool IsTE { get; set; }
     public ReplayDetails ReplayDetails => _replayDetails;
 
-    public Task<bool> EnsureSpawnPositionsAsync(
-        IReplayRepository replayRepository,
-        CancellationToken token = default)
-    {
-        return _spawnPositionHydration.EnsureHydrated(_replayDetails, _sidecarCache, replayRepository, token);
-    }
-
     public Task<SpawnPlaybackSidecarDto?> GetSpawnPlaybackSidecarAsync(
         IReplayRepository replayRepository,
         CancellationToken token = default)

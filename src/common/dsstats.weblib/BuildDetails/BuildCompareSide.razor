@@ -45,7 +45,15 @@
         <div class="bgchart border rounded" style="height: 430px; min-height: 320px;">
             @if (Side.Min5Spawn is not null)
             {
-                <BuildChart Spawn="Side.Min5Spawn" Team="Side.Player.TeamId" Cmdr="Side.Player.Race" moduleTask="moduleTask" />
+                <HydratedBuildChart @key="Side.Key"
+                                    ReplayDetails="ReplayDetails"
+                                    GamePos="Side.Player.GamePos"
+                                    Breakpoint="Breakpoint.Min5"
+                                    Team="Side.Player.TeamId"
+                                    Cmdr="Side.Player.Race"
+                                    moduleTask="moduleTask"
+                                    LoadingText="Loading chart positions..."
+                                    EmptyText="No 5:00 build chart positions are available for this player." />
             }
             else
             {
@@ -60,6 +68,9 @@
 @code {
     [Parameter, EditorRequired]
     public BuildDetailsReplayModal.BuildCompareSideModel Side { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public ReplayDetails ReplayDetails { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;

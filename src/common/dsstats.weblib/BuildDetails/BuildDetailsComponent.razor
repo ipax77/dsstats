@@ -404,6 +404,7 @@
     private int requestVersion;
     private BuildDetailsTab activeTab = BuildDetailsTab.BuildDetails;
     private bool initialized;
+    private int replayCompareLoadVersion;
     private readonly List<TableOrder> overviewOrders = [new() { Column = nameof(BuildDetailsOverviewRow.AverageRatingGain), Ascending = false }];
     private readonly List<TableOrder> matchupOrders = [new() { Column = nameof(BuildDetailsMatchupRow.AverageRatingGain), Ascending = false }];
     private const int AdjustedGainK = 20;
@@ -815,7 +816,14 @@
 
     private async Task LoadReplayCompare(BuildDetailsSampleReplay sample)
     {
+        var version = ++replayCompareLoadVersion;
+        buildDetailsReplayModal?.BeginLoading();
         replayDetails = await ReplayRepository.GetReplayDetails(sample.Replay.ReplayHash);
+        if (version != replayCompareLoadVersion)
+        {
+            return;
+        }
+
         if (replayDetails is not null && buildDetailsReplayModal is not null)
         {
             await buildDetailsReplayModal.Show(replayDetails, sample);

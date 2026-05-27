@@ -4,28 +4,47 @@
 @using dsstats.weblib.Replays
 @inject IReplayRepository ReplayRepository
 @inject IJSRuntime JSRuntime
-@inject SpawnPlaybackSidecarCache SpawnPlaybackSidecarCache
 @implements IAsyncDisposable
 
 
 <div class="row bgchart p-1">
-    @foreach (var info in buildSpawn.SpawnInfos)
+    @if (isLoading)
     {
-        <div class="col-lg-6">
-            <div class="d-flex">
-                <div class="preload-@(info.Player.Race.ToString().ToLower())"></div>
-                @info.Player.Name
-                @if (isLoading)
-                {
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                }
-            </div>
-            <div style="height: 450px; width: 380px;">
-                <BuildChart @ref="info.BuildChart" Spawn="info.Spawn" Team="info.Player.TeamId" Cmdr="info.Player.Race" moduleTask="moduleTask" />
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-center gap-2 p-4 text-light">
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                <span>Loading sample build...</span>
             </div>
         </div>
+    }
+    else if (replayDetails is null || !buildSpawn.HasData)
+    {
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-center p-4 text-warning">
+                No sample build chart data is available.
+            </div>
+        </div>
+    }
+    else
+    {
+        @foreach (var info in buildSpawn.SpawnInfos)
+        {
+            <div class="col-lg-6">
+                <div class="d-flex">
+                    <div class="preload-@(info.Player.Race.ToString().ToLower())"></div>
+                    @info.Player.Name
+                </div>
+                <div style="height: 450px; width: 380px;">
+                    <HydratedBuildChart @key="info.ChartKey"
+                                        ReplayDetails="replayDetails"
+                                        GamePos="info.Player.GamePos"
+                                        Breakpoint="info.Spawn.Breakpoint"
+                                        Team="info.Player.TeamId"
+                                        Cmdr="info.Player.Race"
+                                        moduleTask="moduleTask" />
+                </div>
+            </div>
+        }
     }
 </div>
 
@@ -39,7 +58,6 @@
     bool isLoading;
 
     ReplayDetails? replayDetails;
-    private readonly SpawnPositionHydrationState spawnPositionHydration = new();
     BuildSpawn buildSpawn = new()
     {
         SpawnInfos = [
@@ -49,6 +67,7 @@
     };
 
     SemaphoreSlim ss = new(1, 1);
+    private int loadVersion;
 
     private Lazy<Task<IJSObjectReference>> moduleTask = null!;
 
@@ -56,7 +75,7 @@
     {
         moduleTask = new(() => JSRuntime.InvokeAsync<IJSObjectReference>(
                 "import", "./_content/dsstats.weblib/js/annotationChart.js?v=0.6").AsTask());
-        await LoadData();
+        await LoadData(++loadVersion);
         await base.OnInitializedAsync();
     }
 
@@ -64,35 +83,48 @@
     {
         ReplayHash = replayHash;
         Request = request;
+        loadVersion++;
         replayDetails = null;
+        buildSpawn.Clear();
+        isLoading = !string.IsNullOrEmpty(ReplayHash);
         InvokeAsync(StateHasChanged);
-        _ = LoadData();
+        _ = LoadData(loadVersion);
     }
 
-    private async Task LoadData()
+    private async Task LoadData(int version)
     {
         if (string.IsNullOrEmpty(ReplayHash))
         {
+            isLoading = false;
+            buildSpawn.Clear();
+            await InvokeAsync(StateHasChanged);
             return;
         }
         await ss.WaitAsync();
         try
         {
             isLoading = true;
+            replayDetails = null;
+            buildSpawn.Clear();
             await InvokeAsync(StateHasChanged);
-            replayDetails = await ReplayRepository.GetReplayDetails(ReplayHash);
-            if (replayDetails is not null)
+            var loadedReplayDetails = await ReplayRepository.GetReplayDetails(ReplayHash);
+            if (version != loadVersion)
             {
-                await spawnPositionHydration.EnsureHydrated(replayDetails, SpawnPlaybackSidecarCache, ReplayRepository);
+                return;
             }
-            var mybuildSpawn = GetBuildSpawn(replayDetails);
+
+            replayDetails = loadedReplayDetails;
+            var mybuildSpawn = GetBuildSpawn(loadedReplayDetails);
             buildSpawn.Update(mybuildSpawn);
         }
         finally
         {
             ss.Release();
-            isLoading = false;
-            await InvokeAsync(StateHasChanged);
+            if (version == loadVersion)
+            {
+                isLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
 
@@ -114,8 +146,10 @@
         {
             return null;
         }
-        var playerSpawn = player.Spawns.FirstOrDefault(f => f.Breakpoint == Request.Breakpoint || f.Breakpoint == Breakpoint.All);
-        var oppSpawn = oppPlayer.Spawns.FirstOrDefault(f => f.Breakpoint == Request.Breakpoint || f.Breakpoint == Breakpoint.All);
+        var playerSpawn = player.Spawns.FirstOrDefault(f => f.Breakpoint == Request.Breakpoint)
+            ?? player.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint.All);
+        var oppSpawn = oppPlayer.Spawns.FirstOrDefault(f => f.Breakpoint == Request.Breakpoint)
+            ?? oppPlayer.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint.All);
         if (playerSpawn == null || oppSpawn == null)
         {
             return null;
@@ -160,6 +194,15 @@
     private class BuildSpawn
     {
         public List<BuildSpawnInfo> SpawnInfos { get; set; } = [];
+        public bool HasData => SpawnInfos.All(info => info.Player.GamePos > 0 && info.Spawn.Breakpoint != Breakpoint.None);
+
+        public void Clear()
+        {
+            foreach (var info in SpawnInfos)
+            {
+                info.Update(new());
+            }
+        }
 
         public void Update(BuildSpawn? buildSpawn)
         {
@@ -184,13 +227,12 @@
     {
         public ReplayPlayerDto Player { get; set; } = new();
         public SpawnDto Spawn { get; set; } = new();
-        public BuildChart? BuildChart { get; set; }
+        public string ChartKey => $"{Player.GamePos}_{(int)Spawn.Breakpoint}_{Player.TeamId}_{(int)Player.Race}";
 
         public void Update(BuildSpawnInfo spawnInfo)
         {
             Player = spawnInfo.Player;
             Spawn = spawnInfo.Spawn;
-            BuildChart?.Update(Spawn, Player.Race, Player.TeamId);
         }
     }
 
