@@ -7,8 +7,12 @@ using System.Runtime.InteropServices;
 
 namespace dsstats.dbServices.Builds;
 
-public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFactory, IMemoryCache memoryCache) : IBuildsService
+public partial class BuildsService(
+    IDbContextFactory<DsstatsContext> contextFactory,
+    IMemoryCache memoryCache,
+    IUnitLifeCostService unitLifeCostService) : IBuildsService
 {
+    private readonly IUnitLifeCostService _unitLifeCostService = unitLifeCostService;
     private const string VanadiumPlatingControllerUpgrade = "VanadiumPlatingController";
     private const int AnecdotalTimingThreshold = 10;
 
@@ -22,7 +26,7 @@ public partial class BuildsService(IDbContextFactory<DsstatsContext> contextFact
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
                 await using var context = await contextFactory.CreateDbContextAsync(token);
                 var response = await CreateBuildsResponse(request, context, token);
-                await SetBuildResponseLifeAndCost(response, request.Interest);
+                await SetBuildResponseLifeAndCost(response, request.Interest, token);
                 if (request.WithSpawnInfo)
                 {
                     response.Replays = await GetBuildReplays(request);

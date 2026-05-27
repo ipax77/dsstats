@@ -7,7 +7,9 @@ namespace dsstats.api.Controllers;
 
 [ApiController]
 [Route("api10/[controller]")]
-public class BuildsController(IBuildsService buildsService) : Controller
+public class BuildsController(
+    IBuildsService buildsService,
+    IUnitLifeCostService unitLifeCostService) : Controller
 {
 
     [HttpPost]
@@ -49,5 +51,14 @@ public class BuildsController(IBuildsService buildsService) : Controller
     {
         var unit = await buildsService.GetUnit(id);
         return Ok(unit);
+    }
+
+    [HttpGet("units/life-cost")]
+    public async Task<ActionResult<IReadOnlyDictionary<string, DsUnitLifeCostDto>>> GetUnitLifeCosts(
+        [FromQuery] Commander commander,
+        CancellationToken token = default)
+    {
+        var units = await unitLifeCostService.GetUnitLifeCosts(commander, token);
+        return Ok(units);
     }
 }

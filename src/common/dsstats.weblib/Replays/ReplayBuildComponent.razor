@@ -5,6 +5,7 @@
 @implements IDisposable
 @inject IReplayRepository ReplayRepository
 @inject SpawnPositionHydrationService SpawnPositionHydration
+@inject IUnitLifeCostService UnitLifeCostService
 
 <div class="card bgchart w-auto">
     <div class="card-header bgchart2 rounded">
@@ -155,6 +156,19 @@
                         <td></td>
                         <td>Unit</td>
                         <td>Count</td>
+                        @if (HasLifeCostInfo)
+                        {
+                            <td class="text-end">
+                                Cost
+                                <span class="bi bi-exclamation-triangle-fill text-warning ms-1"
+                                      title="@LifeCostWarningText"></span>
+                            </td>
+                            <td class="text-end">
+                                Life
+                                <span class="bi bi-exclamation-triangle-fill text-warning ms-1"
+                                      title="@LifeCostWarningText"></span>
+                            </td>
+                        }
                     </tr>
                 </thead>
                 <tbody>
@@ -170,10 +184,27 @@
                                 </td>
                                 <td>@unitInfo.Name</td>
                                 <td class="text-start">@unit.Count</td>
+                                @if (HasLifeCostInfo)
+                                {
+                                    <td class="text-end">@FormatUnitCost(unit)</td>
+                                    <td class="text-end">@FormatUnitLife(unit)</td>
+                                }
                             </tr>
                         }
                     }
                 </tbody>
+                @if (HasLifeCostInfo && DisplayedSpawn != null)
+                {
+                    <tfoot>
+                        <tr class="fw-bold">
+                            <td></td>
+                            <td>Total</td>
+                            <td class="text-start">@DisplayedSpawn.Units.Sum(unit => unit.Count)</td>
+                            <td class="text-end">@FormatSpawnCost(DisplayedSpawn)</td>
+                            <td class="text-end">@FormatSpawnLife(DisplayedSpawn)</td>
+                        </tr>
+                    </tfoot>
+                }
             </table>
         </div>
     </div>
@@ -202,6 +233,10 @@
     private string? currentReplayHash;
     private bool loadingSpawnWaves;
     private bool spawnWaveLoadFailed;
+    private Commander currentUnitLifeCostCommander = Commander.None;
+    private IReadOnlyDictionary<string, DsUnitLifeCostDto> unitLifeCosts = EmptyUnitLifeCosts;
+    private static readonly IReadOnlyDictionary<string, DsUnitLifeCostDto> EmptyUnitLifeCosts = new Dictionary<string, DsUnitLifeCostDto>();
+    private const string LifeCostWarningText = "Uses latest patch unit life and cost; values may be wrong for old replays.";
 
     private SpawnDto? BreakpointSpawn => ReplayHelper.GetSpawn(Player);
     private SpawnPlaybackWaveInfo? SelectedSpawnWave =>
@@ -213,6 +248,7 @@
         : BreakpointSpawn;
     private string badgeClass => ReplayHelper.IsWinner(Player) ? "text-bg-success" : "text-bg-danger";
     private bool HasSpawnPlayback => ReplayHelper.ReplayDetails.Replay.SpawnPlayback?.Available == true;
+    private bool HasLifeCostInfo => unitLifeCosts.Count > 0;
     private string MapChartKey
     {
         get
@@ -237,7 +273,7 @@
 
     private Dictionary<string, (double Radius, string Color)> _unitDisplayInfo = [];
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (currentGamePos != Player.GamePos || currentReplayHash != ReplayHelper.ReplayDetails.ReplayHash)
         {
@@ -247,6 +283,7 @@
         }
 
         ComputeDisplayInfo();
+        await EnsureUnitLifeCostsLoaded();
     }
 
     private void ComputeDisplayInfo()
@@ -264,6 +301,74 @@
             return;
         }
         await buildChart.HighlightUnits(name);
+    }
+
+    private async Task EnsureUnitLifeCostsLoaded()
+    {
+        if (currentUnitLifeCostCommander == Player.Race)
+        {
+            return;
+        }
+
+        currentUnitLifeCostCommander = Player.Race;
+        unitLifeCosts = EmptyUnitLifeCosts;
+
+        try
+        {
+            unitLifeCosts = await UnitLifeCostService.GetUnitLifeCosts(Player.Race);
+        }
+        catch
+        {
+            unitLifeCosts = EmptyUnitLifeCosts;
+        }
+    }
+
+    private string FormatUnitCost(UnitDto unit)
+    {
+        return TryGetUnitLifeCost(unit.Name, out var unitLifeCost)
+            ? FormatTotal(unitLifeCost.Cost, unit.Count)
+            : string.Empty;
+    }
+
+    private string FormatUnitLife(UnitDto unit)
+    {
+        return TryGetUnitLifeCost(unit.Name, out var unitLifeCost)
+            ? FormatTotal(unitLifeCost.Life, unit.Count)
+            : string.Empty;
+    }
+
+    private string FormatSpawnCost(SpawnDto spawn)
+    {
+        return FormatSpawnTotal(spawn, unitLifeCost => unitLifeCost.Cost);
+    }
+
+    private string FormatSpawnLife(SpawnDto spawn)
+    {
+        return FormatSpawnTotal(spawn, unitLifeCost => unitLifeCost.Life);
+    }
+
+    private string FormatSpawnTotal(SpawnDto spawn, Func<DsUnitLifeCostDto, int> selector)
+    {
+        var total = 0L;
+        foreach (var unit in spawn.Units)
+        {
+            if (TryGetUnitLifeCost(unit.Name, out var unitLifeCost))
+            {
+                total += selector(unitLifeCost) * (long)unit.Count;
+            }
+        }
+
+        return total.ToString("N0");
+    }
+
+    private bool TryGetUnitLifeCost(string unitName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out DsUnitLifeCostDto? unitLifeCost)
+    {
+        return unitLifeCosts.TryGetValue(UnitMap.GetNormalizedUnitName(unitName, Player.Race), out unitLifeCost);
+    }
+
+    private static string FormatTotal(int value, int count)
+    {
+        return (value * (long)count).ToString("N0");
     }
 
     private async Task ToggleMap()
