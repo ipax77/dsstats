@@ -49,7 +49,7 @@ public static partial class SpawnPlaybackFactoryNg
             return PathBuilder
                 .Build(spawn, lifetimeGameloops)
                 .WithDefaultTarget(death)
-                .WithClusterHold(spawnGameloop, deathClusters)
+                .WithClusterHolds(spawnGameloop, deathClusters)
                 .WithStandOff(DeathClusterStopForwardDistance)
                 .ToPathKey();
         }
@@ -57,33 +57,37 @@ public static partial class SpawnPlaybackFactoryNg
         return PathBuilder
             .Build(spawn, lifetimeGameloops)
             .WithDefaultTarget(mirroredRouteTarget)
-            .WithClusterHold(spawnGameloop, deathClusters)
+            .WithClusterHolds(spawnGameloop, deathClusters)
             .WithStandOff(DeathClusterStopForwardDistance)
             .ToPathKey();
     }
 
-    private static double? TryGetFirstClusterLineSum(
+    private static int GetClusterHoldLineSums(
         DoublePoint spawn,
         DoublePoint routeTarget,
-        double deathLineSum,
+        double targetLineSum,
         int spawnGameloop,
         int lifetimeGameloops,
-        ReadOnlySpan<DeathCluster> deathClusters)
+        ReadOnlySpan<DeathCluster> deathClusters,
+        out double firstLineSum,
+        out double secondLineSum)
     {
+        firstLineSum = 0;
+        secondLineSum = 0;
         if (deathClusters.Length == 0)
         {
-            return null;
+            return 0;
         }
 
-        double deathProgress = GetLineProgress(spawn, routeTarget, deathLineSum);
-        if (deathProgress <= PathEpsilon)
+        double targetProgress = GetLineProgress(spawn, routeTarget, targetLineSum);
+        if (targetProgress <= PathEpsilon)
         {
-            return null;
+            return 0;
         }
 
         int expiresGameloop = spawnGameloop + lifetimeGameloops;
-        double bestProgress = double.MaxValue;
-        double bestLineSum = 0;
+        double firstProgress = double.MaxValue;
+        double secondProgress = double.MaxValue;
         for (int i = 0; i < deathClusters.Length; i++)
         {
             var cluster = deathClusters[i];
@@ -94,17 +98,32 @@ public static partial class SpawnPlaybackFactoryNg
 
             double clusterProgress = GetLineProgress(spawn, routeTarget, cluster.LineSum);
             if (clusterProgress <= PathEpsilon
-                || clusterProgress >= deathProgress - PathEpsilon
-                || clusterProgress >= bestProgress)
+                || clusterProgress >= targetProgress - PathEpsilon)
             {
                 continue;
             }
 
-            bestProgress = clusterProgress;
-            bestLineSum = cluster.LineSum;
+            if (clusterProgress < firstProgress - PathEpsilon)
+            {
+                secondProgress = firstProgress;
+                secondLineSum = firstLineSum;
+                firstProgress = clusterProgress;
+                firstLineSum = cluster.LineSum;
+            }
+            else if (clusterProgress > firstProgress + PathEpsilon
+                && clusterProgress < secondProgress - PathEpsilon)
+            {
+                secondProgress = clusterProgress;
+                secondLineSum = cluster.LineSum;
+            }
         }
 
-        return bestProgress < double.MaxValue ? bestLineSum : null;
+        if (firstProgress == double.MaxValue)
+        {
+            return 0;
+        }
+
+        return secondProgress < double.MaxValue ? 2 : 1;
     }
 
     private static double GetLineProgress(DoublePoint spawn, DoublePoint routeTarget, double lineSum)
@@ -198,7 +217,7 @@ public static partial class SpawnPlaybackFactoryNg
         private int spawnGameloop;
         private double standOffDistance;
         private bool hasDefaultTarget;
-        private bool useClusterHold;
+        private bool useClusterHolds;
 
         private PathBuilder(DoublePoint spawn, int lifetimeGameloops)
         {
@@ -220,9 +239,14 @@ public static partial class SpawnPlaybackFactoryNg
 
         public PathBuilder WithClusterHold(int spawnGameloop, ReadOnlySpan<DeathCluster> deathClusters)
         {
+            return WithClusterHolds(spawnGameloop, deathClusters);
+        }
+
+        public PathBuilder WithClusterHolds(int spawnGameloop, ReadOnlySpan<DeathCluster> deathClusters)
+        {
             this.spawnGameloop = spawnGameloop;
             this.deathClusters = deathClusters;
-            useClusterHold = deathClusters.Length > 0;
+            useClusterHolds = deathClusters.Length > 0;
             return this;
         }
 
@@ -242,47 +266,73 @@ public static partial class SpawnPlaybackFactoryNg
             PathPointBuilder points = new();
             points.Append(spawn, 0);
 
-            if (useClusterHold)
+            if (useClusterHolds)
             {
-                AddClusterHold(ref points);
+                AddClusterHolds(ref points);
             }
 
             AddTarget(ref points);
             return points.ToPathKey();
         }
 
-        private readonly void AddClusterHold(ref PathPointBuilder points)
+        private readonly void AddClusterHolds(ref PathPointBuilder points)
         {
             double targetLineSum = defaultTarget.X + defaultTarget.Y;
-            double? clusterLineSum = TryGetFirstClusterLineSum(
+            int clusterCount = GetClusterHoldLineSums(
                 spawn,
                 defaultTarget,
                 targetLineSum,
                 spawnGameloop,
                 lifetimeGameloops,
-                deathClusters);
-            if (clusterLineSum is not double clusterSum)
+                deathClusters,
+                out double firstClusterLineSum,
+                out double secondClusterLineSum);
+            if (clusterCount == 0)
             {
                 return;
             }
 
-            var clusterLinePoint = MoveTowards(
-                GetLinePoint(spawn, defaultTarget, clusterSum),
+            var firstClusterPoint = ToPathPoint(MoveTowards(
+                GetLinePoint(spawn, defaultTarget, firstClusterLineSum),
                 defaultTarget,
-                standOffDistance);
-            int clusterLineGameloops = GetMinimumSpeedGameloops(GetDistance(spawn, clusterLinePoint));
-            if (clusterLineGameloops <= 0 || clusterLineGameloops >= lifetimeGameloops)
+                standOffDistance));
+            int firstClusterGameloops = GetMinimumSpeedGameloops(GetDistance(spawn, firstClusterPoint));
+            if (firstClusterGameloops <= 0 || firstClusterGameloops >= lifetimeGameloops)
             {
                 return;
             }
 
-            points.Append(clusterLinePoint, clusterLineGameloops);
-
-            int targetGameloops = GetMinimumSpeedGameloops(GetDistance(clusterLinePoint, defaultTarget));
-            int remainingAfterClusterGameloops = lifetimeGameloops - clusterLineGameloops;
-            if (targetGameloops > 0 && targetGameloops < remainingAfterClusterGameloops)
+            if (clusterCount > 1)
             {
-                points.Append(clusterLinePoint, lifetimeGameloops - targetGameloops);
+                var secondClusterPoint = ToPathPoint(MoveTowards(
+                    GetLinePoint(spawn, defaultTarget, secondClusterLineSum),
+                    defaultTarget,
+                    standOffDistance));
+                int firstToSecondGameloops = GetMinimumSpeedGameloops(GetDistance(firstClusterPoint, secondClusterPoint));
+                int secondToTargetGameloops = GetMinimumSpeedGameloops(GetDistance(secondClusterPoint, defaultTarget));
+                int totalTravelGameloops = firstClusterGameloops + firstToSecondGameloops + secondToTargetGameloops;
+                if (firstToSecondGameloops > 0
+                    && secondToTargetGameloops > 0
+                    && totalTravelGameloops + 2 <= lifetimeGameloops)
+                {
+                    int firstClusterDepartureGameloops = lifetimeGameloops
+                        - firstToSecondGameloops
+                        - 1
+                        - secondToTargetGameloops;
+                    int secondClusterArrivalGameloops = firstClusterDepartureGameloops + firstToSecondGameloops;
+                    points.Append(firstClusterPoint, firstClusterGameloops);
+                    points.Append(firstClusterPoint, firstClusterDepartureGameloops);
+                    points.Append(secondClusterPoint, secondClusterArrivalGameloops);
+                    points.Append(secondClusterPoint, lifetimeGameloops - secondToTargetGameloops);
+                    return;
+                }
+            }
+
+            int targetGameloops = GetMinimumSpeedGameloops(GetDistance(firstClusterPoint, defaultTarget));
+            if (targetGameloops > 0 && firstClusterGameloops + targetGameloops < lifetimeGameloops)
+            {
+                points.Append(firstClusterPoint, firstClusterGameloops);
+                points.Append(firstClusterPoint, lifetimeGameloops - targetGameloops);
             }
         }
 
@@ -405,5 +455,10 @@ public static partial class SpawnPlaybackFactoryNg
     private static int ToPathCoordinate(double value, int maxValue)
     {
         return (int)Math.Round(Math.Clamp(value, 0, maxValue), MidpointRounding.AwayFromZero);
+    }
+
+    private static DoublePoint ToPathPoint(DoublePoint point)
+    {
+        return new(ToPathCoordinate(point.X, MapWidth), ToPathCoordinate(point.Y, MapHeight));
     }
 }
