@@ -17,8 +17,22 @@ internal static class SpawnPlaybackBinaryPayloads
     public const int UnitRowSpawnNumberOffset = 3;
     public const int UnitRowSpawnGameloopOffset = 4;
     public const int UnitRowExpiresGameloopOffset = 5;
+    public const int UnitRowPathIndexOffset = 6;
     public const int UnitRowKillOffsetOffset = 7;
     public const int UnitRowKillCountOffset = 8;
+    public const int UnitRowDiedGameloopOffset = 9;
+    public const int UnitRowFlagsOffset = 10;
+
+    public const int PathRowIntCount = 3;
+    public const int PathRowByteStride = PathRowIntCount * sizeof(int);
+    public const int PathRowPointOffsetOffset = 0;
+    public const int PathRowPointCountOffset = 1;
+
+    public const int PathPointIntCount = 3;
+    public const int PathPointByteStride = PathPointIntCount * sizeof(int);
+    public const int PathPointXOffset = 0;
+    public const int PathPointYOffset = 1;
+    public const int PathPointGameloopOffsetOffset = 2;
 
     public static SpawnPlaybackReplayNgMetadata CreateMetadata(SpawnPlaybackReplayNg replay)
     {
