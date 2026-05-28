@@ -14,6 +14,11 @@ public static class BuildChartTarget
         return $"{replayHash}_{gamePos}_spawn_{spawnNumber}_{startGameloop}";
     }
 
+    public static string GetSpawnPlaybackKey(string replayHash, int gamePos, int team, Commander commander)
+    {
+        return $"{replayHash}_{gamePos}_spawn_{team}_{(int)commander}";
+    }
+
     public static string? GetVisibleKey(bool isVisible, string replayHash, int gamePos, Breakpoint breakpoint)
     {
         return isVisible
@@ -30,6 +35,18 @@ public static class BuildChartTarget
     {
         return isVisible
             ? GetWaveKey(replayHash, gamePos, spawnNumber, startGameloop)
+            : null;
+    }
+
+    public static string? GetVisibleSpawnPlaybackKey(
+        bool isVisible,
+        string replayHash,
+        int gamePos,
+        int team,
+        Commander commander)
+    {
+        return isVisible
+            ? GetSpawnPlaybackKey(replayHash, gamePos, team, commander)
             : null;
     }
 }

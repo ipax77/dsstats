@@ -40,29 +40,53 @@
         base.OnInitialized();
     }
 
-    List<MapUnit> GetUnits(SpawnDto? spawn, int team)
+    private List<ChartJsDataset> BuildBubbleChartDatasets(SpawnDto spawn, int team)
     {
-        List<MapUnit> units = new();
-
-        if (spawn == null)
-        {
-            return units;
-        }
+        Dictionary<string, UnitDatasetBuilder> builders = new(StringComparer.Ordinal);
 
         foreach (var unit in spawn.Units)
         {
             if (unit.Positions is { Count: > 0 } positions)
             {
-                for (int i = 0; i < positions.Count; i += 2)
+                var builder = GetOrAddDatasetBuilder(builders, unit.Name, positions.Count / 2);
+                builder.EnsureAdditionalCapacity(positions.Count / 2);
+
+                for (int i = 0; i + 1 < positions.Count; i += 2)
                 {
                     Point point = new(positions[i], positions[i + 1]);
                     (var x, var y) = GetRotatedPoint(point, team);
-                    units.Add(new(unit.Name, x, y));
+                    builder.AddPoint(x, y);
                 }
             }
         }
 
-        return units;
+        List<ChartJsDataset> datasets = new(builders.Count);
+        foreach (var builder in builders.Values.OrderByDescending(o => o.Data.Count))
+        {
+            datasets.Add(builder.ToDataset());
+        }
+
+        return datasets;
+    }
+
+    private UnitDatasetBuilder GetOrAddDatasetBuilder(
+        Dictionary<string, UnitDatasetBuilder> builders,
+        string dbName,
+        int initialCapacity)
+    {
+        if (builders.TryGetValue(dbName, out var builder))
+        {
+            return builder;
+        }
+
+        var unitInfo = UnitMap.GetUnitInfo(dbName, Cmdr);
+        (var radius, var color) = UnitDisplayInfo is not null && UnitDisplayInfo.TryGetValue(dbName, out var di)
+            ? di
+            : UnitMapNg.GetColorAndRadius(dbName, Cmdr);
+
+        builder = new(dbName, unitInfo.Name, radius, color, initialCapacity);
+        builders.Add(dbName, builder);
+        return builder;
     }
 
     private (double x, double y) GetRotatedPoint(Point point, int team)
@@ -87,21 +111,21 @@
 
     public async Task Update(SpawnDto? spawn, Commander cmdr, int team, Dictionary<string, (double Radius, string Color)>? unitDisplayInfo = null)
     {
-        if (!chartIsReady)
-        {
-            return;
-        }
+        await UpdateCore(spawn, cmdr, team, unitDisplayInfo, smooth: false);
+    }
 
-        if (chartConfig.Data.Datasets.Any())
-        {
-            chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
-        }
+    public async Task UpdateSmooth(SpawnDto? spawn, Commander cmdr, int team, Dictionary<string, (double Radius, string Color)>? unitDisplayInfo = null)
+    {
+        await UpdateCore(spawn, cmdr, team, unitDisplayInfo, smooth: true);
+    }
 
-        if (spawn is null)
-        {
-            return;
-        }
-
+    private async Task UpdateCore(
+        SpawnDto? spawn,
+        Commander cmdr,
+        int team,
+        Dictionary<string, (double Radius, string Color)>? unitDisplayInfo,
+        bool smooth)
+    {
         Team = team;
         Spawn = spawn;
         Cmdr = cmdr;
@@ -110,27 +134,39 @@
             UnitDisplayInfo = unitDisplayInfo;
         }
 
-        var unitGroups = GetUnits(spawn, team).GroupBy(g => g.Name);
-        List<ChartJsDataset> datasets = new();
-        int i = 0;
-        foreach (var group in unitGroups.OrderByDescending(o => o.Count()))
+        if (!chartIsReady)
         {
-            var items = group.ToList();
-            if (items.Count == 0)
-            {
-                continue;
-            }
-            var unitInfo = UnitMap.GetUnitInfo(group.Key, Cmdr);
-            datasets.Add(GetBubbleChartDataset(items, unitInfo, group.Key));
-            i++;
+            return;
         }
+
+        List<ChartJsDataset> datasets = spawn is null
+            ? []
+            : BuildBubbleChartDatasets(spawn, team);
+
         try
         {
-            chartConfig.AddDatasets(datasets);
+            if (smooth)
+            {
+                chartConfig.SetDatasetsSmooth(datasets, [], updateOptions: false);
+            }
+            else
+            {
+                if (chartConfig.Data.Datasets.Any())
+                {
+                    chartConfig.RemoveDatasets(chartConfig.Data.Datasets);
+                }
+
+                if (datasets.Count > 0)
+                {
+                    chartConfig.AddDatasets(datasets);
+                }
+            }
+
             var module = await moduleTask.Value;
             await module.InvokeVoidAsync("drawChartBorder", chartConfig.ChartJsConfigGuid);
         }
         catch (TaskCanceledException) { }
+        catch (JSDisconnectedException) { }
     }
 
     public async Task HighlightUnits(string unitName)
@@ -175,31 +211,6 @@
                 await HighlightUnits(hoverEvent.Label);
             }
         }
-    }
-
-    private ChartJsDataset GetBubbleChartDataset(List<MapUnit> units, UnitInfo unitInfo, string dbName)
-    {
-        var label = unitInfo.Name;
-        (var radius, var color) = UnitDisplayInfo is not null && UnitDisplayInfo.TryGetValue(dbName, out var di)
-            ? di
-            : UnitMapNg.GetColorAndRadius(dbName, Cmdr);
-
-        return new BubbleDataset()
-        {
-            Label = label,
-            Data = units.Select(s => (object)(new CmdrBubbleDataPoint()
-            {
-                X = s.X,
-                Y = s.Y,
-                R = radius,
-                Label = label
-            })).ToList(),
-            BorderWidth = 2,
-            BorderColor = $"{color}CC",
-            BackgroundColor = $"{color}80",
-            HoverBorderColor = $"{color}FF",
-            HoverBorderWidth = 4,
-        };
     }
 
     public CustomChartJsConfig GetBubbleChartConfig()
@@ -361,18 +372,92 @@
         public string Label { get; set; } = string.Empty;
     }
 
-    private record MapUnit
+    private static string GetDatasetId(string dbName)
     {
-        public MapUnit(string name, double x, double y)
+        return $"build-{dbName}";
+    }
+
+    private sealed class UnitDatasetBuilder
+    {
+        public UnitDatasetBuilder(string dbName, string label, double radius, string color, int initialCapacity)
         {
-            Name = name;
-            X = x;
-            Y = y;
+            DbName = dbName;
+            Label = label;
+            Radius = radius;
+            Color = color;
+            Data = new(Math.Max(0, initialCapacity));
         }
 
-        public string Name { get; init; }
-        public double X { get; init; }
-        public double Y { get; init; }
+        public string DbName { get; }
+        public string Label { get; }
+        public double Radius { get; }
+        public string Color { get; }
+        public List<CmdrBubbleDataPoint> Data { get; }
+
+        public void EnsureAdditionalCapacity(int additionalCapacity)
+        {
+            var neededCapacity = Data.Count + additionalCapacity;
+            if (Data.Capacity < neededCapacity)
+            {
+                Data.Capacity = neededCapacity;
+            }
+        }
+
+        public void AddPoint(double x, double y)
+        {
+            Data.Add(new CmdrBubbleDataPoint()
+            {
+                X = x,
+                Y = y,
+                R = Radius,
+                Label = Label
+            });
+        }
+
+        public ChartJsDataset ToDataset()
+        {
+            Data.Sort(ComparePoints);
+            List<object> data = new(Data.Count);
+            foreach (var point in Data)
+            {
+                data.Add(point);
+            }
+
+            return new BubbleDataset()
+            {
+                Id = GetDatasetId(DbName),
+                Label = Label,
+                Data = data,
+                BorderWidth = 2,
+                BorderColor = $"{Color}CC",
+                BackgroundColor = $"{Color}80",
+                HoverBorderColor = $"{Color}FF",
+                HoverBorderWidth = 4,
+            };
+        }
+
+        private static int ComparePoints(CmdrBubbleDataPoint left, CmdrBubbleDataPoint right)
+        {
+            var result = left.Y.CompareTo(right.Y);
+            if (result != 0)
+            {
+                return result;
+            }
+
+            result = left.X.CompareTo(right.X);
+            if (result != 0)
+            {
+                return result;
+            }
+
+            result = left.R.CompareTo(right.R);
+            if (result != 0)
+            {
+                return result;
+            }
+
+            return string.CompareOrdinal(left.Label, right.Label);
+        }
     }
 
     public record Point(int X, int Y)

@@ -117,7 +117,7 @@
                                                 moduleTask="moduleTask"
                                                 UnitDisplayInfo="_unitDisplayInfo"
                                                 PositionedSpawn="SelectedSpawnWave.Spawn"
-                                                ChartKeySuffix="MapChartKey"
+                                                ChartKeySuffix="@MapChartKey"
                                                 EmptyText="No spawn chart data is available." />
                         }
                         else
@@ -138,7 +138,7 @@
                                         Cmdr="Player.Race"
                                         moduleTask="moduleTask"
                                         UnitDisplayInfo="_unitDisplayInfo"
-                                        ChartKeySuffix="MapChartKey" />
+                                        ChartKeySuffix="@MapChartKey" />
                     }
                 </div>
             }
@@ -253,14 +253,14 @@
     {
         get
         {
-            if (chartMode == BuildChartMode.Spawn && SelectedSpawnWave is { } wave)
+            if (chartMode == BuildChartMode.Spawn)
             {
-                return BuildChartTarget.GetVisibleWaveKey(
+                return BuildChartTarget.GetVisibleSpawnPlaybackKey(
                     showMap,
                     ReplayHelper.ReplayDetails.ReplayHash,
                     Player.GamePos,
-                    wave.SpawnNumber,
-                    wave.StartGameloop) ?? string.Empty;
+                    Player.TeamId,
+                    Player.Race) ?? string.Empty;
             }
 
             return BuildChartTarget.GetVisibleKey(
@@ -466,24 +466,32 @@
         if (args.Value is string value && int.TryParse(value, out var index))
         {
             selectedSpawnWaveIndex = Math.Clamp(index, 0, Math.Max(0, spawnWaves.Count - 1));
-            ComputeDisplayInfo();
         }
 
-        return InvokeAsync(StateHasChanged);
+        return UpdateSelectedSpawnWave();
     }
 
     private Task PreviousSpawnWave()
     {
         selectedSpawnWaveIndex = Math.Max(0, selectedSpawnWaveIndex - 1);
-        ComputeDisplayInfo();
-        return InvokeAsync(StateHasChanged);
+        return UpdateSelectedSpawnWave();
     }
 
     private Task NextSpawnWave()
     {
         selectedSpawnWaveIndex = Math.Min(Math.Max(0, spawnWaves.Count - 1), selectedSpawnWaveIndex + 1);
+        return UpdateSelectedSpawnWave();
+    }
+
+    private async Task UpdateSelectedSpawnWave()
+    {
         ComputeDisplayInfo();
-        return InvokeAsync(StateHasChanged);
+        if (chartMode == BuildChartMode.Spawn && showMap && buildChart is not null)
+        {
+            await buildChart.UpdateChartAsync(SelectedSpawnWave?.Spawn, _unitDisplayInfo);
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private static string GetSpawnWaveLabel(SpawnPlaybackWaveInfo wave)

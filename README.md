@@ -33,7 +33,15 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v3.0.7</summary>
+<details open="open"><summary>v3.0.8</summary>
+
+>- Replay build life and cost
+>- Replay build for each spawn
+>- better unit pathing for dsplay
+
+</details>
+
+<details><summary>v3.0.7</summary>
 
 >- Add Build Details feature. Thanks to TOMage for the suggestion.
 >- Fix maui player stats
