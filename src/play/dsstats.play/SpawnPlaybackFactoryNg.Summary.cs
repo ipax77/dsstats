@@ -62,44 +62,109 @@ public static partial class SpawnPlaybackFactoryNg
         IReadOnlyList<SpawnPlaybackUnitKindNg> unitKinds,
         Dictionary<PlayerUnitSummaryKey, int> killsByPlayerUnit)
     {
-        List<SpawnPlaybackTopUnitSummary> topUnits = new(killsByPlayerUnit.Count);
+        List<SpawnPlaybackTopUnitSummary> topUnits = new(Math.Min(5, killsByPlayerUnit.Count));
         foreach (var pair in killsByPlayerUnit)
         {
             var player = players[pair.Key.PlayerIndex];
             var unitKind = unitKinds[pair.Key.UnitKindIndex];
-            topUnits.Add(new(
+            if (!ShouldInsertTopUnit(topUnits, player, unitKind, pair.Value))
+            {
+                continue;
+            }
+
+            int insertIndex = GetTopUnitInsertIndex(topUnits, player, unitKind, pair.Value);
+            topUnits.Insert(insertIndex, new(
                 player.Name,
                 player.TeamId,
                 player.GamePos,
                 unitKind.Name,
                 pair.Value));
-        }
-
-        topUnits.Sort(static (left, right) =>
-        {
-            int killsComparison = right.Kills.CompareTo(left.Kills);
-            if (killsComparison != 0)
+            if (topUnits.Count > 5)
             {
-                return killsComparison;
+                topUnits.RemoveAt(5);
             }
-
-            int teamComparison = left.TeamId.CompareTo(right.TeamId);
-            if (teamComparison != 0)
-            {
-                return teamComparison;
-            }
-
-            int gamePosComparison = left.GamePos.CompareTo(right.GamePos);
-            return gamePosComparison != 0
-                ? gamePosComparison
-                : string.Compare(left.UnitName, right.UnitName, StringComparison.Ordinal);
-        });
-
-        if (topUnits.Count > 5)
-        {
-            topUnits.RemoveRange(5, topUnits.Count - 5);
         }
 
         return topUnits;
+    }
+
+    private static bool ShouldInsertTopUnit(
+        List<SpawnPlaybackTopUnitSummary> topUnits,
+        SpawnPlaybackPlayerNg player,
+        SpawnPlaybackUnitKindNg unitKind,
+        int kills)
+    {
+        return topUnits.Count < 5
+            || CompareTopUnit(kills, player.TeamId, player.GamePos, unitKind.Name, topUnits[^1]) < 0;
+    }
+
+    private static int GetTopUnitInsertIndex(
+        List<SpawnPlaybackTopUnitSummary> topUnits,
+        SpawnPlaybackPlayerNg player,
+        SpawnPlaybackUnitKindNg unitKind,
+        int kills)
+    {
+        int index = 0;
+        while (index < topUnits.Count
+            && CompareTopUnit(
+                topUnits[index].Kills,
+                topUnits[index].TeamId,
+                topUnits[index].GamePos,
+                topUnits[index].UnitName,
+                kills,
+                player.TeamId,
+                player.GamePos,
+                unitKind.Name) <= 0)
+        {
+            index++;
+        }
+
+        return index;
+    }
+
+    private static int CompareTopUnit(
+        int leftKills,
+        int leftTeamId,
+        int leftGamePos,
+        string leftUnitName,
+        SpawnPlaybackTopUnitSummary right)
+    {
+        return CompareTopUnit(
+            leftKills,
+            leftTeamId,
+            leftGamePos,
+            leftUnitName,
+            right.Kills,
+            right.TeamId,
+            right.GamePos,
+            right.UnitName);
+    }
+
+    private static int CompareTopUnit(
+        int leftKills,
+        int leftTeamId,
+        int leftGamePos,
+        string leftUnitName,
+        int rightKills,
+        int rightTeamId,
+        int rightGamePos,
+        string rightUnitName)
+    {
+        int killsComparison = rightKills.CompareTo(leftKills);
+        if (killsComparison != 0)
+        {
+            return killsComparison;
+        }
+
+        int teamComparison = leftTeamId.CompareTo(rightTeamId);
+        if (teamComparison != 0)
+        {
+            return teamComparison;
+        }
+
+        int gamePosComparison = leftGamePos.CompareTo(rightGamePos);
+        return gamePosComparison != 0
+            ? gamePosComparison
+            : string.Compare(leftUnitName, rightUnitName, StringComparison.Ordinal);
     }
 }

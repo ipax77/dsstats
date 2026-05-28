@@ -1,3 +1,4 @@
+using System.Buffers;
 using dsstats.shared;
 
 namespace dsstats.play;
@@ -11,125 +12,110 @@ public static partial class SpawnPlaybackFactoryNg
 
     private static DeathCluster[] CreateDeathClusters(
         SpawnPlaybackPlayerSidecarDto[] sidecarPlayers,
-        Dictionary<int, ReplayPlayerDto> replayPlayersByGamePos)
+        ReplayPlayerGamePosLookup replayPlayersByGamePos,
+        int deathCount)
     {
-        int deathCount = CountDeathsWithPositions(sidecarPlayers, replayPlayersByGamePos);
         if (deathCount < DeathClusterMinimumDeaths)
         {
             return [];
         }
 
-        DeathEvent[] deaths = new DeathEvent[deathCount];
-        int deathIndex = 0;
-        for (int playerIndex = 0; playerIndex < sidecarPlayers.Length; playerIndex++)
+        bool returnDeathsToPool = deathCount > 0;
+        DeathEvent[] rentedDeaths = returnDeathsToPool
+            ? ArrayPool<DeathEvent>.Shared.Rent(deathCount)
+            : GC.AllocateUninitializedArray<DeathEvent>(deathCount);
+        try
         {
-            var sidecarPlayer = sidecarPlayers[playerIndex];
-            if (!replayPlayersByGamePos.ContainsKey(sidecarPlayer.GamePos))
+            int deathIndex = 0;
+            for (int playerIndex = 0; playerIndex < sidecarPlayers.Length; playerIndex++)
             {
-                continue;
-            }
-
-            var units = sidecarPlayer.Units;
-            for (int unitIndex = 0; unitIndex < units.Count; unitIndex++)
-            {
-                var unit = units[unitIndex];
-                if (unit.DiedGameloop is int diedGameloop
-                    && unit.DiedX is int diedX
-                    && unit.DiedY is int diedY)
-                {
-                    deaths[deathIndex++] = new(diedGameloop, diedX, diedY);
-                }
-            }
-        }
-
-        Array.Sort(deaths, static (left, right) => left.Gameloop.CompareTo(right.Gameloop));
-        List<DeathClusterAccumulator> clusters = [];
-        int windowEnd = 0;
-        for (int start = 0; start < deaths.Length; start++)
-        {
-            int windowLimit = deaths[start].Gameloop + DeathClusterWindowGameloops;
-            while (windowEnd < deaths.Length && deaths[windowEnd].Gameloop <= windowLimit)
-            {
-                windowEnd++;
-            }
-
-            int count = 0;
-            int firstGameloop = int.MaxValue;
-            int lastGameloop = 0;
-            double sumX = 0;
-            double sumY = 0;
-            for (int candidateIndex = start; candidateIndex < windowEnd; candidateIndex++)
-            {
-                var candidate = deaths[candidateIndex];
-                if (GetDistanceSquared(deaths[start], candidate) > DeathClusterRadiusSquared)
+                var sidecarPlayer = sidecarPlayers[playerIndex];
+                if (!replayPlayersByGamePos.TryGetValue(sidecarPlayer.GamePos, out _))
                 {
                     continue;
                 }
 
-                count++;
-                firstGameloop = Math.Min(firstGameloop, candidate.Gameloop);
-                lastGameloop = Math.Max(lastGameloop, candidate.Gameloop);
-                sumX += candidate.X;
-                sumY += candidate.Y;
-            }
-
-            if (count >= DeathClusterMinimumDeaths)
-            {
-                AddDeathClusterCandidate(clusters, new(count, firstGameloop, lastGameloop, sumX, sumY));
-            }
-        }
-
-        if (clusters.Count == 0)
-        {
-            return [];
-        }
-
-        DeathCluster[] result = new DeathCluster[clusters.Count];
-        for (int i = 0; i < result.Length; i++)
-        {
-            var cluster = clusters[i];
-            double centerX = cluster.CenterX;
-            double centerY = cluster.CenterY;
-            result[i] = new(cluster.FirstGameloop, cluster.LastGameloop, centerX + centerY, centerX, centerY, cluster.Count);
-        }
-
-        Array.Sort(result, static (left, right) =>
-        {
-            int sumComparison = left.LineSum.CompareTo(right.LineSum);
-            return sumComparison != 0
-                ? sumComparison
-                : left.FirstGameloop.CompareTo(right.FirstGameloop);
-        });
-        return result;
-    }
-
-    private static int CountDeathsWithPositions(
-        SpawnPlaybackPlayerSidecarDto[] sidecarPlayers,
-        Dictionary<int, ReplayPlayerDto> replayPlayersByGamePos)
-    {
-        int count = 0;
-        for (int playerIndex = 0; playerIndex < sidecarPlayers.Length; playerIndex++)
-        {
-            var sidecarPlayer = sidecarPlayers[playerIndex];
-            if (!replayPlayersByGamePos.ContainsKey(sidecarPlayer.GamePos))
-            {
-                continue;
-            }
-
-            var units = sidecarPlayer.Units;
-            for (int unitIndex = 0; unitIndex < units.Count; unitIndex++)
-            {
-                var unit = units[unitIndex];
-                if (unit.DiedGameloop is not null
-                    && unit.DiedX is not null
-                    && unit.DiedY is not null)
+                var units = sidecarPlayer.Units;
+                for (int unitIndex = 0; unitIndex < units.Count; unitIndex++)
                 {
-                    count++;
+                    var unit = units[unitIndex];
+                    if (unit.DiedGameloop is int diedGameloop
+                        && unit.DiedX is int diedX
+                        && unit.DiedY is int diedY)
+                    {
+                        rentedDeaths[deathIndex++] = new(diedGameloop, diedX, diedY);
+                    }
                 }
             }
-        }
 
-        return count;
+            Span<DeathEvent> deaths = rentedDeaths.AsSpan(0, deathIndex);
+            deaths.Sort(static (left, right) => left.Gameloop.CompareTo(right.Gameloop));
+            List<DeathClusterAccumulator> clusters = new(Math.Max(1, deathIndex / DeathClusterMinimumDeaths));
+            int windowEnd = 0;
+            for (int start = 0; start < deaths.Length; start++)
+            {
+                int windowLimit = deaths[start].Gameloop + DeathClusterWindowGameloops;
+                while (windowEnd < deaths.Length && deaths[windowEnd].Gameloop <= windowLimit)
+                {
+                    windowEnd++;
+                }
+
+                int count = 0;
+                int firstGameloop = int.MaxValue;
+                int lastGameloop = 0;
+                double sumX = 0;
+                double sumY = 0;
+                for (int candidateIndex = start; candidateIndex < windowEnd; candidateIndex++)
+                {
+                    var candidate = deaths[candidateIndex];
+                    if (GetDistanceSquared(deaths[start], candidate) > DeathClusterRadiusSquared)
+                    {
+                        continue;
+                    }
+
+                    count++;
+                    firstGameloop = Math.Min(firstGameloop, candidate.Gameloop);
+                    lastGameloop = Math.Max(lastGameloop, candidate.Gameloop);
+                    sumX += candidate.X;
+                    sumY += candidate.Y;
+                }
+
+                if (count >= DeathClusterMinimumDeaths)
+                {
+                    AddDeathClusterCandidate(clusters, new(count, firstGameloop, lastGameloop, sumX, sumY));
+                }
+            }
+
+            if (clusters.Count == 0)
+            {
+                return [];
+            }
+
+            DeathCluster[] result = new DeathCluster[clusters.Count];
+            for (int i = 0; i < result.Length; i++)
+            {
+                var cluster = clusters[i];
+                double centerX = cluster.CenterX;
+                double centerY = cluster.CenterY;
+                result[i] = new(cluster.FirstGameloop, cluster.LastGameloop, centerX + centerY, centerX, centerY, cluster.Count);
+            }
+
+            Array.Sort(result, static (left, right) =>
+            {
+                int sumComparison = left.LineSum.CompareTo(right.LineSum);
+                return sumComparison != 0
+                    ? sumComparison
+                    : left.FirstGameloop.CompareTo(right.FirstGameloop);
+            });
+            return result;
+        }
+        finally
+        {
+            if (returnDeathsToPool)
+            {
+                ArrayPool<DeathEvent>.Shared.Return(rentedDeaths);
+            }
+        }
     }
 
     private static void AddDeathClusterCandidate(List<DeathClusterAccumulator> clusters, DeathClusterAccumulator candidate)

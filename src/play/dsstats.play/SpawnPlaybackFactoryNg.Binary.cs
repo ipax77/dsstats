@@ -4,10 +4,10 @@ namespace dsstats.play;
 
 public static partial class SpawnPlaybackFactoryNg
 {
-    private static byte[] CreateUnitRowBytes(List<UnitBinaryRow> rows)
+    private static byte[] CreateUnitRowBytes(ReadOnlySpan<UnitBinaryRow> rows)
     {
-        byte[] bytes = AllocateBytes(rows.Count, SpawnPlaybackBinaryPayloads.UnitRowByteStride);
-        for (int i = 0; i < rows.Count; i++)
+        byte[] bytes = AllocateBytes(rows.Length, SpawnPlaybackBinaryPayloads.UnitRowByteStride);
+        for (int i = 0; i < rows.Length; i++)
         {
             WriteUnitRow(bytes, i, rows[i]);
         }
