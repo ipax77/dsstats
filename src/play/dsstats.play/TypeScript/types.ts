@@ -93,8 +93,11 @@ export interface UnitRender {
 
 export interface NormalizedUnit {
     name: string;
+    playerName: string;
+    gamePos: number;
     commander: string;
     aliveUnitHighlightKey: string;
+    spawnNumber: number;
     spawnGameloop: number;
     expiresGameloop: number;
     spawnX: number;
@@ -219,6 +222,50 @@ export interface ObjectiveDeathAnnouncement {
     endGameloop: number;
 }
 
+export interface UnitLifeCost {
+    cost: number;
+    life: number;
+}
+
+export interface UnitLifeCostEntry {
+    key: string;
+    cost: number;
+    life: number;
+}
+
+export interface SpawnWaveEvent {
+    key: string;
+    teamId: number;
+    spawnNumber: number;
+    playerName: string;
+    gamePos: number;
+    anchorGameloop: number;
+    startGameloop: number;
+    holdEndGameloop: number;
+    endGameloop: number;
+}
+
+export interface SpawnWaveUnitRow {
+    teamId: number;
+    unitName: string;
+    count: number;
+    cost: number | null;
+    life: number | null;
+    totalCost: number | null;
+    totalLife: number | null;
+}
+
+export interface SpawnWaveTeamTable {
+    teamId: number;
+    spawnNumber: number;
+    playerName: string;
+    gamePos: number;
+    rows: SpawnWaveUnitRow[];
+    totalCount: number;
+    totalCost: number;
+    totalLife: number;
+}
+
 export interface RenderCache {
     projection: Projection;
 }
@@ -246,6 +293,10 @@ export interface SpawnPlaybackState {
     staticCanvasWidth: number;
     staticCanvasHeight: number;
     objectiveDeathAnnouncements: ObjectiveDeathAnnouncement[];
+    unitLifeCostByKey: Map<string, UnitLifeCost>;
+    showSpawnWaveOverlay: boolean;
+    spawnWaveEvents: SpawnWaveEvent[];
+    spawnWaveTableCache: Map<string, SpawnWaveTeamTable>;
     unitSpriteCache: Map<string, LayerCanvas>;
     highlightedAliveUnitKey: string | null;
     rootElement: Element | null;

@@ -31,6 +31,9 @@ import type {
     Projection,
     Segment,
     SpawnAreaGeometry,
+    SpawnWaveEvent,
+    SpawnWaveTeamTable,
+    SpawnWaveUnitRow,
     SpawnPlaybackState,
     StaticGeometry
 } from "./types";
@@ -44,6 +47,7 @@ const OBJECTIVE_DEATH_ANNOUNCEMENT_FADE_SECONDS = 7;
 const OBJECTIVE_DEATH_ANNOUNCEMENT_HOLD_SECONDS = 14;
 const OBJECTIVE_DEATH_LABELS = new Set(["Bunker", "Cannon"]);
 const ALIVE_UNIT_HIGHLIGHT_COLOR = "#F8D34A";
+const SPAWN_WAVE_WARNING_TEXT = "latest patch cost/life";
 const FOREST_CLUSTERS = [
     { x: 0.21, y: 0.19, width: 0.18, height: 0.12, trees: 18 },
     { x: 0.27, y: 0.36, width: 0.15, height: 0.12, trees: 16 },
@@ -110,6 +114,7 @@ export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: nu
         drawEmptyState(ctx, canvas);
     }
 
+    drawSpawnWaveOverlay(ctx, canvas, state);
     drawObjectiveDeathAnnouncements(ctx, canvas, state.objectiveDeathAnnouncements, state.currentGameloop);
     drawEndOfReplaySummary(ctx, canvas, replay.summary, state.currentGameloop, replay.durationGameloop);
 }
@@ -754,6 +759,355 @@ function drawObjectiveDeathAnnouncement(
     ctx.restore();
 }
 
+function drawSpawnWaveOverlay(ctx: CanvasContext, canvas: HTMLCanvasElement, state: SpawnPlaybackState): void {
+    if (!state.showSpawnWaveOverlay || state.unitLifeCostByKey.size === 0) {
+        return;
+    }
+
+    const overlay = getActiveSpawnWaveOverlay(state, state.currentGameloop);
+
+    if (overlay.team2.table) {
+        drawSpawnWaveTeamTable(ctx, canvas, overlay.team2.table, "top-left", overlay.team2.alpha);
+    }
+
+    if (overlay.team1.table) {
+        drawSpawnWaveTeamTable(ctx, canvas, overlay.team1.table, "bottom-right", overlay.team1.alpha);
+    }
+}
+
+export function getActiveSpawnWaveEvents(
+    events: readonly SpawnWaveEvent[],
+    currentGameloop: number): { team1: SpawnWaveEvent | null; team2: SpawnWaveEvent | null } {
+    const result: { team1: SpawnWaveEvent | null; team2: SpawnWaveEvent | null } = {
+        team1: null,
+        team2: null
+    };
+
+    if (events.length === 0 || !Number.isFinite(currentGameloop)) {
+        return result;
+    }
+
+    let left = 0;
+    let right = events.length - 1;
+    let endIndex = -1;
+    while (left <= right) {
+        const middle = left + Math.floor((right - left) / 2);
+        if (events[middle].startGameloop <= currentGameloop) {
+            endIndex = middle;
+            left = middle + 1;
+        } else {
+            right = middle - 1;
+        }
+    }
+
+    for (let i = endIndex; i >= 0; i--) {
+        const event = events[i];
+        if (event.endGameloop < currentGameloop) {
+            break;
+        }
+
+        if (event.teamId === 1 && result.team1 === null) {
+            result.team1 = event;
+        } else if (event.teamId === 2 && result.team2 === null) {
+            result.team2 = event;
+        }
+
+        if (result.team1 !== null && result.team2 !== null) {
+            break;
+        }
+    }
+
+    return result;
+}
+
+function getActiveSpawnWaveOverlay(
+    state: SpawnPlaybackState,
+    currentGameloop: number): {
+        team1: { table: SpawnWaveTeamTable | null; alpha: number };
+        team2: { table: SpawnWaveTeamTable | null; alpha: number };
+    } {
+    const events = getActiveSpawnWaveEvents(state.spawnWaveEvents, currentGameloop);
+    return {
+        team1: createActiveSpawnWaveTable(state, events.team1, currentGameloop),
+        team2: createActiveSpawnWaveTable(state, events.team2, currentGameloop)
+    };
+}
+
+function createActiveSpawnWaveTable(
+    state: SpawnPlaybackState,
+    event: SpawnWaveEvent | null,
+    currentGameloop: number): { table: SpawnWaveTeamTable | null; alpha: number } {
+    if (event === null) {
+        return { table: null, alpha: 0 };
+    }
+
+    return {
+        table: getSpawnWaveTable(state, event),
+        alpha: getSpawnWaveEventAlpha(event, currentGameloop)
+    };
+}
+
+function getSpawnWaveTable(state: SpawnPlaybackState, event: SpawnWaveEvent): SpawnWaveTeamTable | null {
+    const cached = state.spawnWaveTableCache.get(event.key);
+    if (cached) {
+        return cached;
+    }
+
+    const table = createSpawnWaveTable(state, event);
+    if (table) {
+        state.spawnWaveTableCache.set(event.key, table);
+    }
+
+    return table;
+}
+
+export function createSpawnWaveTable(
+    state: Pick<SpawnPlaybackState, "replay" | "unitLifeCostByKey">,
+    event: Pick<SpawnWaveEvent, "teamId" | "spawnNumber" | "playerName" | "gamePos">): SpawnWaveTeamTable | null {
+    if (state.unitLifeCostByKey.size === 0 || event.spawnNumber <= 0) {
+        return null;
+    }
+
+    const rowsByUnit = new Map<string, SpawnWaveUnitRow>();
+    for (const unit of state.replay.units) {
+        if (unit.teamId !== event.teamId
+            || unit.spawnNumber !== event.spawnNumber
+            || unit.gamePos !== event.gamePos
+            || unit.playerName !== event.playerName) {
+            continue;
+        }
+
+        const key = unit.aliveUnitHighlightKey;
+        const existing = rowsByUnit.get(key);
+        if (existing) {
+            existing.count++;
+            if (existing.cost !== null && existing.totalCost !== null) {
+                existing.totalCost += existing.cost;
+            }
+            if (existing.life !== null && existing.totalLife !== null) {
+                existing.totalLife += existing.life;
+            }
+            continue;
+        }
+
+        const lifeCost = state.unitLifeCostByKey.get(unit.aliveUnitHighlightKey);
+        rowsByUnit.set(key, {
+            teamId: unit.teamId,
+            unitName: unit.name,
+            count: 1,
+            cost: lifeCost?.cost ?? null,
+            life: lifeCost?.life ?? null,
+            totalCost: lifeCost?.cost ?? null,
+            totalLife: lifeCost?.life ?? null
+        });
+    }
+
+    if (rowsByUnit.size === 0) {
+        return null;
+    }
+
+    const rows = [...rowsByUnit.values()]
+        .sort((left, right) =>
+            right.count - left.count
+            || left.unitName.localeCompare(right.unitName));
+
+    return {
+        teamId: event.teamId,
+        spawnNumber: event.spawnNumber,
+        playerName: event.playerName,
+        gamePos: event.gamePos,
+        rows,
+        totalCount: rows.reduce((sum, row) => sum + row.count, 0),
+        totalCost: rows.reduce((sum, row) => sum + (row.totalCost ?? 0), 0),
+        totalLife: rows.reduce((sum, row) => sum + (row.totalLife ?? 0), 0)
+    };
+}
+
+export function getSpawnWaveEventAlpha(event: SpawnWaveEvent, currentGameloop: number): number {
+    if (currentGameloop < event.anchorGameloop) {
+        const fadeDuration = Math.max(1, event.anchorGameloop - event.startGameloop);
+        return clamp((currentGameloop - event.startGameloop) / fadeDuration, 0, 1);
+    }
+
+    if (currentGameloop <= event.holdEndGameloop) {
+        return 1;
+    }
+
+    const fadeDuration = Math.max(1, event.endGameloop - event.holdEndGameloop);
+    return clamp(1 - (currentGameloop - event.holdEndGameloop) / fadeDuration, 0, 1);
+}
+
+function drawSpawnWaveTeamTable(
+    ctx: CanvasContext,
+    canvas: HTMLCanvasElement,
+    table: SpawnWaveTeamTable,
+    placement: "top-left" | "bottom-right",
+    alpha: number): void {
+    if (alpha <= 0) {
+        return;
+    }
+
+    const scale = deviceScale(canvas);
+    const margin = 12 * scale;
+    const panelWidth = clamp(Math.min(330 * scale, canvas.width * 0.47), 210 * scale, canvas.width - margin * 2);
+    const padding = 10 * scale;
+    const headerHeight = 35 * scale;
+    const columnHeaderHeight = 17 * scale;
+    const rowHeight = 16 * scale;
+    const footerHeight = 18 * scale;
+    const maxRows = Math.max(2, Math.floor((canvas.height * 0.38 - headerHeight - columnHeaderHeight - footerHeight - padding * 2) / rowHeight));
+    const visibleRows = table.rows.slice(0, maxRows);
+    const hiddenRows = table.rows.length - visibleRows.length;
+    const moreHeight = hiddenRows > 0 ? rowHeight : 0;
+    const panelHeight = padding * 2 + headerHeight + columnHeaderHeight + visibleRows.length * rowHeight + moreHeight + footerHeight;
+    const x = placement === "top-left" ? margin : canvas.width - margin - panelWidth;
+    const y = placement === "top-left" ? margin : canvas.height - margin - panelHeight;
+    const radius = 8 * scale;
+    const teamColor = TEAM_COLORS[table.teamId] ?? "#FFFFFF";
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "rgba(7, 16, 21, 0.84)";
+    drawRoundedRect(ctx, x, y, panelWidth, panelHeight, radius);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+    ctx.lineWidth = Math.max(1, scale);
+    drawRoundedRect(ctx, x, y, panelWidth, panelHeight, radius);
+    ctx.stroke();
+
+    ctx.fillStyle = withAlpha(teamColor, "E6");
+    drawRoundedRect(ctx, x, y, 4 * scale, panelHeight, radius);
+    ctx.fill();
+
+    const contentX = x + padding + 4 * scale;
+    const contentWidth = panelWidth - padding * 2 - 4 * scale;
+    drawSpawnWaveHeader(ctx, table, contentX, y + padding, contentWidth, scale, teamColor);
+
+    const columns = getSpawnWaveColumns(contentX, contentWidth, scale);
+    let rowY = y + padding + headerHeight;
+    drawSpawnWaveColumnHeaders(ctx, columns, rowY, scale);
+    rowY += columnHeaderHeight;
+
+    for (const row of visibleRows) {
+        drawSpawnWaveRow(ctx, row, columns, rowY, rowHeight, scale);
+        rowY += rowHeight;
+    }
+
+    if (hiddenRows > 0) {
+        ctx.textAlign = "left";
+        ctx.font = `${Math.max(9, 10 * scale)}px sans-serif`;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.58)";
+        ctx.fillText(`+${hiddenRows} more`, columns.unitX, rowY + rowHeight / 2, contentWidth);
+        rowY += rowHeight;
+    }
+
+    drawSpawnWaveFooter(ctx, table, columns, rowY, footerHeight, scale);
+    ctx.restore();
+}
+
+function drawSpawnWaveHeader(
+    ctx: CanvasContext,
+    table: SpawnWaveTeamTable,
+    x: number,
+    y: number,
+    width: number,
+    scale: number,
+    teamColor: string): void {
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.font = `700 ${Math.max(12, 13 * scale)}px sans-serif`;
+    ctx.fillStyle = withAlpha(teamColor, "F2");
+    ctx.fillText(`P${table.gamePos} ${table.playerName}`, x, y + 8 * scale, width);
+
+    ctx.font = `${Math.max(9, 10 * scale)}px sans-serif`;
+    ctx.fillStyle = "rgba(255, 193, 7, 0.78)";
+    ctx.fillText(`Spawn ${table.spawnNumber} - ${SPAWN_WAVE_WARNING_TEXT}`, x, y + 24 * scale, width);
+}
+
+function getSpawnWaveColumns(x: number, width: number, scale: number): {
+    unitX: number;
+    unitWidth: number;
+    countX: number;
+    costX: number;
+    lifeX: number;
+} {
+    const lifeWidth = 52 * scale;
+    const costWidth = 52 * scale;
+    const countWidth = 38 * scale;
+    const gap = 8 * scale;
+    const lifeX = x + width;
+    const costX = lifeX - lifeWidth - gap;
+    const countX = costX - costWidth - gap;
+    const unitWidth = Math.max(48 * scale, countX - countWidth - gap - x);
+    return {
+        unitX: x,
+        unitWidth,
+        countX,
+        costX,
+        lifeX
+    };
+}
+
+function drawSpawnWaveColumnHeaders(
+    ctx: CanvasContext,
+    columns: ReturnType<typeof getSpawnWaveColumns>,
+    y: number,
+    scale: number): void {
+    ctx.font = `700 ${Math.max(9, 10 * scale)}px sans-serif`;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.58)";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    ctx.fillText("Unit", columns.unitX, y + 8 * scale, columns.unitWidth);
+    ctx.textAlign = "right";
+    ctx.fillText("#", columns.countX, y + 8 * scale);
+    ctx.fillText("Cost", columns.costX, y + 8 * scale);
+    ctx.fillText("Life", columns.lifeX, y + 8 * scale);
+}
+
+function drawSpawnWaveRow(
+    ctx: CanvasContext,
+    row: SpawnWaveUnitRow,
+    columns: ReturnType<typeof getSpawnWaveColumns>,
+    y: number,
+    rowHeight: number,
+    scale: number): void {
+    ctx.textBaseline = "middle";
+    ctx.font = `600 ${Math.max(9, 10 * scale)}px sans-serif`;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.90)";
+    ctx.textAlign = "left";
+    ctx.fillText(fitText(ctx, row.unitName, columns.unitWidth), columns.unitX, y + rowHeight / 2, columns.unitWidth);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
+    ctx.fillText(formatCount(row.count), columns.countX, y + rowHeight / 2);
+    ctx.fillText(formatNullableCount(row.totalCost), columns.costX, y + rowHeight / 2);
+    ctx.fillText(formatNullableCount(row.totalLife), columns.lifeX, y + rowHeight / 2);
+}
+
+function drawSpawnWaveFooter(
+    ctx: CanvasContext,
+    table: SpawnWaveTeamTable,
+    columns: ReturnType<typeof getSpawnWaveColumns>,
+    y: number,
+    footerHeight: number,
+    scale: number): void {
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
+    ctx.lineWidth = Math.max(1, scale);
+    ctx.beginPath();
+    ctx.moveTo(columns.unitX, y + 1 * scale);
+    ctx.lineTo(columns.lifeX, y + 1 * scale);
+    ctx.stroke();
+
+    ctx.textBaseline = "middle";
+    ctx.font = `700 ${Math.max(9, 10 * scale)}px sans-serif`;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+    ctx.textAlign = "left";
+    ctx.fillText("Total", columns.unitX, y + footerHeight / 2 + 1 * scale, columns.unitWidth);
+    ctx.textAlign = "right";
+    ctx.fillText(formatCount(table.totalCount), columns.countX, y + footerHeight / 2 + 1 * scale);
+    ctx.fillText(formatCount(table.totalCost), columns.costX, y + footerHeight / 2 + 1 * scale);
+    ctx.fillText(formatCount(table.totalLife), columns.lifeX, y + footerHeight / 2 + 1 * scale);
+}
+
 export function isEndSummaryVisible(currentGameloop: number, durationGameloop: number): boolean {
     return Number.isFinite(currentGameloop)
         && Number.isFinite(durationGameloop)
@@ -945,6 +1299,10 @@ function drawSummaryRowAccent(
 
 function formatCount(value: number): string {
     return Math.max(0, Math.round(value)).toLocaleString("en-US");
+}
+
+function formatNullableCount(value: number | null): string {
+    return value === null ? "-" : formatCount(value);
 }
 
 function drawGrid(ctx: CanvasContext, canvas: HTMLCanvasElement, gridLines: Segment[]): void {

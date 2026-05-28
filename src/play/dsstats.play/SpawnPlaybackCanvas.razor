@@ -1,8 +1,11 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
 @using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.shared.Units
 @implements IAsyncDisposable
 @inject IJSRuntime JSRuntime
+@inject IUnitLifeCostService UnitLifeCostService
 
 @if (playback is not null)
 {
@@ -33,6 +36,14 @@
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-light" title="@FullscreenTitle" @onclick="ToggleFullscreen">
                         <span class="bi @FullscreenIcon"></span>
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm @SpawnWaveOverlayButtonClass"
+                            title="@SpawnWaveOverlayTitle"
+                            aria-pressed="@showSpawnWaveOverlay"
+                            disabled="@(!HasSpawnWaveOverlayData)"
+                            @onclick="ToggleSpawnWaveOverlay">
+                        <span class="bi bi-table"></span>
                     </button>
                 </div>
                 <select class="form-select form-select-sm spawn-playback-speed"
@@ -230,12 +241,14 @@
     private readonly List<AliveUnitRow> team1AliveUnitRows = [];
     private readonly List<AliveUnitRow> team2AliveUnitRows = [];
     private readonly Dictionary<AliveUnitKey, AliveUnitAccumulator> aliveUnitAccumulators = [];
+    private IReadOnlyList<SpawnPlaybackLifeCostEntry> unitLifeCostEntries = [];
     private int aliveUnitCount;
     private int team1AliveCount;
     private int team2AliveCount;
     private int currentSpawnNumber;
     private bool isFullscreen;
     private bool showAliveUnits = true;
+    private bool showSpawnWaveOverlay = true;
     private SpawnPlaybackAnimationState animationState = SpawnPlaybackAnimationState.Stopped;
     private string selectedPlaybackSpeed = "normal";
 
@@ -256,6 +269,16 @@
     private string AliveUnitsToggleTitle => showAliveUnits ? "Collapse Alive Units" : "Expand Alive Units";
 
     private string AliveUnitsToggleIcon => showAliveUnits ? "bi-chevron-up" : "bi-chevron-down";
+
+    private bool HasSpawnWaveOverlayData => unitLifeCostEntries.Count > 0;
+
+    private string SpawnWaveOverlayTitle => HasSpawnWaveOverlayData
+        ? showSpawnWaveOverlay ? "Hide spawn cost/life overlay" : "Show spawn cost/life overlay"
+        : "Spawn cost/life overlay unavailable";
+
+    private string SpawnWaveOverlayButtonClass => showSpawnWaveOverlay && HasSpawnWaveOverlayData
+        ? "btn-warning"
+        : "btn-outline-light";
 
     private string PlaybackStatusLabel => animationState switch
     {
@@ -283,7 +306,7 @@
         ? string.Empty
         : FormatGameloopSeconds(playbackStops[^1]);
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (!ReferenceEquals(currentReplay, Replay) || !ReferenceEquals(currentSidecar, Sidecar))
         {
@@ -299,6 +322,8 @@
             animationState = SpawnPlaybackAnimationState.Stopped;
             isFullscreen = false;
             showAliveUnits = true;
+            showSpawnWaveOverlay = true;
+            unitLifeCostEntries = await CreateUnitLifeCostEntries(playback);
             SetRenderGameloop(force: true);
         }
     }
@@ -328,6 +353,8 @@
                 canvasElement,
                 playbackElement,
                 playback,
+                unitLifeCostEntries,
+                showSpawnWaveOverlay,
                 dotNetReference,
                 SpawnPlaybackFactory.GameloopsPerSecond,
                 GetPlaybackSpeedMultiplier());
@@ -473,6 +500,23 @@
     {
         showAliveUnits = !showAliveUnits;
         UpdateAliveUnitRows();
+        canvasDrawPending = true;
+    }
+
+    private async Task ToggleSpawnWaveOverlay()
+    {
+        if (!HasSpawnWaveOverlayData)
+        {
+            return;
+        }
+
+        showSpawnWaveOverlay = !showSpawnWaveOverlay;
+        if (module is not null)
+        {
+            await module.InvokeVoidAsync("setSpawnWaveOverlayVisible", canvasElement, showSpawnWaveOverlay);
+            return;
+        }
+
         canvasDrawPending = true;
     }
 
@@ -789,6 +833,50 @@
         return $"{teamId}|{commander.Length}:{commander}|{unitName.Length}:{unitName}";
     }
 
+    private async Task<IReadOnlyList<SpawnPlaybackLifeCostEntry>> CreateUnitLifeCostEntries(SpawnPlaybackReplay? replay)
+    {
+        if (replay is null)
+        {
+            return [];
+        }
+
+        Dictionary<string, SpawnPlaybackLifeCostEntry> entries = [];
+        Dictionary<Commander, IReadOnlyDictionary<string, DsUnitLifeCostDto>> lifeCostsByCommander = [];
+
+        foreach (var player in replay.Players)
+        {
+            if (!Enum.TryParse(player.Commander, out Commander commander))
+            {
+                continue;
+            }
+
+            if (!lifeCostsByCommander.TryGetValue(commander, out var lifeCosts))
+            {
+                lifeCosts = await UnitLifeCostService.GetUnitLifeCosts(commander);
+                lifeCostsByCommander[commander] = lifeCosts;
+            }
+
+            if (lifeCosts.Count == 0)
+            {
+                continue;
+            }
+
+            foreach (var unitName in player.Units.Select(unit => unit.Name).Distinct(StringComparer.Ordinal))
+            {
+                var normalizedName = UnitMap.GetNormalizedUnitName(unitName, commander);
+                if (!lifeCosts.TryGetValue(normalizedName, out var unitLifeCost))
+                {
+                    continue;
+                }
+
+                var key = CreateAliveUnitHighlightKey(player.TeamId, player.Commander, unitName);
+                entries.TryAdd(key, new(key, unitLifeCost.Cost, unitLifeCost.Life));
+            }
+        }
+
+        return entries.Values.ToArray();
+    }
+
     private readonly record struct AliveUnitKey(int TeamId, string Commander, string UnitName);
 
     private readonly record struct AliveUnitAccumulator(int AliveCount, int CurrentKills, string? UnitColor)
@@ -908,4 +996,6 @@
         string? UnitColor,
         int AliveCount,
         int CurrentKills);
+
+    private sealed record SpawnPlaybackLifeCostEntry(string Key, int Cost, int Life);
 }
