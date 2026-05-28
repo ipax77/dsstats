@@ -90,6 +90,14 @@ public static partial class SpawnPlaybackFactoryNg
             {
                 WritePathPoint(bytes, pointIndex++, path.Point3);
             }
+            if (path.PointCount > 4)
+            {
+                WritePathPoint(bytes, pointIndex++, path.Point4);
+            }
+            if (path.PointCount > 5)
+            {
+                WritePathPoint(bytes, pointIndex++, path.Point5);
+            }
         }
 
         return bytes;

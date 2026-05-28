@@ -38,6 +38,7 @@ public static partial class SpawnPlaybackFactoryNg
         Dictionary<PlayerUnitSummaryKey, int> killsByPlayerUnit = [];
         List<(int Gameloop, int Delta)> spawnEvents = [];
         SpawnPlaybackLandmark[] landmarks = GetReplayDtoLandmarks(replay);
+        DeathCluster[] deathClusters = CreateDeathClusters(sidecarPlayers, replayPlayersByGamePos);
 
         int unitsWithDiedEvent = 0;
         int unitsWithDiedPosition = 0;
@@ -99,9 +100,11 @@ public static partial class SpawnPlaybackFactoryNg
                 PathKey path = CreatePath(
                     sidecarUnit.SpawnX,
                     sidecarUnit.SpawnY,
+                    sidecarUnit.SpawnGameloop,
                     sidecarUnit.DiedX,
                     sidecarUnit.DiedY,
-                    lifetimeGameloops);
+                    lifetimeGameloops,
+                    deathClusters);
                 int pathIndex = GetPathIndex(pathIndexes, paths, path, ref pathPointCount);
                 int unitKillOffset = killIndex;
                 int unitKillCount = sidecarUnit.KillGameloops.Count;

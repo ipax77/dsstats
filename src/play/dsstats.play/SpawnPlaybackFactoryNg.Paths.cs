@@ -3,6 +3,7 @@ namespace dsstats.play;
 public static partial class SpawnPlaybackFactoryNg
 {
     private const double PathEpsilon = 0.000001;
+    private const double DeathClusterStopForwardDistance = 2;
 
     private static int GetPathIndex(
         Dictionary<PathKey, int> pathIndexes,
@@ -25,17 +26,27 @@ public static partial class SpawnPlaybackFactoryNg
     private static PathKey CreatePath(
         int spawnX,
         int spawnY,
+        int spawnGameloop,
         int? diedX,
         int? diedY,
-        int lifetimeGameloops)
+        int lifetimeGameloops,
+        ReadOnlySpan<DeathCluster> deathClusters)
     {
         lifetimeGameloops = Math.Max(1, lifetimeGameloops);
         var spawn = new DoublePoint(spawnX, spawnY);
-        var routeTarget = new DoublePoint(MapWidth - spawnX, MapHeight - spawnY);
+        var mirroredRouteTarget = new DoublePoint(MapWidth - spawnX, MapHeight - spawnY);
+        if (diedX is int deathX && diedY is int deathY)
+        {
+            var death = new DoublePoint(deathX, deathY);
+            if (!IsForwardRouteLine(spawn, mirroredRouteTarget, death.X + death.Y))
+            {
+                return CreateFallbackPath(spawn, mirroredRouteTarget, lifetimeGameloops);
+            }
 
-        return diedX is int deathX && diedY is int deathY
-            ? CreateDeathPath(spawn, routeTarget, new DoublePoint(deathX, deathY), lifetimeGameloops)
-            : CreateFallbackPath(spawn, routeTarget, lifetimeGameloops);
+            return CreateDeathPath(spawn, death, death, spawnGameloop, lifetimeGameloops, deathClusters);
+        }
+
+        return CreateFallbackPath(spawn, mirroredRouteTarget, lifetimeGameloops);
     }
 
     private static PathKey CreateFallbackPath(DoublePoint spawn, DoublePoint routeTarget, int lifetimeGameloops)
@@ -60,29 +71,60 @@ public static partial class SpawnPlaybackFactoryNg
         DoublePoint spawn,
         DoublePoint routeTarget,
         DoublePoint death,
-        int lifetimeGameloops)
+        int spawnGameloop,
+        int lifetimeGameloops,
+        ReadOnlySpan<DeathCluster> deathClusters)
     {
         PathBuilder builder = new();
         builder.Append(spawn, 0);
 
-        var deathLinePoint = GetDeathLinePoint(spawn, routeTarget, death.X + death.Y);
-        double lineDistance = GetDistance(spawn, deathLinePoint);
+        double deathLineSum = death.X + death.Y;
+        var deathLinePoint = routeTarget;
+        double? clusterLineSum = TryGetFirstClusterLineSum(spawn, routeTarget, deathLineSum, spawnGameloop, lifetimeGameloops, deathClusters);
+        if (clusterLineSum is double clusterSum)
+        {
+            var clusterLinePoint = MoveTowards(
+                GetLinePoint(spawn, routeTarget, clusterSum),
+                deathLinePoint,
+                DeathClusterStopForwardDistance);
+            int clusterLineGameloops = GetMinimumSpeedGameloops(GetDistance(spawn, clusterLinePoint));
+            if (clusterLineGameloops > 0 && clusterLineGameloops < lifetimeGameloops)
+            {
+                builder.Append(clusterLinePoint, clusterLineGameloops);
+
+                double deathLineDistance = GetDistance(clusterLinePoint, deathLinePoint);
+                int deathLineGameloops = GetMinimumSpeedGameloops(deathLineDistance);
+                double finalDeathDistance = GetDistance(deathLinePoint, death);
+                int deathGameloops = GetMinimumSpeedGameloops(finalDeathDistance);
+                int remainingAfterClusterGameloops = lifetimeGameloops - clusterLineGameloops;
+                int minimumRemainingGameloops = deathLineGameloops + deathGameloops;
+                if (minimumRemainingGameloops > 0 && minimumRemainingGameloops < remainingAfterClusterGameloops)
+                {
+                    builder.Append(clusterLinePoint, lifetimeGameloops - minimumRemainingGameloops);
+                }
+            }
+        }
+
+        double lineDistance = GetDistance(builder.LastPoint, deathLinePoint);
         int lineGameloops = GetMinimumSpeedGameloops(lineDistance);
-        if (lineGameloops >= lifetimeGameloops && lifetimeGameloops <= 1)
+        int currentGameloopOffset = builder.LastGameloopOffset;
+        int remainingBeforeDeathLine = lifetimeGameloops - currentGameloopOffset;
+        if (lineGameloops >= remainingBeforeDeathLine && remainingBeforeDeathLine <= 1)
         {
             builder.Append(death, lifetimeGameloops);
             return builder.ToPathKey();
         }
 
-        if (lineGameloops >= lifetimeGameloops)
+        if (lineGameloops >= remainingBeforeDeathLine)
         {
-            lineGameloops = lifetimeGameloops - 1;
+            lineGameloops = remainingBeforeDeathLine - 1;
         }
 
-        builder.Append(deathLinePoint, Math.Max(0, lineGameloops));
+        currentGameloopOffset += Math.Max(0, lineGameloops);
+        builder.Append(deathLinePoint, currentGameloopOffset);
 
         double deathDistance = GetDistance(deathLinePoint, death);
-        int remainingGameloops = lifetimeGameloops - Math.Max(0, lineGameloops);
+        int remainingGameloops = lifetimeGameloops - currentGameloopOffset;
         int defaultDeathGameloops = GetMinimumSpeedGameloops(deathDistance);
         if (defaultDeathGameloops > 0
             && defaultDeathGameloops < remainingGameloops)
@@ -94,7 +136,71 @@ public static partial class SpawnPlaybackFactoryNg
         return builder.ToPathKey();
     }
 
-    private static DoublePoint GetDeathLinePoint(DoublePoint spawn, DoublePoint routeTarget, double deathLineSum)
+    private static double? TryGetFirstClusterLineSum(
+        DoublePoint spawn,
+        DoublePoint routeTarget,
+        double deathLineSum,
+        int spawnGameloop,
+        int lifetimeGameloops,
+        ReadOnlySpan<DeathCluster> deathClusters)
+    {
+        if (deathClusters.Length == 0)
+        {
+            return null;
+        }
+
+        double deathProgress = GetLineProgress(spawn, routeTarget, deathLineSum);
+        if (deathProgress <= PathEpsilon)
+        {
+            return null;
+        }
+
+        int expiresGameloop = spawnGameloop + lifetimeGameloops;
+        double bestProgress = double.MaxValue;
+        double bestLineSum = 0;
+        for (int i = 0; i < deathClusters.Length; i++)
+        {
+            var cluster = deathClusters[i];
+            if (cluster.LastGameloop < spawnGameloop || cluster.FirstGameloop > expiresGameloop)
+            {
+                continue;
+            }
+
+            double clusterProgress = GetLineProgress(spawn, routeTarget, cluster.LineSum);
+            if (clusterProgress <= PathEpsilon
+                || clusterProgress >= deathProgress - PathEpsilon
+                || clusterProgress >= bestProgress)
+            {
+                continue;
+            }
+
+            bestProgress = clusterProgress;
+            bestLineSum = cluster.LineSum;
+        }
+
+        return bestProgress < double.MaxValue ? bestLineSum : null;
+    }
+
+    private static double GetLineProgress(DoublePoint spawn, DoublePoint routeTarget, double lineSum)
+    {
+        double startSum = spawn.X + spawn.Y;
+        double targetSum = routeTarget.X + routeTarget.Y;
+        double delta = targetSum - startSum;
+        if (Math.Abs(delta) <= PathEpsilon)
+        {
+            return 0;
+        }
+
+        return (lineSum - startSum) / delta;
+    }
+
+    private static bool IsForwardRouteLine(DoublePoint spawn, DoublePoint routeTarget, double lineSum)
+    {
+        double progress = GetLineProgress(spawn, routeTarget, lineSum);
+        return progress > PathEpsilon;
+    }
+
+    private static DoublePoint GetLinePoint(DoublePoint spawn, DoublePoint routeTarget, double lineSum)
     {
         double startSum = spawn.X + spawn.Y;
         double targetSum = routeTarget.X + routeTarget.Y;
@@ -104,7 +210,7 @@ public static partial class SpawnPlaybackFactoryNg
             return spawn;
         }
 
-        double progress = Math.Clamp((deathLineSum - startSum) / delta, 0, 1);
+        double progress = Math.Clamp((lineSum - startSum) / delta, 0, 1);
         return new(
             spawn.X + (routeTarget.X - spawn.X) * progress,
             spawn.Y + (routeTarget.Y - spawn.Y) * progress);
@@ -153,7 +259,9 @@ public static partial class SpawnPlaybackFactoryNg
         PathPoint Point0,
         PathPoint Point1,
         PathPoint Point2,
-        PathPoint Point3);
+        PathPoint Point3,
+        PathPoint Point4,
+        PathPoint Point5);
 
     private struct PathBuilder
     {
@@ -161,7 +269,13 @@ public static partial class SpawnPlaybackFactoryNg
         private PathPoint point1;
         private PathPoint point2;
         private PathPoint point3;
+        private PathPoint point4;
+        private PathPoint point5;
         private int count;
+
+        public readonly DoublePoint LastPoint => new(Last.X, Last.Y);
+
+        public readonly int LastGameloopOffset => Last.GameloopOffset;
 
         public void Append(DoublePoint point, int gameloopOffset)
         {
@@ -190,8 +304,14 @@ public static partial class SpawnPlaybackFactoryNg
                 case 3:
                     point3 = point;
                     break;
+                case 4:
+                    point4 = point;
+                    break;
+                case 5:
+                    point5 = point;
+                    break;
                 default:
-                    throw new InvalidOperationException("Spawn playback paths support at most four points.");
+                    throw new InvalidOperationException("Spawn playback paths support at most six points.");
             }
 
             count++;
@@ -199,7 +319,7 @@ public static partial class SpawnPlaybackFactoryNg
 
         public readonly PathKey ToPathKey()
         {
-            return new(count, point0, point1, point2, point3);
+            return new(count, point0, point1, point2, point3, point4, point5);
         }
 
         private readonly PathPoint Last => count switch
@@ -208,6 +328,8 @@ public static partial class SpawnPlaybackFactoryNg
             2 => point1,
             3 => point2,
             4 => point3,
+            5 => point4,
+            6 => point5,
             _ => default
         };
 
@@ -226,6 +348,12 @@ public static partial class SpawnPlaybackFactoryNg
                     break;
                 case 4:
                     point3 = point;
+                    break;
+                case 5:
+                    point4 = point;
+                    break;
+                case 6:
+                    point5 = point;
                     break;
             }
         }
