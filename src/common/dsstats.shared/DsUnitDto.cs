@@ -44,6 +44,14 @@ public record DsUnitListDto
     public DsUnitType UnitType { get; set; }
 }
 
+public sealed record DsUnitLifeCostDto
+{
+    public string Name { get; set; } = string.Empty;
+    public Commander Commander { get; set; }
+    public int Cost { get; set; }
+    public int Life { get; set; }
+}
+
 public record DsAbilityDto
 {
     public string Name { get; set; } = string.Empty;

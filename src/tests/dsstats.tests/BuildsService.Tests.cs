@@ -1,4 +1,6 @@
 using dsstats.db;
+using dsstats.db.UnitModels;
+using dsstats.dbServices;
 using dsstats.dbServices.Builds;
 using dsstats.shared;
 using Microsoft.Data.Sqlite;
@@ -95,6 +97,59 @@ public sealed class BuildsServiceTests
 
         var allGasTimings = await fixture.Service.GetGasTimings(CreateRequest(Breakpoint.All));
         Assert.IsTrue(allGasTimings.Any(x => x.Gas == 3));
+    }
+
+    [TestMethod]
+    public async Task GetBuildResponse_UsesCachedUnitLifeCostLookup()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.AddDsUnitAsync("Vile Roach", Commander.Abathur, cost: 125, life: 145);
+        await fixture.AddDsUnitAsync("Vile Roach", Commander.Alarak, cost: 999, life: 999);
+
+        await fixture.SeedReplayPlayerAsync(
+            replayId: 50,
+            playerId: 501,
+            commander: Commander.Abathur,
+            oppCommander: Commander.Alarak,
+            min5Units: [("VileRoach", 2), ("UnknownUnit", 3)]);
+
+        var response = await fixture.Service.GetBuildResponse(CreateRequest(Breakpoint.Min5));
+
+        var vileRoach = response.Units.Single(unit => unit.Name == "Vile Roach");
+        Assert.AreEqual(2, vileRoach.Count);
+        Assert.AreEqual(250, vileRoach.Cost);
+        Assert.AreEqual(290, vileRoach.Life);
+
+        var unknown = response.Units.Single(unit => unit.Name == "UnknownUnit");
+        Assert.AreEqual(3, unknown.Count);
+        Assert.AreEqual(0, unknown.Cost);
+        Assert.AreEqual(0, unknown.Life);
+    }
+
+    [TestMethod]
+    public async Task UnitLifeCostService_CachesProjectionAndSeparatesCommanders()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.AddDsUnitAsync("SharedName", Commander.Abathur, cost: 100, life: 200);
+        await fixture.AddDsUnitAsync("SharedName", Commander.Alarak, cost: 300, life: 400);
+
+        var abathurUnits = await fixture.UnitLifeCostService.GetUnitLifeCosts(Commander.Abathur);
+        var alarakUnits = await fixture.UnitLifeCostService.GetUnitLifeCosts(Commander.Alarak);
+
+        Assert.AreEqual(100, abathurUnits["SharedName"].Cost);
+        Assert.AreEqual(200, abathurUnits["SharedName"].Life);
+        Assert.AreEqual(300, alarakUnits["SharedName"].Cost);
+        Assert.AreEqual(400, alarakUnits["SharedName"].Life);
+
+        var dsUnit = fixture.Context.DsUnits.Single(unit => unit.Name == "SharedName" && unit.Commander == Commander.Abathur);
+        dsUnit.Cost = 1;
+        dsUnit.Life = 2;
+        await fixture.Context.SaveChangesAsync();
+
+        var cachedAbathurUnits = await fixture.UnitLifeCostService.GetUnitLifeCosts(Commander.Abathur);
+
+        Assert.AreEqual(100, cachedAbathurUnits["SharedName"].Cost);
+        Assert.AreEqual(200, cachedAbathurUnits["SharedName"].Life);
     }
 
     [TestMethod]
@@ -213,18 +268,26 @@ public sealed class BuildsServiceTests
     private sealed class TestFixture : IAsyncDisposable
     {
         private readonly Dictionary<string, Upgrade> upgrades = [];
+        private readonly Dictionary<string, Unit> units = [];
 
-        private TestFixture(SqliteConnection connection, DsstatsContext context, BuildsService service, IMemoryCache memoryCache)
+        private TestFixture(
+            SqliteConnection connection,
+            DsstatsContext context,
+            BuildsService service,
+            UnitLifeCostService unitLifeCostService,
+            IMemoryCache memoryCache)
         {
             Connection = connection;
             Context = context;
             Service = service;
+            UnitLifeCostService = unitLifeCostService;
             MemoryCache = memoryCache;
         }
 
         public SqliteConnection Connection { get; }
         public DsstatsContext Context { get; }
         public BuildsService Service { get; }
+        public UnitLifeCostService UnitLifeCostService { get; }
         public IMemoryCache MemoryCache { get; }
 
         public static async Task<TestFixture> CreateAsync()
@@ -242,8 +305,22 @@ public sealed class BuildsServiceTests
             await context.Database.MigrateAsync();
 
             var cache = new MemoryCache(new MemoryCacheOptions());
-            var service = new BuildsService(contextFactory, cache);
-            return new TestFixture(connection, context, service, cache);
+            var unitLifeCostService = new UnitLifeCostService(contextFactory, cache);
+            var service = new BuildsService(contextFactory, cache, unitLifeCostService);
+            return new TestFixture(connection, context, service, unitLifeCostService, cache);
+        }
+
+        public async Task AddDsUnitAsync(string name, Commander commander, int cost, int life)
+        {
+            Context.DsUnits.Add(new DsUnit
+            {
+                Name = name,
+                Commander = commander,
+                Cost = cost,
+                Life = life
+            });
+
+            await Context.SaveChangesAsync();
         }
 
         public async Task SeedReplayPlayerAsync(
@@ -259,10 +336,14 @@ public sealed class BuildsServiceTests
             LeaverType leaverType = LeaverType.None,
             RatingType ratingType = RatingType.Commanders,
             int[]? refineries = null,
-            (string Upgrade, int Time)[]? upgrades = null)
+            (string Upgrade, int Time)[]? upgrades = null,
+            (string Unit, int Count)[]? min5Units = null,
+            (string Unit, int Count)[]? allUnits = null)
         {
             upgrades ??= [];
             refineries ??= [];
+            min5Units ??= [];
+            allUnits ??= [];
 
             var replayPlayerId = replayId * 1000 + 1;
             var replayRatingId = replayId * 10;
@@ -310,8 +391,20 @@ public sealed class BuildsServiceTests
                 Refineries = refineries,
                 Spawns =
                 [
-                    new() { Breakpoint = Breakpoint.Min5, GasCount = min5GasCount, UpgradeSpent = min5UpgradeSpent },
-                    new() { Breakpoint = Breakpoint.All, GasCount = allGasCount, UpgradeSpent = allUpgradeSpent }
+                    new()
+                    {
+                        Breakpoint = Breakpoint.Min5,
+                        GasCount = min5GasCount,
+                        UpgradeSpent = min5UpgradeSpent,
+                        Units = CreateSpawnUnits(min5Units)
+                    },
+                    new()
+                    {
+                        Breakpoint = Breakpoint.All,
+                        GasCount = allGasCount,
+                        UpgradeSpent = allUpgradeSpent,
+                        Units = CreateSpawnUnits(allUnits)
+                    }
                 ]
             };
 
@@ -377,6 +470,30 @@ public sealed class BuildsServiceTests
             upgrade = new Upgrade { Name = name };
             upgrades[name] = upgrade;
             return upgrade;
+        }
+
+        private List<SpawnUnit> CreateSpawnUnits((string Unit, int Count)[] spawnUnits)
+        {
+            return spawnUnits
+                .Select(unit => new SpawnUnit
+                {
+                    Count = unit.Count,
+                    Unit = GetUnit(unit.Unit)
+                })
+                .ToList();
+        }
+
+        private Unit GetUnit(string name)
+        {
+            if (units.TryGetValue(name, out var unit))
+            {
+                return unit;
+            }
+
+            unit = Context.Units.Local.FirstOrDefault(existing => existing.Name == name)
+                ?? new Unit { Name = name };
+            units[name] = unit;
+            return unit;
         }
 
         public async ValueTask DisposeAsync()

@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="../common/dsstats.parser/dsstats.parser.csproj" />
+  <Project Path="../common/dsstats.shared/dsstats.shared.csproj" />
+  <Project Path="dsstats.play.benchmarks/dsstats.play.benchmarks.csproj" />
+  <Project Path="dsstats.play.tests/dsstats.play.tests.csproj" />
+  <Project Path="dsstats.play/dsstats.play.csproj" />
+</Solution>

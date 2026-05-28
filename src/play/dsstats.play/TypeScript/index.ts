@@ -1,10 +1,13 @@
 export {
     initializeSpawnPlayback,
+    initializeSpawnPlaybackNg,
     startSpawnPlayback,
     pauseSpawnPlayback,
     stopSpawnPlayback,
     setSpawnPlaybackSpeed,
+    setSpawnWaveOverlayVisible,
     setSpawnPlaybackFullscreen,
+    isSpawnPlaybackMobileViewport,
     observeSpawnPlaybackResize,
     syncAliveUnitHighlightSelection,
     disposeSpawnPlayback

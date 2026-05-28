@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MSTest" Version="4.1.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\common\dsstats.parser\dsstats.parser.csproj" />
+    <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />
+    <ProjectReference Include="..\dsstats.play\dsstats.play.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="testdata\Direct Strike %2810253%29.SC2Replay">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

@@ -1,6 +1,11 @@
 @using Microsoft.JSInterop
 @using dsstats.shared
+@using dsstats.shared.Interfaces
 @using dsstats.shared.Units
+@implements IDisposable
+@inject IReplayRepository ReplayRepository
+@inject SpawnPositionHydrationService SpawnPositionHydration
+@inject IUnitLifeCostService UnitLifeCostService
 
 <div class="card bgchart w-auto">
     <div class="card-header bgchart2 rounded">
@@ -24,7 +29,7 @@
                         data-bs-target="@($"#Player{Player.GamePos}Gas")" aria-expanded="false"
                         aria-controls="@($"Player{Player.GamePos}Gas")" @onclick="e => showGas = !showGas">
                     <span class="bi @(showGas ? "bi-chevron-down" : "bi-chevron-up")"></span>
-                    Gas @spawn?.GasCount
+                    Gas @BreakpointSpawn?.GasCount
                 </button>
             </div>
             <div class="">
@@ -32,16 +37,98 @@
                         data-bs-target="@($"#Player{Player.GamePos}Upgrades")" aria-expanded="false"
                         aria-controls="@($"Player{Player.GamePos}Upgrades")" @onclick="e => showUpgrades = !showUpgrades">
                     <span class="bi @(showUpgrades ? "bi-chevron-down" : "bi-chevron-up")"></span>
-                    Upgrades @ReplayHelper.GetNumberString(spawn?.UpgradeSpent)
+                    Upgrades @ReplayHelper.GetNumberString(BreakpointSpawn?.UpgradeSpent)
                 </button>
             </div>
         </div>
     </div>
     <div class="card-body bgchart">
         <div class="collapse" id="@($"Player{Player.GamePos}Map")">
-            <div class="bgchart" style="height: 600px; width: 500px;">
-                @if (showMap)
+            @if (showMap)
+            {
+                @if (HasSpawnPlayback)
                 {
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2" style="width: 500px; max-width: 100%;">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Build chart mode">
+                            <button type="button"
+                                    class="btn @(chartMode == BuildChartMode.Breakpoint ? "btn-info" : "btn-outline-info")"
+                                    @onclick="() => SetChartMode(BuildChartMode.Breakpoint)">
+                                Breakpoint
+                            </button>
+                            <button type="button"
+                                    class="btn @(chartMode == BuildChartMode.Spawn ? "btn-info" : "btn-outline-info")"
+                                    @onclick="() => SetChartMode(BuildChartMode.Spawn)">
+                                Spawn
+                            </button>
+                        </div>
+                        @if (chartMode == BuildChartMode.Spawn)
+                        {
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Spawn wave controls">
+                                <button type="button"
+                                        class="btn btn-outline-light"
+                                        title="Previous spawn"
+                                        disabled="@(loadingSpawnWaves || selectedSpawnWaveIndex <= 0)"
+                                        @onclick="PreviousSpawnWave">
+                                    <span class="bi bi-chevron-left"></span>
+                                </button>
+                                <button type="button"
+                                        class="btn btn-outline-light"
+                                        title="Next spawn"
+                                        disabled="@(loadingSpawnWaves || selectedSpawnWaveIndex >= spawnWaves.Count - 1)"
+                                        @onclick="NextSpawnWave">
+                                    <span class="bi bi-chevron-right"></span>
+                                </button>
+                            </div>
+                            <select class="form-select form-select-sm text-light bgchart"
+                                    style="width: 12rem;"
+                                    aria-label="Spawn wave"
+                                    disabled="@(loadingSpawnWaves || spawnWaves.Count == 0)"
+                                    value="@selectedSpawnWaveIndex"
+                                    @onchange="SelectSpawnWave">
+                                @for (var i = 0; i < spawnWaves.Count; i++)
+                                {
+                                    <option value="@i">@GetSpawnWaveLabel(spawnWaves[i])</option>
+                                }
+                            </select>
+                        }
+                    </div>
+                }
+                <div class="bgchart" style="height: 600px; width: 500px;">
+                    @if (chartMode == BuildChartMode.Spawn)
+                    {
+                        @if (loadingSpawnWaves)
+                        {
+                            <div class="h-100 d-flex align-items-center justify-content-center text-light p-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                                    <span>Loading spawns...</span>
+                                </div>
+                            </div>
+                        }
+                        else if (SelectedSpawnWave is not null)
+                        {
+                            <HydratedBuildChart @ref="buildChart"
+                                                @key="MapChartKey"
+                                                ReplayDetails="ReplayHelper.ReplayDetails"
+                                                GamePos="Player.GamePos"
+                                                Breakpoint="ReplayHelper.Breakpoint"
+                                                Team="Player.TeamId"
+                                                Cmdr="Player.Race"
+                                                moduleTask="moduleTask"
+                                                UnitDisplayInfo="_unitDisplayInfo"
+                                                PositionedSpawn="SelectedSpawnWave.Spawn"
+                                                ChartKeySuffix="@MapChartKey"
+                                                EmptyText="No spawn chart data is available." />
+                        }
+                        else
+                        {
+                            <div class="h-100 d-flex align-items-center justify-content-center text-warning p-3 text-center">
+                                @(spawnWaveLoadFailed ? "Spawn data could not be loaded." : "No spawn waves are available.")
+                            </div>
+                        }
+                    }
+                    else
+                    {
                     <HydratedBuildChart @ref="buildChart"
                                         @key="MapChartKey"
                                         ReplayDetails="ReplayHelper.ReplayDetails"
@@ -50,9 +137,11 @@
                                         Team="Player.TeamId"
                                         Cmdr="Player.Race"
                                         moduleTask="moduleTask"
-                                        UnitDisplayInfo="_unitDisplayInfo" />
-                }
-            </div>
+                                        UnitDisplayInfo="_unitDisplayInfo"
+                                        ChartKeySuffix="@MapChartKey" />
+                    }
+                </div>
+            }
         </div>
         <div class="collapse" id="@($"Player{Player.GamePos}Gas")">
             <RefineryInfoComponent Player="Player" />
@@ -67,12 +156,25 @@
                         <td></td>
                         <td>Unit</td>
                         <td>Count</td>
+                        @if (HasLifeCostInfo)
+                        {
+                            <td class="text-end">
+                                Cost
+                                <span class="bi bi-exclamation-triangle-fill text-warning ms-1"
+                                      title="@LifeCostWarningText"></span>
+                            </td>
+                            <td class="text-end">
+                                Life
+                                <span class="bi bi-exclamation-triangle-fill text-warning ms-1"
+                                      title="@LifeCostWarningText"></span>
+                            </td>
+                        }
                     </tr>
                 </thead>
                 <tbody>
-                    @if (spawn != null)
+                    @if (DisplayedSpawn != null)
                     {
-                    @foreach (var unit in spawn.Units.OrderByDescending(o => o.Count))
+                    @foreach (var unit in DisplayedSpawn.Units.OrderByDescending(o => o.Count))
                         {
                             var unitInfo = UnitMap.GetUnitInfo(unit.Name, Player.Race);
                             var unitColor = _unitDisplayInfo.TryGetValue(unit.Name, out var di) ? di.Color : "#CCCCCC";
@@ -82,10 +184,27 @@
                                 </td>
                                 <td>@unitInfo.Name</td>
                                 <td class="text-start">@unit.Count</td>
+                                @if (HasLifeCostInfo)
+                                {
+                                    <td class="text-end">@FormatUnitCost(unit)</td>
+                                    <td class="text-end">@FormatUnitLife(unit)</td>
+                                }
                             </tr>
                         }
                     }
                 </tbody>
+                @if (HasLifeCostInfo && DisplayedSpawn != null)
+                {
+                    <tfoot>
+                        <tr class="fw-bold">
+                            <td></td>
+                            <td>Total</td>
+                            <td class="text-start">@DisplayedSpawn.Units.Sum(unit => unit.Count)</td>
+                            <td class="text-end">@FormatSpawnCost(DisplayedSpawn)</td>
+                            <td class="text-end">@FormatSpawnLife(DisplayedSpawn)</td>
+                        </tr>
+                    </tfoot>
+                }
             </table>
         </div>
     </div>
@@ -105,25 +224,71 @@
     private bool showMap = false;
     private bool showGas = false;
     private bool showUpgrades = false;
+    private IReadOnlyList<SpawnPlaybackWaveInfo> spawnWaves = [];
+    private CancellationTokenSource? spawnWaveLoadCts;
+    private BuildChartMode chartMode = BuildChartMode.Breakpoint;
+    private int selectedSpawnWaveIndex;
+    private int spawnWaveLoadVersion;
+    private int currentGamePos;
+    private string? currentReplayHash;
+    private bool loadingSpawnWaves;
+    private bool spawnWaveLoadFailed;
+    private Commander currentUnitLifeCostCommander = Commander.None;
+    private IReadOnlyDictionary<string, DsUnitLifeCostDto> unitLifeCosts = EmptyUnitLifeCosts;
+    private static readonly IReadOnlyDictionary<string, DsUnitLifeCostDto> EmptyUnitLifeCosts = new Dictionary<string, DsUnitLifeCostDto>();
+    private const string LifeCostWarningText = "Uses latest patch unit life and cost; values may be wrong for old replays.";
 
-    private SpawnDto? spawn => ReplayHelper.GetSpawn(Player);
+    private SpawnDto? BreakpointSpawn => ReplayHelper.GetSpawn(Player);
+    private SpawnPlaybackWaveInfo? SelectedSpawnWave =>
+        (uint)selectedSpawnWaveIndex < (uint)spawnWaves.Count
+            ? spawnWaves[selectedSpawnWaveIndex]
+            : null;
+    private SpawnDto? DisplayedSpawn => chartMode == BuildChartMode.Spawn && SelectedSpawnWave is not null
+        ? SelectedSpawnWave.Spawn
+        : BreakpointSpawn;
     private string badgeClass => ReplayHelper.IsWinner(Player) ? "text-bg-success" : "text-bg-danger";
-    private string MapChartKey => BuildChartTarget.GetVisibleKey(
-        showMap,
-        ReplayHelper.ReplayDetails.ReplayHash,
-        Player.GamePos,
-        ReplayHelper.Breakpoint) ?? string.Empty;
+    private bool HasSpawnPlayback => ReplayHelper.ReplayDetails.Replay.SpawnPlayback?.Available == true;
+    private bool HasLifeCostInfo => unitLifeCosts.Count > 0;
+    private string MapChartKey
+    {
+        get
+        {
+            if (chartMode == BuildChartMode.Spawn)
+            {
+                return BuildChartTarget.GetVisibleSpawnPlaybackKey(
+                    showMap,
+                    ReplayHelper.ReplayDetails.ReplayHash,
+                    Player.GamePos,
+                    Player.TeamId,
+                    Player.Race) ?? string.Empty;
+            }
+
+            return BuildChartTarget.GetVisibleKey(
+                showMap,
+                ReplayHelper.ReplayDetails.ReplayHash,
+                Player.GamePos,
+                ReplayHelper.Breakpoint) ?? string.Empty;
+        }
+    }
 
     private Dictionary<string, (double Radius, string Color)> _unitDisplayInfo = [];
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
+        if (currentGamePos != Player.GamePos || currentReplayHash != ReplayHelper.ReplayDetails.ReplayHash)
+        {
+            currentGamePos = Player.GamePos;
+            currentReplayHash = ReplayHelper.ReplayDetails.ReplayHash;
+            ResetSpawnWaveState();
+        }
+
         ComputeDisplayInfo();
+        await EnsureUnitLifeCostsLoaded();
     }
 
     private void ComputeDisplayInfo()
     {
-        _unitDisplayInfo = spawn?.Units
+        _unitDisplayInfo = DisplayedSpawn?.Units
             .DistinctBy(u => u.Name)
             .ToDictionary(u => u.Name, u => UnitMapNg.GetColorAndRadius(u.Name, Player.Race))
             ?? [];
@@ -138,9 +303,82 @@
         await buildChart.HighlightUnits(name);
     }
 
+    private async Task EnsureUnitLifeCostsLoaded()
+    {
+        if (currentUnitLifeCostCommander == Player.Race)
+        {
+            return;
+        }
+
+        currentUnitLifeCostCommander = Player.Race;
+        unitLifeCosts = EmptyUnitLifeCosts;
+
+        try
+        {
+            unitLifeCosts = await UnitLifeCostService.GetUnitLifeCosts(Player.Race);
+        }
+        catch
+        {
+            unitLifeCosts = EmptyUnitLifeCosts;
+        }
+    }
+
+    private string FormatUnitCost(UnitDto unit)
+    {
+        return TryGetUnitLifeCost(unit.Name, out var unitLifeCost)
+            ? FormatTotal(unitLifeCost.Cost, unit.Count)
+            : string.Empty;
+    }
+
+    private string FormatUnitLife(UnitDto unit)
+    {
+        return TryGetUnitLifeCost(unit.Name, out var unitLifeCost)
+            ? FormatTotal(unitLifeCost.Life, unit.Count)
+            : string.Empty;
+    }
+
+    private string FormatSpawnCost(SpawnDto spawn)
+    {
+        return FormatSpawnTotal(spawn, unitLifeCost => unitLifeCost.Cost);
+    }
+
+    private string FormatSpawnLife(SpawnDto spawn)
+    {
+        return FormatSpawnTotal(spawn, unitLifeCost => unitLifeCost.Life);
+    }
+
+    private string FormatSpawnTotal(SpawnDto spawn, Func<DsUnitLifeCostDto, int> selector)
+    {
+        var total = 0L;
+        foreach (var unit in spawn.Units)
+        {
+            if (TryGetUnitLifeCost(unit.Name, out var unitLifeCost))
+            {
+                total += selector(unitLifeCost) * (long)unit.Count;
+            }
+        }
+
+        return total.ToString("N0");
+    }
+
+    private bool TryGetUnitLifeCost(string unitName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out DsUnitLifeCostDto? unitLifeCost)
+    {
+        return unitLifeCosts.TryGetValue(UnitMap.GetNormalizedUnitName(unitName, Player.Race), out unitLifeCost);
+    }
+
+    private static string FormatTotal(int value, int count)
+    {
+        return (value * (long)count).ToString("N0");
+    }
+
     private async Task ToggleMap()
     {
         showMap = !showMap;
+        if (showMap && chartMode == BuildChartMode.Spawn)
+        {
+            await EnsureSpawnWavesLoaded();
+        }
+
         ComputeDisplayInfo();
         await InvokeAsync(StateHasChanged);
     }
@@ -149,5 +387,148 @@
     {
         ComputeDisplayInfo();
         InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SetChartMode(BuildChartMode mode)
+    {
+        if (chartMode == mode)
+        {
+            return;
+        }
+
+        chartMode = mode;
+        if (chartMode == BuildChartMode.Spawn)
+        {
+            await EnsureSpawnWavesLoaded();
+        }
+
+        ComputeDisplayInfo();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task EnsureSpawnWavesLoaded()
+    {
+        if (!HasSpawnPlayback || loadingSpawnWaves || spawnWaves.Count > 0)
+        {
+            return;
+        }
+
+        spawnWaveLoadCts?.Cancel();
+        spawnWaveLoadCts?.Dispose();
+        spawnWaveLoadCts = new();
+        var loadCts = spawnWaveLoadCts;
+        var version = ++spawnWaveLoadVersion;
+        loadingSpawnWaves = true;
+        spawnWaveLoadFailed = false;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var waves = await SpawnPositionHydration.GetSpawnWavesAsync(
+                ReplayHelper.ReplayDetails,
+                Player.GamePos,
+                ReplayRepository,
+                loadCts.Token);
+
+            if (version != spawnWaveLoadVersion || loadCts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            spawnWaves = waves;
+            selectedSpawnWaveIndex = Math.Clamp(selectedSpawnWaveIndex, 0, Math.Max(0, spawnWaves.Count - 1));
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch
+        {
+            if (version == spawnWaveLoadVersion)
+            {
+                spawnWaves = [];
+                selectedSpawnWaveIndex = 0;
+                spawnWaveLoadFailed = true;
+            }
+        }
+        finally
+        {
+            if (version == spawnWaveLoadVersion)
+            {
+                loadingSpawnWaves = false;
+                ComputeDisplayInfo();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private Task SelectSpawnWave(ChangeEventArgs args)
+    {
+        if (args.Value is string value && int.TryParse(value, out var index))
+        {
+            selectedSpawnWaveIndex = Math.Clamp(index, 0, Math.Max(0, spawnWaves.Count - 1));
+        }
+
+        return UpdateSelectedSpawnWave();
+    }
+
+    private Task PreviousSpawnWave()
+    {
+        selectedSpawnWaveIndex = Math.Max(0, selectedSpawnWaveIndex - 1);
+        return UpdateSelectedSpawnWave();
+    }
+
+    private Task NextSpawnWave()
+    {
+        selectedSpawnWaveIndex = Math.Min(Math.Max(0, spawnWaves.Count - 1), selectedSpawnWaveIndex + 1);
+        return UpdateSelectedSpawnWave();
+    }
+
+    private async Task UpdateSelectedSpawnWave()
+    {
+        ComputeDisplayInfo();
+        if (chartMode == BuildChartMode.Spawn && showMap && buildChart is not null)
+        {
+            await buildChart.UpdateChartAsync(SelectedSpawnWave?.Spawn, _unitDisplayInfo);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static string GetSpawnWaveLabel(SpawnPlaybackWaveInfo wave)
+    {
+        return $"Spawn {wave.SpawnNumber} - {FormatGameloop(wave.StartGameloop)}";
+    }
+
+    private static string FormatGameloop(int gameloop)
+    {
+        var time = TimeSpan.FromSeconds(Math.Round(gameloop / 22.4));
+        return time.Hours > 0
+            ? time.ToString(@"hh\:mm\:ss")
+            : time.ToString(@"mm\:ss");
+    }
+
+    private void ResetSpawnWaveState()
+    {
+        spawnWaveLoadCts?.Cancel();
+        spawnWaveLoadCts?.Dispose();
+        spawnWaveLoadCts = null;
+        spawnWaves = [];
+        selectedSpawnWaveIndex = 0;
+        loadingSpawnWaves = false;
+        spawnWaveLoadFailed = false;
+        chartMode = BuildChartMode.Breakpoint;
+        spawnWaveLoadVersion++;
+    }
+
+    public void Dispose()
+    {
+        spawnWaveLoadCts?.Cancel();
+        spawnWaveLoadCts?.Dispose();
+    }
+
+    private enum BuildChartMode
+    {
+        Breakpoint,
+        Spawn
     }
 }

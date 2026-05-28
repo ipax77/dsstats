@@ -22,7 +22,7 @@ else if (positionedSpawn is not null)
                 Team="Team"
                 Cmdr="Cmdr"
                 moduleTask="moduleTask"
-                UnitDisplayInfo="UnitDisplayInfo" />
+                UnitDisplayInfo="effectiveUnitDisplayInfo" />
 }
 else
 {
@@ -54,6 +54,12 @@ else
     public Dictionary<string, (double Radius, string Color)>? UnitDisplayInfo { get; set; }
 
     [Parameter]
+    public SpawnDto? PositionedSpawn { get; set; }
+
+    [Parameter]
+    public string? ChartKeySuffix { get; set; }
+
+    [Parameter]
     public string LoadingText { get; set; } = "Loading build chart...";
 
     [Parameter]
@@ -62,6 +68,7 @@ else
     private BuildChart? buildChart;
     private CancellationTokenSource? loadCts;
     private SpawnDto? positionedSpawn;
+    private Dictionary<string, (double Radius, string Color)>? effectiveUnitDisplayInfo;
     private string chartKey = string.Empty;
     private int loadVersion;
     private bool isLoading;
@@ -73,9 +80,23 @@ else
         loadCts = new();
 
         var version = ++loadVersion;
-        chartKey = $"{ReplayDetails.ReplayHash}_{GamePos}_{(int)Breakpoint}_{Team}_{(int)Cmdr}";
-        buildChart = null;
+        var nextChartKey = $"{ReplayDetails.ReplayHash}_{GamePos}_{(int)Breakpoint}_{Team}_{(int)Cmdr}_{ChartKeySuffix}";
+        effectiveUnitDisplayInfo = UnitDisplayInfo;
+
+        if (!string.Equals(chartKey, nextChartKey, StringComparison.Ordinal))
+        {
+            chartKey = nextChartKey;
+            buildChart = null;
+        }
+
         positionedSpawn = null;
+
+        if (PositionedSpawn is not null)
+        {
+            positionedSpawn = PositionedSpawn;
+            isLoading = false;
+            return;
+        }
 
         var spawn = SpawnPositionHydrationService.GetSpawn(ReplayDetails.Replay, GamePos, Breakpoint);
         if (spawn is not null && SpawnPositionHydrationService.HasChartPositions(spawn))
@@ -92,6 +113,23 @@ else
     public Task HighlightUnits(string unitName)
     {
         return buildChart?.HighlightUnits(unitName) ?? Task.CompletedTask;
+    }
+
+    public async Task UpdateChartAsync(
+        SpawnDto? spawn,
+        Dictionary<string, (double Radius, string Color)>? unitDisplayInfo)
+    {
+        effectiveUnitDisplayInfo = unitDisplayInfo;
+        positionedSpawn = spawn;
+        isLoading = false;
+
+        if (buildChart is not null)
+        {
+            await buildChart.UpdateSmooth(spawn, Cmdr, Team, unitDisplayInfo);
+            return;
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadPositionedSpawn(

@@ -92,6 +92,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, InHouseAuthenticationStateProvider>();
 builder.Services.AddScoped<IPlayerService, dsstats.apiServices.PlayerService>();
 builder.Services.AddScoped<IStatsService, dsstats.apiServices.StatsService>();
+builder.Services.AddScoped<IUnitLifeCostService, NoOpUnitLifeCostService>();
 
 builder.Services.AddSingleton<DecodeService>();
 

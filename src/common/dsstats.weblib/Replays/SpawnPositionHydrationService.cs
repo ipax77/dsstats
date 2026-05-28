@@ -3,6 +3,12 @@ using dsstats.shared.Interfaces;
 
 namespace dsstats.weblib.Replays;
 
+public sealed record SpawnPlaybackWaveInfo(
+    int SpawnNumber,
+    int StartGameloop,
+    int EndGameloop,
+    SpawnDto Spawn);
+
 public sealed class SpawnPositionHydrationService
 {
     private const int MaxEntries = 8;
@@ -68,6 +74,38 @@ public sealed class SpawnPositionHydrationService
         }
 
         return spawn;
+    }
+
+    public Task<IReadOnlyList<SpawnPlaybackWaveInfo>> GetSpawnWavesAsync(
+        ReplayDetails replayDetails,
+        int gamePos,
+        IReplayRepository replayRepository,
+        CancellationToken token = default)
+    {
+        ArgumentNullException.ThrowIfNull(replayDetails);
+        ArgumentNullException.ThrowIfNull(replayRepository);
+
+        if (replayDetails.Replay.SpawnPlayback?.Available != true)
+        {
+            return Task.FromResult<IReadOnlyList<SpawnPlaybackWaveInfo>>([]);
+        }
+
+        if (token.IsCancellationRequested)
+        {
+            return Task.FromCanceled<IReadOnlyList<SpawnPlaybackWaveInfo>>(token);
+        }
+
+        var entry = GetEntry(replayDetails.ReplayHash);
+        lock (entry.Sync)
+        {
+            if (!entry.WaveTasks.TryGetValue(gamePos, out var task))
+            {
+                task = LoadSpawnWaves(replayDetails, gamePos, replayRepository);
+                entry.WaveTasks[gamePos] = task;
+            }
+
+            return task;
+        }
     }
 
     public static bool HasChartPositions(SpawnDto spawn)
@@ -200,6 +238,94 @@ public sealed class SpawnPositionHydrationService
             : SpawnPlaybackBreakpointProjector.Project(sidecar);
     }
 
+    private async Task<IReadOnlyList<SpawnPlaybackWaveInfo>> LoadSpawnWaves(
+        ReplayDetails replayDetails,
+        int gamePos,
+        IReplayRepository replayRepository)
+    {
+        if (replayDetails.Replay.SpawnPlayback?.Available != true)
+        {
+            return [];
+        }
+
+        var sidecar = await sidecarCache.GetSidecar(
+            replayDetails.ReplayHash,
+            replayDetails.Replay.SpawnPlayback.Compression,
+            replayRepository,
+            CancellationToken.None).ConfigureAwait(false);
+
+        if (sidecar is null)
+        {
+            return [];
+        }
+
+        return ProjectSpawnWaves(sidecar, gamePos);
+    }
+
+    public static IReadOnlyList<SpawnPlaybackWaveInfo> ProjectSpawnWaves(
+        SpawnPlaybackSidecarDto sidecar,
+        int gamePos)
+    {
+        ArgumentNullException.ThrowIfNull(sidecar);
+
+        var player = sidecar.Players.FirstOrDefault(player => player.GamePos == gamePos);
+        if (player is null || player.Units.Count == 0)
+        {
+            return [];
+        }
+
+        List<SpawnPlaybackWaveInfo> waves = [];
+        foreach (var group in player.Units
+            .GroupBy(unit => unit.SpawnNumber)
+            .OrderBy(group => group.Min(unit => unit.SpawnGameloop))
+            .ThenBy(group => group.Key))
+        {
+            int startGameloop = group.Min(unit => unit.SpawnGameloop);
+            int endGameloop = group.Max(unit => unit.SpawnGameloop);
+
+            waves.Add(new(
+                group.Key,
+                startGameloop,
+                endGameloop,
+                new()
+                {
+                    Breakpoint = Breakpoint.None,
+                    Units = CreateWaveUnits(group)
+                }));
+        }
+
+        return waves;
+    }
+
+    private static List<UnitDto> CreateWaveUnits(IEnumerable<SpawnPlaybackUnitSidecarDto> units)
+    {
+        Dictionary<string, List<int>> positionsByName = new(StringComparer.Ordinal);
+        foreach (var unit in units)
+        {
+            if (!positionsByName.TryGetValue(unit.Name, out var positions))
+            {
+                positions = [];
+                positionsByName[unit.Name] = positions;
+            }
+
+            positions.Add(unit.SpawnX);
+            positions.Add(unit.SpawnY);
+        }
+
+        List<UnitDto> result = new(positionsByName.Count);
+        foreach (var pair in positionsByName.OrderByDescending(pair => pair.Value.Count).ThenBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            result.Add(new()
+            {
+                Name = pair.Key,
+                Count = pair.Value.Count / 2,
+                Positions = pair.Value
+            });
+        }
+
+        return result;
+    }
+
     private Task<ReplaySpawnPositionsDto?> GetFallbackPositions(
         ReplayHydrationEntry entry,
         string replayHash,
@@ -217,5 +343,6 @@ public sealed class SpawnPositionHydrationService
         public Lock Sync { get; } = new();
         public Task<IReadOnlyDictionary<SpawnPlaybackBreakpointKey, IReadOnlyList<SpawnPlaybackProjectedUnit>>?>? ProjectedTask { get; set; }
         public Task<ReplaySpawnPositionsDto?>? FallbackTask { get; set; }
+        public Dictionary<int, Task<IReadOnlyList<SpawnPlaybackWaveInfo>>> WaveTasks { get; } = [];
     }
 }

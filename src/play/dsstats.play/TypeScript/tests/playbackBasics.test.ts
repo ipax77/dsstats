@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { clipSumLine, clamp, withAlpha } from "../canvasUtils";
+import { getReplayUnitCount, getUnitSpawnGameloop, resolveUnitPosition, normalizeReplayNg } from "../ngPlayback";
 import { createAliveUnitHighlightKey, normalizeMiddleControl, normalizeReplay, normalizeSummary } from "../normalization";
-import { createObjectiveDeathAnnouncements, fitText, isEndSummaryVisible } from "../rendering";
+import { createObjectiveDeathAnnouncements, createSpawnWaveTable, fitText, getActiveSpawnWaveEvents, getSpawnWaveEventAlpha, isEndSummaryVisible } from "../rendering";
 import { resolveAliveUnitHighlightToggle, syncAliveUnitHighlightSelection } from "../state";
 import { deleteState, setState } from "../store";
 import type { LandmarkGeometry } from "../types";
@@ -53,12 +54,205 @@ describe("spawn playback basics", () => {
         expect(replay.players[0].refineryGameloops).toEqual([100, 220]);
         expect(replay.players[0].tierUpgradeGameloops).toEqual([300, 450]);
         expect(replay.units.map(unit => unit.name)).toEqual(["Marine", "Marauder"]);
+        expect(replay.units.map(unit => unit.spawnNumber)).toEqual([0, 0]);
+        expect(replay.units[0].playerName).toBe("Player One");
+        expect(replay.units[0].gamePos).toBe(2);
         expect(replay.units[0].aliveUnitHighlightKey).toBe(createAliveUnitHighlightKey(1, "Terran", "Marine"));
         expect(replay.units[0].deltaX).toBe(0);
         expect(replay.units[0].deltaY).toBe(0);
         expect(replay.units[1].deltaX).toBe(100);
         expect(replay.units[1].deltaY).toBe(100);
         expect(replay.summary).toEqual({ totalKills: 0, players: [], topUnits: [] });
+    });
+
+    it("selects active per-team spawn events only inside their fade windows", () => {
+        const events = [
+            createSpawnEvent("t1-old", 1, 1, "Alpha", 1, 100),
+            createSpawnEvent("t2", 2, 4, "Bravo", 2, 300),
+            createSpawnEvent("t1-new", 1, 2, "Charlie", 3, 520)
+        ];
+
+        expect(getActiveSpawnWaveEvents(events, 49)).toEqual({ team1: null, team2: null });
+        expect(getActiveSpawnWaveEvents(events, 100).team1?.key).toBe("t1-old");
+        expect(getActiveSpawnWaveEvents(events, 340).team2?.key).toBe("t2");
+        expect(getActiveSpawnWaveEvents(events, 520).team1?.key).toBe("t1-new");
+        expect(getActiveSpawnWaveEvents(events, 900)).toEqual({ team1: null, team2: null });
+    });
+
+    it("normalizes NG binary replay metadata without unit objects", () => {
+        const replay = normalizeReplayNg(
+            createNgReplayMetadata(),
+            createInt32Bytes([
+                7, 0, 0, 1, 100, 220, 0, 0, 0, -1, 4,
+                8, 0, 0, 1, 90, 210, 0, 0, 0, -1, 4
+            ]),
+            createInt32Bytes([0, 2, 0]),
+            createInt32Bytes([10, 20, 0, 30, 40, 120]),
+            createInt32Bytes([]));
+
+        expect(replay.units).toHaveLength(0);
+        expect(getReplayUnitCount(replay)).toBe(2);
+        expect(getUnitSpawnGameloop(replay, 0)).toBe(100);
+        expect(resolveUnitPosition(replay, 0, 160)).toEqual({ x: 20, y: 30 });
+    });
+
+    it("resolves NG path waits from repeated coordinates and gameloop offsets", () => {
+        const replay = normalizeReplayNg(
+            createNgReplayMetadata(),
+            createInt32Bytes([7, 0, 0, 1, 100, 220, 0, 0, 0, -1, 4]),
+            createInt32Bytes([0, 4, 0]),
+            createInt32Bytes([
+                10, 20, 0,
+                30, 40, 40,
+                30, 40, 80,
+                50, 60, 120
+            ]),
+            createInt32Bytes([]));
+
+        expect(resolveUnitPosition(replay, 0, 120)).toEqual({ x: 20, y: 30 });
+        expect(resolveUnitPosition(replay, 0, 160)).toEqual({ x: 30, y: 40 });
+        expect(resolveUnitPosition(replay, 0, 200)).toEqual({ x: 40, y: 50 });
+    });
+
+    it("groups one player spawn table and totals latest-patch cost and life", () => {
+        const replay = normalizeReplay({
+            DurationGameloop: 800,
+            Players: [
+                {
+                    Name: "Alpha",
+                    TeamId: 1,
+                    GamePos: 1,
+                    Commander: "Terran",
+                    Units: [
+                        createUnit("Marine", 2, 200),
+                        createUnit("Marine", 2, 201),
+                        createUnit("Marauder", 2, 202),
+                        createUnit("Ghost", 1, 100)
+                    ]
+                },
+                {
+                    Name: "Bravo",
+                    TeamId: 2,
+                    GamePos: 4,
+                    Commander: "Terran",
+                    Units: [
+                        createUnit("Marine", 2, 205),
+                        createUnit("Marauder", 2, 206)
+                    ]
+                }
+            ]
+        });
+        const unitLifeCostByKey = new Map([
+            [createAliveUnitHighlightKey(1, "Terran", "Marine"), { cost: 50, life: 45 }],
+            [createAliveUnitHighlightKey(2, "Terran", "Marine"), { cost: 60, life: 55 }],
+            [createAliveUnitHighlightKey(2, "Terran", "Marauder"), { cost: 100, life: 125 }]
+        ]);
+
+        const table = createSpawnWaveTable(
+            { replay, unitLifeCostByKey },
+            createSpawnEvent("alpha-2", 1, 1, "Alpha", 2, 200));
+
+        expect(table?.spawnNumber).toBe(2);
+        expect(table?.teamId).toBe(1);
+        expect(table?.playerName).toBe("Alpha");
+        expect(table?.gamePos).toBe(1);
+        expect(table?.rows).toEqual([
+            {
+                teamId: 1,
+                unitName: "Marine",
+                count: 2,
+                cost: 50,
+                life: 45,
+                totalCost: 100,
+                totalLife: 90
+            },
+            {
+                teamId: 1,
+                unitName: "Marauder",
+                count: 1,
+                cost: null,
+                life: null,
+                totalCost: null,
+                totalLife: null
+            }
+        ]);
+        expect(table?.totalCount).toBe(3);
+        expect(table?.totalCost).toBe(100);
+        expect(table?.totalLife).toBe(90);
+    });
+
+    it("keeps same-team spawn tables separated by player name", () => {
+        const replay = normalizeReplay({
+            DurationGameloop: 800,
+            Players: [
+                {
+                    Name: "Alpha",
+                    TeamId: 1,
+                    GamePos: 1,
+                    Commander: "Terran",
+                    Units: [
+                        createUnit("Marine", 2, 200),
+                        createUnit("Marine", 2, 201)
+                    ]
+                },
+                {
+                    Name: "Charlie",
+                    TeamId: 1,
+                    GamePos: 2,
+                    Commander: "Terran",
+                    Units: [
+                        createUnit("Marine", 2, 205)
+                    ]
+                }
+            ]
+        });
+        const unitLifeCostByKey = new Map([
+            [createAliveUnitHighlightKey(1, "Terran", "Marine"), { cost: 50, life: 45 }]
+        ]);
+
+        const alphaTable = createSpawnWaveTable(
+            { replay, unitLifeCostByKey },
+            createSpawnEvent("alpha-2", 1, 1, "Alpha", 2, 200));
+        const charlieTable = createSpawnWaveTable(
+            { replay, unitLifeCostByKey },
+            createSpawnEvent("charlie-2", 1, 2, "Charlie", 2, 205));
+
+        expect(alphaTable?.rows.map(row => [row.unitName, row.count, row.totalCost, row.totalLife])).toEqual([
+            ["Marine", 2, 100, 90]
+        ]);
+        expect(charlieTable?.rows.map(row => [row.unitName, row.count, row.totalCost, row.totalLife])).toEqual([
+            ["Marine", 1, 50, 45]
+        ]);
+    });
+
+    it("fades spawn wave tables around the spawn event", () => {
+        const event = createSpawnEvent("alpha-2", 1, 1, "Alpha", 2, 200);
+
+        expect(getSpawnWaveEventAlpha(event, 149)).toBe(0);
+        expect(getSpawnWaveEventAlpha(event, 175)).toBeCloseTo(0.5);
+        expect(getSpawnWaveEventAlpha(event, 200)).toBe(1);
+        expect(getSpawnWaveEventAlpha(event, 450)).toBe(1);
+        expect(getSpawnWaveEventAlpha(event, 475)).toBeCloseTo(0.5);
+        expect(getSpawnWaveEventAlpha(event, 501)).toBe(0);
+    });
+
+    it("does not create spawn wave overlay rows without life-cost metadata", () => {
+        const replay = normalizeReplay({
+            DurationGameloop: 400,
+            Players: [
+                {
+                    Name: "Alpha",
+                    TeamId: 1,
+                    GamePos: 1,
+                    Commander: "Terran",
+                    Units: [createUnit("Marine", 1, 100)]
+                }
+            ]
+        });
+
+        expect(createSpawnWaveTable(
+            { replay, unitLifeCostByKey: new Map() },
+            createSpawnEvent("alpha-1", 1, 1, "Alpha", 1, 100))).toBeNull();
     });
 
     it("rejects invalid middle-control data", () => {
@@ -399,6 +593,79 @@ function createLandmark(label: string, diedGameloop: number | null, kills = 0): 
         radius: 9,
         diedGameloop,
         projected: { x: 0, y: 0 }
+    };
+}
+
+function createUnit(name: string, spawnNumber: number, spawnGameloop: number): Record<string, unknown> {
+    return {
+        Name: name,
+        SpawnNumber: spawnNumber,
+        SpawnGameloop: spawnGameloop,
+        SpawnX: 40,
+        SpawnY: 50,
+        ExpiresGameloop: spawnGameloop + 400,
+        Radius: 6,
+        Color: "#AAAAAA"
+    };
+}
+
+function createNgReplayMetadata(): Record<string, unknown> {
+    return {
+        DurationGameloop: 500,
+        StepGameloops: 112,
+        Bounds: { MinX: 0, MinY: 0, MaxX: 256, MaxY: 240 },
+        Players: [
+            {
+                Name: "Alpha",
+                TeamId: 1,
+                GamePos: 1,
+                Commander: "Terran",
+                RefineryGameloops: [],
+                TierUpgradeGameloops: []
+            }
+        ],
+        UnitKinds: [
+            {
+                Name: "Marine",
+                Commander: "Terran",
+                Radius: 6,
+                Color: "#AAAAAA"
+            }
+        ],
+        Summary: { TotalKills: 0, Players: [], TopUnits: [] },
+        MiddleControl: { FirstTeamId: 0, ChangeGameloops: [] },
+        Landmarks: [],
+        Snapshots: []
+    };
+}
+
+function createInt32Bytes(values: number[]): Uint8Array {
+    const bytes = new Uint8Array(values.length * Int32Array.BYTES_PER_ELEMENT);
+    const view = new DataView(bytes.buffer);
+    for (let i = 0; i < values.length; i++) {
+        view.setInt32(i * Int32Array.BYTES_PER_ELEMENT, values[i], true);
+    }
+
+    return bytes;
+}
+
+function createSpawnEvent(
+    key: string,
+    teamId: number,
+    gamePos: number,
+    playerName: string,
+    spawnNumber: number,
+    anchorGameloop: number) {
+    return {
+        key,
+        teamId,
+        gamePos,
+        playerName,
+        spawnNumber,
+        anchorGameloop,
+        startGameloop: anchorGameloop - 50,
+        holdEndGameloop: anchorGameloop + 250,
+        endGameloop: anchorGameloop + 300
     };
 }
 

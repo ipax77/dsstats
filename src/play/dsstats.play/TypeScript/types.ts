@@ -91,10 +91,22 @@ export interface UnitRender {
     sprite: LayerCanvas;
 }
 
-export interface NormalizedUnit {
+export interface NormalizedUnitKind {
     name: string;
     commander: string;
+    radius: number;
+    color: string;
+    iconDefinition: UnitIconDefinition | null;
+    iconResolved: boolean;
+}
+
+export interface NormalizedUnit {
+    name: string;
+    playerName: string;
+    gamePos: number;
+    commander: string;
     aliveUnitHighlightKey: string;
+    spawnNumber: number;
     spawnGameloop: number;
     expiresGameloop: number;
     spawnX: number;
@@ -132,6 +144,15 @@ export interface NormalizedReplay {
     snapshots: unknown[];
     players: NormalizedPlayer[];
     units: NormalizedUnit[];
+    ng: NormalizedReplayNg | null;
+}
+
+export interface NormalizedReplayNg {
+    unitKinds: NormalizedUnitKind[];
+    unitRows: Int32Array;
+    pathRows: Int32Array;
+    pathPoints: Int32Array;
+    killGameloops: Int32Array;
 }
 
 export interface PlaybackPlayerSummary {
@@ -219,6 +240,50 @@ export interface ObjectiveDeathAnnouncement {
     endGameloop: number;
 }
 
+export interface UnitLifeCost {
+    cost: number;
+    life: number;
+}
+
+export interface UnitLifeCostEntry {
+    key: string;
+    cost: number;
+    life: number;
+}
+
+export interface SpawnWaveEvent {
+    key: string;
+    teamId: number;
+    spawnNumber: number;
+    playerName: string;
+    gamePos: number;
+    anchorGameloop: number;
+    startGameloop: number;
+    holdEndGameloop: number;
+    endGameloop: number;
+}
+
+export interface SpawnWaveUnitRow {
+    teamId: number;
+    unitName: string;
+    count: number;
+    cost: number | null;
+    life: number | null;
+    totalCost: number | null;
+    totalLife: number | null;
+}
+
+export interface SpawnWaveTeamTable {
+    teamId: number;
+    spawnNumber: number;
+    playerName: string;
+    gamePos: number;
+    rows: SpawnWaveUnitRow[];
+    totalCount: number;
+    totalCost: number;
+    totalLife: number;
+}
+
 export interface RenderCache {
     projection: Projection;
 }
@@ -237,7 +302,7 @@ export interface SpawnPlaybackState {
     animationFrameId: number;
     lastFrameTimestamp: number;
     lastProgressTimestamp: number;
-    activeUnits: NormalizedUnit[];
+    activeUnitIndexes: number[];
     nextUnitIndex: number;
     lastActiveGameloop: number;
     staticGeometry: StaticGeometry | null;
@@ -246,6 +311,10 @@ export interface SpawnPlaybackState {
     staticCanvasWidth: number;
     staticCanvasHeight: number;
     objectiveDeathAnnouncements: ObjectiveDeathAnnouncement[];
+    unitLifeCostByKey: Map<string, UnitLifeCost>;
+    showSpawnWaveOverlay: boolean;
+    spawnWaveEvents: SpawnWaveEvent[];
+    spawnWaveTableCache: Map<string, SpawnWaveTeamTable>;
     unitSpriteCache: Map<string, LayerCanvas>;
     highlightedAliveUnitKey: string | null;
     rootElement: Element | null;

@@ -99,24 +99,24 @@ public partial class BuildsService
         return unit ?? new();
     }
 
-    public async Task SetBuildResponseLifeAndCost(BuildsResponse buildResponse, Commander cmdr)
+    public async Task SetBuildResponseLifeAndCost(
+        BuildsResponse buildResponse,
+        Commander cmdr,
+        CancellationToken token = default)
     {
-        var dsUnits = await GetUnits(new() { Commander = cmdr });
+        var unitLifeCosts = await _unitLifeCostService.GetUnitLifeCosts(cmdr, token);
 
         foreach (var buildUnit in buildResponse.Units)
         {
             var unitName = MapUnitName(buildUnit.Name, cmdr);
-            var dsUnit = dsUnits.FirstOrDefault(f => f.Name.Equals(unitName, StringComparison.Ordinal)
-                && f.Commander == cmdr);
-
-            if (dsUnit is null)
+            if (!unitLifeCosts.TryGetValue(unitName, out var unitLifeCost))
             {
                 continue;
             }
 
             buildUnit.Name = unitName;
-            buildUnit.Life = Math.Round(dsUnit.Life * buildUnit.Count, 2);
-            buildUnit.Cost = Math.Round(dsUnit.Cost * buildUnit.Count, 2);
+            buildUnit.Life = Math.Round(unitLifeCost.Life * buildUnit.Count, 2);
+            buildUnit.Cost = Math.Round(unitLifeCost.Cost * buildUnit.Count, 2);
         }
     }
 

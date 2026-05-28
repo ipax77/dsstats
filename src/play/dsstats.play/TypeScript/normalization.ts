@@ -8,7 +8,9 @@ import type {
     PlaybackPlayerSummary,
     PlaybackSummary,
     PlaybackTopUnitSummary,
-    RawObject
+    RawObject,
+    UnitLifeCost,
+    UnitLifeCostEntry
 } from "./types";
 
 export function normalizeReplay(replayValue: unknown): NormalizedReplay {
@@ -43,8 +45,11 @@ export function normalizeReplay(replayValue: unknown): NormalizedReplay {
             const targetY = readOptionalNumber(rawUnit, "targetY", "TargetY") ?? spawnY;
             const unit: NormalizedUnit = {
                 name,
+                playerName: player.name,
+                gamePos: player.gamePos,
                 commander: player.commander,
                 aliveUnitHighlightKey: createAliveUnitHighlightKey(player.teamId, player.commander, name),
+                spawnNumber: readNumber(rawUnit, "spawnNumber", "SpawnNumber"),
                 spawnGameloop,
                 expiresGameloop,
                 spawnX,
@@ -79,7 +84,37 @@ export function normalizeReplay(replayValue: unknown): NormalizedReplay {
         buildUnits: readArray(replay, "buildUnits", "BuildUnits"),
         snapshots: readArray(replay, "snapshots", "Snapshots"),
         players,
-        units
+        units,
+        ng: null
+    };
+}
+
+export function normalizeUnitLifeCosts(value: unknown): Map<string, UnitLifeCost> {
+    const result = new Map<string, UnitLifeCost>();
+    const entries = Array.isArray(value) ? value : [];
+    for (const entryValue of entries) {
+        const entry = normalizeUnitLifeCostEntry(entryValue);
+        if (entry !== null) {
+            result.set(entry.key, { cost: entry.cost, life: entry.life });
+        }
+    }
+
+    return result;
+}
+
+function normalizeUnitLifeCostEntry(value: unknown): UnitLifeCostEntry | null {
+    const entry = asObject(value);
+    const key = readString(entry, "key", "Key");
+    const cost = readOptionalNumber(entry, "cost", "Cost");
+    const life = readOptionalNumber(entry, "life", "Life");
+    if (key.length === 0 || cost === null || life === null) {
+        return null;
+    }
+
+    return {
+        key,
+        cost: Math.max(0, Math.round(cost)),
+        life: Math.max(0, Math.round(life))
     };
 }
 

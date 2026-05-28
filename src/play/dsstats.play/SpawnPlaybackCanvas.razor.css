@@ -16,6 +16,28 @@
     background: #0B1820;
 }
 
+.spawn-playback-toolbar,
+.spawn-playback-toolbar-actions {
+    min-width: 0;
+}
+
+.spawn-playback-toolbar-actions {
+    justify-content: flex-end;
+}
+
+.spawn-playback-alive-controls {
+    min-width: 0;
+    padding-left: 0.75rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.spawn-playback-alive-controls .badge {
+    max-width: 7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .spawn-playback-body {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(440px, 520px);
@@ -77,8 +99,7 @@
 }
 
 .spawn-playback-alive-collapsed .spawn-playback-alive {
-    width: fit-content;
-    max-width: 100%;
+    display: none;
 }
 
 .spawn-playback-team-tables {
@@ -158,6 +179,19 @@
 }
 
 @media (max-width: 991.98px) {
+    .spawn-playback-toolbar {
+        align-items: flex-start !important;
+    }
+
+    .spawn-playback-toolbar-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .spawn-playback-alive-controls {
+        flex: 0 0 auto;
+    }
+
     .spawn-playback-body {
         grid-template-columns: 1fr;
     }
@@ -176,6 +210,22 @@
 }
 
 @media (max-width: 575.98px) {
+    .spawn-playback:fullscreen {
+        padding: 0.75rem !important;
+    }
+
+    .spawn-playback-toolbar-actions {
+        gap: 0.5rem !important;
+    }
+
+    .spawn-playback-alive-controls {
+        width: 100%;
+        padding-left: 0;
+        padding-top: 0.5rem;
+        border-left: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.22);
+    }
+
     .spawn-playback-team-tables {
         grid-template-columns: 1fr;
     }

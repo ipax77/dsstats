@@ -1,4 +1,5 @@
-import { normalizeReplay } from "./normalization";
+import { normalizeReplay, normalizeUnitLifeCosts } from "./normalization";
+import { getReplayUnitCount, getUnitGamePos, getUnitPlayerName, getUnitSpawnGameloop, getUnitSpawnNumber, getUnitTeamId, normalizeReplayNg } from "./ngPlayback";
 import { clampGameloop, drawSpawnPlayback } from "./rendering";
 import { deleteState, getState, setState } from "./store";
 import type { DotNetCallbackRef, SpawnPlaybackState } from "./types";
@@ -6,20 +7,30 @@ import type { DotNetCallbackRef, SpawnPlaybackState } from "./types";
 const ALIVE_UNIT_ROW_SELECTOR = "[data-spawn-playback-alive-unit-row]";
 const ALIVE_UNIT_CLEAR_SELECTOR = "[data-spawn-playback-clear-highlight]";
 const ALIVE_UNIT_SELECTED_CLASS = "spawn-playback-alive-row-selected";
+const MOBILE_PLAYBACK_MEDIA_QUERY = "(max-width: 991.98px)";
+
+export function isSpawnPlaybackMobileViewport(): boolean {
+    return typeof window !== "undefined"
+        && window.matchMedia(MOBILE_PLAYBACK_MEDIA_QUERY).matches;
+}
 
 export function initializeSpawnPlayback(
     canvas: HTMLCanvasElement,
     rootElement: Element | null,
     replay: unknown,
+    unitLifeCosts: unknown,
+    showSpawnWaveOverlay: boolean,
     callbackRef: DotNetCallbackRef | null,
     gameloopsPerSecond: number,
     speedMultiplier: number): void {
+    const normalizedReplay = normalizeReplay(replay);
+    const loopsPerSecond = Number.isFinite(gameloopsPerSecond) && gameloopsPerSecond > 0
+        ? gameloopsPerSecond
+        : 22.4;
     const state: SpawnPlaybackState = {
-        replay: normalizeReplay(replay),
+        replay: normalizedReplay,
         callbackRef,
-        gameloopsPerSecond: Number.isFinite(gameloopsPerSecond) && gameloopsPerSecond > 0
-            ? gameloopsPerSecond
-            : 22.4,
+        gameloopsPerSecond: loopsPerSecond,
         speedMultiplier: Number.isFinite(speedMultiplier) && speedMultiplier > 0
             ? speedMultiplier
             : 1,
@@ -32,7 +43,7 @@ export function initializeSpawnPlayback(
         animationFrameId: 0,
         lastFrameTimestamp: 0,
         lastProgressTimestamp: 0,
-        activeUnits: [],
+        activeUnitIndexes: [],
         nextUnitIndex: 0,
         lastActiveGameloop: Number.NEGATIVE_INFINITY,
         staticGeometry: null,
@@ -41,6 +52,10 @@ export function initializeSpawnPlayback(
         staticCanvasWidth: 0,
         staticCanvasHeight: 0,
         objectiveDeathAnnouncements: [],
+        unitLifeCostByKey: normalizeUnitLifeCosts(unitLifeCosts),
+        showSpawnWaveOverlay,
+        spawnWaveEvents: createSpawnWaveEvents(normalizedReplay, loopsPerSecond),
+        spawnWaveTableCache: new Map(),
         unitSpriteCache: new Map(),
         highlightedAliveUnitKey: null,
         rootElement,
@@ -57,6 +72,139 @@ export function initializeSpawnPlayback(
     document.addEventListener("fullscreenchange", state.fullscreenListener);
     initializeAliveUnitHighlightEvents(canvas, state);
     setState(canvas, state);
+}
+
+export function initializeSpawnPlaybackNg(
+    canvas: HTMLCanvasElement,
+    rootElement: Element | null,
+    replay: unknown,
+    unitLifeCosts: unknown,
+    showSpawnWaveOverlay: boolean,
+    callbackRef: DotNetCallbackRef | null,
+    gameloopsPerSecond: number,
+    speedMultiplier: number,
+    unitRows: Uint8Array,
+    pathRows: Uint8Array,
+    pathPoints: Uint8Array,
+    killGameloops: Uint8Array): void {
+    const normalizedReplay = normalizeReplayNg(replay, unitRows, pathRows, pathPoints, killGameloops);
+    const loopsPerSecond = Number.isFinite(gameloopsPerSecond) && gameloopsPerSecond > 0
+        ? gameloopsPerSecond
+        : 22.4;
+    const state: SpawnPlaybackState = {
+        replay: normalizedReplay,
+        callbackRef,
+        gameloopsPerSecond: loopsPerSecond,
+        speedMultiplier: Number.isFinite(speedMultiplier) && speedMultiplier > 0
+            ? speedMultiplier
+            : 1,
+        resizeObserver: null,
+        isMounted: true,
+        isDisposing: false,
+        pendingResizeRaf: null,
+        currentGameloop: 0,
+        running: false,
+        animationFrameId: 0,
+        lastFrameTimestamp: 0,
+        lastProgressTimestamp: 0,
+        activeUnitIndexes: [],
+        nextUnitIndex: 0,
+        lastActiveGameloop: Number.NEGATIVE_INFINITY,
+        staticGeometry: null,
+        renderCache: null,
+        staticBackgroundCanvas: null,
+        staticCanvasWidth: 0,
+        staticCanvasHeight: 0,
+        objectiveDeathAnnouncements: [],
+        unitLifeCostByKey: normalizeUnitLifeCosts(unitLifeCosts),
+        showSpawnWaveOverlay,
+        spawnWaveEvents: createSpawnWaveEvents(normalizedReplay, loopsPerSecond),
+        spawnWaveTableCache: new Map(),
+        unitSpriteCache: new Map(),
+        highlightedAliveUnitKey: null,
+        rootElement,
+        modalElement: null,
+        modalHideListener: null,
+        fullscreenListener: null,
+        aliveUnitClickListener: null,
+        aliveUnitKeydownListener: null
+    };
+
+    disposeState(getState(canvas));
+
+    state.fullscreenListener = () => handleFullscreenChange(canvas);
+    document.addEventListener("fullscreenchange", state.fullscreenListener);
+    initializeAliveUnitHighlightEvents(canvas, state);
+    setState(canvas, state);
+}
+
+function createSpawnWaveEvents(
+    replay: SpawnPlaybackState["replay"],
+    gameloopsPerSecond: number): {
+        key: string;
+        teamId: number;
+        spawnNumber: number;
+        playerName: string;
+        gamePos: number;
+        anchorGameloop: number;
+        startGameloop: number;
+        holdEndGameloop: number;
+        endGameloop: number;
+    }[] {
+    const fadeGameloops = Math.max(1, Math.round(gameloopsPerSecond * 1.2));
+    const holdGameloops = Math.max(1, Math.round(gameloopsPerSecond * 5));
+    const starts = new Map<string, {
+        teamId: number;
+        spawnNumber: number;
+        playerName: string;
+        gamePos: number;
+        anchorGameloop: number;
+    }>();
+    const unitCount = getReplayUnitCount(replay);
+    for (let unitIndex = 0; unitIndex < unitCount; unitIndex++) {
+        const spawnNumber = getUnitSpawnNumber(replay, unitIndex);
+        const spawnGameloop = getUnitSpawnGameloop(replay, unitIndex);
+        if (spawnNumber <= 0 || !Number.isFinite(spawnGameloop)) {
+            continue;
+        }
+
+        const teamId = getUnitTeamId(replay, unitIndex);
+        const gamePos = getUnitGamePos(replay, unitIndex);
+        const playerName = getUnitPlayerName(replay, unitIndex);
+        const key = createSpawnWaveEventKey(teamId, gamePos, playerName, spawnNumber);
+        const existing = starts.get(key);
+        if (existing === undefined || spawnGameloop < existing.anchorGameloop) {
+            starts.set(key, {
+                teamId,
+                spawnNumber,
+                playerName,
+                gamePos,
+                anchorGameloop: spawnGameloop
+            });
+        }
+    }
+
+    return [...starts]
+        .map(([key, event]) => ({
+            key,
+            teamId: event.teamId,
+            spawnNumber: event.spawnNumber,
+            playerName: event.playerName,
+            gamePos: event.gamePos,
+            anchorGameloop: event.anchorGameloop,
+            startGameloop: Math.max(0, event.anchorGameloop - fadeGameloops),
+            holdEndGameloop: event.anchorGameloop + holdGameloops,
+            endGameloop: event.anchorGameloop + holdGameloops + fadeGameloops
+        }))
+        .sort((left, right) =>
+            left.startGameloop - right.startGameloop
+            || left.anchorGameloop - right.anchorGameloop
+            || left.teamId - right.teamId
+            || left.gamePos - right.gamePos);
+}
+
+function createSpawnWaveEventKey(teamId: number, gamePos: number, playerName: string, spawnNumber: number): string {
+    return `${teamId}|${gamePos}|${spawnNumber}|${playerName.length}:${playerName}`;
 }
 
 export function observeSpawnPlaybackResize(canvas: HTMLCanvasElement): void {
@@ -147,6 +295,24 @@ export function setSpawnPlaybackSpeed(canvas: HTMLCanvasElement, speedMultiplier
     }
 
     state.speedMultiplier = speedMultiplier;
+}
+
+export function setSpawnWaveOverlayVisible(canvas: HTMLCanvasElement, visible: boolean): void {
+    const state = getState(canvas);
+    if (!state || state.isDisposing || state.showSpawnWaveOverlay === visible) {
+        return;
+    }
+
+    state.showSpawnWaveOverlay = visible;
+    if (!state.running && state.isMounted) {
+        requestAnimationFrame(() => {
+            if (!state.isMounted || state.isDisposing) {
+                return;
+            }
+
+            drawSpawnPlayback(canvas, state.currentGameloop);
+        });
+    }
 }
 
 export async function setSpawnPlaybackFullscreen(
