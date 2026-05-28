@@ -10,13 +10,13 @@
 @if (playback is not null)
 {
     <div @ref="playbackElement" class="spawn-playback bgchart border border-dark rounded p-3 mb-4 @(showAliveUnits ? null : "spawn-playback-alive-collapsed")">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+        <div class="spawn-playback-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
             <div>
                 <h5 class="mb-1 text-warning">Spawn Playback</h5>
                 <div class="small text-light">@CurrentTimeLabel</div>
                 <div class="small text-muted">@PlaybackStatusLabel</div>
             </div>
-            <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="spawn-playback-toolbar-actions d-flex flex-wrap align-items-center gap-2">
                 <div class="btn-group" role="group" aria-label="Spawn playback controls">
                     <button type="button" class="btn btn-sm btn-outline-light" title="Back 5 seconds" @onclick="StepBackward">
                         <span class="bi bi-chevron-left"></span>
@@ -54,6 +54,23 @@
                     <option value="normal">Normal</option>
                     <option value="fast">Fast</option>
                 </select>
+                <div class="spawn-playback-alive-controls d-flex align-items-center gap-2">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-light spawn-playback-clear-highlight"
+                            title="Clear unit highlight"
+                            aria-label="Clear unit highlight"
+                            data-spawn-playback-clear-highlight>
+                        <span class="bi bi-x-lg"></span>
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-light"
+                            title="@AliveUnitsToggleTitle"
+                            aria-expanded="@showAliveUnits"
+                            @onclick="ToggleAliveUnits">
+                        <span class="bi @AliveUnitsToggleIcon"></span>
+                    </button>
+                    <span class="badge text-bg-dark border border-secondary">@aliveUnitCount.ToString("N0") units</span>
+                </div>
             </div>
         </div>
         <div class="spawn-playback-body">
@@ -81,23 +98,6 @@
                     <div>
                         <h6 class="mb-0 text-warning">Alive Units</h6>
                         <div class="small text-muted">Current spawn @CurrentSpawnLabel</div>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button"
-                                class="btn btn-sm btn-outline-light spawn-playback-clear-highlight"
-                                title="Clear unit highlight"
-                                aria-label="Clear unit highlight"
-                                data-spawn-playback-clear-highlight>
-                            <span class="bi bi-x-lg"></span>
-                        </button>
-                        <button type="button"
-                                class="btn btn-sm btn-outline-light"
-                                title="@AliveUnitsToggleTitle"
-                                aria-expanded="@showAliveUnits"
-                                @onclick="ToggleAliveUnits">
-                            <span class="bi @AliveUnitsToggleIcon"></span>
-                        </button>
-                        <span class="badge text-bg-dark border border-secondary">@aliveUnitCount.ToString("N0") units</span>
                     </div>
                 </div>
                 @if (showAliveUnits)
@@ -247,7 +247,8 @@
     private int team2AliveCount;
     private int currentSpawnNumber;
     private bool isFullscreen;
-    private bool showAliveUnits = true;
+    private bool showAliveUnits;
+    private bool aliveUnitsDefaultResolved;
     private bool showSpawnWaveOverlay = true;
     private SpawnPlaybackAnimationState animationState = SpawnPlaybackAnimationState.Stopped;
     private string selectedPlaybackSpeed = "normal";
@@ -321,7 +322,8 @@
             currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(currentGameloop);
             animationState = SpawnPlaybackAnimationState.Stopped;
             isFullscreen = false;
-            showAliveUnits = true;
+            showAliveUnits = false;
+            aliveUnitsDefaultResolved = false;
             showSpawnWaveOverlay = true;
             unitLifeCostEntries = await CreateUnitLifeCostEntries(playback);
             SetRenderGameloop(force: true);
@@ -343,6 +345,19 @@
         if (dotNetReference is null)
         {
             dotNetReference = DotNetObjectReference.Create(this);
+        }
+
+        if (!aliveUnitsDefaultResolved)
+        {
+            bool isMobile = await module.InvokeAsync<bool>("isSpawnPlaybackMobileViewport");
+            showAliveUnits = !isMobile;
+            aliveUnitsDefaultResolved = true;
+            UpdateAliveUnitRows();
+            canvasDrawPending = true;
+            if (showAliveUnits)
+            {
+                StateHasChanged();
+            }
         }
 
         if (!ReferenceEquals(initializedReplay, playback))

@@ -9627,6 +9627,10 @@ function drawEmptyState(ctx, canvas) {
 var ALIVE_UNIT_ROW_SELECTOR = "[data-spawn-playback-alive-unit-row]";
 var ALIVE_UNIT_CLEAR_SELECTOR = "[data-spawn-playback-clear-highlight]";
 var ALIVE_UNIT_SELECTED_CLASS = "spawn-playback-alive-row-selected";
+var MOBILE_PLAYBACK_MEDIA_QUERY = "(max-width: 991.98px)";
+function isSpawnPlaybackMobileViewport() {
+  return typeof window !== "undefined" && window.matchMedia(MOBILE_PLAYBACK_MEDIA_QUERY).matches;
+}
 function initializeSpawnPlayback(canvas, rootElement, replay, unitLifeCosts, showSpawnWaveOverlay, callbackRef, gameloopsPerSecond, speedMultiplier) {
   const normalizedReplay = normalizeReplay(replay);
   const loopsPerSecond = Number.isFinite(gameloopsPerSecond) && gameloopsPerSecond > 0 ? gameloopsPerSecond : 22.4;
@@ -10092,6 +10096,7 @@ export {
   drawSpawnPlayback,
   hydrateUnitIcons,
   initializeSpawnPlayback,
+  isSpawnPlaybackMobileViewport,
   observeSpawnPlaybackResize,
   pauseSpawnPlayback,
   setSpawnPlaybackFullscreen,

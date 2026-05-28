@@ -6,6 +6,12 @@ import type { DotNetCallbackRef, SpawnPlaybackState } from "./types";
 const ALIVE_UNIT_ROW_SELECTOR = "[data-spawn-playback-alive-unit-row]";
 const ALIVE_UNIT_CLEAR_SELECTOR = "[data-spawn-playback-clear-highlight]";
 const ALIVE_UNIT_SELECTED_CLASS = "spawn-playback-alive-row-selected";
+const MOBILE_PLAYBACK_MEDIA_QUERY = "(max-width: 991.98px)";
+
+export function isSpawnPlaybackMobileViewport(): boolean {
+    return typeof window !== "undefined"
+        && window.matchMedia(MOBILE_PLAYBACK_MEDIA_QUERY).matches;
+}
 
 export function initializeSpawnPlayback(
     canvas: HTMLCanvasElement,

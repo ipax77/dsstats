@@ -6,6 +6,7 @@ export {
     setSpawnPlaybackSpeed,
     setSpawnWaveOverlayVisible,
     setSpawnPlaybackFullscreen,
+    isSpawnPlaybackMobileViewport,
     observeSpawnPlaybackResize,
     syncAliveUnitHighlightSelection,
     disposeSpawnPlayback
