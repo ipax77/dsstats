@@ -194,16 +194,6 @@ public static class SpawnPlaybackFactoryNg
             ]);
     }
 
-    public static SpawnPlaybackUnitKey GetUnitKey(
-        int unitIndex,
-        int spawnGameloop,
-        int spawnX,
-        int spawnY,
-        string name)
-    {
-        return new(unitIndex, spawnGameloop, spawnX, spawnY, name);
-    }
-
     private static Dictionary<int, ReplayPlayerDto> CreateReplayPlayerLookup(ReplayDto replay)
     {
         Dictionary<int, ReplayPlayerDto> playersByGamePos = new(replay.Players.Count);

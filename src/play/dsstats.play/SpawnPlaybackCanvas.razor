@@ -226,6 +226,9 @@
     [Parameter]
     public SpawnPlaybackSidecarDto? Sidecar { get; set; }
 
+    [Parameter]
+    public SpawnPlaybackReplayNg? Playback { get; set; }
+
     private ElementReference playbackElement;
     private ElementReference canvasElement;
     private IJSObjectReference? module;
@@ -323,9 +326,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var nextPlayback = Replay is not null && Sidecar is not null
-            ? SpawnPlaybackFactoryNg.Create(Replay, Sidecar)
-            : null;
+        var nextPlayback = Playback
+            ?? (Replay is not null && Sidecar is not null
+                ? SpawnPlaybackFactoryNg.Create(Replay, Sidecar)
+                : null);
         initializedReplay = null;
         BuildPlaybackStops(null);
         currentGameloop = 0;
@@ -805,7 +809,7 @@
 
     private static string FormatGameloopSeconds(int gameloop)
     {
-        return $"{Math.Round(gameloop / SpawnPlaybackFactory.GameloopsPerSecond, 1):0.0}s";
+        return $"{Math.Round(gameloop / SpawnPlaybackFactoryNg.GameloopsPerSecond, 1):0.0}s";
     }
 
     private void UpdateAliveUnitRows()
