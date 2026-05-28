@@ -84,7 +84,8 @@ export function normalizeReplay(replayValue: unknown): NormalizedReplay {
         buildUnits: readArray(replay, "buildUnits", "BuildUnits"),
         snapshots: readArray(replay, "snapshots", "Snapshots"),
         players,
-        units
+        units,
+        ng: null
     };
 }
 

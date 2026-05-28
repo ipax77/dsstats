@@ -1,4 +1,5 @@
 import { normalizeReplay, normalizeUnitLifeCosts } from "./normalization";
+import { getReplayUnitCount, getUnitGamePos, getUnitPlayerName, getUnitSpawnGameloop, getUnitSpawnNumber, getUnitTeamId, normalizeReplayNg } from "./ngPlayback";
 import { clampGameloop, drawSpawnPlayback } from "./rendering";
 import { deleteState, getState, setState } from "./store";
 import type { DotNetCallbackRef, SpawnPlaybackState } from "./types";
@@ -42,7 +43,7 @@ export function initializeSpawnPlayback(
         animationFrameId: 0,
         lastFrameTimestamp: 0,
         lastProgressTimestamp: 0,
-        activeUnits: [],
+        activeUnitIndexes: [],
         nextUnitIndex: 0,
         lastActiveGameloop: Number.NEGATIVE_INFINITY,
         staticGeometry: null,
@@ -53,7 +54,71 @@ export function initializeSpawnPlayback(
         objectiveDeathAnnouncements: [],
         unitLifeCostByKey: normalizeUnitLifeCosts(unitLifeCosts),
         showSpawnWaveOverlay,
-        spawnWaveEvents: createSpawnWaveEvents(normalizedReplay.units, loopsPerSecond),
+        spawnWaveEvents: createSpawnWaveEvents(normalizedReplay, loopsPerSecond),
+        spawnWaveTableCache: new Map(),
+        unitSpriteCache: new Map(),
+        highlightedAliveUnitKey: null,
+        rootElement,
+        modalElement: null,
+        modalHideListener: null,
+        fullscreenListener: null,
+        aliveUnitClickListener: null,
+        aliveUnitKeydownListener: null
+    };
+
+    disposeState(getState(canvas));
+
+    state.fullscreenListener = () => handleFullscreenChange(canvas);
+    document.addEventListener("fullscreenchange", state.fullscreenListener);
+    initializeAliveUnitHighlightEvents(canvas, state);
+    setState(canvas, state);
+}
+
+export function initializeSpawnPlaybackNg(
+    canvas: HTMLCanvasElement,
+    rootElement: Element | null,
+    replay: unknown,
+    unitLifeCosts: unknown,
+    showSpawnWaveOverlay: boolean,
+    callbackRef: DotNetCallbackRef | null,
+    gameloopsPerSecond: number,
+    speedMultiplier: number,
+    unitRows: Uint8Array,
+    pathRows: Uint8Array,
+    pathPoints: Uint8Array,
+    killGameloops: Uint8Array): void {
+    const normalizedReplay = normalizeReplayNg(replay, unitRows, pathRows, pathPoints, killGameloops);
+    const loopsPerSecond = Number.isFinite(gameloopsPerSecond) && gameloopsPerSecond > 0
+        ? gameloopsPerSecond
+        : 22.4;
+    const state: SpawnPlaybackState = {
+        replay: normalizedReplay,
+        callbackRef,
+        gameloopsPerSecond: loopsPerSecond,
+        speedMultiplier: Number.isFinite(speedMultiplier) && speedMultiplier > 0
+            ? speedMultiplier
+            : 1,
+        resizeObserver: null,
+        isMounted: true,
+        isDisposing: false,
+        pendingResizeRaf: null,
+        currentGameloop: 0,
+        running: false,
+        animationFrameId: 0,
+        lastFrameTimestamp: 0,
+        lastProgressTimestamp: 0,
+        activeUnitIndexes: [],
+        nextUnitIndex: 0,
+        lastActiveGameloop: Number.NEGATIVE_INFINITY,
+        staticGeometry: null,
+        renderCache: null,
+        staticBackgroundCanvas: null,
+        staticCanvasWidth: 0,
+        staticCanvasHeight: 0,
+        objectiveDeathAnnouncements: [],
+        unitLifeCostByKey: normalizeUnitLifeCosts(unitLifeCosts),
+        showSpawnWaveOverlay,
+        spawnWaveEvents: createSpawnWaveEvents(normalizedReplay, loopsPerSecond),
         spawnWaveTableCache: new Map(),
         unitSpriteCache: new Map(),
         highlightedAliveUnitKey: null,
@@ -74,13 +139,7 @@ export function initializeSpawnPlayback(
 }
 
 function createSpawnWaveEvents(
-    units: readonly {
-        teamId: number;
-        gamePos: number;
-        playerName: string;
-        spawnNumber: number;
-        spawnGameloop: number;
-    }[],
+    replay: SpawnPlaybackState["replay"],
     gameloopsPerSecond: number): {
         key: string;
         teamId: number;
@@ -101,20 +160,26 @@ function createSpawnWaveEvents(
         gamePos: number;
         anchorGameloop: number;
     }>();
-    for (const unit of units) {
-        if (unit.spawnNumber <= 0 || !Number.isFinite(unit.spawnGameloop)) {
+    const unitCount = getReplayUnitCount(replay);
+    for (let unitIndex = 0; unitIndex < unitCount; unitIndex++) {
+        const spawnNumber = getUnitSpawnNumber(replay, unitIndex);
+        const spawnGameloop = getUnitSpawnGameloop(replay, unitIndex);
+        if (spawnNumber <= 0 || !Number.isFinite(spawnGameloop)) {
             continue;
         }
 
-        const key = createSpawnWaveEventKey(unit.teamId, unit.gamePos, unit.playerName, unit.spawnNumber);
+        const teamId = getUnitTeamId(replay, unitIndex);
+        const gamePos = getUnitGamePos(replay, unitIndex);
+        const playerName = getUnitPlayerName(replay, unitIndex);
+        const key = createSpawnWaveEventKey(teamId, gamePos, playerName, spawnNumber);
         const existing = starts.get(key);
-        if (existing === undefined || unit.spawnGameloop < existing.anchorGameloop) {
+        if (existing === undefined || spawnGameloop < existing.anchorGameloop) {
             starts.set(key, {
-                teamId: unit.teamId,
-                spawnNumber: unit.spawnNumber,
-                playerName: unit.playerName,
-                gamePos: unit.gamePos,
-                anchorGameloop: unit.spawnGameloop
+                teamId,
+                spawnNumber,
+                playerName,
+                gamePos,
+                anchorGameloop: spawnGameloop
             });
         }
     }

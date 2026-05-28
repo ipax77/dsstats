@@ -1,5 +1,6 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
+@using System.Buffers.Binary
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @using dsstats.shared.Units
@@ -229,8 +230,8 @@
     private ElementReference canvasElement;
     private IJSObjectReference? module;
     private DotNetObjectReference<SpawnPlaybackCanvas>? dotNetReference;
-    private SpawnPlaybackReplay? playback;
-    private SpawnPlaybackReplay? initializedReplay;
+    private SpawnPlaybackReplayNg? playback;
+    private SpawnPlaybackReplayNg? initializedReplay;
     private int currentGameloop;
     private int renderGameloop;
     private readonly List<int> playbackStops = [];
@@ -250,6 +251,21 @@
     private bool showSpawnWaveOverlay = false;
     private SpawnPlaybackAnimationState animationState = SpawnPlaybackAnimationState.Stopped;
     private string selectedPlaybackSpeed = "normal";
+
+    private const string UnitRowsDatasetId = "unitRows";
+    private const string PathRowsDatasetId = "pathRows";
+    private const string PathPointsDatasetId = "pathPoints";
+    private const string KillGameloopsDatasetId = "killGameloops";
+    private const int UnitRowIntCount = 11;
+    private const int UnitRowByteStride = UnitRowIntCount * sizeof(int);
+    private const int UnitRowUnitIndexOffset = 0;
+    private const int UnitRowPlayerIndexOffset = 1;
+    private const int UnitRowUnitKindIndexOffset = 2;
+    private const int UnitRowSpawnNumberOffset = 3;
+    private const int UnitRowSpawnGameloopOffset = 4;
+    private const int UnitRowExpiresGameloopOffset = 5;
+    private const int UnitRowKillOffsetOffset = 7;
+    private const int UnitRowKillCountOffset = 8;
 
     private string PlayPauseTitle => animationState == SpawnPlaybackAnimationState.Playing
         ? "Pause"
@@ -289,7 +305,7 @@
     private string CurrentTimeLabel =>
         playback is null
             ? string.Empty
-            : $"{Math.Round(renderGameloop / SpawnPlaybackFactory.GameloopsPerSecond, 1):0.0}s / gameloop {renderGameloop:N0}";
+            : $"{Math.Round(renderGameloop / SpawnPlaybackFactoryNg.GameloopsPerSecond, 1):0.0}s / gameloop {renderGameloop:N0}";
 
     private string CurrentSpawnLabel => currentSpawnNumber > 0 ? currentSpawnNumber.ToString("N0") : "-";
 
@@ -308,7 +324,7 @@
     protected override async Task OnInitializedAsync()
     {
         var nextPlayback = Replay is not null && Sidecar is not null
-            ? SpawnPlaybackFactory.Create(Replay, Sidecar)
+            ? SpawnPlaybackFactoryNg.Create(Replay, Sidecar)
             : null;
         initializedReplay = null;
         BuildPlaybackStops(null);
@@ -362,15 +378,19 @@
         {
             initializedReplay = playback;
             await module.InvokeVoidAsync(
-                "initializeSpawnPlayback",
+                "initializeSpawnPlaybackNg",
                 canvasElement,
                 playbackElement,
-                playback,
+                CreatePlaybackMetadata(playback),
                 unitLifeCostEntries,
                 showSpawnWaveOverlay,
                 dotNetReference,
-                SpawnPlaybackFactory.GameloopsPerSecond,
-                GetPlaybackSpeedMultiplier());
+                SpawnPlaybackFactoryNg.GameloopsPerSecond,
+                GetPlaybackSpeedMultiplier(),
+                GetBinaryPayloadBytes(playback, UnitRowsDatasetId),
+                GetBinaryPayloadBytes(playback, PathRowsDatasetId),
+                GetBinaryPayloadBytes(playback, PathPointsDatasetId),
+                GetBinaryPayloadBytes(playback, KillGameloopsDatasetId));
             canvasDrawPending = true;
         }
 
@@ -393,6 +413,46 @@
         return JSRuntime.InvokeAsync<IJSObjectReference>(
             "import",
             "./_content/dsstats.play/spawnPlayback.js");
+    }
+
+    private static SpawnPlaybackReplayNgMetadata CreatePlaybackMetadata(SpawnPlaybackReplayNg replay)
+    {
+        return new(
+            replay.DurationGameloop,
+            replay.StepGameloops,
+            replay.Bounds,
+            replay.Stats,
+            replay.Summary,
+            replay.MiddleControl,
+            replay.Landmarks,
+            replay.Snapshots,
+            replay.Players,
+            replay.UnitKinds,
+            replay.BinaryPayloads.Select(payload => new SpawnPlaybackBinaryPayloadMetadataNg(
+                payload.DatasetId,
+                payload.Count,
+                payload.Format,
+                payload.XOffset,
+                payload.YOffset,
+                payload.ByteStride)).ToArray());
+    }
+
+    private static byte[] GetBinaryPayloadBytes(SpawnPlaybackReplayNg replay, string datasetId)
+    {
+        return GetBinaryPayload(replay, datasetId)?.Bytes ?? [];
+    }
+
+    private static SpawnPlaybackBinaryPayloadNg? GetBinaryPayload(SpawnPlaybackReplayNg replay, string datasetId)
+    {
+        foreach (var payload in replay.BinaryPayloads)
+        {
+            if (string.Equals(payload.DatasetId, datasetId, StringComparison.Ordinal))
+            {
+                return payload;
+            }
+        }
+
+        return null;
     }
 
     private async Task TogglePlayback()
@@ -619,7 +679,7 @@
         return true;
     }
 
-    private void BuildPlaybackStops(SpawnPlaybackReplay? replay)
+    private void BuildPlaybackStops(SpawnPlaybackReplayNg? replay)
     {
         playbackStops.Clear();
         if (replay is null)
@@ -762,40 +822,61 @@
             return;
         }
 
-        foreach (var player in playback.Players)
+        var unitRows = GetBinaryPayload(playback, UnitRowsDatasetId);
+        if (unitRows is null)
         {
-            foreach (var unit in player.Units)
+            return;
+        }
+
+        byte[] unitBytes = unitRows.Bytes;
+        ReadOnlySpan<byte> killBytes = GetBinaryPayload(playback, KillGameloopsDatasetId)?.Bytes ?? [];
+        for (int rowIndex = 0; rowIndex < unitRows.Count; rowIndex++)
+        {
+            int spawnGameloop = ReadUnitRowInt(unitBytes, rowIndex, UnitRowSpawnGameloopOffset);
+            if (spawnGameloop > renderGameloop)
             {
-                if (unit.SpawnGameloop > renderGameloop)
-                {
-                    continue;
-                }
-
-                currentSpawnNumber = Math.Max(currentSpawnNumber, unit.SpawnNumber);
-                if (unit.ExpiresGameloop <= renderGameloop)
-                {
-                    continue;
-                }
-
-                aliveUnitCount++;
-                if (player.TeamId == 1)
-                {
-                    team1AliveCount++;
-                }
-                else if (player.TeamId == 2)
-                {
-                    team2AliveCount++;
-                }
-
-                if (!showAliveUnits)
-                {
-                    continue;
-                }
-
-                var key = new AliveUnitKey(player.TeamId, player.Commander, unit.Name);
-                aliveUnitAccumulators.TryGetValue(key, out var row);
-                aliveUnitAccumulators[key] = row.Add(unit.Color, GetCurrentKills(unit.KillGameloops, renderGameloop));
+                continue;
             }
+
+            int spawnNumber = ReadUnitRowInt(unitBytes, rowIndex, UnitRowSpawnNumberOffset);
+            currentSpawnNumber = Math.Max(currentSpawnNumber, spawnNumber);
+
+            int expiresGameloop = ReadUnitRowInt(unitBytes, rowIndex, UnitRowExpiresGameloopOffset);
+            if (expiresGameloop <= renderGameloop)
+            {
+                continue;
+            }
+
+            int playerIndex = ReadUnitRowInt(unitBytes, rowIndex, UnitRowPlayerIndexOffset);
+            int unitKindIndex = ReadUnitRowInt(unitBytes, rowIndex, UnitRowUnitKindIndexOffset);
+            if ((uint)playerIndex >= (uint)playback.Players.Count
+                || (uint)unitKindIndex >= (uint)playback.UnitKinds.Count)
+            {
+                continue;
+            }
+
+            var player = playback.Players[playerIndex];
+            var unitKind = playback.UnitKinds[unitKindIndex];
+            aliveUnitCount++;
+            if (player.TeamId == 1)
+            {
+                team1AliveCount++;
+            }
+            else if (player.TeamId == 2)
+            {
+                team2AliveCount++;
+            }
+
+            if (!showAliveUnits)
+            {
+                continue;
+            }
+
+            int killOffset = ReadUnitRowInt(unitBytes, rowIndex, UnitRowKillOffsetOffset);
+            int killCount = ReadUnitRowInt(unitBytes, rowIndex, UnitRowKillCountOffset);
+            var key = new AliveUnitKey(player.TeamId, player.Commander, unitKind.Name);
+            aliveUnitAccumulators.TryGetValue(key, out var row);
+            aliveUnitAccumulators[key] = row.Add(unitKind.Color, GetCurrentKills(killBytes, killOffset, killCount, renderGameloop));
         }
 
         if (!showAliveUnits)
@@ -846,7 +927,7 @@
         return $"{teamId}|{commander.Length}:{commander}|{unitName.Length}:{unitName}";
     }
 
-    private async Task<IReadOnlyList<SpawnPlaybackLifeCostEntry>> CreateUnitLifeCostEntries(SpawnPlaybackReplay? replay)
+    private async Task<IReadOnlyList<SpawnPlaybackLifeCostEntry>> CreateUnitLifeCostEntries(SpawnPlaybackReplayNg? replay)
     {
         if (replay is null)
         {
@@ -855,9 +936,32 @@
 
         Dictionary<string, SpawnPlaybackLifeCostEntry> entries = [];
         Dictionary<Commander, IReadOnlyDictionary<string, DsUnitLifeCostDto>> lifeCostsByCommander = [];
-
-        foreach (var player in replay.Players)
+        HashSet<AliveUnitKey> seenUnits = [];
+        var unitRows = GetBinaryPayload(replay, UnitRowsDatasetId);
+        if (unitRows is null)
         {
+            return [];
+        }
+
+        byte[] unitBytes = unitRows.Bytes;
+        for (int rowIndex = 0; rowIndex < unitRows.Count; rowIndex++)
+        {
+            int playerIndex = ReadUnitRowInt(unitBytes, rowIndex, UnitRowPlayerIndexOffset);
+            int unitKindIndex = ReadUnitRowInt(unitBytes, rowIndex, UnitRowUnitKindIndexOffset);
+            if ((uint)playerIndex >= (uint)replay.Players.Count
+                || (uint)unitKindIndex >= (uint)replay.UnitKinds.Count)
+            {
+                continue;
+            }
+
+            var player = replay.Players[playerIndex];
+            var unitKind = replay.UnitKinds[unitKindIndex];
+            var aliveUnitKey = new AliveUnitKey(player.TeamId, player.Commander, unitKind.Name);
+            if (!seenUnits.Add(aliveUnitKey))
+            {
+                continue;
+            }
+
             if (!Enum.TryParse(player.Commander, out Commander commander))
             {
                 continue;
@@ -874,17 +978,14 @@
                 continue;
             }
 
-            foreach (var unitName in player.Units.Select(unit => unit.Name).Distinct(StringComparer.Ordinal))
+            var normalizedName = UnitMap.GetNormalizedUnitName(unitKind.Name, commander);
+            if (!lifeCosts.TryGetValue(normalizedName, out var unitLifeCost))
             {
-                var normalizedName = UnitMap.GetNormalizedUnitName(unitName, commander);
-                if (!lifeCosts.TryGetValue(normalizedName, out var unitLifeCost))
-                {
-                    continue;
-                }
-
-                var key = CreateAliveUnitHighlightKey(player.TeamId, player.Commander, unitName);
-                entries.TryAdd(key, new(key, unitLifeCost.Cost, unitLifeCost.Life));
+                continue;
             }
+
+            var key = CreateAliveUnitHighlightKey(player.TeamId, player.Commander, unitKind.Name);
+            entries.TryAdd(key, new(key, unitLifeCost.Cost, unitLifeCost.Life));
         }
 
         return entries.Values.ToArray();
@@ -900,10 +1001,10 @@
         }
     }
 
-    private static int GetCurrentKills(IReadOnlyList<int> killGameloops, int currentGameloop)
+    private static int GetCurrentKills(ReadOnlySpan<byte> killGameloops, int killOffset, int killCount, int currentGameloop)
     {
         int kills = 0;
-        while (kills < killGameloops.Count && killGameloops[kills] <= currentGameloop)
+        while (kills < killCount && ReadInt32(killGameloops, checked((killOffset + kills) * sizeof(int))) <= currentGameloop)
         {
             kills++;
         }
@@ -911,7 +1012,19 @@
         return kills;
     }
 
-    private static int GetFirstPlaybackGameloop(SpawnPlaybackReplay? replay)
+    private static int ReadUnitRowInt(ReadOnlySpan<byte> bytes, int rowIndex, int valueOffset)
+    {
+        return ReadInt32(bytes, checked(rowIndex * UnitRowByteStride + valueOffset * sizeof(int)));
+    }
+
+    private static int ReadInt32(ReadOnlySpan<byte> bytes, int offset)
+    {
+        return offset >= 0 && offset + sizeof(int) <= bytes.Length
+            ? BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(offset, sizeof(int)))
+            : 0;
+    }
+
+    private static int GetFirstPlaybackGameloop(SpawnPlaybackReplayNg? replay)
     {
         if (replay is null)
         {
@@ -923,16 +1036,20 @@
             : GetFirstUnitSpawnGameloop(replay);
     }
 
-    private static int GetFirstUnitSpawnGameloop(SpawnPlaybackReplay? replay)
+    private static int GetFirstUnitSpawnGameloop(SpawnPlaybackReplayNg? replay)
     {
-        return replay?.Players
-            .SelectMany(player => player.Units)
-            .Select(unit => unit.SpawnGameloop)
-            .DefaultIfEmpty(0)
-            .Min() ?? 0;
+        if (replay is null)
+        {
+            return 0;
+        }
+
+        var unitRows = GetBinaryPayload(replay, UnitRowsDatasetId);
+        return unitRows is null || unitRows.Count == 0
+            ? 0
+            : ReadUnitRowInt(unitRows.Bytes, 0, UnitRowSpawnGameloopOffset);
     }
 
-    private static int ResolveRenderGameloop(SpawnPlaybackReplay? replay, int gameloop)
+    private static int ResolveRenderGameloop(SpawnPlaybackReplayNg? replay, int gameloop)
     {
         if (replay is null || replay.Snapshots.Count == 0)
         {
@@ -1011,4 +1128,25 @@
         int CurrentKills);
 
     private sealed record SpawnPlaybackLifeCostEntry(string Key, int Cost, int Life);
+
+    private sealed record SpawnPlaybackReplayNgMetadata(
+        int DurationGameloop,
+        int StepGameloops,
+        SpawnPlaybackBounds Bounds,
+        SpawnPlaybackStats Stats,
+        SpawnPlaybackSummary Summary,
+        SpawnPlaybackMiddleControl MiddleControl,
+        IReadOnlyList<SpawnPlaybackLandmark> Landmarks,
+        IReadOnlyList<SpawnPlaybackSnapshot> Snapshots,
+        IReadOnlyList<SpawnPlaybackPlayerNg> Players,
+        IReadOnlyList<SpawnPlaybackUnitKindNg> UnitKinds,
+        IReadOnlyList<SpawnPlaybackBinaryPayloadMetadataNg> BinaryPayloads);
+
+    private sealed record SpawnPlaybackBinaryPayloadMetadataNg(
+        string DatasetId,
+        int Count,
+        SpawnPlaybackBinaryDataFormatNg Format,
+        int XOffset,
+        int YOffset,
+        int? ByteStride);
 }

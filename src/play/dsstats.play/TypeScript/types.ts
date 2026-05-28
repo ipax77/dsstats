@@ -91,6 +91,15 @@ export interface UnitRender {
     sprite: LayerCanvas;
 }
 
+export interface NormalizedUnitKind {
+    name: string;
+    commander: string;
+    radius: number;
+    color: string;
+    iconDefinition: UnitIconDefinition | null;
+    iconResolved: boolean;
+}
+
 export interface NormalizedUnit {
     name: string;
     playerName: string;
@@ -135,6 +144,15 @@ export interface NormalizedReplay {
     snapshots: unknown[];
     players: NormalizedPlayer[];
     units: NormalizedUnit[];
+    ng: NormalizedReplayNg | null;
+}
+
+export interface NormalizedReplayNg {
+    unitKinds: NormalizedUnitKind[];
+    unitRows: Int32Array;
+    pathRows: Int32Array;
+    pathPoints: Int32Array;
+    killGameloops: Int32Array;
 }
 
 export interface PlaybackPlayerSummary {
@@ -284,7 +302,7 @@ export interface SpawnPlaybackState {
     animationFrameId: number;
     lastFrameTimestamp: number;
     lastProgressTimestamp: number;
-    activeUnits: NormalizedUnit[];
+    activeUnitIndexes: number[];
     nextUnitIndex: number;
     lastActiveGameloop: number;
     staticGeometry: StaticGeometry | null;

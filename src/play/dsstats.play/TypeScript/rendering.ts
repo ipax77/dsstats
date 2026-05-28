@@ -17,6 +17,22 @@ import {
     withAlpha
 } from "./canvasUtils";
 import { createRenderCache, createStaticGeometry } from "./geometry";
+import {
+    getReplayUnitCount,
+    getUnitAliveHighlightKey,
+    getUnitColor,
+    getUnitCommander,
+    getUnitExpiresGameloop,
+    getUnitGamePos,
+    getUnitKind,
+    getUnitName,
+    getUnitPlayerName,
+    getUnitRadius,
+    getUnitSpawnGameloop,
+    getUnitSpawnNumber,
+    getUnitTeamId,
+    resolveUnitPosition
+} from "./ngPlayback";
 import { objectiveIconCatalog } from "./objectiveIcons";
 import { getState } from "./store";
 import type {
@@ -24,7 +40,6 @@ import type {
     LandmarkGeometry,
     LayerCanvas,
     MiddleControl,
-    NormalizedUnit,
     ObjectiveDeathAnnouncement,
     PlaybackSummary,
     PlayerGasBadge,
@@ -87,7 +102,7 @@ export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: nu
             state.gameloopsPerSecond);
         state.staticCanvasWidth = canvas.width;
         state.staticCanvasHeight = canvas.height;
-        state.activeUnits.length = 0;
+        state.activeUnitIndexes.length = 0;
         state.nextUnitIndex = 0;
         state.lastActiveGameloop = Number.NEGATIVE_INFINITY;
         prepareUnitSprites(state, canvas);
@@ -99,13 +114,15 @@ export function drawSpawnPlayback(canvas: HTMLCanvasElement, currentGameloop: nu
 
     ctx.drawImage(state.staticBackgroundCanvas, 0, 0);
     drawDynamicMapLayer(ctx, canvas, state.staticGeometry, state.currentGameloop);
-    const activeUnits = getActiveUnits(state, state.currentGameloop);
-    const drawnUnits = drawUnitLayer(ctx, state.renderCache.projection, activeUnits, state.currentGameloop);
+    const activeUnitIndexes = getActiveUnitIndexes(state, state.currentGameloop);
+    const drawnUnits = drawUnitLayer(ctx, canvas, state, state.renderCache.projection, activeUnitIndexes, state.currentGameloop);
     if (state.highlightedAliveUnitKey !== null) {
         drawAliveUnitHighlightLayer(
             ctx,
+            canvas,
+            state,
             state.renderCache.projection,
-            activeUnits,
+            activeUnitIndexes,
             state.currentGameloop,
             state.highlightedAliveUnitKey);
     }
@@ -127,6 +144,16 @@ export function clampGameloop(state: SpawnPlaybackState, gameloop: number): numb
 function prepareUnitSprites(state: SpawnPlaybackState, canvas: HTMLCanvasElement): void {
     const scale = deviceScale(canvas);
     state.unitSpriteCache.clear();
+    if (state.replay.ng) {
+        for (const unitKind of state.replay.ng.unitKinds) {
+            if (!unitKind.iconResolved) {
+                unitKind.iconDefinition = unitIconCatalog.resolve(unitKind.commander, unitKind.name);
+                unitKind.iconResolved = true;
+            }
+        }
+        return;
+    }
+
     for (const unit of state.replay.units) {
         const radius = Math.max(3, unit.radius * scale * 0.55);
         if (!unit.iconResolved) {
@@ -136,7 +163,7 @@ function prepareUnitSprites(state: SpawnPlaybackState, canvas: HTMLCanvasElement
 
         unit.render = {
             radius,
-            sprite: getUnitSprite(state, unit, radius, scale)
+            sprite: getUnitSprite(state, unit.name, unit.commander, unit.teamId, unit.color, unit.iconDefinition, radius, scale)
         };
     }
 }
@@ -154,15 +181,16 @@ function createStaticBackgroundCanvas(canvas: HTMLCanvasElement, geometry: Stati
 
 function getUnitSprite(
     state: SpawnPlaybackState,
-    unit: NormalizedUnit,
+    name: string,
+    commander: string,
+    teamId: number,
+    color: string,
+    iconDefinition: ReturnType<typeof unitIconCatalog.resolve>,
     radius: number,
     canvasScale: number): LayerCanvas {
-    const color = unit.color;
-    const teamId = unit.teamId;
-    const iconDefinition = unit.iconDefinition;
     const iconColor = iconDefinition ? TEAM_COLORS[teamId] ?? color : color;
     const key = iconDefinition
-        ? `${iconDefinition.id}|${unit.commander}|${unit.name}|${teamId}|${iconColor}|${Math.round(radius * 10)}`
+        ? `${iconDefinition.id}|${commander}|${name}|${teamId}|${iconColor}|${Math.round(radius * 10)}`
         : `${teamId}|${color}|${Math.round(radius * 10)}`;
     const cached = state.unitSpriteCache.get(key);
     if (cached) {
@@ -206,31 +234,69 @@ function getUnitSprite(
     return sprite;
 }
 
-function getActiveUnits(state: SpawnPlaybackState, currentGameloop: number): NormalizedUnit[] {
-    if (currentGameloop < state.lastActiveGameloop) {
-        rebuildActiveUnits(state, currentGameloop);
-        return state.activeUnits;
+function getUnitDrawRadius(state: SpawnPlaybackState, unitIndex: number, canvas: HTMLCanvasElement): number {
+    if (!state.replay.ng) {
+        return state.replay.units[unitIndex]?.render?.radius ?? 3;
     }
 
-    const units = state.replay.units;
-    while (state.nextUnitIndex < units.length && units[state.nextUnitIndex].spawnGameloop <= currentGameloop) {
-        state.activeUnits.push(units[state.nextUnitIndex]);
+    return Math.max(3, getUnitRadius(state.replay, unitIndex) * deviceScale(canvas) * 0.55);
+}
+
+function getUnitSpriteForDraw(
+    state: SpawnPlaybackState,
+    unitIndex: number,
+    canvas: HTMLCanvasElement,
+    radius: number): LayerCanvas | null {
+    if (!state.replay.ng) {
+        return state.replay.units[unitIndex]?.render?.sprite ?? null;
+    }
+
+    const unitKind = getUnitKind(state.replay, unitIndex);
+    if (!unitKind) {
+        return null;
+    }
+
+    if (!unitKind.iconResolved) {
+        unitKind.iconDefinition = unitIconCatalog.resolve(unitKind.commander, unitKind.name);
+        unitKind.iconResolved = true;
+    }
+
+    const scale = deviceScale(canvas);
+    return getUnitSprite(
+        state,
+        unitKind.name,
+        unitKind.commander,
+        getUnitTeamId(state.replay, unitIndex),
+        unitKind.color,
+        unitKind.iconDefinition,
+        radius,
+        scale);
+}
+
+function getActiveUnitIndexes(state: SpawnPlaybackState, currentGameloop: number): number[] {
+    if (currentGameloop < state.lastActiveGameloop) {
+        rebuildActiveUnitIndexes(state, currentGameloop);
+        return state.activeUnitIndexes;
+    }
+
+    const unitCount = getReplayUnitCount(state.replay);
+    while (state.nextUnitIndex < unitCount && getUnitSpawnGameloop(state.replay, state.nextUnitIndex) <= currentGameloop) {
+        state.activeUnitIndexes.push(state.nextUnitIndex);
         state.nextUnitIndex++;
     }
 
-    compactActiveUnits(state, currentGameloop);
+    compactActiveUnitIndexes(state, currentGameloop);
     state.lastActiveGameloop = currentGameloop;
-    return state.activeUnits;
+    return state.activeUnitIndexes;
 }
 
-function rebuildActiveUnits(state: SpawnPlaybackState, currentGameloop: number): void {
-    state.activeUnits.length = 0;
-    const units = state.replay.units;
+function rebuildActiveUnitIndexes(state: SpawnPlaybackState, currentGameloop: number): void {
+    state.activeUnitIndexes.length = 0;
+    const unitCount = getReplayUnitCount(state.replay);
     let index = 0;
-    while (index < units.length && units[index].spawnGameloop <= currentGameloop) {
-        const unit = units[index];
-        if (unit.expiresGameloop > currentGameloop) {
-            state.activeUnits.push(unit);
+    while (index < unitCount && getUnitSpawnGameloop(state.replay, index) <= currentGameloop) {
+        if (getUnitExpiresGameloop(state.replay, index) > currentGameloop) {
+            state.activeUnitIndexes.push(index);
         }
 
         index++;
@@ -240,18 +306,18 @@ function rebuildActiveUnits(state: SpawnPlaybackState, currentGameloop: number):
     state.lastActiveGameloop = currentGameloop;
 }
 
-function compactActiveUnits(state: SpawnPlaybackState, currentGameloop: number): void {
-    const activeUnits = state.activeUnits;
+function compactActiveUnitIndexes(state: SpawnPlaybackState, currentGameloop: number): void {
+    const activeUnitIndexes = state.activeUnitIndexes;
     let writeIndex = 0;
-    for (let readIndex = 0; readIndex < activeUnits.length; readIndex++) {
-        const unit = activeUnits[readIndex];
-        if (unit.expiresGameloop > currentGameloop) {
-            activeUnits[writeIndex] = unit;
+    for (let readIndex = 0; readIndex < activeUnitIndexes.length; readIndex++) {
+        const unitIndex = activeUnitIndexes[readIndex];
+        if (getUnitExpiresGameloop(state.replay, unitIndex) > currentGameloop) {
+            activeUnitIndexes[writeIndex] = unitIndex;
             writeIndex++;
         }
     }
 
-    activeUnits.length = writeIndex;
+    activeUnitIndexes.length = writeIndex;
 }
 
 function drawStaticBackgroundLayer(ctx: CanvasContext, canvas: HTMLCanvasElement, geometry: StaticGeometry): void {
@@ -868,16 +934,18 @@ export function createSpawnWaveTable(
         return null;
     }
 
+    const replay = state.replay;
     const rowsByUnit = new Map<string, SpawnWaveUnitRow>();
-    for (const unit of state.replay.units) {
-        if (unit.teamId !== event.teamId
-            || unit.spawnNumber !== event.spawnNumber
-            || unit.gamePos !== event.gamePos
-            || unit.playerName !== event.playerName) {
+    const unitCount = getReplayUnitCount(replay);
+    for (let unitIndex = 0; unitIndex < unitCount; unitIndex++) {
+        if (getUnitTeamId(replay, unitIndex) !== event.teamId
+            || getUnitSpawnNumber(replay, unitIndex) !== event.spawnNumber
+            || getUnitGamePos(replay, unitIndex) !== event.gamePos
+            || getUnitPlayerName(replay, unitIndex) !== event.playerName) {
             continue;
         }
 
-        const key = unit.aliveUnitHighlightKey;
+        const key = getUnitAliveHighlightKey(replay, unitIndex);
         const existing = rowsByUnit.get(key);
         if (existing) {
             existing.count++;
@@ -890,10 +958,10 @@ export function createSpawnWaveTable(
             continue;
         }
 
-        const lifeCost = state.unitLifeCostByKey.get(unit.aliveUnitHighlightKey);
+        const lifeCost = state.unitLifeCostByKey.get(key);
         rowsByUnit.set(key, {
-            teamId: unit.teamId,
-            unitName: unit.name,
+            teamId: getUnitTeamId(replay, unitIndex),
+            unitName: getUnitName(replay, unitIndex),
             count: 1,
             cost: lifeCost?.cost ?? null,
             life: lifeCost?.life ?? null,
@@ -1579,12 +1647,14 @@ function drawFallbackLandmark(
 
 function drawUnitLayer(
     ctx: CanvasContext,
+    canvas: HTMLCanvasElement,
+    state: SpawnPlaybackState,
     projection: Projection,
-    activeUnits: NormalizedUnit[],
+    activeUnitIndexes: number[],
     currentGameloop: number): number {
     let drawnUnits = 0;
-    for (const unit of activeUnits) {
-        if (drawUnit(ctx, projection, unit, currentGameloop)) {
+    for (const unitIndex of activeUnitIndexes) {
+        if (drawUnit(ctx, canvas, state, projection, unitIndex, currentGameloop)) {
             drawnUnits++;
         }
     }
@@ -1592,22 +1662,24 @@ function drawUnitLayer(
     return drawnUnits;
 }
 
-function drawUnit(ctx: CanvasContext, projection: Projection, unit: NormalizedUnit, currentGameloop: number): boolean {
-    if (currentGameloop < unit.spawnGameloop || unit.expiresGameloop <= currentGameloop) {
+function drawUnit(ctx: CanvasContext, canvas: HTMLCanvasElement, state: SpawnPlaybackState, projection: Projection, unitIndex: number, currentGameloop: number): boolean {
+    const replay = state.replay;
+    if (currentGameloop < getUnitSpawnGameloop(replay, unitIndex)
+        || getUnitExpiresGameloop(replay, unitIndex) <= currentGameloop) {
         return false;
     }
 
-    const progress = clamp((currentGameloop - unit.spawnGameloop) * unit.inverseLifetime, 0, 1);
-    const x = projectX(projection, unit.spawnX + unit.deltaX * progress);
-    const y = projectY(projection, unit.spawnY + unit.deltaY * progress);
-    const sprite = unit.render?.sprite;
-    const radius = unit.render?.radius ?? 3;
+    const position = resolveUnitPosition(replay, unitIndex, currentGameloop);
+    const x = projectX(projection, position.x);
+    const y = projectY(projection, position.y);
+    const radius = getUnitDrawRadius(state, unitIndex, canvas);
+    const sprite = getUnitSpriteForDraw(state, unitIndex, canvas, radius);
     if (sprite) {
         ctx.drawImage(sprite, x - sprite.width / 2, y - sprite.height / 2);
     } else {
         ctx.beginPath();
         ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = withAlpha(unit.color, "99");
+        ctx.fillStyle = withAlpha(getUnitColor(replay, unitIndex), "99");
         ctx.fill();
     }
 
@@ -1616,26 +1688,29 @@ function drawUnit(ctx: CanvasContext, projection: Projection, unit: NormalizedUn
 
 function drawAliveUnitHighlightLayer(
     ctx: CanvasContext,
+    canvas: HTMLCanvasElement,
+    state: SpawnPlaybackState,
     projection: Projection,
-    activeUnits: NormalizedUnit[],
+    activeUnitIndexes: number[],
     currentGameloop: number,
     highlightedAliveUnitKey: string): void {
+    const replay = state.replay;
     ctx.save();
     ctx.strokeStyle = withAlpha(ALIVE_UNIT_HIGHLIGHT_COLOR, "EE");
     ctx.shadowColor = withAlpha(ALIVE_UNIT_HIGHLIGHT_COLOR, "AA");
     ctx.shadowBlur = 8;
 
-    for (const unit of activeUnits) {
-        if (unit.aliveUnitHighlightKey !== highlightedAliveUnitKey
-            || currentGameloop < unit.spawnGameloop
-            || unit.expiresGameloop <= currentGameloop) {
+    for (const unitIndex of activeUnitIndexes) {
+        if (getUnitAliveHighlightKey(replay, unitIndex) !== highlightedAliveUnitKey
+            || currentGameloop < getUnitSpawnGameloop(replay, unitIndex)
+            || getUnitExpiresGameloop(replay, unitIndex) <= currentGameloop) {
             continue;
         }
 
-        const progress = clamp((currentGameloop - unit.spawnGameloop) * unit.inverseLifetime, 0, 1);
-        const x = projectX(projection, unit.spawnX + unit.deltaX * progress);
-        const y = projectY(projection, unit.spawnY + unit.deltaY * progress);
-        const radius = unit.render?.radius ?? 3;
+        const position = resolveUnitPosition(replay, unitIndex, currentGameloop);
+        const x = projectX(projection, position.x);
+        const y = projectY(projection, position.y);
+        const radius = getUnitDrawRadius(state, unitIndex, canvas);
 
         ctx.lineWidth = Math.max(2, radius * 0.36);
         ctx.beginPath();

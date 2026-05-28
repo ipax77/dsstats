@@ -29,10 +29,10 @@ public static class SpawnPlaybackFactoryNg
 
     private const int UnitRowIntCount = 11;
     private const int PathRowIntCount = 3;
-    private const int PathPointFloatCount = 3;
+    private const int PathPointIntCount = 3;
     private const int UnitRowByteStride = UnitRowIntCount * sizeof(int);
     private const int PathRowByteStride = PathRowIntCount * sizeof(int);
-    private const int PathPointByteStride = PathPointFloatCount * sizeof(float);
+    private const int PathPointByteStride = PathPointIntCount * sizeof(int);
 
     private const int UnitFlagDiedGameloop = 1;
     private const int UnitFlagDiedPosition = 2;
@@ -49,10 +49,10 @@ public static class SpawnPlaybackFactoryNg
         SpawnPlaybackPlayerSidecarDto[] sidecarPlayers = CopySortedSidecarPlayers(sidecar);
         (int unitCount, int killCount) = CountRows(sidecarPlayers, replayPlayersByGamePos);
 
-        byte[] unitRowBytes = AllocateBytes(unitCount, UnitRowByteStride);
         byte[] killGameloopBytes = AllocateBytes(killCount, sizeof(int));
         List<SpawnPlaybackPlayerNg> players = new(sidecarPlayers.Length);
         List<SpawnPlaybackUnitKindNg> unitKinds = [];
+        List<UnitBinaryRow> unitRows = new(unitCount);
         Dictionary<UnitKindKey, int> unitKindIndexes = [];
         Dictionary<(Commander Commander, string UnitName), (double Radius, string Color)> displayCache = [];
         Dictionary<PathKey, int> pathIndexes = [];
@@ -63,7 +63,6 @@ public static class SpawnPlaybackFactoryNg
 
         int unitsWithDiedEvent = 0;
         int unitsWithDiedPosition = 0;
-        int unitRowIndex = 0;
         int killIndex = 0;
         BoundsBuilder bounds = new();
 
@@ -115,7 +114,14 @@ public static class SpawnPlaybackFactoryNg
                 }
 
                 int unitKindIndex = GetUnitKindIndex(unitKinds, unitKindIndexes, displayCache, commander, sidecarUnit.Name);
-                int pathIndex = GetPathIndex(pathIndexes, paths, sidecarUnit.SpawnX, sidecarUnit.SpawnY, targetX, targetY);
+                int pathIndex = GetPathIndex(
+                    pathIndexes,
+                    paths,
+                    sidecarUnit.SpawnX,
+                    sidecarUnit.SpawnY,
+                    targetX,
+                    targetY,
+                    Math.Max(1, expiresGameloop - sidecarUnit.SpawnGameloop));
                 int unitKillOffset = killIndex;
                 int unitKillCount = sidecarUnit.KillGameloops.Count;
                 WriteKillGameloops(killGameloopBytes, sidecarUnit.KillGameloops, ref killIndex);
@@ -126,9 +132,7 @@ public static class SpawnPlaybackFactoryNg
                     killsByPlayerUnit[summaryKey] = existingKills + unitKillCount;
                 }
 
-                WriteUnitRow(
-                    unitRowBytes,
-                    unitRowIndex,
+                unitRows.Add(new(
                     sidecarUnit.UnitIndex,
                     playerIndex,
                     unitKindIndex,
@@ -139,8 +143,7 @@ public static class SpawnPlaybackFactoryNg
                     unitKillOffset,
                     unitKillCount,
                     sidecarUnit.DiedGameloop ?? -1,
-                    flags);
-                unitRowIndex++;
+                    flags));
 
                 bounds.AddPoint(sidecarUnit.SpawnX, sidecarUnit.SpawnY);
                 bounds.AddPoint(targetX, targetY);
@@ -161,14 +164,16 @@ public static class SpawnPlaybackFactoryNg
 
         byte[] pathRowBytes = CreatePathRowBytes(paths);
         byte[] pathPointBytes = CreatePathPointBytes(paths);
+        unitRows.Sort(CompareUnitRows);
+        byte[] unitRowBytes = CreateUnitRowBytes(unitRows);
         SpawnPlaybackSnapshot[] snapshots = GetSnapshots(sidecar);
         SpawnPlaybackStats stats = new(
             players.Count,
             sidecar.Snapshots.Count,
-            unitRowIndex,
+            unitRows.Count,
             unitsWithDiedEvent,
             unitsWithDiedPosition,
-            2);
+            GetMaxSimultaneousActiveSpawns(spawnEvents));
 
         return new(
             Math.Max(1, sidecar.DurationGameloop),
@@ -182,9 +187,9 @@ public static class SpawnPlaybackFactoryNg
             players,
             unitKinds,
             [
-                new(UnitRowsDatasetId, unitRowBytes, unitRowIndex, SpawnPlaybackBinaryDataFormatNg.Int32Rows, ByteStride: UnitRowByteStride),
+                new(UnitRowsDatasetId, unitRowBytes, unitRows.Count, SpawnPlaybackBinaryDataFormatNg.Int32Rows, ByteStride: UnitRowByteStride),
                 new(PathRowsDatasetId, pathRowBytes, paths.Count, SpawnPlaybackBinaryDataFormatNg.Int32Rows, ByteStride: PathRowByteStride),
-                new(PathPointsDatasetId, pathPointBytes, paths.Count * 2, SpawnPlaybackBinaryDataFormatNg.Float32Rows, ByteStride: PathPointByteStride),
+                new(PathPointsDatasetId, pathPointBytes, paths.Count * 2, SpawnPlaybackBinaryDataFormatNg.Int32Rows, ByteStride: PathPointByteStride),
                 new(KillGameloopsDatasetId, killGameloopBytes, killIndex, SpawnPlaybackBinaryDataFormatNg.Int32Y)
             ]);
     }
@@ -290,9 +295,10 @@ public static class SpawnPlaybackFactoryNg
         int spawnX,
         int spawnY,
         int targetX,
-        int targetY)
+        int targetY,
+        int lifetimeGameloops)
     {
-        var key = new PathKey(spawnX, spawnY, targetX, targetY);
+        var key = new PathKey(spawnX, spawnY, targetX, targetY, lifetimeGameloops);
         if (pathIndexes.TryGetValue(key, out int index))
         {
             return index;
@@ -321,33 +327,48 @@ public static class SpawnPlaybackFactoryNg
         spawnRanges.Add(spawnNumber, new(spawnGameloop, expiresGameloop));
     }
 
+    private static byte[] CreateUnitRowBytes(List<UnitBinaryRow> rows)
+    {
+        byte[] bytes = AllocateBytes(rows.Count, UnitRowByteStride);
+        for (int i = 0; i < rows.Count; i++)
+        {
+            WriteUnitRow(bytes, i, rows[i]);
+        }
+
+        return bytes;
+    }
+
+    private static int CompareUnitRows(UnitBinaryRow left, UnitBinaryRow right)
+    {
+        int spawnComparison = left.SpawnGameloop.CompareTo(right.SpawnGameloop);
+        if (spawnComparison != 0)
+        {
+            return spawnComparison;
+        }
+
+        int expiresComparison = left.ExpiresGameloop.CompareTo(right.ExpiresGameloop);
+        return expiresComparison != 0
+            ? expiresComparison
+            : left.UnitIndex.CompareTo(right.UnitIndex);
+    }
+
     private static void WriteUnitRow(
         byte[] bytes,
         int rowIndex,
-        int unitIndex,
-        int playerIndex,
-        int unitKindIndex,
-        int spawnNumber,
-        int spawnGameloop,
-        int expiresGameloop,
-        int pathIndex,
-        int killOffset,
-        int killCount,
-        int diedGameloop,
-        int flags)
+        UnitBinaryRow row)
     {
         int offset = checked(rowIndex * UnitRowByteStride);
-        WriteInt32(bytes, offset, unitIndex);
-        WriteInt32(bytes, offset + sizeof(int), playerIndex);
-        WriteInt32(bytes, offset + 2 * sizeof(int), unitKindIndex);
-        WriteInt32(bytes, offset + 3 * sizeof(int), spawnNumber);
-        WriteInt32(bytes, offset + 4 * sizeof(int), spawnGameloop);
-        WriteInt32(bytes, offset + 5 * sizeof(int), expiresGameloop);
-        WriteInt32(bytes, offset + 6 * sizeof(int), pathIndex);
-        WriteInt32(bytes, offset + 7 * sizeof(int), killOffset);
-        WriteInt32(bytes, offset + 8 * sizeof(int), killCount);
-        WriteInt32(bytes, offset + 9 * sizeof(int), diedGameloop);
-        WriteInt32(bytes, offset + 10 * sizeof(int), flags);
+        WriteInt32(bytes, offset, row.UnitIndex);
+        WriteInt32(bytes, offset + sizeof(int), row.PlayerIndex);
+        WriteInt32(bytes, offset + 2 * sizeof(int), row.UnitKindIndex);
+        WriteInt32(bytes, offset + 3 * sizeof(int), row.SpawnNumber);
+        WriteInt32(bytes, offset + 4 * sizeof(int), row.SpawnGameloop);
+        WriteInt32(bytes, offset + 5 * sizeof(int), row.ExpiresGameloop);
+        WriteInt32(bytes, offset + 6 * sizeof(int), row.PathIndex);
+        WriteInt32(bytes, offset + 7 * sizeof(int), row.KillOffset);
+        WriteInt32(bytes, offset + 8 * sizeof(int), row.KillCount);
+        WriteInt32(bytes, offset + 9 * sizeof(int), row.DiedGameloop);
+        WriteInt32(bytes, offset + 10 * sizeof(int), row.Flags);
     }
 
     private static void WriteKillGameloops(byte[] bytes, IReadOnlyList<int> killGameloops, ref int writeIndex)
@@ -381,17 +402,17 @@ public static class SpawnPlaybackFactoryNg
             var path = paths[i];
             int firstOffset = i * 2 * PathPointByteStride;
             WritePathPoint(bytes, firstOffset, path.SpawnX, path.SpawnY, 0);
-            WritePathPoint(bytes, firstOffset + PathPointByteStride, path.TargetX, path.TargetY, 1);
+            WritePathPoint(bytes, firstOffset + PathPointByteStride, path.TargetX, path.TargetY, path.LifetimeGameloops);
         }
 
         return bytes;
     }
 
-    private static void WritePathPoint(byte[] bytes, int offset, float x, float y, float t)
+    private static void WritePathPoint(byte[] bytes, int offset, int x, int y, int gameloopOffset)
     {
-        WriteSingle(bytes, offset, x);
-        WriteSingle(bytes, offset + sizeof(float), y);
-        WriteSingle(bytes, offset + 2 * sizeof(float), t);
+        WriteInt32(bytes, offset, x);
+        WriteInt32(bytes, offset + sizeof(int), y);
+        WriteInt32(bytes, offset + 2 * sizeof(int), gameloopOffset);
     }
 
     private static byte[] AllocateBytes(int count, int byteStride)
@@ -404,11 +425,6 @@ public static class SpawnPlaybackFactoryNg
     private static void WriteInt32(byte[] bytes, int offset, int value)
     {
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(offset, sizeof(int)), value);
-    }
-
-    private static void WriteSingle(byte[] bytes, int offset, float value)
-    {
-        BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(offset, sizeof(float)), value);
     }
 
     private static SpawnPlaybackSummary GetSummary(
@@ -592,6 +608,27 @@ public static class SpawnPlaybackFactoryNg
         return gameloops;
     }
 
+    private static int GetMaxSimultaneousActiveSpawns(List<(int Gameloop, int Delta)> spawnEvents)
+    {
+        int activeSpawns = 0;
+        int maxActiveSpawns = 0;
+        spawnEvents.Sort(static (left, right) =>
+        {
+            int gameloopComparison = left.Gameloop.CompareTo(right.Gameloop);
+            return gameloopComparison != 0
+                ? gameloopComparison
+                : left.Delta.CompareTo(right.Delta);
+        });
+
+        for (int i = 0; i < spawnEvents.Count; i++)
+        {
+            activeSpawns = Math.Max(0, activeSpawns + spawnEvents[i].Delta);
+            maxActiveSpawns = Math.Max(maxActiveSpawns, activeSpawns);
+        }
+
+        return maxActiveSpawns;
+    }
+
     private static int ToGameloop(int seconds)
     {
         return seconds <= 0
@@ -608,7 +645,20 @@ public static class SpawnPlaybackFactoryNg
 
     private readonly record struct PlayerUnitSummaryKey(int PlayerIndex, int UnitKindIndex);
 
-    private readonly record struct PathKey(int SpawnX, int SpawnY, int TargetX, int TargetY);
+    private readonly record struct UnitBinaryRow(
+        int UnitIndex,
+        int PlayerIndex,
+        int UnitKindIndex,
+        int SpawnNumber,
+        int SpawnGameloop,
+        int ExpiresGameloop,
+        int PathIndex,
+        int KillOffset,
+        int KillCount,
+        int DiedGameloop,
+        int Flags);
+
+    private readonly record struct PathKey(int SpawnX, int SpawnY, int TargetX, int TargetY, int LifetimeGameloops);
 
     private readonly record struct SpawnRange(int StartGameloop, int EndGameloop);
 

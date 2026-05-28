@@ -1,5 +1,6 @@
 export {
     initializeSpawnPlayback,
+    initializeSpawnPlaybackNg,
     startSpawnPlayback,
     pauseSpawnPlayback,
     stopSpawnPlayback,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { clipSumLine, clamp, withAlpha } from "../canvasUtils";
+import { getReplayUnitCount, getUnitSpawnGameloop, resolveUnitPosition, normalizeReplayNg } from "../ngPlayback";
 import { createAliveUnitHighlightKey, normalizeMiddleControl, normalizeReplay, normalizeSummary } from "../normalization";
 import { createObjectiveDeathAnnouncements, createSpawnWaveTable, fitText, getActiveSpawnWaveEvents, getSpawnWaveEventAlpha, isEndSummaryVisible } from "../rendering";
 import { resolveAliveUnitHighlightToggle, syncAliveUnitHighlightSelection } from "../state";
@@ -76,6 +77,41 @@ describe("spawn playback basics", () => {
         expect(getActiveSpawnWaveEvents(events, 340).team2?.key).toBe("t2");
         expect(getActiveSpawnWaveEvents(events, 520).team1?.key).toBe("t1-new");
         expect(getActiveSpawnWaveEvents(events, 900)).toEqual({ team1: null, team2: null });
+    });
+
+    it("normalizes NG binary replay metadata without unit objects", () => {
+        const replay = normalizeReplayNg(
+            createNgReplayMetadata(),
+            createInt32Bytes([
+                7, 0, 0, 1, 100, 220, 0, 0, 0, -1, 4,
+                8, 0, 0, 1, 90, 210, 0, 0, 0, -1, 4
+            ]),
+            createInt32Bytes([0, 2, 0]),
+            createInt32Bytes([10, 20, 0, 30, 40, 120]),
+            createInt32Bytes([]));
+
+        expect(replay.units).toHaveLength(0);
+        expect(getReplayUnitCount(replay)).toBe(2);
+        expect(getUnitSpawnGameloop(replay, 0)).toBe(100);
+        expect(resolveUnitPosition(replay, 0, 160)).toEqual({ x: 20, y: 30 });
+    });
+
+    it("resolves NG path waits from repeated coordinates and gameloop offsets", () => {
+        const replay = normalizeReplayNg(
+            createNgReplayMetadata(),
+            createInt32Bytes([7, 0, 0, 1, 100, 220, 0, 0, 0, -1, 4]),
+            createInt32Bytes([0, 4, 0]),
+            createInt32Bytes([
+                10, 20, 0,
+                30, 40, 40,
+                30, 40, 80,
+                50, 60, 120
+            ]),
+            createInt32Bytes([]));
+
+        expect(resolveUnitPosition(replay, 0, 120)).toEqual({ x: 20, y: 30 });
+        expect(resolveUnitPosition(replay, 0, 160)).toEqual({ x: 30, y: 40 });
+        expect(resolveUnitPosition(replay, 0, 200)).toEqual({ x: 40, y: 50 });
     });
 
     it("groups one player spawn table and totals latest-patch cost and life", () => {
@@ -571,6 +607,46 @@ function createUnit(name: string, spawnNumber: number, spawnGameloop: number): R
         Radius: 6,
         Color: "#AAAAAA"
     };
+}
+
+function createNgReplayMetadata(): Record<string, unknown> {
+    return {
+        DurationGameloop: 500,
+        StepGameloops: 112,
+        Bounds: { MinX: 0, MinY: 0, MaxX: 256, MaxY: 240 },
+        Players: [
+            {
+                Name: "Alpha",
+                TeamId: 1,
+                GamePos: 1,
+                Commander: "Terran",
+                RefineryGameloops: [],
+                TierUpgradeGameloops: []
+            }
+        ],
+        UnitKinds: [
+            {
+                Name: "Marine",
+                Commander: "Terran",
+                Radius: 6,
+                Color: "#AAAAAA"
+            }
+        ],
+        Summary: { TotalKills: 0, Players: [], TopUnits: [] },
+        MiddleControl: { FirstTeamId: 0, ChangeGameloops: [] },
+        Landmarks: [],
+        Snapshots: []
+    };
+}
+
+function createInt32Bytes(values: number[]): Uint8Array {
+    const bytes = new Uint8Array(values.length * Int32Array.BYTES_PER_ELEMENT);
+    const view = new DataView(bytes.buffer);
+    for (let i = 0; i < values.length; i++) {
+        view.setInt32(i * Int32Array.BYTES_PER_ELEMENT, values[i], true);
+    }
+
+    return bytes;
 }
 
 function createSpawnEvent(
