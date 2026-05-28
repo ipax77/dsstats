@@ -229,8 +229,6 @@
     private ElementReference canvasElement;
     private IJSObjectReference? module;
     private DotNetObjectReference<SpawnPlaybackCanvas>? dotNetReference;
-    private ReplayDto? currentReplay;
-    private SpawnPlaybackSidecarDto? currentSidecar;
     private SpawnPlaybackReplay? playback;
     private SpawnPlaybackReplay? initializedReplay;
     private int currentGameloop;
@@ -249,7 +247,7 @@
     private bool isFullscreen;
     private bool showAliveUnits;
     private bool aliveUnitsDefaultResolved;
-    private bool showSpawnWaveOverlay = true;
+    private bool showSpawnWaveOverlay = false;
     private SpawnPlaybackAnimationState animationState = SpawnPlaybackAnimationState.Stopped;
     private string selectedPlaybackSpeed = "normal";
 
@@ -307,27 +305,27 @@
         ? string.Empty
         : FormatGameloopSeconds(playbackStops[^1]);
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
-        if (!ReferenceEquals(currentReplay, Replay) || !ReferenceEquals(currentSidecar, Sidecar))
-        {
-            currentReplay = Replay;
-            currentSidecar = Sidecar;
-            playback = Replay is not null && Sidecar is not null
-                ? SpawnPlaybackFactory.Create(Replay, Sidecar)
-                : null;
-            initializedReplay = null;
-            BuildPlaybackStops(playback);
-            currentGameloop = GetFirstPlaybackGameloop(playback);
-            currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(currentGameloop);
-            animationState = SpawnPlaybackAnimationState.Stopped;
-            isFullscreen = false;
-            showAliveUnits = false;
-            aliveUnitsDefaultResolved = false;
-            showSpawnWaveOverlay = true;
-            unitLifeCostEntries = await CreateUnitLifeCostEntries(playback);
-            SetRenderGameloop(force: true);
-        }
+        var nextPlayback = Replay is not null && Sidecar is not null
+            ? SpawnPlaybackFactory.Create(Replay, Sidecar)
+            : null;
+        initializedReplay = null;
+        BuildPlaybackStops(null);
+        currentGameloop = 0;
+        renderGameloop = 0;
+        currentPlaybackStopIndex = 0;
+        animationState = SpawnPlaybackAnimationState.Stopped;
+        isFullscreen = false;
+        showAliveUnits = false;
+        aliveUnitsDefaultResolved = false;
+        showSpawnWaveOverlay = true;
+        unitLifeCostEntries = await CreateUnitLifeCostEntries(nextPlayback);
+        playback = nextPlayback;
+        BuildPlaybackStops(playback);
+        currentGameloop = GetFirstPlaybackGameloop(playback);
+        currentPlaybackStopIndex = FindPlaybackStopIndexAtOrBefore(currentGameloop);
+        SetRenderGameloop(force: true);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
