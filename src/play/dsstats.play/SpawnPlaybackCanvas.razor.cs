@@ -38,7 +38,7 @@ public partial class SpawnPlaybackCanvas
     private bool isFullscreen;
     private bool showAliveUnits;
     private bool aliveUnitsDefaultResolved;
-    private bool showSpawnWaveOverlay = false;
+    private bool showSpawnWaveOverlay;
     private SpawnPlaybackAnimationState animationState = SpawnPlaybackAnimationState.Stopped;
     private string selectedPlaybackSpeed = "normal";
 
@@ -111,7 +111,7 @@ public partial class SpawnPlaybackCanvas
         isFullscreen = false;
         showAliveUnits = false;
         aliveUnitsDefaultResolved = false;
-        showSpawnWaveOverlay = true;
+        showSpawnWaveOverlay = false;
         unitLifeCostEntries = await CreateUnitLifeCostEntries(nextPlayback);
         playback = nextPlayback;
         SpawnPlaybackTimeline.BuildPlaybackStops(playback, playbackStops);
@@ -137,10 +137,17 @@ public partial class SpawnPlaybackCanvas
             dotNetReference = DotNetObjectReference.Create(this);
         }
 
+        // if (firstRender)
+        // {
+        //     bool isMobile = await module.InvokeAsync<bool>("isSpawnPlaybackMobileViewport");
+        //     if (isMobile)
+        //     {
+        //         showAliveUnits = false;
+        //     }
+        // }
+
         if (!aliveUnitsDefaultResolved)
         {
-            bool isMobile = await module.InvokeAsync<bool>("isSpawnPlaybackMobileViewport");
-            showAliveUnits = !isMobile;
             aliveUnitsDefaultResolved = true;
             UpdateAliveUnitRows();
             canvasDrawPending = true;
@@ -417,6 +424,11 @@ public partial class SpawnPlaybackCanvas
 
     private void UpdateAliveUnitRows()
     {
+        if (!showAliveUnits)
+        {
+            return;
+        }
+
         var summary = SpawnPlaybackAliveUnits.UpdateRows(
             playback,
             renderGameloop,

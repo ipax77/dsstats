@@ -57,6 +57,8 @@ public static partial class SpawnPlaybackFactoryNg
         return PathBuilder
             .Build(spawn, lifetimeGameloops)
             .WithDefaultTarget(mirroredRouteTarget)
+            .WithClusterHold(spawnGameloop, deathClusters)
+            .WithStandOff(DeathClusterStopForwardDistance)
             .ToPathKey();
     }
 

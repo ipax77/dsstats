@@ -70,7 +70,10 @@
                             @onclick="ToggleAliveUnits">
                         <span class="bi @AliveUnitsToggleIcon"></span>
                     </button>
-                    <span class="badge text-bg-dark border border-secondary">@aliveUnitCount.ToString("N0") units</span>
+                    @if (showAliveUnits)
+                    {
+                        <span class="badge text-bg-dark border border-secondary">@aliveUnitCount.ToString("N0") units</span>
+                    }
                 </div>
             </div>
         </div>
