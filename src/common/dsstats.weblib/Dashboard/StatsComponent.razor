@@ -1,6 +1,9 @@
 ﻿@using dsstats.shared
 @using dsstats.shared.Interfaces
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
 @inject IDashboardStatsService DashboardStatsService
+@inject IJSRuntime JSRuntime
 
 <div class="p-2">
     <h3 class="mt-2 fw-bold text-warning d-inline-block p-2 bgchart border border-dark rounded">Stats past 90 days</h3>
@@ -87,7 +90,12 @@
             </div>
 
             <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card shadow-sm hover-lift">
+                <div class="card shadow-sm hover-lift upload-stat-card"
+                     role="button"
+                     tabindex="0"
+                     aria-label="Show detailed upload stats"
+                     @onclick="ShowUploadStats"
+                     @onkeydown="HandleUploadStatsKeyDown">
                     <div class="card-body bgchart d-flex align-items-center">
                         <div class="stat-icon rounded-3 flex-shrink-0 me-3" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -100,6 +108,58 @@
                             <div class="text-muted small fw-medium mb-1">Uploads</div>
                             <div class="fs-3 fw-bold">@response.Uploads.ToString("N0")</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal" id="@UploadStatsModalId" aria-hidden="true" aria-labelledby="@($"{UploadStatsModalId}Label")" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bgchart2">
+                        <h5 class="modal-title mb-0" id="@($"{UploadStatsModalId}Label")">Upload Stats</h5>
+                        <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CloseUploadStats"></button>
+                    </div>
+                    <div class="modal-body bgchart">
+                        @foreach (var source in GetUploadStats())
+                        {
+                            <section class="upload-source-section border rounded p-2 mb-2">
+                                <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                                    <div>
+                                        <div class="fw-semibold">@GetUploadSourceTitle(source.Source)</div>
+                                        <div class="small text-muted">@source.Source</div>
+                                    </div>
+                                    <span class="badge bgchart2 fs-6">@source.Count.ToString("N0")</span>
+                                </div>
+
+                                @if (source.Versions.Count == 0)
+                                {
+                                    <div class="small text-muted">No uploads</div>
+                                }
+                                else
+                                {
+                                    <div class="table-responsive">
+                                        <table class="table table-sm mb-0 align-middle upload-version-table">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Version</th>
+                                                    <th scope="col" class="text-end">Uploads</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var version in source.Versions)
+                                                {
+                                                    <tr>
+                                                        <td>@version.Version</td>
+                                                        <td class="text-end">@version.Count.ToString("N0")</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            </section>
+                        }
                     </div>
                 </div>
             </div>
@@ -144,6 +204,15 @@
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
+    .upload-stat-card {
+        cursor: pointer;
+    }
+
+        .upload-stat-card:focus-visible {
+            outline: 3px solid #fee140;
+            outline-offset: 3px;
+        }
+
         .hover-lift:hover {
             transform: translateY(-4px);
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
@@ -156,9 +225,18 @@
         .hover-border:hover {
             border-color: #667eea !important;
         }
+
+    .upload-source-section:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    .upload-version-table {
+        color: inherit;
+    }
 </style>
 
 @code {
+    private const string UploadStatsModalId = "dashboardUploadStatsModal";
     DashboardStatsResponse? response;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -174,6 +252,58 @@
     {
         response = await DashboardStatsService.GetDashboardStatsAsync();
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ShowUploadStats()
+    {
+        await JSRuntime.InvokeVoidAsync("openModalById", UploadStatsModalId);
+    }
+
+    private async Task CloseUploadStats()
+    {
+        await JSRuntime.InvokeVoidAsync("closeModalById", UploadStatsModalId);
+    }
+
+    private async Task HandleUploadStatsKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key is "Enter" or " ")
+        {
+            await ShowUploadStats();
+        }
+    }
+
+    private IEnumerable<DashboardUploadSourceStats> GetUploadStats()
+    {
+        if (response is null)
+        {
+            return [];
+        }
+
+        return response.UploadStats
+            .OrderByDescending(x => x.Count)
+            .ThenBy(x => GetUploadSourceOrder(x.Source));
+    }
+
+    private static int GetUploadSourceOrder(string source)
+    {
+        return source switch
+        {
+            "maui" => 0,
+            "mydsstats" => 1,
+            "service" => 2,
+            _ => 3
+        };
+    }
+
+    private static string GetUploadSourceTitle(string source)
+    {
+        return source switch
+        {
+            "maui" => "Maui",
+            "mydsstats" => "mydsstats",
+            "service" => "Service",
+            _ => source
+        };
     }
 
     private double GetPercentage(int value, int total)

@@ -132,10 +132,24 @@ public sealed class DashboardStatsResponse
     public int Dsstats { get; init; }
     public List<DashboardGameModeStats> GameModes { get; init; } = [];
     public int Uploads { get; init; }
+    public List<DashboardUploadSourceStats> UploadStats { get; init; } = [];
 }
 
 public sealed class DashboardGameModeStats
 {
     public GameMode GameMode { get; set; }
     public int Count { get; set; }
+}
+
+public sealed class DashboardUploadSourceStats
+{
+    public string Source { get; init; } = string.Empty;
+    public int Count { get; init; }
+    public List<DashboardUploadVersionStats> Versions { get; init; } = [];
+}
+
+public sealed class DashboardUploadVersionStats
+{
+    public string Version { get; init; } = string.Empty;
+    public int Count { get; init; }
 }
