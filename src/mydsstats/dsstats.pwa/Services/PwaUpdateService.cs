@@ -14,6 +14,7 @@ public sealed class PwaUpdateService(
     public event Action? UpdateAvailableChanged;
 
     public bool IsUpdateAvailable { get; private set; }
+    public bool WasUpdated { get; private set; }
 
     public async ValueTask InitializeAsync()
     {
@@ -34,6 +35,7 @@ public sealed class PwaUpdateService(
             _module = await jsRuntime.InvokeAsync<IJSObjectReference>("import", $"./js/pwa-update.js?v={version}");
             _callbacks = DotNetObjectReference.Create(this);
             IsUpdateAvailable = await _module.InvokeAsync<bool>("initialize", _callbacks);
+            WasUpdated = await _module.InvokeAsync<bool>("consumeAppliedUpdate");
             _initialized = true;
         }
         catch (Exception ex)
