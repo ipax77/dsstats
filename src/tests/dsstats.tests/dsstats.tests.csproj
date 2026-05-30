@@ -108,6 +108,7 @@
     <ProjectReference Include="..\..\common\dsstats.weblib\dsstats.weblib.csproj" />
     <ProjectReference Include="..\..\server\dsstats.migrations.mysql\dsstats.migrations.mysql.csproj" />
     <ProjectReference Include="..\..\server\dsstats.migrations.sqlite\dsstats.migrations.sqlite.csproj" />
+    <ProjectReference Include="..\..\service\dsstats.service\dsstats.service.csproj" />
   </ItemGroup>
 
 </Project>

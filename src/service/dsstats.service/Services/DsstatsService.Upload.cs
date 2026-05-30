@@ -18,11 +18,12 @@ internal sealed partial class DsstatsService
     private static readonly Uri SpawnPlaybackUploadEndpoint = new("api10/upload/import-spawn-playbacks", UriKind.Relative);
     private static readonly JsonSerializerOptions UploadJsonOptions = new(JsonSerializerDefaults.Web);
 
-    public async Task Upload(AppOptions config, CancellationToken ct)
+    public async Task<int> Upload(AppOptions config, CancellationToken ct)
     {
         if (!config.UploadCredential)
         {
-            return;
+            logger.LogWarning("Upload is disabled by worker config.");
+            return 0;
         }
 
         using var scope = scopeFactory.CreateScope();
@@ -30,6 +31,7 @@ internal sealed partial class DsstatsService
         var httpClient = httpClientFactory.CreateClient("api");
         httpClient.DefaultRequestHeaders.Authorization = new("DS8upload77");
         var requestNames = GetUploadRequestNames(config);
+        var uploadedCount = 0;
 
         try
         {
@@ -75,12 +77,14 @@ internal sealed partial class DsstatsService
                     await context.Replays
                         .Where(x => uploadedReplayIds.Contains(x.ReplayId))
                         .ExecuteUpdateAsync(e => e.SetProperty(p => p.Uploaded, true), ct);
+                    uploadedCount += uploadedReplayIds.Count;
                 }
                 else
                 {
                     await context.Replays
                         .Where(x => batch.ReplayIds.Contains(x.ReplayId))
                         .ExecuteUpdateAsync(e => e.SetProperty(p => p.Uploaded, true), ct);
+                    uploadedCount += batch.ReplayIds.Count;
                 }
             }
         }
@@ -91,6 +95,8 @@ internal sealed partial class DsstatsService
         {
             logger.LogError("Upload failed: {error}", ex.Message);
         }
+
+        return uploadedCount;
     }
 
     private static async Task<List<UploadReplayCandidate>> GetUploadCandidates(

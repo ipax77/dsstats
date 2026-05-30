@@ -17,11 +17,10 @@ internal sealed partial class DsstatsService
         await configSemaphore.WaitAsync();
         try
         {
-            AppOptions? appOptions = null;
-            if (File.Exists(configFile))
-            {
-                appOptions = JsonSerializer.Deserialize<AppOptions>(await File.ReadAllTextAsync(configFile));
-            }
+            var loadResult = await DsstatsConfigLoader.Load(
+                appFolder,
+                DsstatsServicePaths.GetLegacyAppFolders(appFolder, logger));
+            var appOptions = loadResult.Options;
             var folders = GetMyDocumentsPathAllUsers();
             var sc2profiles = GetInitialNamesAndFolders(folders);
 
@@ -30,18 +29,8 @@ internal sealed partial class DsstatsService
                 logger.LogWarning("No sc2 profiles found.");
             }
 
-            if (appOptions is null)
-            {
-                appOptions = new()
-                {
-                    Sc2Profiles = sc2profiles
-                };
-                await File.WriteAllTextAsync(configFile, JsonSerializer.Serialize(appOptions, jsonSerializerOptions));
-            }
-            else
-            {
-                appOptions.Sc2Profiles = sc2profiles;
-            }
+            appOptions.Sc2Profiles = sc2profiles;
+            await File.WriteAllTextAsync(configFile, JsonSerializer.Serialize(appOptions, jsonSerializerOptions));
 
             return appOptions;
         }
@@ -73,7 +62,7 @@ internal sealed partial class DsstatsService
         return FilterProfiles(config)
             .Select(s => s.Folder)
             .Concat(config.CustomFolders)
-            .Distinct()
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
 
