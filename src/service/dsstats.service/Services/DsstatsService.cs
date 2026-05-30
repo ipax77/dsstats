@@ -22,10 +22,9 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
     private const int DecodeBacklogCapacity = 4;
     private const int MaxDecodeParallelism = 4;
 
-    public static readonly string appFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "dsstats.worker");
+    public static readonly string appFolder = DsstatsServicePaths.AppFolder;
 
-    private static readonly string configFile = Path.Combine(appFolder, "workerconfig.json");
+    private static readonly string configFile = DsstatsServicePaths.ConfigFile;
     private readonly ReplayDecoder _replayDecoder = new();
     private readonly ReplayDecoderOptions _decoderOptions = new()
     {
@@ -38,15 +37,23 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
         AttributeEvents = false,
     };
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
-    internal readonly Version CurrentVersion = new(3, 0, 5);
+    private int _startupLogged;
+    internal readonly Version CurrentVersion = new(3, 0, 6);
 
     public async Task StartImportAsync(CancellationToken token)
     {
         var config = await GetConfig();
+        LogStartupStateOnce(config);
+        if (!config.AutoDecode)
+        {
+            logger.LogWarning("Auto decode is disabled in {ConfigFile}.", configFile);
+            return;
+        }
+
         try
         {
-            var toDoReplayPaths = await GetToDoReplayPaths(config, token);
-            if (toDoReplayPaths.Count == 0)
+            var discovery = await GetToDoReplayPaths(config, token);
+            if (discovery.ReplayPaths.Count == 0)
             {
                 logger.LogWarning("no replay to decode found.");
                 return;
@@ -60,14 +67,20 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
                 FullMode = BoundedChannelFullMode.Wait
             });
 
-            var decodeTask = DecodeToChannelAsync(config, toDoReplayPaths, channel.Writer, token);
+            var decodeTask = DecodeToChannelAsync(config, discovery.ReplayPaths, channel.Writer, token);
             var importTask = ImportFromChannelAsync(channel.Reader, token);
 
             await Task.WhenAll(decodeTask, importTask);
+            var importedCount = await importTask;
 
-            await Upload(config, token);
+            var uploadedCount = await Upload(config, token);
             sw.Stop();
-            logger.LogWarning("{count} replays decoded in {time}.", toDoReplayPaths.Count, sw.Elapsed.ToString(@"mm\:ss", CultureInfo.InvariantCulture));
+            logger.LogWarning(
+                "Decoded {DecodedCount} replay(s), imported {ImportedCount}, uploaded {UploadedCount} in {Elapsed}.",
+                discovery.ReplayPaths.Count,
+                importedCount,
+                uploadedCount,
+                sw.Elapsed.ToString(@"mm\:ss", CultureInfo.InvariantCulture));
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -85,11 +98,12 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
         try
         {
             var uploaders = GetToonIds(config);
+            var decodeDegree = GetDecodeDegreeOfParallelism(config);
             await Parallel.ForEachAsync(
                 replayPaths,
                 new ParallelOptions
                 {
-                    MaxDegreeOfParallelism = GetDecodeDegreeOfParallelism(config),
+                    MaxDegreeOfParallelism = decodeDegree,
                     CancellationToken = ct
                 },
                 async (replayPath, token) =>
@@ -146,11 +160,12 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
         }
     }
 
-    private async Task ImportFromChannelAsync(
+    private async Task<int> ImportFromChannelAsync(
         ChannelReader<ReplayImportDto> reader,
         CancellationToken ct)
     {
         var batch = new List<ReplayImportDto>(ImportBatchSize);
+        var importedCount = 0;
 
         try
         {
@@ -161,6 +176,7 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
                 if (batch.Count >= ImportBatchSize)
                 {
                     await ImportBatchAsync(batch, ct);
+                    importedCount += batch.Count;
                     batch.Clear();
                 }
             }
@@ -174,8 +190,11 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
             if (batch.Count > 0)
             {
                 await ImportBatchAsync(batch, CancellationToken.None);
+                importedCount += batch.Count;
             }
         }
+
+        return importedCount;
     }
 
     private async Task ImportBatchAsync(
@@ -195,48 +214,163 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
         }
     }
 
-    private async Task<IReadOnlyCollection<string>> GetToDoReplayPaths(AppOptions config, CancellationToken ct)
+    internal async Task<ReplayDiscoveryResult> GetToDoReplayPaths(AppOptions config, CancellationToken ct)
     {
-        var existingReplayPaths = await GetExistingReplayPaths(ct);
-        var replayPaths = GetHdReplayPaths(config);
-        replayPaths.ExceptWith(existingReplayPaths);
-        replayPaths.ExceptWith(config.IgnoreReplays);
-        return replayPaths.Take(dsstatsConfig.Value.BatchSize).ToList();
+        return await DiscoverReplayPaths(
+            config,
+            dsstatsConfig.Value.BatchSize,
+            GetExistingReplayPaths,
+            ct);
     }
 
-    private async Task<HashSet<string>> GetExistingReplayPaths(CancellationToken ct)
+    private async Task<HashSet<string>> GetExistingReplayPaths(IReadOnlyCollection<string> replayPaths, CancellationToken ct)
     {
+        if (replayPaths.Count == 0)
+        {
+            return [];
+        }
+
         using var scope = scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
 
-        return await context.Replays
-            .Where(x => x.FileName != null)
+        var existingReplayPaths = await context.Replays
+            .AsNoTracking()
+            .Where(x => x.FileName != null && replayPaths.Contains(x.FileName))
             .Select(x => x.FileName!)
-            .ToHashSetAsync(ct);
+            .ToListAsync(ct);
+
+        return existingReplayPaths.ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
-    private static HashSet<string> GetHdReplayPaths(AppOptions config)
+    internal static async Task<ReplayDiscoveryResult> DiscoverReplayPaths(
+        AppOptions config,
+        int batchSize,
+        Func<IReadOnlyCollection<string>, CancellationToken, Task<HashSet<string>>> getExistingReplayPaths,
+        CancellationToken ct)
     {
         var folders = GetReplayFolders(config);
-        HashSet<string> replayPaths = [];
+        var ignoreReplays = config.IgnoreReplays.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var candidates = new ReplayCandidateQueue(Math.Max(1, batchSize));
+        var pending = new List<ReplayFileCandidate>(Math.Max(ImportBatchSize, Math.Min(250, batchSize * 2)));
+        var scannedCount = 0;
+        var ignoredCount = 0;
+        var existingCount = 0;
 
-        List<FileInfo> fileInfos = [];
         foreach (var folder in folders)
         {
             if (!Directory.Exists(folder))
             {
                 continue;
             }
-            var dir = new DirectoryInfo(folder);
-            fileInfos.AddRange(dir.GetFiles(
-                    $"{config.ReplayStartName}*.SC2Replay",
-                    SearchOption.AllDirectories)
-                );
+
+            foreach (var candidate in EnumerateReplayFileCandidates(folder, config.ReplayStartName))
+            {
+                ct.ThrowIfCancellationRequested();
+                scannedCount++;
+                if (ignoreReplays.Contains(candidate.Path))
+                {
+                    ignoredCount++;
+                    continue;
+                }
+
+                pending.Add(candidate);
+                if (pending.Count >= 250)
+                {
+                    existingCount += await AddPendingReplayCandidates(pending, candidates, getExistingReplayPaths, ct);
+                    pending.Clear();
+                }
+            }
         }
 
-        return fileInfos
-                .OrderByDescending(o => o.CreationTimeUtc).Select(s => s.FullName)
-                .ToHashSet();
+        if (pending.Count > 0)
+        {
+            existingCount += await AddPendingReplayCandidates(pending, candidates, getExistingReplayPaths, ct);
+            pending.Clear();
+        }
+
+        return new(
+            candidates.GetReplayPathsNewestFirst(),
+            folders.Count,
+            scannedCount,
+            ignoredCount,
+            existingCount);
+    }
+
+    private static IEnumerable<ReplayFileCandidate> EnumerateReplayFileCandidates(string folder, string replayStartName)
+    {
+        foreach (var file in EnumerateReplayFilesSafe(folder, $"{replayStartName}*.SC2Replay"))
+        {
+            FileInfo fileInfo;
+            try
+            {
+                fileInfo = new(file);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            yield return new(fileInfo.FullName, fileInfo.CreationTimeUtc);
+        }
+    }
+
+    private static IEnumerable<string> EnumerateReplayFilesSafe(string folder, string pattern)
+    {
+        var pendingFolders = new Stack<string>();
+        pendingFolders.Push(folder);
+
+        while (pendingFolders.Count > 0)
+        {
+            var currentFolder = pendingFolders.Pop();
+            string[] files;
+            try
+            {
+                files = Directory.GetFiles(currentFolder, pattern, SearchOption.TopDirectoryOnly);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            foreach (var file in files)
+            {
+                yield return file;
+            }
+
+            string[] childFolders;
+            try
+            {
+                childFolders = Directory.GetDirectories(currentFolder);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            foreach (var childFolder in childFolders)
+            {
+                pendingFolders.Push(childFolder);
+            }
+        }
+    }
+
+    private static async Task<int> AddPendingReplayCandidates(
+        List<ReplayFileCandidate> pending,
+        ReplayCandidateQueue candidates,
+        Func<IReadOnlyCollection<string>, CancellationToken, Task<HashSet<string>>> getExistingReplayPaths,
+        CancellationToken ct)
+    {
+        var pendingPaths = pending.Select(candidate => candidate.Path).ToList();
+        var existingReplayPaths = await getExistingReplayPaths(pendingPaths, ct);
+        foreach (var candidate in pending)
+        {
+            if (!existingReplayPaths.Contains(candidate.Path))
+            {
+                candidates.Enqueue(candidate);
+            }
+        }
+
+        return existingReplayPaths.Count;
     }
 
     private static int GetDecodeDegreeOfParallelism(AppOptions config)
@@ -256,5 +390,57 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
         configSemaphore.Dispose();
     }
 
+    private void LogStartupStateOnce(AppOptions config)
+    {
+        if (Interlocked.Exchange(ref _startupLogged, 1) != 0)
+        {
+            return;
+        }
+
+        logger.LogWarning(
+            "Dsstats service {Version} ready. Profiles: {ProfileCount}.",
+            CurrentVersion.ToString(),
+            config.Sc2Profiles.Count);
+    }
+
     private sealed record DecodeReplayResult(ReplayImportDto? Import, string? Error);
+
+    internal sealed record ReplayDiscoveryResult(
+        IReadOnlyList<string> ReplayPaths,
+        int ReplayFolderCount,
+        int ScannedReplayCount,
+        int IgnoredReplayCount,
+        int ExistingReplayCount);
+
+    private sealed record ReplayFileCandidate(string Path, DateTime CreationTimeUtc);
+
+    private sealed class ReplayCandidateQueue(int capacity)
+    {
+        private readonly PriorityQueue<ReplayFileCandidate, DateTime> queue = new();
+
+        public void Enqueue(ReplayFileCandidate candidate)
+        {
+            if (queue.Count < capacity)
+            {
+                queue.Enqueue(candidate, candidate.CreationTimeUtc);
+                return;
+            }
+
+            if (queue.TryPeek(out var oldestCandidate, out _)
+                && candidate.CreationTimeUtc > oldestCandidate.CreationTimeUtc)
+            {
+                queue.Dequeue();
+                queue.Enqueue(candidate, candidate.CreationTimeUtc);
+            }
+        }
+
+        public List<string> GetReplayPathsNewestFirst()
+        {
+            return queue.UnorderedItems
+                .Select(item => item.Element)
+                .OrderByDescending(candidate => candidate.CreationTimeUtc)
+                .Select(candidate => candidate.Path)
+                .ToList();
+        }
+    }
 }

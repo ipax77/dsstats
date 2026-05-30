@@ -32,6 +32,9 @@
 	    <AssemblyAttribute Include="System.CLSCompliantAttribute">
 		    <_Parameter1>false</_Parameter1>
 	    </AssemblyAttribute>
+	    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+		    <_Parameter1>dsstats.tests</_Parameter1>
+	    </AssemblyAttribute>
     </ItemGroup>
 
   <ItemGroup>
