@@ -13,6 +13,19 @@ export interface StoredDirHandle {
   lastScannedAt?: number;
 }
 
+export interface DirectoryHandleEntry {
+  key: string;
+  displayName: string;
+  requiresReselect: boolean;
+  status: "bound" | "unbound";
+}
+
+export type DirectorySource =
+  | { kind: "handle"; handle: FileSystemDirectoryHandle }
+  | { kind: "files"; displayName: string; files: File[] };
+
+const fallbackFilesByRootKey = new Map<string, File[]>();
+
 // ── internal helpers ──────────────────────────────────────────────────────────
 
 async function getAllStoredEntries(): Promise<{ key: string; entry: StoredDirHandle }[]> {
@@ -51,6 +64,14 @@ export async function addDirectoryHandle(
   // Duplicate-handle check
   for (const { key, entry } of existing) {
     if (await entry.handle?.isSameEntry(handle)) {
+      if (entry.status !== "bound") {
+        await updateDirectoryHandle(key, {
+          ...entry,
+          handle,
+          status: "bound",
+          lastBoundAt: Date.now()
+        });
+      }
       return key;
     }
   }
@@ -96,10 +117,90 @@ export async function addDirectoryHandle(
   const db = await openDB();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORES.directoryHandles, "readwrite");
-    tx.objectStore(STORES.directoryHandles).put({ handle, displayName: effectiveName }, uuid);
+    tx.objectStore(STORES.directoryHandles).put({
+      handle,
+      displayName: effectiveName,
+      regionId: 0,
+      fingerprint: null,
+      status: "bound",
+      lastBoundAt: Date.now()
+    }, uuid);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+  return uuid;
+}
+
+export async function addFallbackDirectoryFiles(
+  files: File[],
+  startName: string,
+  rootKey?: string,
+  displayName?: string,
+): Promise<string> {
+  const existing = await getAllStoredEntries();
+  const fileIndex = createFileIndexFromFiles(files, startName);
+  const fingerprint = createDirectoryFingerprintFromFiles(files, startName);
+  const effectiveName = displayName || getFallbackDirectoryDisplayName(files);
+
+  if (rootKey) {
+    const target = existing.find((e) => e.key === rootKey);
+    if (!target) throw new Error(`Handle key "${rootKey}" not found.`);
+
+    if (target.entry.fingerprint && !matchesFingerprint(target.entry.fingerprint, fileIndex)) {
+      throw new Error(`Selected folder does not match "${target.entry.displayName}". Choose the same replay folder again.`);
+    }
+
+    const updatedEntry: StoredDirHandle = {
+      ...target.entry,
+      handle: null,
+      displayName: target.entry.displayName || effectiveName,
+      fingerprint,
+      status: "unbound",
+      lastBoundAt: Date.now()
+    };
+
+    await updateDirectoryHandle(rootKey, updatedEntry);
+    fallbackFilesByRootKey.set(rootKey, files);
+    return rootKey;
+  }
+
+  for (const { key, entry } of existing.filter((e) => e.entry.status === "unbound")) {
+    if (matchesFingerprint(entry.fingerprint, fileIndex)) {
+      await updateDirectoryHandle(key, {
+        ...entry,
+        handle: null,
+        fingerprint,
+        status: "unbound",
+        lastBoundAt: Date.now()
+      });
+      fallbackFilesByRootKey.set(key, files);
+      return key;
+    }
+  }
+
+  let uniqueName = effectiveName;
+  let suffix = 2;
+  while (existing.some((e) => e.entry.displayName === uniqueName)) {
+    uniqueName = `${effectiveName} ${suffix++}`;
+  }
+
+  const uuid = crypto.randomUUID();
+  const db = await openDB();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORES.directoryHandles, "readwrite");
+    tx.objectStore(STORES.directoryHandles).put({
+      handle: null,
+      displayName: uniqueName,
+      regionId: 0,
+      fingerprint,
+      status: "unbound",
+      lastBoundAt: Date.now()
+    } satisfies StoredDirHandle, uuid);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+
+  fallbackFilesByRootKey.set(uuid, files);
   return uuid;
 }
 
@@ -155,9 +256,14 @@ export async function getDirectoryHandle(key: string): Promise<StoredDirHandle |
 }
 
 /** Returns all saved entries as plain objects (no FileSystemDirectoryHandle, safe to serialize). */
-export async function getAllDirectoryHandleEntries(): Promise<{ key: string; displayName: string; }[]> {
+export async function getAllDirectoryHandleEntries(): Promise<DirectoryHandleEntry[]> {
   const entries = await getAllStoredEntries();
-  return entries.map(({ key, entry }) => ({ key, displayName: entry.displayName }));
+  return entries.map(({ key, entry }) => ({
+    key,
+    displayName: entry.displayName,
+    requiresReselect: !entry.handle && !fallbackFilesByRootKey.has(key),
+    status: entry.status ?? (entry.handle ? "bound" : "unbound")
+  }));
 }
 
 /** Returns just the UUID keys (kept for backward compatibility). */
@@ -222,6 +328,10 @@ export async function verifyAllDirectoryPermissions(keys: string[]): Promise<str
   for (const key of keys) {
     const entry = await getDirectoryHandle(key);
     if (!entry) continue;
+    if (!entry.handle && fallbackFilesByRootKey.has(key)) {
+      granted.push(key);
+      continue;
+    }
     const ok = await verifyDirectoryPermission(entry.handle);
     if (ok) granted.push(key);
   }
@@ -230,16 +340,82 @@ export async function verifyAllDirectoryPermissions(keys: string[]): Promise<str
 
 export async function getDirectoryHandleFromUser(): Promise<FileSystemDirectoryHandle | null> {
   if (!("showDirectoryPicker" in window)) {
-    throw new Error(
-      "showDirectoryPicker is not supported in this browser. File selection requires a Chromium-based browser."
-    );
+    return null;
   }
   try {
     return await (window as any).showDirectoryPicker();
   } catch (error: any) {
     if (error?.name === "AbortError") return null;
+    if (isDirectoryPickerUnsupported(error)) return null;
     throw new Error(`Failed to pick directory: ${error?.message ?? error}`);
   }
+}
+
+export async function getDirectorySourceFromUser(): Promise<DirectorySource | null> {
+  if ("showDirectoryPicker" in window) {
+    try {
+      const handle = await (window as any).showDirectoryPicker();
+      return { kind: "handle", handle };
+    } catch (error: any) {
+      if (error?.name === "AbortError") return null;
+      if (!isDirectoryPickerUnsupported(error)) {
+        throw new Error(`Failed to pick directory: ${error?.message ?? error}`);
+      }
+    }
+  }
+
+  const files = await getFallbackDirectoryFilesFromUser();
+  if (!files || files.length === 0) {
+    return null;
+  }
+
+  return {
+    kind: "files",
+    displayName: getFallbackDirectoryDisplayName(files),
+    files
+  };
+}
+
+export function getSessionFallbackFiles(rootKey: string): File[] | undefined {
+  return fallbackFilesByRootKey.get(rootKey);
+}
+
+function getFallbackDirectoryFilesFromUser(): Promise<File[] | null> {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    input.style.display = "none";
+    input.setAttribute("webkitdirectory", "");
+    (input as HTMLInputElement & { webkitdirectory?: boolean }).webkitdirectory = true;
+
+    const cleanup = () => input.remove();
+
+    input.onchange = () => {
+      const files = input.files ? Array.from(input.files) : [];
+      cleanup();
+      resolve(files.length > 0 ? files : null);
+    };
+    (input as HTMLInputElement & { oncancel?: () => void }).oncancel = () => {
+      cleanup();
+      resolve(null);
+    };
+    input.onerror = () => {
+      cleanup();
+      reject(new Error("Failed to open folder file picker."));
+    };
+
+    document.body.appendChild(input);
+    input.click();
+  });
+}
+
+function isDirectoryPickerUnsupported(error: unknown): boolean {
+  const err = error as { name?: string; message?: string };
+  return err?.name === "NotSupportedError"
+    || err?.name === "SecurityError"
+    || err?.name === "TypeError"
+    || /showDirectoryPicker|not supported|not implemented/i.test(err?.message ?? "");
 }
 
 export function selectFingerprintFiles(files: FileInfo[], count = 12) {
@@ -259,11 +435,62 @@ export function selectFingerprintFiles(files: FileInfo[], count = 12) {
   return result;
 }
 
+export function createDirectoryFingerprintFromFiles(files: File[], startName: string): DirectoryFingerprint {
+  const candidates = files
+    .filter((file) => file.name.startsWith(startName))
+    .map((file) => ({
+      record: {
+        path: getFallbackRelativePath(file),
+        name: file.name,
+        size: file.size,
+        lastModified: file.lastModified,
+      },
+      file
+    }));
+
+  return {
+    version: 1,
+    files: selectFingerprintFiles(candidates).map((entry) => ({
+      name: entry.file.name,
+      size: entry.file.size,
+      lastModified: entry.file.lastModified
+    }))
+  };
+}
+
+function createFileIndexFromFiles(files: File[], startName: string): Map<string, FileInfoRecord[]> {
+  const index = new Map<string, FileInfoRecord[]>();
+  for (const file of files) {
+    if (!file.name.startsWith(startName)) continue;
+
+    const key = `${file.name}::${file.size}`;
+    if (!index.has(key)) index.set(key, []);
+    index.get(key)!.push({
+      path: getFallbackRelativePath(file),
+      name: file.name,
+      size: file.size,
+      lastModified: file.lastModified
+    });
+  }
+
+  return index;
+}
+
+function getFallbackDirectoryDisplayName(files: File[]): string {
+  const relativePath = files.find((file) => getFallbackRelativePath(file).includes("/"));
+  const root = relativePath ? getFallbackRelativePath(relativePath).split("/")[0] : "";
+  return root || "Replay folder";
+}
+
+function getFallbackRelativePath(file: File): string {
+  return file.webkitRelativePath || file.name;
+}
+
 export function matchesFingerprint(
   fingerprint: DirectoryFingerprint | null,
   fileIndex: Map<string, FileInfoRecord[]>
 ): boolean {
-  if (!fingerprint) return false;
+  if (!fingerprint || fingerprint.files.length === 0) return false;
   let matches = 0;
 
   for (const f of fingerprint.files) {

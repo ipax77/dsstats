@@ -15,6 +15,18 @@ const mockFile = (name: string, size: number, lastModified: number): File => ({
     text: vi.fn(),
 } as unknown as File);
 
+const mockFileWithPath = (name: string, relativePath: string, size: number, lastModified: number): File => ({
+    name,
+    size,
+    lastModified,
+    webkitRelativePath: relativePath,
+    type: 'text/plain',
+    arrayBuffer: vi.fn(),
+    slice: vi.fn(),
+    stream: vi.fn(),
+    text: vi.fn(),
+} as unknown as File);
+
 const mockFileHandle = (name: string, file: File) => ({
     kind: 'file',
     name,
@@ -80,22 +92,21 @@ describe('getReplaysFromFolder', () => {
     });
 
     it('should return an empty array if user cancels directory selection', async () => {
-        vi.spyOn(fileHandleRepository, 'getDirectoryHandleFromUser').mockResolvedValue(null);
+        vi.spyOn(fileHandleRepository, 'getDirectorySourceFromUser').mockResolvedValue(null);
         const result = await getReplaysFromFolder("replay", [], 10);
         expect(result).toEqual([]);
     });
 
     it('should return files from the selected directory, filtered by startName and sorted by lastModified', async () => {
-        vi.spyOn(fileHandleRepository, 'getDirectoryHandleFromUser').mockResolvedValue(
-            mockDirectoryHandle('mock-folder', {
+        const dirHandle = mockDirectoryHandle('mock-folder', {
                 'replay1.txt': mockFileHandle('replay1.txt', mockFile('replay1.txt', 100, Date.now() - 10000)),
                 'replay2.txt': mockFileHandle('replay2.txt', mockFile('replay2.txt', 200, Date.now() - 20000)),
                 'sub-folder': mockDirectoryHandle('sub-folder', {
                     'replay3.txt': mockFileHandle('replay3.txt', mockFile('replay3.txt', 300, Date.now() - 5000)),
                 }),
                 'other-file.jpg': mockFileHandle('other-file.jpg', mockFile('other-file.jpg', 50, Date.now() - 1000)),
-            })
-        );
+            });
+        vi.spyOn(fileHandleRepository, 'getDirectorySourceFromUser').mockResolvedValue({ kind: 'handle', handle: dirHandle });
         const result = await getReplaysFromFolder("replay", [], 10);
 
         expect(result).toHaveLength(3);
@@ -111,12 +122,11 @@ describe('getReplaysFromFolder', () => {
     });
 
     it('should filter out existing paths', async () => {
-        vi.spyOn(fileHandleRepository, 'getDirectoryHandleFromUser').mockResolvedValue(
-            mockDirectoryHandle('mock-folder', {
+        const dirHandle = mockDirectoryHandle('mock-folder', {
                 'replay1.txt': mockFileHandle('replay1.txt', mockFile('replay1.txt', 100, Date.now() - 10000)),
                 'replay2.txt': mockFileHandle('replay2.txt', mockFile('replay2.txt', 200, Date.now() - 20000)),
-            })
-        );
+            });
+        vi.spyOn(fileHandleRepository, 'getDirectorySourceFromUser').mockResolvedValue({ kind: 'handle', handle: dirHandle });
         const existingPaths = ['mock-folder/replay1.txt'];
         const result = await getReplaysFromFolder('replay', existingPaths, 1);
 
@@ -216,13 +226,12 @@ describe('getReplaysFromFolder', () => {
     });
 
     it('should limit the number of returned files by count', async () => {
-        vi.spyOn(fileHandleRepository, 'getDirectoryHandleFromUser').mockResolvedValue(
-            mockDirectoryHandle('mock-folder', {
+        const dirHandle = mockDirectoryHandle('mock-folder', {
                 'replay1.txt': mockFileHandle('replay1.txt', mockFile('replay1.txt', 100, Date.now() - 10000)),
                 'replay2.txt': mockFileHandle('replay2.txt', mockFile('replay2.txt', 200, Date.now() - 20000)),
                 'replay3.txt': mockFileHandle('replay3.txt', mockFile('replay3.txt', 300, Date.now() - 5000)),
-            })
-        );
+            });
+        vi.spyOn(fileHandleRepository, 'getDirectorySourceFromUser').mockResolvedValue({ kind: 'handle', handle: dirHandle });
         const result = await getReplaysFromFolder('replay', [], 2);
 
         expect(result).toHaveLength(2);
@@ -231,7 +240,7 @@ describe('getReplaysFromFolder', () => {
     });
 
     it('should use provided dirHandle if available', async () => {
-        const getDirectoryHandleFromUserSpy = vi.spyOn(fileHandleRepository, 'getDirectoryHandleFromUser');
+        const getDirectorySourceFromUserSpy = vi.spyOn(fileHandleRepository, 'getDirectorySourceFromUser');
         const customDirHandle = mockDirectoryHandle('custom-folder', {
             'custom-replay.txt': mockFileHandle('custom-replay.txt', mockFile('custom-replay.txt', 150, Date.now() - 100)),
         });
@@ -240,17 +249,16 @@ describe('getReplaysFromFolder', () => {
 
         expect(result).toHaveLength(1);
         expect(result[0].name).toBe('custom-replay.txt');
-        expect(getDirectoryHandleFromUserSpy).not.toHaveBeenCalled();
+        expect(getDirectorySourceFromUserSpy).not.toHaveBeenCalled();
         expect(fileHandleRepository.addDirectoryHandle).not.toHaveBeenCalled();
         expect(fileHandleRepository.verifyDirectoryPermission).toHaveBeenCalledWith(customDirHandle);
     });
 
     it('should save the directory handle if a new one is selected', async () => {
-        vi.spyOn(fileHandleRepository, 'getDirectoryHandleFromUser').mockResolvedValue(
-            mockDirectoryHandle('mock-folder', {})
-        );
+        const dirHandle = mockDirectoryHandle('mock-folder', {});
+        vi.spyOn(fileHandleRepository, 'getDirectorySourceFromUser').mockResolvedValue({ kind: 'handle', handle: dirHandle });
         const result = await getReplaysFromFolder("replay", [], 10);
-        expect(fileHandleRepository.getDirectoryHandleFromUser).toHaveBeenCalled();
+        expect(fileHandleRepository.getDirectorySourceFromUser).toHaveBeenCalled();
         // expect(fileHandleRepository.addDirectoryHandle).toHaveBeenCalledWith(expect.any(Object), 'mock-folder', 1);
     });
 
@@ -263,7 +271,7 @@ describe('getReplaysFromFolder', () => {
     });
 
     it('should handle errors during file system access gracefully', async () => {
-        vi.spyOn(fileHandleRepository, 'getDirectoryHandleFromUser').mockRejectedValue(new Error('Permission denied'));
+        vi.spyOn(fileHandleRepository, 'getDirectorySourceFromUser').mockRejectedValue(new Error('Permission denied'));
         const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {}); // Suppress console.log
         const result = await getReplaysFromFolder("replay", [], 10);
         expect(result).toEqual([]);
@@ -281,8 +289,8 @@ describe('getReplaysFromFolder', () => {
 
         it('should fetch chunks of replays', async () => {
             const dirSpy = vi
-                .spyOn(fileHandleRepository, 'getDirectoryHandleFromUser')
-                .mockResolvedValue(dirHandle);
+                .spyOn(fileHandleRepository, 'getDirectorySourceFromUser')
+                .mockResolvedValue({ kind: 'handle', handle: dirHandle });
 
             const firstChunk = await getReplaysFromFolder("replay", [], 10);
 
@@ -299,7 +307,7 @@ describe('getReplaysFromFolder', () => {
             };
 
             const updatedDirHandle = mockDirectoryHandle('chunk-test-folder', newReplays);
-            dirSpy.mockResolvedValue(updatedDirHandle);
+            dirSpy.mockResolvedValue({ kind: 'handle', handle: updatedDirHandle });
 
             const firstChunkPaths = firstChunk.map(m => m.path);
             const secondChunk = await getReplaysFromFolder('replay', firstChunkPaths, 10);
@@ -311,5 +319,63 @@ describe('getReplaysFromFolder', () => {
             const thirdChunk = await getReplaysFromFolder('replay', secondChunkPaths, 2);
             expect(thirdChunk).toHaveLength(2);
         });
+    });
+
+    it('should scan fallback folder files by webkitRelativePath', async () => {
+        const newest = Date.now() - 100;
+        vi.spyOn(fileHandleRepository, 'getDirectorySourceFromUser').mockResolvedValue({
+            kind: 'files',
+            displayName: 'fallback-folder',
+            files: [
+                mockFileWithPath('replay-old.SC2Replay', 'fallback-folder/replay-old.SC2Replay', 100, newest - 2000),
+                mockFileWithPath('notes.txt', 'fallback-folder/notes.txt', 50, newest - 1000),
+                mockFileWithPath('replay-new.SC2Replay', 'fallback-folder/nested/replay-new.SC2Replay', 120, newest),
+            ],
+        });
+        vi.spyOn(fileHandleRepository, 'addFallbackDirectoryFiles').mockResolvedValue('fallback-root');
+
+        const result = await getReplaysFromFolder('replay', [], 10);
+
+        expect(result).toHaveLength(2);
+        expect(result[0].path).toBe('fallback-root/nested/replay-new.SC2Replay');
+        expect(result[1].path).toBe('fallback-root/replay-old.SC2Replay');
+    });
+
+    it('should reselect an unbound fallback folder and keep the existing root key', async () => {
+        const selectedFile = mockFileWithPath('replay1.SC2Replay', 'fallback-folder/replay1.SC2Replay', 100, Date.now());
+        vi.spyOn(fileHandleRepository, 'getDirectoryHandle').mockResolvedValue({
+            handle: null,
+            displayName: 'fallback-folder',
+            regionId: 0,
+            fingerprint: {
+                version: 1,
+                files: [{ name: selectedFile.name, size: selectedFile.size, lastModified: selectedFile.lastModified }],
+            },
+            status: 'unbound',
+        });
+        vi.spyOn(fileHandleRepository, 'getSessionFallbackFiles').mockReturnValue(undefined);
+        vi.spyOn(fileHandleRepository, 'getDirectorySourceFromUser').mockResolvedValue({
+            kind: 'files',
+            displayName: 'fallback-folder',
+            files: [selectedFile],
+        });
+        vi.spyOn(fileHandleRepository, 'addFallbackDirectoryFiles').mockResolvedValue('saved-root');
+
+        const result = await getReplaysFromFolder('replay', [], 10, null, 'saved-root');
+
+        expect(fileHandleRepository.addFallbackDirectoryFiles).toHaveBeenCalledWith([selectedFile], 'replay', 'saved-root', 'fallback-folder');
+        expect(result).toHaveLength(1);
+        expect(result[0].path).toBe('saved-root/replay1.SC2Replay');
+    });
+
+    it('should reject a fallback reselect when the fingerprint does not match', async () => {
+        const originalFile = mockFileWithPath('replay1.SC2Replay', 'fallback-folder/replay1.SC2Replay', 100, Date.now() - 1000);
+        const selectedOtherFolder = mockFileWithPath('replay2.SC2Replay', 'other-folder/replay2.SC2Replay', 200, Date.now());
+
+        const key = await fileHandleRepository.addFallbackDirectoryFiles([originalFile], 'replay', undefined, 'fallback-folder');
+
+        await expect(
+            fileHandleRepository.addFallbackDirectoryFiles([selectedOtherFolder], 'replay', key, 'fallback-folder')
+        ).rejects.toThrow('Selected folder does not match');
     });
 });

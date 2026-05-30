@@ -1,5 +1,5 @@
 import { DirectoryFingerprint, FileInfo, FileInfoRecord, ReplayMeta } from "./dtos";
-import { addDirectoryHandle, getDirectoryHandle, getDirectoryHandleFromUser, selectFingerprintFiles, updateDirectoryFingerprint, updateDirectoryScanState, verifyDirectoryPermission } from "./file-handle-repository";
+import { addDirectoryHandle, addFallbackDirectoryFiles, DirectorySource, getDirectoryHandle, getDirectorySourceFromUser, getSessionFallbackFiles, selectFingerprintFiles, updateDirectoryFingerprint, updateDirectoryScanState, verifyDirectoryPermission } from "./file-handle-repository";
 import { getFilesFromFolderRecursive } from "./get-files";
 
 const fileHandleMap = new Map<string, File>();
@@ -23,15 +23,56 @@ export async function getReplaysFromFolder(
     fileHandleMap.clear(); // reset
     try {
         let previousScanTime = 0;
+        let source: DirectorySource | null = null;
+        let sourceDisplayName = "";
+
         if (dirHandle === null || dirHandle === undefined) {
-            dirHandle = await getDirectoryHandleFromUser();
-            if (dirHandle === null || dirHandle === undefined) {
-                return [];
+            if (rootKey) {
+                const stored = await getDirectoryHandle(rootKey);
+                if (stored?.handle) {
+                    source = { kind: "handle", handle: stored.handle };
+                    dirHandle = stored.handle;
+                    sourceDisplayName = stored.displayName || stored.handle.name;
+                } else {
+                    const sessionFiles = getSessionFallbackFiles(rootKey);
+                    if (sessionFiles) {
+                        source = {
+                            kind: "files",
+                            displayName: stored?.displayName || "Replay folder",
+                            files: sessionFiles
+                        };
+                        sourceDisplayName = source.displayName;
+                    } else {
+                        source = await getDirectorySourceFromUser();
+                        if (!source) return [];
+
+                        if (source.kind === "handle") {
+                            rootKey = await addDirectoryHandle(source.handle, startName, rootKey);
+                            dirHandle = source.handle;
+                            sourceDisplayName = source.handle.name;
+                        } else {
+                            rootKey = await addFallbackDirectoryFiles(source.files, startName, rootKey, stored?.displayName);
+                            sourceDisplayName = stored?.displayName || source.displayName;
+                        }
+                    }
+                }
+            } else {
+                source = await getDirectorySourceFromUser();
+                if (!source) return [];
+
+                if (source.kind === "handle") {
+                    dirHandle = source.handle;
+                    rootKey = await addDirectoryHandle(source.handle, startName, rootKey);
+                    sourceDisplayName = source.handle.name;
+                } else {
+                    rootKey = await addFallbackDirectoryFiles(source.files, startName);
+                    sourceDisplayName = source.displayName;
+                }
             }
-            // Save with unique UUID key; returns existing UUID if same folder was already saved.
-            rootKey = await addDirectoryHandle(dirHandle, startName, rootKey);
         } else {
             await verifyDirectoryPermission(dirHandle);
+            source = { kind: "handle", handle: dirHandle };
+            sourceDisplayName = dirHandle.name;
         }
 
         if (rootKey) {
@@ -41,12 +82,14 @@ export async function getReplaysFromFolder(
 
         // Use the UUID (or dirHandle.name as fallback) as the path root so that
         // stored paths are globally unique across handles with the same folder name.
-        const pathRoot = rootKey ?? dirHandle.name;
-        const allRecords = await getFilesFromFolderRecursive(dirHandle, startName, true, pathRoot);
+        if (!source) return [];
+
+        const pathRoot = rootKey ?? sourceDisplayName;
+        const allRecords = await getFileInfosFromDirectorySource(source, startName, pathRoot);
 
         const pathPrefixes = new Set<string>([pathRoot]);
-        if (dirHandle.name && dirHandle.name !== pathRoot) {
-            pathPrefixes.add(dirHandle.name);
+        if (sourceDisplayName && sourceDisplayName !== pathRoot) {
+            pathPrefixes.add(sourceDisplayName);
         }
 
         const relevantMetas = metas
@@ -73,8 +116,8 @@ export async function getReplaysFromFolder(
         for (let i = 0; i < allRecords.length; i++) {
             const record = allRecords[i];
             const currentPath = record.record.path;
-            const legacyPath = dirHandle.name !== pathRoot
-                ? toLegacyPath(currentPath, pathRoot, dirHandle.name)
+            const legacyPath = sourceDisplayName !== pathRoot
+                ? toLegacyPath(currentPath, pathRoot, sourceDisplayName)
                 : null;
 
             const currentMeta = metaByPath.get(currentPath) ?? (legacyPath ? metaByPath.get(legacyPath) : undefined);
@@ -115,4 +158,38 @@ export async function readFileContentStream(path: string): Promise<File> {
     const file = fileHandleMap.get(path);
     if (!file) throw new Error(`File not found: ${path}`);
     return file;
+}
+
+async function getFileInfosFromDirectorySource(
+    source: DirectorySource,
+    startName: string,
+    pathRoot: string,
+): Promise<FileInfo[]> {
+    if (source.kind === "handle") {
+        return await getFilesFromFolderRecursive(source.handle, startName, true, pathRoot);
+    }
+
+    const out: FileInfo[] = [];
+    for (const file of source.files) {
+        if (!file.name.startsWith(startName)) continue;
+
+        out.push({
+            record: {
+                path: toFallbackPath(file, pathRoot),
+                name: file.name,
+                size: file.size,
+                lastModified: file.lastModified,
+            },
+            file,
+        });
+    }
+
+    return out;
+}
+
+function toFallbackPath(file: File, pathRoot: string): string {
+    const relativePath = file.webkitRelativePath || file.name;
+    const parts = relativePath.split("/").filter(Boolean);
+    const pathUnderRoot = parts.length > 1 ? parts.slice(1).join("/") : parts.join("/");
+    return `${pathRoot}/${pathUnderRoot}`;
 }

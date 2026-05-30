@@ -5,7 +5,7 @@ import { getReplaysFromFolder, readFileContentStream } from "./pick-replays";
 import { exportBackup, importBackup } from "./backup";
 import { MyPlayerStats } from "./stats/stats-dto";
 import { StatsService } from "./stats/stats";
-import { addDirectoryHandle, deleteDirectoryHandle, getAllDirectoryHandleEntries, getAllDirectoryHandles, getDirectoryHandle, getDirectoryHandleFromUser, renameDirectoryHandle as renameDirHandle, verifyAllDirectoryPermissions as verifyAllDirPerms } from "./file-handle-repository";
+import { addDirectoryHandle, addFallbackDirectoryFiles, deleteDirectoryHandle, DirectoryHandleEntry, getAllDirectoryHandleEntries, getAllDirectoryHandles, getDirectoryHandle, getDirectorySourceFromUser, renameDirectoryHandle as renameDirHandle, verifyAllDirectoryPermissions as verifyAllDirPerms } from "./file-handle-repository";
 import { replayListMatchesDetailProjection, replayListNeedsFullDetailCheck, replayMatchesDetailFilter } from "./replay-detail-filter";
 
 const CONFIG_KEYS = {
@@ -538,12 +538,16 @@ export async function pickDirectoryInit(
 }
 
 export async function pickDirectoryHandle(startName: string): Promise<string | null> {
-    const dirHandle = await getDirectoryHandleFromUser();
-    if (!dirHandle) {
+    const source = await getDirectorySourceFromUser();
+    if (!source) {
         return null;
     }
 
-    return await addDirectoryHandle(dirHandle, startName, undefined);
+    if (source.kind === "handle") {
+        return await addDirectoryHandle(source.handle, startName, undefined);
+    }
+
+    return await addFallbackDirectoryFiles(source.files, startName, undefined, source.displayName);
 }
 
 export async function getFileContentStream(path: string) {
@@ -1083,7 +1087,7 @@ export async function exportAllDirectoryHandles(): Promise<string[]> {
     return await getAllDirectoryHandles();
 }
 
-export async function exportAllDirectoryHandleEntries(): Promise<{ key: string; displayName: string; }[]> {
+export async function exportAllDirectoryHandleEntries(): Promise<DirectoryHandleEntry[]> {
     return await getAllDirectoryHandleEntries();
 }
 

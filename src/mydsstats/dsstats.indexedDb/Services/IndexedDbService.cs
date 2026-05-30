@@ -286,6 +286,8 @@ public class IndexedDbService
     {
         public string Key { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
+        public bool RequiresReselect { get; set; }
+        public string Status { get; set; } = "bound";
     }
 
     public sealed class FileInfoRecord
