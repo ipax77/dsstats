@@ -5,6 +5,7 @@ let applyingUpdate = false;
 let trackedInstallingWorker = null;
 let trackedWaitingWorker = null;
 let reloadFallbackId = null;
+const appliedUpdateStorageKey = "dsstats.pwa.appliedUpdate";
 
 export async function initialize(callbacks) {
   if (!("serviceWorker" in navigator)) {
@@ -34,6 +35,7 @@ export async function applyUpdate() {
 
   if (registration.waiting) {
     applyingUpdate = true;
+    markAppliedUpdatePending();
     trackWaitingWorker(registration.waiting);
     console.info("PWA update: asking waiting service worker to activate.");
     registration.waiting.postMessage({ type: "SKIP_WAITING" });
@@ -42,7 +44,18 @@ export async function applyUpdate() {
   }
 
   console.info("PWA update: no waiting service worker found, reloading.");
+  markAppliedUpdatePending();
   window.location.reload();
+}
+
+export function consumeAppliedUpdate() {
+  try {
+    const value = window.localStorage.getItem(appliedUpdateStorageKey);
+    window.localStorage.removeItem(appliedUpdateStorageKey);
+    return value === "1";
+  } catch {
+    return false;
+  }
 }
 
 export function dispose() {
@@ -120,6 +133,14 @@ function clearReloadFallback() {
   if (reloadFallbackId !== null) {
     window.clearTimeout(reloadFallbackId);
     reloadFallbackId = null;
+  }
+}
+
+function markAppliedUpdatePending() {
+  try {
+    window.localStorage.setItem(appliedUpdateStorageKey, "1");
+  } catch {
+    // Storage can be unavailable in private browsing modes; the update still works.
   }
 }
 

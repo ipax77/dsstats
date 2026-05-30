@@ -6,13 +6,6 @@
 @implements IDisposable
 
 <div class="top-row d-flex flex-wrap align-items-center gap-2 px-4 py-3 bg-dark text-light">
-	@if (PwaUpdateService.IsUpdateAvailable)
-	{
-		<button class="btn btn-warning btn-sm" @onclick="ApplyUpdate" disabled="@isApplyingUpdate">
-			<i class="bi bi-arrow-clockwise me-1"></i>Update
-		</button>
-	}
-
 	@if (hasDirHandles)
 	{
 		<button class="btn btn-success btn-sm" @onclick="DecodeAll"
@@ -119,7 +112,27 @@
 	}
 
 	<div class="ms-auto d-flex align-items-center gap-2">
-		<span class="small text-light opacity-50">v@(DecodeService.Version.ToString())</span>
+		<span class="small text-light opacity-75">
+			@if (PwaUpdateService.WasUpdated)
+			{
+				<span>Updated to v@(DecodeService.Version.ToString()) &middot; </span>
+				<a href="/info#changelog" class="link-light link-underline-opacity-50 link-underline-opacity-100-hover">What's new</a>
+			}
+			else
+			{
+				<span>Version @(DecodeService.Version.ToString())</span>
+				@if (PwaUpdateService.IsUpdateAvailable)
+				{
+					<span> &middot; Update available</span>
+				}
+			}
+		</span>
+		@if (PwaUpdateService.IsUpdateAvailable)
+		{
+			<button class="btn btn-warning btn-sm" @onclick="ApplyUpdate" disabled="@isApplyingUpdate">
+				<i class="bi bi-arrow-clockwise me-1"></i>Reload to update
+			</button>
+		}
 		<AuthorizeView>
 			<Authorized Context="authState">
 				<span class="small text-light">@authState.User.Identity?.Name</span>
