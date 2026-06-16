@@ -25,9 +25,9 @@ public class SessionProgress(
             return SessionReplayResult.Empty;
         }
 
-        var profiles = config.Sc2Profiles
-            .Where(IsValidProfile)
-            .ToList();
+        await EnsureManualReplayFolderIdentities(config, token);
+
+        var profiles = GetSessionProfiles(config);
 
         if (profiles.Count == 0)
         {
@@ -157,6 +157,76 @@ public class SessionProgress(
     public static bool IsWin(ReplayDto replay, ToonIdDto toonId)
         => MauiSessionProgressCalculator.IsWin(replay, toonId);
 
+    private async Task EnsureManualReplayFolderIdentities(MauiConfig config, CancellationToken token)
+    {
+        var folders = config.ManualReplayFolders
+            .Where(folder => folder.Active &&
+                !string.IsNullOrWhiteSpace(folder.Folder) &&
+                !HasDetectedToonId(folder))
+            .Select(folder => new ManualFolderDetectionTarget(
+                folder.MauiReplayFolderId,
+                MauiConfigPersistence.NormalizeFolderPath(folder.Folder)))
+            .Where(folder => folder.MauiReplayFolderId > 0 && !string.IsNullOrWhiteSpace(folder.Folder))
+            .DistinctBy(folder => folder.MauiReplayFolderId)
+            .ToList();
+
+        if (folders.Count == 0)
+        {
+            return;
+        }
+
+        using var scope = scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+        var folderIds = folders
+            .Select(target => target.MauiReplayFolderId)
+            .ToArray();
+        var dbFolders = await context.ManualReplayFolders
+            .Where(folder => folderIds.Contains(folder.MauiReplayFolderId))
+            .ToDictionaryAsync(folder => folder.MauiReplayFolderId, token);
+
+        var changed = false;
+        foreach (var folder in folders)
+        {
+            token.ThrowIfCancellationRequested();
+
+            if (!dbFolders.TryGetValue(folder.MauiReplayFolderId, out var dbFolder) ||
+                HasDetectedToonId(dbFolder))
+            {
+                continue;
+            }
+
+            var candidate = await MauiManualReplayFolderDetection.DetectProfileCandidate(context, folder.Folder, token);
+            if (candidate is null)
+            {
+                continue;
+            }
+
+            changed |= MauiConfigPersistence.SetDetectedProfile(
+                dbFolder,
+                candidate.Name,
+                candidate.ToonId,
+                DateTime.UtcNow,
+                candidate.ReplayCount);
+
+            var configFolder = config.ManualReplayFolders
+                .FirstOrDefault(existing => existing.MauiReplayFolderId == folder.MauiReplayFolderId);
+            if (configFolder is not null)
+            {
+                configFolder.DetectedName = dbFolder.DetectedName;
+                configFolder.DetectedToonIdRegion = dbFolder.DetectedToonIdRegion;
+                configFolder.DetectedToonIdRealm = dbFolder.DetectedToonIdRealm;
+                configFolder.DetectedToonIdId = dbFolder.DetectedToonIdId;
+                configFolder.DetectedAtUtc = dbFolder.DetectedAtUtc;
+                configFolder.DetectedReplayCount = dbFolder.DetectedReplayCount;
+            }
+        }
+
+        if (changed)
+        {
+            await context.SaveChangesAsync(token);
+        }
+    }
+
     private async Task<List<string>> GetSessionReplayHashes(MauiConfig config, CancellationToken token)
     {
         using var scope = scopeFactory.CreateScope();
@@ -239,14 +309,45 @@ public class SessionProgress(
         }
     }
 
+    private static List<TrackedSessionProfile> GetSessionProfiles(MauiConfig config)
+    {
+        var profiles = config.Sc2Profiles
+            .Where(IsValidProfile)
+            .Select(profile => new TrackedSessionProfile(
+                profile.Name,
+                CloneToonId(profile.ToonId)))
+            .ToList();
+
+        profiles.AddRange(config.ManualReplayFolders
+            .Where(folder => folder.Active && HasDetectedToonId(folder))
+            .Select(folder => new TrackedSessionProfile(
+                string.IsNullOrWhiteSpace(folder.DetectedName)
+                    ? Path.GetFileName(folder.Folder)
+                    : folder.DetectedName!,
+                new()
+                {
+                    Region = folder.DetectedToonIdRegion.GetValueOrDefault(),
+                    Realm = folder.DetectedToonIdRealm.GetValueOrDefault(),
+                    Id = folder.DetectedToonIdId.GetValueOrDefault(),
+                })));
+
+        return profiles
+            .GroupBy(profile => new ToonIdKey(profile.ToonId.Region, profile.ToonId.Realm, profile.ToonId.Id))
+            .Select(group => group.First())
+            .ToList();
+    }
+
     private static bool IsValidProfile(Sc2Profile profile)
         => profile.Active && profile.ToonId.Id > 0;
 
-    private static IEnumerable<Sc2Profile> GetTrackedProfiles(IEnumerable<Sc2Profile> profiles, ReplayDto replay)
+    private static bool HasDetectedToonId(MauiReplayFolder folder)
+        => folder.DetectedToonIdId > 0;
+
+    private static IEnumerable<TrackedSessionProfile> GetTrackedProfiles(IEnumerable<TrackedSessionProfile> profiles, ReplayDto replay)
         => profiles.Where(profile => replay.Players.Any(player => MatchesToonId(player.Player.ToonId, profile.ToonId)));
 
     private static SessionProfileRating? GetProfileRating(
-        Sc2Profile profile,
+        TrackedSessionProfile profile,
         ReplayDetails replayDetails,
         ReplayRatingDto? rating)
     {
@@ -274,15 +375,18 @@ public class SessionProgress(
         };
     }
 
-    private static string GetToonKey(ToonId toonId)
+    private static string GetToonKey(ToonIdDto toonId)
         => $"{toonId.Region}:{toonId.Realm}:{toonId.Id}";
 
-    private static bool MatchesToonId(ToonIdDto left, ToonId right)
-        => left.Id == right.Id &&
-           left.Region == right.Region &&
-           left.Realm == right.Realm;
-
     private static ToonIdDto CloneToonId(ToonId toonId)
+        => new()
+        {
+            Id = toonId.Id,
+            Region = toonId.Region,
+            Realm = toonId.Realm,
+        };
+
+    private static ToonIdDto CloneToonId(ToonIdDto toonId)
         => new()
         {
             Id = toonId.Id,
@@ -295,6 +399,10 @@ public class SessionProgress(
 
     private static int NormalizeReplayCount(int replayCount)
         => replayCount is 10 or 20 or 30 or 50 ? replayCount : 10;
+
+    private readonly record struct TrackedSessionProfile(string Name, ToonIdDto ToonId);
+    private readonly record struct ManualFolderDetectionTarget(int MauiReplayFolderId, string Folder);
+    private readonly record struct ToonIdKey(int Region, int Realm, int Id);
 }
 
 public sealed class SessionReplay

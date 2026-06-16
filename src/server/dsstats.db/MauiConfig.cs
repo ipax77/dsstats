@@ -48,6 +48,14 @@ public sealed class MauiReplayFolder
     [MaxLength(200)]
     public string Folder { get; set; } = string.Empty;
     public bool Active { get; set; } = true;
+    [MaxLength(30)]
+    public string? DetectedName { get; set; }
+    public int? DetectedToonIdRegion { get; set; }
+    public int? DetectedToonIdRealm { get; set; }
+    public int? DetectedToonIdId { get; set; }
+    [Precision(0)]
+    public DateTime? DetectedAtUtc { get; set; }
+    public int DetectedReplayCount { get; set; }
     public int MauiConfigId { get; set; }
     public MauiConfig? MauiConfig { get; set; }
 }
@@ -107,11 +115,33 @@ public static class MauiConfigExtensions
         MauiReplayFolderId = entity.MauiReplayFolderId,
         Folder = entity.Folder,
         Active = entity.Active,
+        DetectedName = entity.DetectedName,
+        DetectedToonId = entity.DetectedToonIdId > 0
+            ? new()
+            {
+                Region = entity.DetectedToonIdRegion.GetValueOrDefault(),
+                Realm = entity.DetectedToonIdRealm.GetValueOrDefault(),
+                Id = entity.DetectedToonIdId.GetValueOrDefault(),
+            }
+            : null,
+        DetectedAtUtc = entity.DetectedAtUtc,
+        DetectedReplayCount = entity.DetectedReplayCount,
     };
 }
 
 public static class MauiConfigPersistence
 {
+    public static string NormalizeFolderPath(string folder)
+    {
+        if (string.IsNullOrWhiteSpace(folder))
+        {
+            return string.Empty;
+        }
+
+        return Path.TrimEndingDirectorySeparator(
+            Path.GetFullPath(folder.Trim()));
+    }
+
     public static List<MauiReplayFolderAssignment> ApplyConfig(
         MauiConfig entity,
         MauiConfigDto dto,
@@ -302,12 +332,30 @@ public static class MauiConfigPersistence
         var existingById = existingFolders
             .Where(folder => folder.MauiReplayFolderId > 0)
             .ToDictionary(folder => folder.MauiReplayFolderId);
+        var existingByPath = existingFolders
+            .GroupBy(folder => NormalizeFolderPath(folder.Folder), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
         HashSet<MauiReplayFolder> matchedFolders = [];
+        HashSet<string> matchedPaths = new(StringComparer.OrdinalIgnoreCase);
 
         foreach (var dtoFolder in dto.ManualReplayFolders)
         {
+            var normalizedFolder = NormalizeFolderPath(dtoFolder.Folder);
+            if (string.IsNullOrWhiteSpace(normalizedFolder) || !matchedPaths.Add(normalizedFolder))
+            {
+                continue;
+            }
+
             if (dtoFolder.MauiReplayFolderId > 0 &&
                 existingById.TryGetValue(dtoFolder.MauiReplayFolderId, out var folder) &&
+                matchedFolders.Add(folder))
+            {
+                ApplyManualReplayFolder(folder, dtoFolder);
+                assignments.Add(new(dtoFolder, folder));
+                continue;
+            }
+
+            if (existingByPath.TryGetValue(normalizedFolder, out folder) &&
                 matchedFolders.Add(folder))
             {
                 ApplyManualReplayFolder(folder, dtoFolder);
@@ -339,7 +387,7 @@ public static class MauiConfigPersistence
     {
         var changed = false;
         HashSet<string> manualFolders = entity.ManualReplayFolders
-            .Select(folder => folder.Folder)
+            .Select(folder => NormalizeFolderPath(folder.Folder))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var profile in entity.Sc2Profiles.ToList())
@@ -349,11 +397,12 @@ public static class MauiConfigPersistence
                 continue;
             }
 
-            if (!string.IsNullOrWhiteSpace(profile.Folder) && manualFolders.Add(profile.Folder))
+            var normalizedFolder = NormalizeFolderPath(profile.Folder);
+            if (!string.IsNullOrWhiteSpace(normalizedFolder) && manualFolders.Add(normalizedFolder))
             {
                 entity.ManualReplayFolders.Add(new()
                 {
-                    Folder = profile.Folder,
+                    Folder = normalizedFolder,
                     Active = profile.Active,
                 });
             }
@@ -383,8 +432,47 @@ public static class MauiConfigPersistence
 
     private static void ApplyManualReplayFolder(MauiReplayFolder entity, MauiReplayFolderDto dto)
     {
-        _ = SetIfChanged(entity.Folder, dto.Folder, value => entity.Folder = value);
+        var normalizedFolder = NormalizeFolderPath(dto.Folder);
+        var folderChanged = !string.Equals(entity.Folder, normalizedFolder, StringComparison.OrdinalIgnoreCase);
+        _ = SetIfChanged(entity.Folder, normalizedFolder, value => entity.Folder = value);
+        dto.Folder = normalizedFolder;
         _ = SetIfChanged(entity.Active, dto.Active, value => entity.Active = value);
+
+        if (folderChanged)
+        {
+            ClearDetectedProfile(entity);
+            dto.DetectedName = null;
+            dto.DetectedToonId = null;
+            dto.DetectedAtUtc = null;
+            dto.DetectedReplayCount = 0;
+        }
+    }
+
+    public static bool SetDetectedProfile(
+        MauiReplayFolder entity,
+        string name,
+        ToonIdDto toonId,
+        DateTime detectedAtUtc,
+        int replayCount)
+    {
+        var changed = false;
+        changed |= SetIfChanged(entity.DetectedName, name, value => entity.DetectedName = value);
+        changed |= SetIfChanged(entity.DetectedToonIdRegion, toonId.Region, value => entity.DetectedToonIdRegion = value);
+        changed |= SetIfChanged(entity.DetectedToonIdRealm, toonId.Realm, value => entity.DetectedToonIdRealm = value);
+        changed |= SetIfChanged(entity.DetectedToonIdId, toonId.Id, value => entity.DetectedToonIdId = value);
+        changed |= SetIfChanged(entity.DetectedAtUtc, detectedAtUtc, value => entity.DetectedAtUtc = value);
+        changed |= SetIfChanged(entity.DetectedReplayCount, replayCount, value => entity.DetectedReplayCount = value);
+        return changed;
+    }
+
+    private static void ClearDetectedProfile(MauiReplayFolder entity)
+    {
+        entity.DetectedName = null;
+        entity.DetectedToonIdRegion = null;
+        entity.DetectedToonIdRealm = null;
+        entity.DetectedToonIdId = null;
+        entity.DetectedAtUtc = null;
+        entity.DetectedReplayCount = 0;
     }
 
     private static bool IsValidToonId(ToonId toonId)

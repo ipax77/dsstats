@@ -519,6 +519,26 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.Property<bool>("Active")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("DetectedAtUtc")
+                        .HasPrecision(0)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DetectedName")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DetectedReplayCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("DetectedToonIdId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("DetectedToonIdRealm")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("DetectedToonIdRegion")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Folder")
                         .IsRequired()
                         .HasMaxLength(200)

@@ -41,4 +41,8 @@ public sealed class MauiReplayFolderDto
     public int MauiReplayFolderId { get; set; }
     public string Folder { get; set; } = string.Empty;
     public bool Active { get; set; }
+    public string? DetectedName { get; set; }
+    public ToonIdDto? DetectedToonId { get; set; }
+    public DateTime? DetectedAtUtc { get; set; }
+    public int DetectedReplayCount { get; set; }
 }

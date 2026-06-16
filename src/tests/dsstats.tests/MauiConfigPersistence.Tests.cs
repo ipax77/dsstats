@@ -71,6 +71,143 @@ public sealed class MauiConfigPersistenceTests
     }
 
     [TestMethod]
+    public async Task SaveConfig_NormalizesAndDeduplicatesManualReplayFolders()
+    {
+        await using var fixture = await SqliteFixture.Create();
+        var folder = Path.Combine(Path.GetTempPath(), "dsstats-folder-normalize");
+        var duplicateFolder = folder + Path.DirectorySeparatorChar;
+        var dto = CreateConfig(
+            manualFolders:
+            [
+                CreateManualFolder($" {folder} "),
+                CreateManualFolder(duplicateFolder),
+            ]);
+
+        await SaveConfig(fixture, dto);
+
+        var expectedFolder = MauiConfigPersistence.NormalizeFolderPath(folder);
+        var reloaded = await LoadConfig(fixture);
+        Assert.AreEqual(1, reloaded.ManualReplayFolders.Count);
+        Assert.AreEqual(expectedFolder, reloaded.ManualReplayFolders[0].Folder);
+        Assert.AreEqual(expectedFolder, dto.ManualReplayFolders[0].Folder);
+    }
+
+    [TestMethod]
+    public async Task SaveConfig_PreservesDetectedManualReplayFolderProfile()
+    {
+        await using var fixture = await SqliteFixture.Create();
+        var dto = CreateConfig(
+            manualFolders:
+            [
+                CreateManualFolder(@"C:\Replays\Alpha"),
+            ]);
+
+        await SaveConfig(fixture, dto);
+        await using (var context = fixture.CreateContext())
+        {
+            var folder = await context.ManualReplayFolders.SingleAsync();
+            MauiConfigPersistence.SetDetectedProfile(
+                folder,
+                "Alpha",
+                new() { Region = 1, Realm = 1, Id = 123 },
+                DateTime.UtcNow,
+                replayCount: 2);
+            await context.SaveChangesAsync();
+        }
+
+        var reloaded = await LoadConfig(fixture);
+        await SaveConfig(fixture, reloaded);
+
+        reloaded = await LoadConfig(fixture);
+        var detectedFolder = reloaded.ManualReplayFolders.Single();
+        Assert.AreEqual("Alpha", detectedFolder.DetectedName);
+        Assert.IsNotNull(detectedFolder.DetectedToonId);
+        Assert.AreEqual(123, detectedFolder.DetectedToonId.Id);
+        Assert.AreEqual(2, detectedFolder.DetectedReplayCount);
+    }
+
+    [TestMethod]
+    public async Task SaveConfig_ClearsDetectedManualReplayFolderProfileWhenFolderChanges()
+    {
+        await using var fixture = await SqliteFixture.Create();
+        var dto = CreateConfig(
+            manualFolders:
+            [
+                CreateManualFolder(@"C:\Replays\Alpha"),
+            ]);
+
+        await SaveConfig(fixture, dto);
+        await using (var context = fixture.CreateContext())
+        {
+            var folder = await context.ManualReplayFolders.SingleAsync();
+            MauiConfigPersistence.SetDetectedProfile(
+                folder,
+                "Alpha",
+                new() { Region = 1, Realm = 1, Id = 123 },
+                DateTime.UtcNow,
+                replayCount: 2);
+            await context.SaveChangesAsync();
+        }
+
+        var reloaded = await LoadConfig(fixture);
+        reloaded.ManualReplayFolders[0].Folder = @"C:\Replays\Bravo";
+        await SaveConfig(fixture, reloaded);
+
+        reloaded = await LoadConfig(fixture);
+        var changedFolder = reloaded.ManualReplayFolders.Single();
+        Assert.AreEqual(@"C:\Replays\Bravo", changedFolder.Folder);
+        Assert.IsNull(changedFolder.DetectedName);
+        Assert.IsNull(changedFolder.DetectedToonId);
+        Assert.AreEqual(0, changedFolder.DetectedReplayCount);
+    }
+
+    [TestMethod]
+    public async Task DetectProfileCandidate_UsesStrongestRecentToonIdInsideManualFolder()
+    {
+        await using var fixture = await SqliteFixture.Create();
+        var folder = MauiConfigPersistence.NormalizeFolderPath(
+            Path.Combine(Path.GetTempPath(), "dsstats-manual-detect"));
+        var prefixSiblingFolder = folder + "-sibling";
+
+        await using (var context = fixture.CreateContext())
+        {
+            var alpha = CreatePlayer("Alpha", region: 1, realm: 1, id: 123);
+            var bravo = CreatePlayer("Bravo", region: 1, realm: 1, id: 456);
+            var ignored = CreatePlayer("Ignored", region: 1, realm: 1, id: 789);
+            context.Players.AddRange(alpha, bravo, ignored);
+
+            context.Replays.AddRange(
+                CreateReplay(Path.Combine(folder, "Direct Strike (3).SC2Replay"), DateTime.UtcNow.AddMinutes(-1), alpha),
+                CreateReplay(Path.Combine(folder, "Direct Strike (2).SC2Replay"), DateTime.UtcNow.AddMinutes(-2), alpha),
+                CreateReplay(Path.Combine(folder, "Direct Strike (1).SC2Replay"), DateTime.UtcNow.AddMinutes(-3), bravo),
+                CreateReplay(Path.Combine(prefixSiblingFolder, "Direct Strike (9).SC2Replay"), DateTime.UtcNow, ignored));
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = fixture.CreateContext())
+        {
+            var candidate = await MauiManualReplayFolderDetection.DetectProfileCandidate(context, folder);
+
+            Assert.IsNotNull(candidate);
+            Assert.AreEqual("Alpha", candidate.Name);
+            Assert.AreEqual(123, candidate.ToonId.Id);
+            Assert.AreEqual(2, candidate.ReplayCount);
+        }
+    }
+
+    [TestMethod]
+    public void IsPathInFolder_RejectsSiblingPathWithSamePrefix()
+    {
+        var folder = MauiConfigPersistence.NormalizeFolderPath(
+            Path.Combine(Path.GetTempPath(), "dsstats-prefix"));
+        var inside = Path.Combine(folder, "Direct Strike.SC2Replay");
+        var sibling = Path.Combine(folder + "-sibling", "Direct Strike.SC2Replay");
+
+        Assert.IsTrue(MauiManualReplayFolderDetection.IsPathInFolder(inside, folder));
+        Assert.IsFalse(MauiManualReplayFolderDetection.IsPathInFolder(sibling, folder));
+    }
+
+    [TestMethod]
     public async Task RefreshDiscoveredProfiles_UpsertsByToonIdAndPreservesActive()
     {
         await using var fixture = await SqliteFixture.Create();
@@ -114,7 +251,7 @@ public sealed class MauiConfigPersistenceTests
         {
             Sc2Profiles =
             [
-                CreateEntityProfile("Manual", @"C:\Manual", active: false, region: 0, realm: 0, id: 0),
+                CreateEntityProfile("Manual", $" {Path.Combine(Path.GetTempPath(), "dsstats-manual")}\\", active: false, region: 0, realm: 0, id: 0),
                 CreateEntityProfile("Known", @"C:\Known", active: true, region: 1, realm: 1, id: 123),
             ]
         };
@@ -133,7 +270,9 @@ public sealed class MauiConfigPersistenceTests
         Assert.AreEqual(1, reloaded.Sc2Profiles.Count);
         Assert.AreEqual(123, reloaded.Sc2Profiles[0].ToonId.Id);
         Assert.AreEqual(1, reloaded.ManualReplayFolders.Count);
-        Assert.AreEqual(@"C:\Manual", reloaded.ManualReplayFolders[0].Folder);
+        Assert.AreEqual(
+            MauiConfigPersistence.NormalizeFolderPath(Path.Combine(Path.GetTempPath(), "dsstats-manual")),
+            reloaded.ManualReplayFolders[0].Folder);
         Assert.IsFalse(reloaded.ManualReplayFolders[0].Active);
     }
 
@@ -212,6 +351,46 @@ public sealed class MauiConfigPersistenceTests
                 Realm = realm,
                 Id = id,
             }
+        };
+
+    private static Player CreatePlayer(
+        string name,
+        int region,
+        int realm,
+        int id)
+        => new()
+        {
+            Name = name,
+            ToonId = new()
+            {
+                Region = region,
+                Realm = realm,
+                Id = id,
+            }
+        };
+
+    private static Replay CreateReplay(
+        string fileName,
+        DateTime gametime,
+        params Player[] players)
+        => new()
+        {
+            FileName = fileName,
+            Title = "Direct Strike",
+            Version = "5.0",
+            Gametime = gametime,
+            ReplayHash = Guid.NewGuid().ToString("N"),
+            CompatHash = Guid.NewGuid().ToString("N"),
+            PlayerCount = players.Length,
+            Players = players
+                .Select((player, index) => new ReplayPlayer
+                {
+                    Name = player.Name,
+                    Player = player,
+                    TeamId = index % 2 + 1,
+                    GamePos = index + 1,
+                })
+                .ToList(),
         };
 
     private sealed class SqliteFixture : IAsyncDisposable

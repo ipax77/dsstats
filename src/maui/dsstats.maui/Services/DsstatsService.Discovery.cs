@@ -105,7 +105,7 @@ public sealed partial class DsstatsService
         {
             if (profile.Active && !string.IsNullOrWhiteSpace(profile.Folder))
             {
-                folders.Add(profile.Folder);
+                folders.Add(MauiConfigPersistence.NormalizeFolderPath(profile.Folder));
             }
         }
 
@@ -113,7 +113,7 @@ public sealed partial class DsstatsService
         {
             if (folder.Active && !string.IsNullOrWhiteSpace(folder.Folder))
             {
-                folders.Add(folder.Folder);
+                folders.Add(MauiConfigPersistence.NormalizeFolderPath(folder.Folder));
             }
         }
 
