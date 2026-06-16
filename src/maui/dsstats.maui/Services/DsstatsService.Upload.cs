@@ -223,7 +223,7 @@ public partial class DsstatsService
             new UploadRequestDto
             {
                 AppGuid = appGuid,
-                AppVersion = "ma3.7",
+                AppVersion = "ma3.0.8",
                 RequestNames = requestNames,
                 Replays = replayDtos,
             },
