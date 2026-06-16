@@ -6,11 +6,11 @@
         <div class="row g-3 align-items-end">
             <div class="col-md-4">
                 <label class="form-label">Name</label>
-                <InputText class="form-control" @bind-Value="Profile.Name" />
+                <div class="form-control bg-dark text-light">@Profile.Name</div>
             </div>
             <div class="col-md-5">
                 <label class="form-label">Folder</label>
-                <InputText class="form-control" @bind-Value="Profile.Folder" />
+                <div class="form-control bg-dark text-light text-truncate" title="@Profile.Folder">@Profile.Folder</div>
             </div>
             <div class="col-md-2">
                 <div class="form-check mt-4">
@@ -18,10 +18,8 @@
                     <label class="form-check-label">Active</label>
                 </div>
             </div>
-            <div class="col-md-1 text-end">
-                <button type="button" class="btn btn-outline-danger" @onclick="OnRemoveClicked">
-                    Remove
-                </button>
+            <div class="col-md-1">
+                <div class="small text-muted">@($"{Profile.ToonId.Region}-S2-{Profile.ToonId.Realm}-{Profile.ToonId.Id}")</div>
             </div>
         </div>
     </div>

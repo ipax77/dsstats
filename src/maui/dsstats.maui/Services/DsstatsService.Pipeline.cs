@@ -6,6 +6,7 @@ using dsstats.parser;
 using dsstats.shared;
 using System.IO.Compression;
 using System.Threading.Channels;
+using Microsoft.EntityFrameworkCore;
 
 namespace dsstats.maui.Services;
 
@@ -251,6 +252,8 @@ public sealed partial class DsstatsService
         List<ReplayImportDto> batch,
         CancellationToken ct)
     {
+        await AutoIgnoreDuplicateReplayPathsAsync(batch, ct).ConfigureAwait(false);
+
         await _dbSemaphore.WaitAsync(ct).ConfigureAwait(false);
         try
         {
@@ -262,6 +265,48 @@ public sealed partial class DsstatsService
         {
             _dbSemaphore.Release();
         }
+    }
+
+    private async Task AutoIgnoreDuplicateReplayPathsAsync(
+        List<ReplayImportDto> batch,
+        CancellationToken ct)
+    {
+        if (batch.Count == 0)
+        {
+            return;
+        }
+
+        var replayHashes = batch
+            .Select(import => import.Replay.ComputeHash())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        HashSet<string> existingReplayHashes;
+        using (var scope = scopeFactory.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
+            var hashes = await context.Replays
+                .AsNoTracking()
+                .Where(replay => replayHashes.Contains(replay.ReplayHash))
+                .Select(replay => replay.ReplayHash)
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+
+            existingReplayHashes = hashes.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var config = await GetConfigDto().ConfigureAwait(false);
+        var duplicatePaths = MauiDuplicateReplayPathDetector.GetDuplicateReplayPaths(
+            batch,
+            existingReplayHashes,
+            config.IgnoreReplays);
+        if (duplicatePaths.Length == 0)
+        {
+            return;
+        }
+
+        config.IgnoreReplays = [.. config.IgnoreReplays, .. duplicatePaths];
+        await SaveConfig(config).ConfigureAwait(false);
     }
 
     private static int GetDecodeDegreeOfParallelism(MauiConfig config)

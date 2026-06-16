@@ -77,47 +77,47 @@ public partial class ConfigPage : IDisposable
         await Toast.Make(Loc["Configuration saved successfully"]).Show();
     }
 
-    private void AddProfile()
+    private void AddManualReplayFolder()
     {
         if (mauiConfig is null) return;
 
-        mauiConfig.Sc2Profiles.Add(new Sc2ProfileDto
+        mauiConfig.ManualReplayFolders.Add(new MauiReplayFolderDto
         {
             Active = true,
-            ToonId = new()
+            Folder = string.Empty,
         });
 
         editContext?.NotifyFieldChanged(
-            new FieldIdentifier(mauiConfig, nameof(mauiConfig.Sc2Profiles)));
+            new FieldIdentifier(mauiConfig, nameof(mauiConfig.ManualReplayFolders)));
     }
 
-    private void RemoveProfile(Sc2ProfileDto profile)
+    private void RemoveManualReplayFolder(MauiReplayFolderDto folder)
     {
         if (mauiConfig is null) return;
 
-        mauiConfig.Sc2Profiles.Remove(profile);
+        mauiConfig.ManualReplayFolders.Remove(folder);
 
         editContext?.NotifyFieldChanged(
-            new FieldIdentifier(mauiConfig, nameof(mauiConfig.Sc2Profiles)));
+            new FieldIdentifier(mauiConfig, nameof(mauiConfig.ManualReplayFolders)));
     }
 
     private void RemoveIgnoredReplay(string replayPath)
     {
         if (mauiConfig is null) return;
 
-        mauiConfig.IgnoreReplays = mauiConfig.IgnoreReplays.Where(r => r != replayPath).ToArray();
+        mauiConfig.IgnoreReplays = mauiConfig.IgnoreReplays
+            .Where(r => !string.Equals(r, replayPath, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
 
         editContext?.NotifyFieldChanged(
             new FieldIdentifier(mauiConfig, nameof(mauiConfig.IgnoreReplays)));
     }
 
-    private void RecreateProfilesFromDisk()
+    private void RescanProfilesFromDisk()
     {
         if (mauiConfig is null) return;
 
-        var diskProfiles = DsstatsService.DiscoverProfiles();
-
-        mauiConfig.Sc2Profiles = diskProfiles.Select(s => s.ToDto()).ToList();
+        DsstatsService.RefreshDiscoveredProfiles(mauiConfig);
 
         editContext?.NotifyFieldChanged(
             new FieldIdentifier(mauiConfig, nameof(mauiConfig.Sc2Profiles)));

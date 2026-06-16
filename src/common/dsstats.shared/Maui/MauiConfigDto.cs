@@ -25,6 +25,7 @@ public sealed class MauiConfigDto
     public GameMode SessionWindowGameMode { get; set; } = GameMode.None;
     public bool SessionWindowInitialized { get; set; }
     public List<Sc2ProfileDto> Sc2Profiles { get; set; } = new();
+    public List<MauiReplayFolderDto> ManualReplayFolders { get; set; } = new();
 }
 
 public sealed class Sc2ProfileDto
@@ -33,4 +34,15 @@ public sealed class Sc2ProfileDto
     public string Folder { get; set; } = string.Empty;
     public ToonIdDto ToonId { get; set; } = new();
     public bool Active { get; set; }
+}
+
+public sealed class MauiReplayFolderDto
+{
+    public int MauiReplayFolderId { get; set; }
+    public string Folder { get; set; } = string.Empty;
+    public bool Active { get; set; }
+    public string? DetectedName { get; set; }
+    public ToonIdDto? DetectedToonId { get; set; }
+    public DateTime? DetectedAtUtc { get; set; }
+    public int DetectedReplayCount { get; set; }
 }

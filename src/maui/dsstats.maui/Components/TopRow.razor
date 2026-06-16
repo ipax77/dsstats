@@ -130,6 +130,7 @@
 	{
 		// Defensive: ensure clean state if page is recreated
 		ImportState.OnChange += OnImportStateChanged;
+		DsstatsService.IgnoreReplaysChanged += OnIgnoreReplaysChanged;
 		_ = GetDecodeStatus();
 	}
 
@@ -148,6 +149,11 @@
 	private async void OnImportStateChanged()
 	{
 		await InvokeAsync(StateHasChanged);
+	}
+
+	private async void OnIgnoreReplaysChanged(object? sender, EventArgs e)
+	{
+		await InvokeAsync(GetDecodeStatus);
 	}
 
 	private async Task GetDecodeStatus()
@@ -283,5 +289,6 @@
 	public void Dispose()
 	{
 		ImportState.OnChange -= OnImportStateChanged;
+		DsstatsService.IgnoreReplaysChanged -= OnIgnoreReplaysChanged;
 	}
 }

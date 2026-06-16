@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using dsstats.db;
 
@@ -10,9 +11,11 @@ using dsstats.db;
 namespace dsstats.migrations.sqlite.Migrations
 {
     [DbContext(typeof(DsstatsContext))]
-    partial class DsstatsContextModelSnapshot : ModelSnapshot
+    [Migration("20260616071058_MauiManualReplayFolders")]
+    partial class MauiManualReplayFolders
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.17");
@@ -517,26 +520,6 @@ namespace dsstats.migrations.sqlite.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("Active")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("DetectedAtUtc")
-                        .HasPrecision(0)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DetectedName")
-                        .HasMaxLength(30)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("DetectedReplayCount")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("DetectedToonIdId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("DetectedToonIdRealm")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("DetectedToonIdRegion")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Folder")
