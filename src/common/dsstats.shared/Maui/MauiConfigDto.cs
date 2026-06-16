@@ -29,6 +29,7 @@ public sealed class MauiConfigDto
 
 public sealed class Sc2ProfileDto
 {
+    public int Sc2ProfileId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Folder { get; set; } = string.Empty;
     public ToonIdDto ToonId { get; set; } = new();

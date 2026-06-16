@@ -89,17 +89,19 @@ public partial class DsstatsService
             if (dbConfig == null)
             {
                 dbConfig = new MauiConfig();
-                ApplyConfig(dbConfig, dto, context);
+                var newProfileIdAssignments = MauiConfigPersistence.ApplyConfig(dbConfig, dto, context);
 
                 context.MauiConfig.Add(dbConfig);
                 await context.SaveChangesAsync();
+                MauiConfigPersistence.SyncGeneratedProfileIds(newProfileIdAssignments);
                 return;
             }
 
             bool cultureChanged = dbConfig.Culture != dto.Culture;
 
-            ApplyConfig(dbConfig, dto, context);
+            var profileIdAssignments = MauiConfigPersistence.ApplyConfig(dbConfig, dto, context);
             await context.SaveChangesAsync();
+            MauiConfigPersistence.SyncGeneratedProfileIds(profileIdAssignments);
 
             if (cultureChanged)
             {
@@ -109,87 +111,6 @@ public partial class DsstatsService
         finally
         {
             configSemaphore.Release();
-        }
-    }
-
-
-    private static void ApplyConfig(MauiConfig entity, MauiConfigDto dto, DsstatsContext context)
-    {
-        // Scalar values
-        entity.Version = dto.Version;
-        entity.CPUCores = dto.CPUCores;
-        entity.AutoDecode = dto.AutoDecode;
-        entity.CheckForUpdates = dto.CheckForUpdates;
-        entity.UploadCredential = dto.UploadCredential;
-        entity.ReplayStartName = dto.ReplayStartName;
-        entity.Culture = dto.Culture;
-        entity.UploadAskTime = dto.UploadAskTime;
-        entity.IgnoreReplays = dto.IgnoreReplays;
-        entity.SessionWindowMode = dto.SessionWindowMode is MauiSessionWindowMode.Time or MauiSessionWindowMode.Count
-            ? dto.SessionWindowMode
-            : MauiSessionWindowMode.Time;
-        entity.SessionWindowHours = dto.SessionWindowHours switch
-        {
-            3 or 6 or 12 or 24 => dto.SessionWindowHours,
-            _ => 6,
-        };
-        entity.SessionWindowReplayCount = dto.SessionWindowReplayCount switch
-        {
-            10 or 20 or 30 or 50 => dto.SessionWindowReplayCount,
-            _ => 10,
-        };
-        entity.SessionWindowGameMode = Enum.IsDefined(dto.SessionWindowGameMode)
-            ? dto.SessionWindowGameMode
-            : dsstats.shared.GameMode.None;
-        entity.SessionWindowInitialized = dto.SessionWindowInitialized;
-
-        // Update profiles: remove missing
-        foreach (var existing in entity.Sc2Profiles.ToList())
-        {
-            bool stillPresent = dto.Sc2Profiles.Any(p =>
-                p.ToonId.Region == existing.ToonId.Region &&
-                p.ToonId.Realm == existing.ToonId.Realm &&
-                p.ToonId.Id == existing.ToonId.Id);
-
-            if (!stillPresent)
-            {
-                context.Sc2Profiles.Remove(existing);
-            }
-        }
-
-        // Add or update
-        foreach (var dtoProfile in dto.Sc2Profiles)
-        {
-            var existing = entity.Sc2Profiles.FirstOrDefault(p =>
-                p.ToonId.Region == dtoProfile.ToonId.Region &&
-                p.ToonId.Realm == dtoProfile.ToonId.Realm &&
-                p.ToonId.Id == dtoProfile.ToonId.Id);
-
-            if (existing == null)
-            {
-                entity.Sc2Profiles.Add(new Sc2Profile
-                {
-                    Name = dtoProfile.Name,
-                    Folder = dtoProfile.Folder,
-                    Active = dtoProfile.Active,
-                    ToonId = new ToonId
-                    {
-                        Region = dtoProfile.ToonId.Region,
-                        Realm = dtoProfile.ToonId.Realm,
-                        Id = dtoProfile.ToonId.Id
-                    }
-                });
-            }
-            else
-            {
-                existing.Name = dtoProfile.Name;
-                existing.Folder = dtoProfile.Folder;
-                existing.Active = dtoProfile.Active;
-
-                existing.ToonId.Region = dtoProfile.ToonId.Region;
-                existing.ToonId.Realm = dtoProfile.ToonId.Realm;
-                existing.ToonId.Id = dtoProfile.ToonId.Id;
-            }
         }
     }
 
