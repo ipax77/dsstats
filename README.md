@@ -33,6 +33,13 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
+<details open="open"><summary>v3.0.9</summary>
+
+>- Fix maui profiles - allow adding custom folders
+>- Fix display of ignored replays
+
+</details>
+
 <details open="open"><summary>v3.0.8</summary>
 
 >- Replay build life and cost

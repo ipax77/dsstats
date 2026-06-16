@@ -105,7 +105,9 @@ public partial class ConfigPage : IDisposable
     {
         if (mauiConfig is null) return;
 
-        mauiConfig.IgnoreReplays = mauiConfig.IgnoreReplays.Where(r => r != replayPath).ToArray();
+        mauiConfig.IgnoreReplays = mauiConfig.IgnoreReplays
+            .Where(r => !string.Equals(r, replayPath, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
 
         editContext?.NotifyFieldChanged(
             new FieldIdentifier(mauiConfig, nameof(mauiConfig.IgnoreReplays)));

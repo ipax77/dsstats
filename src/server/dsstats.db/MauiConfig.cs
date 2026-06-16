@@ -142,6 +142,23 @@ public static class MauiConfigPersistence
             Path.GetFullPath(folder.Trim()));
     }
 
+    public static string NormalizeReplayPath(string replayPath)
+    {
+        if (string.IsNullOrWhiteSpace(replayPath))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            return Path.GetFullPath(replayPath.Trim());
+        }
+        catch (Exception)
+        {
+            return replayPath.Trim();
+        }
+    }
+
     public static List<MauiReplayFolderAssignment> ApplyConfig(
         MauiConfig entity,
         MauiConfigDto dto,
@@ -268,10 +285,18 @@ public static class MauiConfigPersistence
         _ = SetIfChanged(entity.Culture, dto.Culture, value => entity.Culture = value);
         _ = SetIfChanged(entity.UploadAskTime, dto.UploadAskTime, value => entity.UploadAskTime = value);
 
-        if (!entity.IgnoreReplays.SequenceEqual(dto.IgnoreReplays))
+        var ignoreReplays = dto.IgnoreReplays
+            .Select(NormalizeReplayPath)
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (!entity.IgnoreReplays.SequenceEqual(ignoreReplays, StringComparer.OrdinalIgnoreCase))
         {
-            entity.IgnoreReplays = dto.IgnoreReplays;
+            entity.IgnoreReplays = ignoreReplays;
         }
+        dto.IgnoreReplays = ignoreReplays;
 
         var sessionWindowMode = dto.SessionWindowMode is MauiSessionWindowMode.Time or MauiSessionWindowMode.Count
             ? dto.SessionWindowMode

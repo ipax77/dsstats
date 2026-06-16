@@ -9,12 +9,18 @@ namespace dsstats.maui.Services;
 public partial class DsstatsService
 {
     public event EventHandler? CultureChanged;
+    public event EventHandler? IgnoreReplaysChanged;
     private readonly SemaphoreSlim configSemaphore = new(1, 1);
     private bool sc2ProfilesRefreshedFromDisk;
 
     private void OnCultureChanged()
     {
         CultureChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnIgnoreReplaysChanged()
+    {
+        IgnoreReplaysChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task<MauiConfig> GetConfig()
@@ -53,6 +59,8 @@ public partial class DsstatsService
 
     public async Task SaveConfig(MauiConfigDto dto)
     {
+        bool ignoreReplaysChanged = false;
+        bool configSaved = false;
         await configSemaphore.WaitAsync();
         try
         {
@@ -68,19 +76,29 @@ public partial class DsstatsService
             {
                 dbConfig = new MauiConfig();
                 MauiConfigPersistence.RefreshDiscoveredProfileDtos(dto, GetInitialNamesAndFolders());
+                var previousIgnoreReplays = dbConfig.IgnoreReplays.ToArray();
                 var newFolderIdAssignments = MauiConfigPersistence.ApplyConfig(dbConfig, dto, context);
+                ignoreReplaysChanged = !previousIgnoreReplays.SequenceEqual(
+                    dbConfig.IgnoreReplays,
+                    StringComparer.OrdinalIgnoreCase);
 
                 context.MauiConfig.Add(dbConfig);
                 await context.SaveChangesAsync();
+                configSaved = true;
                 MauiConfigPersistence.SyncGeneratedManualReplayFolderIds(newFolderIdAssignments);
                 sc2ProfilesRefreshedFromDisk = true;
                 return;
             }
 
             bool cultureChanged = dbConfig.Culture != dto.Culture;
+            var oldIgnoreReplays = dbConfig.IgnoreReplays.ToArray();
 
             var folderIdAssignments = MauiConfigPersistence.ApplyConfig(dbConfig, dto, context);
+            ignoreReplaysChanged = !oldIgnoreReplays.SequenceEqual(
+                dbConfig.IgnoreReplays,
+                StringComparer.OrdinalIgnoreCase);
             await context.SaveChangesAsync();
+            configSaved = true;
             MauiConfigPersistence.SyncGeneratedManualReplayFolderIds(folderIdAssignments);
 
             if (cultureChanged)
@@ -91,6 +109,11 @@ public partial class DsstatsService
         finally
         {
             configSemaphore.Release();
+
+            if (configSaved && ignoreReplaysChanged)
+            {
+                OnIgnoreReplaysChanged();
+            }
         }
     }
 
@@ -156,7 +179,8 @@ public partial class DsstatsService
 
     public static List<Sc2Profile> GetInitialNamesAndFolders()
     {
-        var sc2Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Starcraft II");
+        // var sc2Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Starcraft II");
+        var sc2Dir = "C:\\Users\\pax77\\OneDrive\\Dokumente\\StarCraft II";
         Dictionary<(int Region, int Realm, int Id), Sc2Profile> profiles = [];
 
         if (Directory.Exists(sc2Dir))

@@ -93,6 +93,27 @@ public sealed class MauiConfigPersistenceTests
     }
 
     [TestMethod]
+    public async Task SaveConfig_NormalizesAndDeduplicatesIgnoredReplays()
+    {
+        await using var fixture = await SqliteFixture.Create();
+        var replayPath = Path.Combine(Path.GetTempPath(), "dsstats-ignored", "Direct Strike 3817.SC2Replay");
+        var dto = CreateConfig();
+        dto.IgnoreReplays =
+        [
+            $" {replayPath} ",
+            replayPath.ToUpperInvariant(),
+        ];
+
+        await SaveConfig(fixture, dto);
+
+        var expectedReplayPath = MauiConfigPersistence.NormalizeReplayPath(replayPath);
+        var reloaded = await LoadConfig(fixture);
+        Assert.AreEqual(1, reloaded.IgnoreReplays.Length);
+        Assert.AreEqual(expectedReplayPath, reloaded.IgnoreReplays[0]);
+        Assert.AreEqual(expectedReplayPath, dto.IgnoreReplays[0]);
+    }
+
+    [TestMethod]
     public async Task SaveConfig_PreservesDetectedManualReplayFolderProfile()
     {
         await using var fixture = await SqliteFixture.Create();

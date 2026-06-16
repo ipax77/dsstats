@@ -139,7 +139,7 @@ public sealed class DsstatsServiceConfigTests
 
             AppOptions config = new()
             {
-                IgnoreReplays = [newestIgnored],
+                IgnoreReplays = [newestIgnored.ToUpperInvariant()],
                 Sc2Profiles =
                 [
                     new()
