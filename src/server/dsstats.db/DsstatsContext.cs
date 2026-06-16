@@ -53,6 +53,7 @@ public class DsstatsContext : DbContext
 
     public DbSet<MauiConfig> MauiConfig { get; set; }
     public DbSet<Sc2Profile> Sc2Profiles { get; set; }
+    public DbSet<MauiReplayFolder> ManualReplayFolders { get; set; }
     public DbSet<InHouseUser> InHouseUsers { get; set; }
     public DbSet<InHousePasskeyCredential> InHousePasskeyCredentials { get; set; }
     public DbSet<InHouseProfile> InHouseProfiles { get; set; }
@@ -109,6 +110,11 @@ public class DsstatsContext : DbContext
             });
 
             entity.HasIndex(i => i.Name);
+        });
+
+        modelBuilder.Entity<MauiReplayFolder>(entity =>
+        {
+            entity.HasIndex(i => i.Folder);
         });
 
         modelBuilder.Entity<InHouseUser>(entity =>

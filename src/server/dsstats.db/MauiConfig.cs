@@ -26,6 +26,7 @@ public sealed class MauiConfig
     public GameMode SessionWindowGameMode { get; set; } = GameMode.None;
     public bool SessionWindowInitialized { get; set; }
     public ICollection<Sc2Profile> Sc2Profiles { get; set; } = [];
+    public ICollection<MauiReplayFolder> ManualReplayFolders { get; set; } = [];
 }
 
 public sealed class Sc2Profile
@@ -41,11 +42,22 @@ public sealed class Sc2Profile
     public MauiConfig? MauiConfig { get; set; }
 }
 
+public sealed class MauiReplayFolder
+{
+    public int MauiReplayFolderId { get; set; }
+    [MaxLength(200)]
+    public string Folder { get; set; } = string.Empty;
+    public bool Active { get; set; } = true;
+    public int MauiConfigId { get; set; }
+    public MauiConfig? MauiConfig { get; set; }
+}
+
 public static class MauiConfigExtensions
 {
     public static List<ToonIdDto> GetToonIdDtos(this MauiConfig config)
     {
         return config.Sc2Profiles
+            .Where(p => p.ToonId.Id > 0)
             .Select(p => new ToonIdDto
             {
                 Region = p.ToonId.Region,
@@ -72,12 +84,13 @@ public static class MauiConfigExtensions
         SessionWindowGameMode = entity.SessionWindowGameMode,
         SessionWindowInitialized = entity.SessionWindowInitialized,
         Sc2Profiles = entity.Sc2Profiles
-        .Select(p => p.ToDto()).ToList()
+            .Select(p => p.ToDto()).ToList(),
+        ManualReplayFolders = entity.ManualReplayFolders
+            .Select(p => p.ToDto()).ToList()
     };
 
     public static Sc2ProfileDto ToDto(this Sc2Profile entity) => new()
     {
-        Sc2ProfileId = entity.Sc2ProfileId,
         Name = entity.Name,
         Folder = entity.Folder,
         Active = entity.Active,
@@ -88,37 +101,142 @@ public static class MauiConfigExtensions
             Id = entity.ToonId.Id
         }
     };
+
+    public static MauiReplayFolderDto ToDto(this MauiReplayFolder entity) => new()
+    {
+        MauiReplayFolderId = entity.MauiReplayFolderId,
+        Folder = entity.Folder,
+        Active = entity.Active,
+    };
 }
 
 public static class MauiConfigPersistence
 {
-    public static List<Sc2ProfileIdentityAssignment> ApplyConfig(
+    public static List<MauiReplayFolderAssignment> ApplyConfig(
         MauiConfig entity,
         MauiConfigDto dto,
         DsstatsContext context)
     {
         ApplyScalars(entity, dto);
-        return ApplyProfiles(entity, dto, context);
+        ApplySc2ProfileActivation(entity, dto);
+        return ApplyManualReplayFolders(entity, dto, context);
     }
 
-    public static void SyncGeneratedProfileIds(IEnumerable<Sc2ProfileIdentityAssignment> assignments)
+    public static bool RefreshDiscoveredProfiles(
+        MauiConfig entity,
+        IEnumerable<Sc2Profile> discoveredProfiles,
+        DsstatsContext context)
+    {
+        var changed = MigrateInvalidProfilesToManualReplayFolders(entity, context);
+        var discoveredByToonId = BuildValidToonIdLookup(discoveredProfiles);
+        var existingProfiles = entity.Sc2Profiles.ToList();
+        var existingByToonId = BuildValidToonIdLookup(existingProfiles);
+        HashSet<Sc2Profile> matchedProfiles = [];
+
+        foreach (var discoveredEntry in discoveredByToonId)
+        {
+            var key = discoveredEntry.Key;
+            var discoveredProfile = discoveredEntry.Value;
+            if (existingByToonId.TryGetValue(key, out var existingProfile))
+            {
+                matchedProfiles.Add(existingProfile);
+                changed |= SetIfChanged(existingProfile.Name, discoveredProfile.Name, value => existingProfile.Name = value);
+                changed |= SetIfChanged(existingProfile.Folder, discoveredProfile.Folder, value => existingProfile.Folder = value);
+                continue;
+            }
+
+            var newProfile = new Sc2Profile
+            {
+                Name = discoveredProfile.Name,
+                Folder = discoveredProfile.Folder,
+                Active = true,
+                ToonId = new ToonId
+                {
+                    Region = discoveredProfile.ToonId.Region,
+                    Realm = discoveredProfile.ToonId.Realm,
+                    Id = discoveredProfile.ToonId.Id,
+                }
+            };
+            entity.Sc2Profiles.Add(newProfile);
+            matchedProfiles.Add(newProfile);
+            changed = true;
+        }
+
+        foreach (var existingProfile in existingProfiles)
+        {
+            if (!IsValidToonId(existingProfile.ToonId))
+            {
+                continue;
+            }
+
+            if (!matchedProfiles.Contains(existingProfile))
+            {
+                context.Sc2Profiles.Remove(existingProfile);
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
+    public static void RefreshDiscoveredProfileDtos(
+        MauiConfigDto dto,
+        IEnumerable<Sc2Profile> discoveredProfiles)
+    {
+        var existingByToonId = dto.Sc2Profiles
+            .Where(profile => IsValidToonId(profile.ToonId))
+            .ToDictionary(profile => new ToonIdKey(profile.ToonId.Region, profile.ToonId.Realm, profile.ToonId.Id));
+
+        List<Sc2ProfileDto> profiles = [];
+        foreach (var discoveredProfile in discoveredProfiles)
+        {
+            if (!IsValidToonId(discoveredProfile.ToonId))
+            {
+                continue;
+            }
+
+            var key = new ToonIdKey(
+                discoveredProfile.ToonId.Region,
+                discoveredProfile.ToonId.Realm,
+                discoveredProfile.ToonId.Id);
+
+            profiles.Add(new()
+            {
+                Name = discoveredProfile.Name,
+                Folder = discoveredProfile.Folder,
+                Active = existingByToonId.TryGetValue(key, out var existingProfile)
+                    ? existingProfile.Active
+                    : discoveredProfile.Active,
+                ToonId = new()
+                {
+                    Region = key.Region,
+                    Realm = key.Realm,
+                    Id = key.Id,
+                }
+            });
+        }
+
+        dto.Sc2Profiles = profiles;
+    }
+
+    public static void SyncGeneratedManualReplayFolderIds(IEnumerable<MauiReplayFolderAssignment> assignments)
     {
         foreach (var assignment in assignments)
         {
-            assignment.Dto.Sc2ProfileId = assignment.Entity.Sc2ProfileId;
+            assignment.Dto.MauiReplayFolderId = assignment.Entity.MauiReplayFolderId;
         }
     }
 
     private static void ApplyScalars(MauiConfig entity, MauiConfigDto dto)
     {
-        SetIfChanged(entity.Version, dto.Version, value => entity.Version = value);
-        SetIfChanged(entity.CPUCores, dto.CPUCores, value => entity.CPUCores = value);
-        SetIfChanged(entity.AutoDecode, dto.AutoDecode, value => entity.AutoDecode = value);
-        SetIfChanged(entity.CheckForUpdates, dto.CheckForUpdates, value => entity.CheckForUpdates = value);
-        SetIfChanged(entity.UploadCredential, dto.UploadCredential, value => entity.UploadCredential = value);
-        SetIfChanged(entity.ReplayStartName, dto.ReplayStartName, value => entity.ReplayStartName = value);
-        SetIfChanged(entity.Culture, dto.Culture, value => entity.Culture = value);
-        SetIfChanged(entity.UploadAskTime, dto.UploadAskTime, value => entity.UploadAskTime = value);
+        _ = SetIfChanged(entity.Version, dto.Version, value => entity.Version = value);
+        _ = SetIfChanged(entity.CPUCores, dto.CPUCores, value => entity.CPUCores = value);
+        _ = SetIfChanged(entity.AutoDecode, dto.AutoDecode, value => entity.AutoDecode = value);
+        _ = SetIfChanged(entity.CheckForUpdates, dto.CheckForUpdates, value => entity.CheckForUpdates = value);
+        _ = SetIfChanged(entity.UploadCredential, dto.UploadCredential, value => entity.UploadCredential = value);
+        _ = SetIfChanged(entity.ReplayStartName, dto.ReplayStartName, value => entity.ReplayStartName = value);
+        _ = SetIfChanged(entity.Culture, dto.Culture, value => entity.Culture = value);
+        _ = SetIfChanged(entity.UploadAskTime, dto.UploadAskTime, value => entity.UploadAskTime = value);
 
         if (!entity.IgnoreReplays.SequenceEqual(dto.IgnoreReplays))
         {
@@ -128,72 +246,123 @@ public static class MauiConfigPersistence
         var sessionWindowMode = dto.SessionWindowMode is MauiSessionWindowMode.Time or MauiSessionWindowMode.Count
             ? dto.SessionWindowMode
             : MauiSessionWindowMode.Time;
-        SetIfChanged(entity.SessionWindowMode, sessionWindowMode, value => entity.SessionWindowMode = value);
+        _ = SetIfChanged(entity.SessionWindowMode, sessionWindowMode, value => entity.SessionWindowMode = value);
 
         var sessionWindowHours = dto.SessionWindowHours switch
         {
             3 or 6 or 12 or 24 => dto.SessionWindowHours,
             _ => 6,
         };
-        SetIfChanged(entity.SessionWindowHours, sessionWindowHours, value => entity.SessionWindowHours = value);
+        _ = SetIfChanged(entity.SessionWindowHours, sessionWindowHours, value => entity.SessionWindowHours = value);
 
         var sessionWindowReplayCount = dto.SessionWindowReplayCount switch
         {
             10 or 20 or 30 or 50 => dto.SessionWindowReplayCount,
             _ => 10,
         };
-        SetIfChanged(entity.SessionWindowReplayCount, sessionWindowReplayCount, value => entity.SessionWindowReplayCount = value);
+        _ = SetIfChanged(entity.SessionWindowReplayCount, sessionWindowReplayCount, value => entity.SessionWindowReplayCount = value);
 
         var sessionWindowGameMode = Enum.IsDefined(dto.SessionWindowGameMode)
             ? dto.SessionWindowGameMode
             : GameMode.None;
-        SetIfChanged(entity.SessionWindowGameMode, sessionWindowGameMode, value => entity.SessionWindowGameMode = value);
-        SetIfChanged(entity.SessionWindowInitialized, dto.SessionWindowInitialized, value => entity.SessionWindowInitialized = value);
+        _ = SetIfChanged(entity.SessionWindowGameMode, sessionWindowGameMode, value => entity.SessionWindowGameMode = value);
+        _ = SetIfChanged(entity.SessionWindowInitialized, dto.SessionWindowInitialized, value => entity.SessionWindowInitialized = value);
     }
 
-    private static List<Sc2ProfileIdentityAssignment> ApplyProfiles(
+    private static void ApplySc2ProfileActivation(MauiConfig entity, MauiConfigDto dto)
+    {
+        var activeByToonId = dto.Sc2Profiles
+            .Where(profile => IsValidToonId(profile.ToonId))
+            .ToDictionary(
+                profile => new ToonIdKey(profile.ToonId.Region, profile.ToonId.Realm, profile.ToonId.Id),
+                profile => profile.Active);
+
+        foreach (var profile in entity.Sc2Profiles)
+        {
+            if (!IsValidToonId(profile.ToonId))
+            {
+                continue;
+            }
+
+            var key = new ToonIdKey(profile.ToonId.Region, profile.ToonId.Realm, profile.ToonId.Id);
+            if (activeByToonId.TryGetValue(key, out var active))
+            {
+                _ = SetIfChanged(profile.Active, active, value => profile.Active = value);
+            }
+        }
+    }
+
+    private static List<MauiReplayFolderAssignment> ApplyManualReplayFolders(
         MauiConfig entity,
         MauiConfigDto dto,
         DsstatsContext context)
     {
-        var assignments = new List<Sc2ProfileIdentityAssignment>();
-        var existingProfiles = entity.Sc2Profiles.ToList();
-        var existingById = existingProfiles
-            .Where(profile => profile.Sc2ProfileId > 0)
-            .ToDictionary(profile => profile.Sc2ProfileId);
-        var existingByToonId = BuildValidToonIdLookup(existingProfiles);
-        var matchedProfiles = new HashSet<Sc2Profile>();
+        var assignments = new List<MauiReplayFolderAssignment>();
+        var existingFolders = entity.ManualReplayFolders.ToList();
+        var existingById = existingFolders
+            .Where(folder => folder.MauiReplayFolderId > 0)
+            .ToDictionary(folder => folder.MauiReplayFolderId);
+        HashSet<MauiReplayFolder> matchedFolders = [];
 
-        foreach (var dtoProfile in dto.Sc2Profiles)
+        foreach (var dtoFolder in dto.ManualReplayFolders)
         {
-            var profile = FindExistingProfile(dtoProfile, existingById, existingByToonId);
-
-            if (profile is not null && matchedProfiles.Add(profile))
+            if (dtoFolder.MauiReplayFolderId > 0 &&
+                existingById.TryGetValue(dtoFolder.MauiReplayFolderId, out var folder) &&
+                matchedFolders.Add(folder))
             {
-                ApplyProfile(profile, dtoProfile);
-                assignments.Add(new(dtoProfile, profile));
+                ApplyManualReplayFolder(folder, dtoFolder);
+                assignments.Add(new(dtoFolder, folder));
                 continue;
             }
 
-            profile = new Sc2Profile
-            {
-                ToonId = new ToonId()
-            };
-            ApplyProfile(profile, dtoProfile);
-            entity.Sc2Profiles.Add(profile);
-            matchedProfiles.Add(profile);
-            assignments.Add(new(dtoProfile, profile));
+            folder = new MauiReplayFolder();
+            ApplyManualReplayFolder(folder, dtoFolder);
+            entity.ManualReplayFolders.Add(folder);
+            matchedFolders.Add(folder);
+            assignments.Add(new(dtoFolder, folder));
         }
 
-        foreach (var existing in existingProfiles)
+        foreach (var existingFolder in existingFolders)
         {
-            if (!matchedProfiles.Contains(existing))
+            if (!matchedFolders.Contains(existingFolder))
             {
-                context.Sc2Profiles.Remove(existing);
+                context.Set<MauiReplayFolder>().Remove(existingFolder);
             }
         }
 
         return assignments;
+    }
+
+    private static bool MigrateInvalidProfilesToManualReplayFolders(
+        MauiConfig entity,
+        DsstatsContext context)
+    {
+        var changed = false;
+        HashSet<string> manualFolders = entity.ManualReplayFolders
+            .Select(folder => folder.Folder)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var profile in entity.Sc2Profiles.ToList())
+        {
+            if (IsValidToonId(profile.ToonId))
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(profile.Folder) && manualFolders.Add(profile.Folder))
+            {
+                entity.ManualReplayFolders.Add(new()
+                {
+                    Folder = profile.Folder,
+                    Active = profile.Active,
+                });
+            }
+
+            context.Sc2Profiles.Remove(profile);
+            changed = true;
+        }
+
+        return changed;
     }
 
     private static Dictionary<ToonIdKey, Sc2Profile> BuildValidToonIdLookup(IEnumerable<Sc2Profile> profiles)
@@ -201,69 +370,43 @@ public static class MauiConfigPersistence
         Dictionary<ToonIdKey, Sc2Profile> profilesByToonId = [];
         foreach (var profile in profiles)
         {
-            if (!TryGetValidToonIdKey(profile.ToonId, out var key))
+            if (!IsValidToonId(profile.ToonId))
             {
                 continue;
             }
 
-            profilesByToonId.TryAdd(key, profile);
+            profilesByToonId.TryAdd(new(profile.ToonId.Region, profile.ToonId.Realm, profile.ToonId.Id), profile);
         }
 
         return profilesByToonId;
     }
 
-    private static Sc2Profile? FindExistingProfile(
-        Sc2ProfileDto dtoProfile,
-        IReadOnlyDictionary<int, Sc2Profile> existingById,
-        IReadOnlyDictionary<ToonIdKey, Sc2Profile> existingByToonId)
+    private static void ApplyManualReplayFolder(MauiReplayFolder entity, MauiReplayFolderDto dto)
     {
-        if (dtoProfile.Sc2ProfileId > 0 &&
-            existingById.TryGetValue(dtoProfile.Sc2ProfileId, out var existingByIdProfile))
+        _ = SetIfChanged(entity.Folder, dto.Folder, value => entity.Folder = value);
+        _ = SetIfChanged(entity.Active, dto.Active, value => entity.Active = value);
+    }
+
+    private static bool IsValidToonId(ToonId toonId)
+        => toonId.Id > 0;
+
+    private static bool IsValidToonId(ToonIdDto toonId)
+        => toonId.Id > 0;
+
+    private static bool SetIfChanged<T>(T currentValue, T newValue, Action<T> setValue)
+    {
+        if (EqualityComparer<T>.Default.Equals(currentValue, newValue))
         {
-            return existingByIdProfile;
+            return false;
         }
 
-        return TryGetValidToonIdKey(dtoProfile.ToonId, out var key) &&
-            existingByToonId.TryGetValue(key, out var existingByToonIdProfile)
-            ? existingByToonIdProfile
-            : null;
-    }
-
-    private static void ApplyProfile(Sc2Profile entity, Sc2ProfileDto dto)
-    {
-        SetIfChanged(entity.Name, dto.Name, value => entity.Name = value);
-        SetIfChanged(entity.Folder, dto.Folder, value => entity.Folder = value);
-        SetIfChanged(entity.Active, dto.Active, value => entity.Active = value);
-
-        entity.ToonId ??= new ToonId();
-        SetIfChanged(entity.ToonId.Region, dto.ToonId.Region, value => entity.ToonId.Region = value);
-        SetIfChanged(entity.ToonId.Realm, dto.ToonId.Realm, value => entity.ToonId.Realm = value);
-        SetIfChanged(entity.ToonId.Id, dto.ToonId.Id, value => entity.ToonId.Id = value);
-    }
-
-    private static bool TryGetValidToonIdKey(ToonId toonId, out ToonIdKey key)
-    {
-        key = new(toonId.Region, toonId.Realm, toonId.Id);
-        return toonId.Id > 0;
-    }
-
-    private static bool TryGetValidToonIdKey(ToonIdDto toonId, out ToonIdKey key)
-    {
-        key = new(toonId.Region, toonId.Realm, toonId.Id);
-        return toonId.Id > 0;
-    }
-
-    private static void SetIfChanged<T>(T currentValue, T newValue, Action<T> setValue)
-    {
-        if (!EqualityComparer<T>.Default.Equals(currentValue, newValue))
-        {
-            setValue(newValue);
-        }
+        setValue(newValue);
+        return true;
     }
 
     private readonly record struct ToonIdKey(int Region, int Realm, int Id);
 }
 
-public readonly record struct Sc2ProfileIdentityAssignment(
-    Sc2ProfileDto Dto,
-    Sc2Profile Entity);
+public readonly record struct MauiReplayFolderAssignment(
+    MauiReplayFolderDto Dto,
+    MauiReplayFolder Entity);

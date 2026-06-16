@@ -10,6 +10,7 @@ public partial class DsstatsService
 {
     public event EventHandler? CultureChanged;
     private readonly SemaphoreSlim configSemaphore = new(1, 1);
+    private bool sc2ProfilesRefreshedFromDisk;
 
     private void OnCultureChanged()
     {
@@ -24,19 +25,7 @@ public partial class DsstatsService
             using var scope = scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
 
-            var config = await context.MauiConfig
-                .Include(i => i.Sc2Profiles)
-                .AsNoTracking()
-                .OrderBy(o => o.MauiConfigId)
-                .FirstOrDefaultAsync();
-
-            if (config is null)
-            {
-                config = new();
-                config.Sc2Profiles = GetInitialNamesAndFolders();
-                context.MauiConfig.Add(config);
-                await context.SaveChangesAsync();
-            }
+            var config = await GetOrCreateConfig(context);
             return config;
         }
         finally
@@ -53,19 +42,7 @@ public partial class DsstatsService
             using var scope = scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<DsstatsContext>();
 
-            var config = await context.MauiConfig
-                .Include(i => i.Sc2Profiles)
-                .AsNoTracking()
-                .OrderBy(o => o.MauiConfigId)
-                .FirstOrDefaultAsync();
-
-            if (config is null)
-            {
-                config = new();
-                config.Sc2Profiles = GetInitialNamesAndFolders();
-                context.MauiConfig.Add(config);
-                await context.SaveChangesAsync();
-            }
+            var config = await GetOrCreateConfig(context);
             return config.ToDto();
         }
         finally
@@ -84,24 +61,27 @@ public partial class DsstatsService
 
             var dbConfig = await context.MauiConfig
                 .Include(c => c.Sc2Profiles)
+                .Include(c => c.ManualReplayFolders)
                 .FirstOrDefaultAsync();
 
             if (dbConfig == null)
             {
                 dbConfig = new MauiConfig();
-                var newProfileIdAssignments = MauiConfigPersistence.ApplyConfig(dbConfig, dto, context);
+                MauiConfigPersistence.RefreshDiscoveredProfileDtos(dto, GetInitialNamesAndFolders());
+                var newFolderIdAssignments = MauiConfigPersistence.ApplyConfig(dbConfig, dto, context);
 
                 context.MauiConfig.Add(dbConfig);
                 await context.SaveChangesAsync();
-                MauiConfigPersistence.SyncGeneratedProfileIds(newProfileIdAssignments);
+                MauiConfigPersistence.SyncGeneratedManualReplayFolderIds(newFolderIdAssignments);
+                sc2ProfilesRefreshedFromDisk = true;
                 return;
             }
 
             bool cultureChanged = dbConfig.Culture != dto.Culture;
 
-            var profileIdAssignments = MauiConfigPersistence.ApplyConfig(dbConfig, dto, context);
+            var folderIdAssignments = MauiConfigPersistence.ApplyConfig(dbConfig, dto, context);
             await context.SaveChangesAsync();
-            MauiConfigPersistence.SyncGeneratedProfileIds(profileIdAssignments);
+            MauiConfigPersistence.SyncGeneratedManualReplayFolderIds(folderIdAssignments);
 
             if (cultureChanged)
             {
@@ -112,6 +92,47 @@ public partial class DsstatsService
         {
             configSemaphore.Release();
         }
+    }
+
+    public void RefreshDiscoveredProfiles(MauiConfigDto dto)
+    {
+        MauiConfigPersistence.RefreshDiscoveredProfileDtos(dto, GetInitialNamesAndFolders());
+    }
+
+    private async Task<MauiConfig> GetOrCreateConfig(DsstatsContext context)
+    {
+        var config = await context.MauiConfig
+            .Include(i => i.Sc2Profiles)
+            .Include(i => i.ManualReplayFolders)
+            .OrderBy(o => o.MauiConfigId)
+            .FirstOrDefaultAsync();
+
+        if (config is null)
+        {
+            config = new();
+            config.Sc2Profiles = GetInitialNamesAndFolders();
+            context.MauiConfig.Add(config);
+            await context.SaveChangesAsync();
+            sc2ProfilesRefreshedFromDisk = true;
+            return config;
+        }
+
+        if (!sc2ProfilesRefreshedFromDisk)
+        {
+            var changed = MauiConfigPersistence.RefreshDiscoveredProfiles(
+                config,
+                GetInitialNamesAndFolders(),
+                context);
+
+            if (changed)
+            {
+                await context.SaveChangesAsync();
+            }
+
+            sc2ProfilesRefreshedFromDisk = true;
+        }
+
+        return config;
     }
 
 
@@ -136,7 +157,7 @@ public partial class DsstatsService
     public static List<Sc2Profile> GetInitialNamesAndFolders()
     {
         var sc2Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Starcraft II");
-        HashSet<Sc2Profile> profiles = [];
+        Dictionary<(int Region, int Realm, int Id), Sc2Profile> profiles = [];
 
         if (Directory.Exists(sc2Dir))
         {
@@ -175,10 +196,12 @@ public partial class DsstatsService
                 {
                     continue;
                 }
-                profiles.Add(profile);
+                profiles.TryAdd(
+                    (profile.ToonId.Region, profile.ToonId.Realm, profile.ToonId.Id),
+                    profile);
             }
         }
-        return profiles.ToList();
+        return profiles.Values.ToList();
     }
 
     private static ToonId? GetPlayerIdFromFolder(string folder)

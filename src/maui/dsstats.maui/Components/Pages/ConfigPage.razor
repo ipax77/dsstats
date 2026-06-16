@@ -61,18 +61,31 @@
 
 					@foreach (var profile in mauiConfig.Sc2Profiles.OrderBy(o => o.Name).ThenBy(o => o.ToonId.Region))
 					{
-						<ProfileEditor @key="profile" Profile="profile" OnRemove="RemoveProfile" />
+						<ProfileEditor @key="profile" Profile="profile" />
+					}
+
+					<button type="button"
+							class="btn btn-outline-secondary"
+							@onclick="RescanProfilesFromDisk">
+						@Loc["Rescan SC2 Profiles from Disk"]
+					</button>
+				</fieldset>
+
+				<!-- Manual Replay Folders -->
+				<fieldset class="mb-4">
+					<legend class="h5">
+						@Loc["Manual Replay Folders"]
+					</legend>
+
+					@foreach (var folder in mauiConfig.ManualReplayFolders.OrderBy(o => o.Folder))
+					{
+						<ManualReplayFolderEditor @key="folder" Folder="folder" OnRemove="RemoveManualReplayFolder" />
 					}
 
 					<button type="button"
 							class="btn btn-outline-primary"
-							@onclick="AddProfile">
-						@Loc["Add Profile"]
-					</button>
-					<button type="button"
-							class="btn btn-outline-secondary"
-							@onclick="RecreateProfilesFromDisk">
-						@Loc["Recreate Profiles from Disk"]
+							@onclick="AddManualReplayFolder">
+						@Loc["Add Folder"]
 					</button>
 				</fieldset>
 

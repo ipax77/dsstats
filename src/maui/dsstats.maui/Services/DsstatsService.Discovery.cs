@@ -26,9 +26,7 @@ public sealed partial class DsstatsService
             var existingReplays = await GetExistingReplayPathsAsync(token).ConfigureAwait(false);
             existingReplaysCount = existingReplays.Count;
 
-            var folders = config.Sc2Profiles
-                .Where(x => x.Active)
-                .Select(s => s.Folder).ToHashSet();
+            var folders = GetActiveReplayFolders(config);
 
             List<FileInfo> fileInfos = [];
             foreach (var folder in folders)
@@ -74,7 +72,7 @@ public sealed partial class DsstatsService
     public void StartWatching(MauiConfigDto config)
     {
         WatchService?.NewFileDetected -= ReplayDetected;
-        WatchService = new(config.Sc2Profiles.Select(s => s.Folder), config.ReplayStartName);
+        WatchService = new(GetActiveReplayFolders(config), config.ReplayStartName);
         WatchService.NewFileDetected += ReplayDetected;
         WatchService.WatchForNewReplays();
     }
@@ -97,6 +95,29 @@ public sealed partial class DsstatsService
             .Select(x => x.FileName!)
             .ToHashSetAsync(ct)
             .ConfigureAwait(false);
+    }
+
+    private static HashSet<string> GetActiveReplayFolders(MauiConfigDto config)
+    {
+        HashSet<string> folders = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var profile in config.Sc2Profiles)
+        {
+            if (profile.Active && !string.IsNullOrWhiteSpace(profile.Folder))
+            {
+                folders.Add(profile.Folder);
+            }
+        }
+
+        foreach (var folder in config.ManualReplayFolders)
+        {
+            if (folder.Active && !string.IsNullOrWhiteSpace(folder.Folder))
+            {
+                folders.Add(folder.Folder);
+            }
+        }
+
+        return folders;
     }
 
     #endregion
