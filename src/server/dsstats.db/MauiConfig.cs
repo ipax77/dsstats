@@ -523,3 +523,72 @@ public static class MauiConfigPersistence
 public readonly record struct MauiReplayFolderAssignment(
     MauiReplayFolderDto Dto,
     MauiReplayFolder Entity);
+
+public static class MauiDuplicateReplayPathDetector
+{
+    public static string[] GetDuplicateReplayPaths(
+        IReadOnlyCollection<ReplayImportDto> imports,
+        IReadOnlySet<string> existingReplayHashes,
+        IEnumerable<string> ignoreReplays)
+    {
+        if (imports.Count == 0)
+        {
+            return [];
+        }
+
+        HashSet<string> ignoredPaths = ignoreReplays
+            .Select(MauiConfigPersistence.NormalizeReplayPath)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> importedReplayHashes = existingReplayHashes
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> duplicatePaths = new(StringComparer.OrdinalIgnoreCase);
+        List<ReplayImportCandidate> candidates = new(imports.Count);
+
+        var index = 0;
+        foreach (var import in imports)
+        {
+            var path = MauiConfigPersistence.NormalizeReplayPath(import.Replay.FileName);
+            if (string.IsNullOrWhiteSpace(path) || ignoredPaths.Contains(path))
+            {
+                index++;
+                continue;
+            }
+
+            var replayHash = import.Replay.ComputeHash();
+            candidates.Add(new(replayHash, path, import.Replay.Duration, index++));
+        }
+
+        foreach (var candidate in candidates)
+        {
+            if (importedReplayHashes.Contains(candidate.ReplayHash))
+            {
+                duplicatePaths.Add(candidate.Path);
+            }
+        }
+
+        foreach (var group in candidates
+            .Where(candidate => !importedReplayHashes.Contains(candidate.ReplayHash))
+            .GroupBy(candidate => candidate.ReplayHash, StringComparer.OrdinalIgnoreCase))
+        {
+            var keeper = group
+                .OrderByDescending(candidate => candidate.Duration)
+                .ThenBy(candidate => candidate.Index)
+                .First();
+
+            foreach (var duplicate in group.Where(candidate => candidate.Index != keeper.Index))
+            {
+                duplicatePaths.Add(duplicate.Path);
+            }
+        }
+
+        return duplicatePaths
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private sealed record ReplayImportCandidate(
+        string ReplayHash,
+        string Path,
+        int Duration,
+        int Index);
+}

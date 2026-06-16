@@ -1,4 +1,5 @@
 using dsstats.db;
+using dsstats.shared;
 using dsstats.shared.Maui;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -111,6 +112,56 @@ public sealed class MauiConfigPersistenceTests
         Assert.AreEqual(1, reloaded.IgnoreReplays.Length);
         Assert.AreEqual(expectedReplayPath, reloaded.IgnoreReplays[0]);
         Assert.AreEqual(expectedReplayPath, dto.IgnoreReplays[0]);
+    }
+
+    [TestMethod]
+    public void DuplicateReplayPathDetector_FindsReplayAlreadyImportedFromAnotherPath()
+    {
+        var duplicatePath = Path.Combine(Path.GetTempPath(), "dsstats-manual", "Direct Strike 3817.SC2Replay");
+        var import = CreateReplayImport(duplicatePath, duration: 900);
+        var replayHash = import.Replay.ComputeHash();
+
+        var duplicatePaths = MauiDuplicateReplayPathDetector.GetDuplicateReplayPaths(
+            [import],
+            new HashSet<string>([replayHash], StringComparer.OrdinalIgnoreCase),
+            []);
+
+        CollectionAssert.AreEqual(
+            new[] { MauiConfigPersistence.NormalizeReplayPath(duplicatePath) },
+            duplicatePaths);
+    }
+
+    [TestMethod]
+    public void DuplicateReplayPathDetector_FindsNonKeeperDuplicateInsideBatch()
+    {
+        var keeperPath = Path.Combine(Path.GetTempPath(), "dsstats-manual", "Direct Strike keeper.SC2Replay");
+        var duplicatePath = Path.Combine(Path.GetTempPath(), "dsstats-manual", "Direct Strike duplicate.SC2Replay");
+        var keeper = CreateReplayImport(keeperPath, duration: 900);
+        var duplicate = CreateReplayImport(duplicatePath, duration: 800);
+
+        var duplicatePaths = MauiDuplicateReplayPathDetector.GetDuplicateReplayPaths(
+            [keeper, duplicate],
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+            []);
+
+        CollectionAssert.AreEqual(
+            new[] { MauiConfigPersistence.NormalizeReplayPath(duplicatePath) },
+            duplicatePaths);
+    }
+
+    [TestMethod]
+    public void DuplicateReplayPathDetector_SkipsAlreadyIgnoredDuplicatePath()
+    {
+        var duplicatePath = Path.Combine(Path.GetTempPath(), "dsstats-manual", "Direct Strike ignored.SC2Replay");
+        var import = CreateReplayImport(duplicatePath, duration: 900);
+        var replayHash = import.Replay.ComputeHash();
+
+        var duplicatePaths = MauiDuplicateReplayPathDetector.GetDuplicateReplayPaths(
+            [import],
+            new HashSet<string>([replayHash], StringComparer.OrdinalIgnoreCase),
+            [duplicatePath.ToUpperInvariant()]);
+
+        Assert.AreEqual(0, duplicatePaths.Length);
     }
 
     [TestMethod]
@@ -345,6 +396,50 @@ public sealed class MauiConfigPersistenceTests
             Culture = "en",
             Sc2Profiles = sc2Profiles?.ToList() ?? [],
             ManualReplayFolders = manualFolders?.ToList() ?? [],
+        };
+
+    private static ReplayImportDto CreateReplayImport(string fileName, int duration)
+        => new(
+            new ReplayDto
+            {
+                FileName = fileName,
+                Title = "Direct Strike",
+                Version = "5.0.14",
+                GameMode = GameMode.Standard,
+                RegionId = 1,
+                Gametime = new DateTime(2026, 6, 16, 12, 0, 0, DateTimeKind.Utc),
+                Duration = duration,
+                WinnerTeam = 1,
+                Players =
+                [
+                    CreateReplayImportPlayer(1),
+                    CreateReplayImportPlayer(2),
+                    CreateReplayImportPlayer(3),
+                    CreateReplayImportPlayer(4),
+                ],
+            },
+            null);
+
+    private static ReplayPlayerDto CreateReplayImportPlayer(int gamePos)
+        => new()
+        {
+            Name = $"Player{gamePos}",
+            Race = Commander.Terran,
+            SelectedRace = Commander.Terran,
+            GamePos = gamePos,
+            TeamId = gamePos <= 2 ? 1 : 2,
+            Result = gamePos <= 2 ? PlayerResult.Win : PlayerResult.Los,
+            Duration = 900,
+            Player = new()
+            {
+                Name = $"Player{gamePos}",
+                ToonId = new()
+                {
+                    Region = 1,
+                    Realm = 1,
+                    Id = gamePos,
+                }
+            }
         };
 
     private static MauiReplayFolderDto CreateManualFolder(string folder)

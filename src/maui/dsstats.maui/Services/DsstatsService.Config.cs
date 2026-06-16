@@ -179,8 +179,7 @@ public partial class DsstatsService
 
     public static List<Sc2Profile> GetInitialNamesAndFolders()
     {
-        // var sc2Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Starcraft II");
-        var sc2Dir = "C:\\Users\\pax77\\OneDrive\\Dokumente\\StarCraft II";
+        var sc2Dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Starcraft II");
         Dictionary<(int Region, int Realm, int Id), Sc2Profile> profiles = [];
 
         if (Directory.Exists(sc2Dir))
