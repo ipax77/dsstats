@@ -190,6 +190,7 @@ public enum TerranBuild
     Banshees = 5,
     RavenViking = 6,
     LibBio = 7,
+    Ghost = 8,
 }
 
 public enum ZergBuild

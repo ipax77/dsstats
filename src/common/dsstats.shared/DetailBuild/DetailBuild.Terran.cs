@@ -7,6 +7,7 @@ public static partial class DetailBuilds
     private static TerranBuild DetectTerranBuild(SpawnDto spawnDto)
     {
         const int BansheeThreshold = 3;
+        const int GhostThreshold = 3;
         const int RavenVikingRavenThreshold = 2;
         const int RavenVikingVikingThreshold = 4;
         const int DominantSharePercent = 60;
@@ -57,6 +58,11 @@ public static partial class DetailBuilds
             return TerranBuild.RavenViking;
         }
 
+        if (composition.GhostCount >= GhostThreshold)
+        {
+            return TerranBuild.Ghost;
+        }
+
         if (composition.BioCount >= 2
             && IsAtLeastShare(composition.BioWeight, composition.TotalWeight, DominantSharePercent))
         {
@@ -84,7 +90,7 @@ public static partial class DetailBuilds
             "Marauder" => new TerranUnitProfile(TerranUnitKind.Bio, 1),
             "Reaper" => new TerranUnitProfile(TerranUnitKind.Bio, 1),
             "Medivac" => new TerranUnitProfile(TerranUnitKind.Bio, 1),
-            "Ghost" => new TerranUnitProfile(TerranUnitKind.Bio, 1),
+            "Ghost" => new TerranUnitProfile(TerranUnitKind.Ghost, 1),
             "Raven" => new TerranUnitProfile(TerranUnitKind.Raven, 2),
             "Viking" => new TerranUnitProfile(TerranUnitKind.Viking, 2),
             "Widow Mine" => new TerranUnitProfile(TerranUnitKind.Mech, 2),
@@ -106,6 +112,7 @@ public static partial class DetailBuilds
     {
         Unknown,
         Bio,
+        Ghost,
         Mech,
         Banshee,
         Raven,
@@ -124,6 +131,7 @@ public static partial class DetailBuilds
         public int BansheeWeight;
         public int RavenVikingWeight;
         public int BioCount;
+        public int GhostCount;
         public int BansheeCount;
         public int RavenCount;
         public int VikingCount;
@@ -138,6 +146,11 @@ public static partial class DetailBuilds
             switch (profile.Kind)
             {
                 case TerranUnitKind.Bio:
+                    BioCount += count;
+                    BioWeight += weight;
+                    break;
+                case TerranUnitKind.Ghost:
+                    GhostCount += count;
                     BioCount += count;
                     BioWeight += weight;
                     break;

@@ -10,7 +10,7 @@ public sealed class BuildDetailGenerationService(
     IDbContextFactory<DsstatsContext> contextFactory,
     ILogger<BuildDetailGenerationService> logger)
 {
-    public const int CurrentDetectionVersion = 1;
+    public const int CurrentDetectionVersion = 2;
     public const int DefaultBatchSize = 500;
     private readonly SemaphoreSlim processingLock = new(1, 1);
 
@@ -142,19 +142,9 @@ public sealed class BuildDetailGenerationService(
         var spawnIds = spawnRows.Select(x => x.SpawnId).ToArray();
         var unitRows = await GetSpawnUnits(context, spawnIds, token);
 
-        var playersByReplay = playerRows
-            .GroupBy(x => x.ReplayId)
-            .ToDictionary(x => x.Key, x => x.OrderBy(p => p.GamePos).ToList());
-        var spawnsByPlayer = spawnRows
-            .GroupBy(x => x.ReplayPlayerId)
-            .ToDictionary(x => x.Key, x => x.OrderBy(s => s.SpawnId).First());
-        var unitsBySpawn = unitRows
-            .GroupBy(x => x.SpawnId)
-            .ToDictionary(x => x.Key, x => x.Select(u => new UnitDto
-            {
-                Name = u.UnitName,
-                Count = u.Count
-            }).ToList());
+        var playersByReplay = BuildPlayersByReplay(playerRows, replayRows.Count);
+        var spawnsByPlayer = BuildSpawnsByPlayer(spawnRows, playerRows.Count);
+        var unitsBySpawn = BuildUnitsBySpawn(unitRows, spawnRows.Count);
 
         var createdAt = DateTime.UtcNow;
         var details = new List<ReplayBuildDetail>(replayRows.Count);
@@ -194,28 +184,37 @@ public sealed class BuildDetailGenerationService(
 
         if (details.Count > 0)
         {
-            var detailReplayIds = details.Select(x => x.ReplayId).ToArray();
-            var existingReplayIds = await context.ReplayBuildDetails
+            await using var transaction = await context.Database.BeginTransactionAsync(token);
+            var detailReplayIds = ToReplayIdArray(details);
+
+            await context.ReplayBuildDetails
+                .Where(x => detailReplayIds.Contains(x.ReplayId)
+                    && x.DetectionVersion != CurrentDetectionVersion)
+                .ExecuteDeleteAsync(token);
+
+            var currentReplayIds = await context.ReplayBuildDetails
                 .AsNoTracking()
                 .Where(x => detailReplayIds.Contains(x.ReplayId))
                 .Select(x => x.ReplayId)
                 .ToListAsync(token);
 
-            if (existingReplayIds.Count > 0)
+            if (currentReplayIds.Count > 0)
             {
-                var existingReplayIdSet = existingReplayIds.ToHashSet();
-                details.RemoveAll(x => existingReplayIdSet.Contains(x.ReplayId));
+                var currentReplayIdSet = currentReplayIds.ToHashSet();
+                details.RemoveAll(x => currentReplayIdSet.Contains(x.ReplayId));
             }
-        }
 
-        if (details.Count > 0)
-        {
             var autoDetectChanges = context.ChangeTracker.AutoDetectChangesEnabled;
             context.ChangeTracker.AutoDetectChangesEnabled = false;
             try
             {
-                context.ReplayBuildDetails.AddRange(details);
-                await context.SaveChangesAsync(token);
+                if (details.Count > 0)
+                {
+                    context.ReplayBuildDetails.AddRange(details);
+                    await context.SaveChangesAsync(token);
+                }
+
+                await transaction.CommitAsync(token);
             }
             finally
             {
@@ -236,7 +235,9 @@ public sealed class BuildDetailGenerationService(
             .Where(r => r.GameMode == GameMode.Standard
                 && r.WinnerTeam > 0
                 && r.PlayerCount == 6
-                && !context.ReplayBuildDetails.Any(d => d.ReplayId == r.ReplayId))
+                && !context.ReplayBuildDetails.Any(d =>
+                    d.ReplayId == r.ReplayId
+                    && d.DetectionVersion == CurrentDetectionVersion))
             .OrderBy(r => r.ReplayId)
             .Select(r => new CandidateReplayRow(
                 r.ReplayId,
@@ -262,6 +263,8 @@ public sealed class BuildDetailGenerationService(
         return context.ReplayPlayers
             .AsNoTracking()
             .Where(p => replayIds.Contains(p.ReplayId))
+            .OrderBy(p => p.ReplayId)
+            .ThenBy(p => p.GamePos)
             .Select(p => new CandidatePlayerRow(
                 p.ReplayPlayerId,
                 p.ReplayId,
@@ -286,6 +289,8 @@ public sealed class BuildDetailGenerationService(
             .AsNoTracking()
             .Where(s => replayPlayerIds.Contains(s.ReplayPlayerId)
                 && s.Breakpoint == Breakpoint.Min5)
+            .OrderBy(s => s.ReplayPlayerId)
+            .ThenBy(s => s.SpawnId)
             .Select(s => new Min5SpawnRow(s.SpawnId, s.ReplayPlayerId, s.GasCount))
             .ToListAsync(token);
     }
@@ -298,6 +303,7 @@ public sealed class BuildDetailGenerationService(
         return context.SpawnUnits
             .AsNoTracking()
             .Where(su => spawnIds.Contains(su.SpawnId))
+            .OrderBy(su => su.SpawnId)
             .Select(su => new SpawnUnitRow(
                 su.SpawnId,
                 su.Unit!.Name,
@@ -323,8 +329,88 @@ public sealed class BuildDetailGenerationService(
             Cannon = replay.Cannon,
             Bunker = replay.Bunker,
             WinnerTeam = replay.WinnerTeam,
-            Players = players.Select(p => CreatePlayerDto(p, spawnsByPlayer, unitsBySpawn)).ToList()
+            Players = CreatePlayerDtos(players, spawnsByPlayer, unitsBySpawn)
         };
+    }
+
+    private static Dictionary<int, List<CandidatePlayerRow>> BuildPlayersByReplay(
+        List<CandidatePlayerRow> playerRows,
+        int replayCount)
+    {
+        var playersByReplay = new Dictionary<int, List<CandidatePlayerRow>>(replayCount);
+        foreach (var player in playerRows)
+        {
+            if (!playersByReplay.TryGetValue(player.ReplayId, out var players))
+            {
+                players = new List<CandidatePlayerRow>(6);
+                playersByReplay.Add(player.ReplayId, players);
+            }
+
+            players.Add(player);
+        }
+
+        return playersByReplay;
+    }
+
+    private static Dictionary<int, Min5SpawnRow> BuildSpawnsByPlayer(
+        List<Min5SpawnRow> spawnRows,
+        int playerCount)
+    {
+        var spawnsByPlayer = new Dictionary<int, Min5SpawnRow>(playerCount);
+        foreach (var spawn in spawnRows)
+        {
+            spawnsByPlayer.TryAdd(spawn.ReplayPlayerId, spawn);
+        }
+
+        return spawnsByPlayer;
+    }
+
+    private static Dictionary<int, List<UnitDto>> BuildUnitsBySpawn(
+        List<SpawnUnitRow> unitRows,
+        int spawnCount)
+    {
+        var unitsBySpawn = new Dictionary<int, List<UnitDto>>(spawnCount);
+        foreach (var unit in unitRows)
+        {
+            if (!unitsBySpawn.TryGetValue(unit.SpawnId, out var units))
+            {
+                units = [];
+                unitsBySpawn.Add(unit.SpawnId, units);
+            }
+
+            units.Add(new UnitDto
+            {
+                Name = unit.UnitName,
+                Count = unit.Count
+            });
+        }
+
+        return unitsBySpawn;
+    }
+
+    private static int[] ToReplayIdArray(List<ReplayBuildDetail> details)
+    {
+        var replayIds = new int[details.Count];
+        for (var i = 0; i < details.Count; i++)
+        {
+            replayIds[i] = details[i].ReplayId;
+        }
+
+        return replayIds;
+    }
+
+    private static List<ReplayPlayerDto> CreatePlayerDtos(
+        List<CandidatePlayerRow> players,
+        Dictionary<int, Min5SpawnRow> spawnsByPlayer,
+        Dictionary<int, List<UnitDto>> unitsBySpawn)
+    {
+        var playerDtos = new List<ReplayPlayerDto>(players.Count);
+        foreach (var player in players)
+        {
+            playerDtos.Add(CreatePlayerDto(player, spawnsByPlayer, unitsBySpawn));
+        }
+
+        return playerDtos;
     }
 
     private static ReplayPlayerDto CreatePlayerDto(
@@ -380,7 +466,12 @@ public sealed class BuildDetailGenerationService(
         ReplayBuildDetails details,
         DateTime createdAt)
     {
-        var replayPlayerByGamePos = replayPlayers.ToDictionary(x => x.GamePos);
+        var replayPlayerByGamePos = new Dictionary<int, CandidatePlayerRow>(replayPlayers.Count);
+        foreach (var replayPlayer in replayPlayers)
+        {
+            replayPlayerByGamePos.Add(replayPlayer.GamePos, replayPlayer);
+        }
+
         var buildDetail = new ReplayBuildDetail
         {
             ReplayId = replayId,

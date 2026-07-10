@@ -69,6 +69,59 @@ public sealed class BuildDetailGenerationServiceTests
     }
 
     [TestMethod]
+    public async Task ProcessPendingBatchAsync_ReplacesStaleDetectionVersion()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedDetectableReplayAsync(
+            terranPlayer2Units:
+            [
+                ("Marine", 19),
+                ("Ghost", 3),
+                ("Hellion", 3)
+            ]);
+        await fixture.SeedBuildDetailAsync(detectionVersion: 1);
+
+        var result = await fixture.Service.ProcessPendingBatchAsync();
+        fixture.Context.ChangeTracker.Clear();
+
+        Assert.AreEqual(1, result.Candidates);
+        Assert.AreEqual(1, result.Detected);
+        Assert.AreEqual(0, result.NotDetectable);
+        Assert.AreEqual(1, await fixture.Context.ReplayBuildDetails.CountAsync());
+        Assert.AreEqual(6, await fixture.Context.ReplayPlayerBuildDetails.CountAsync());
+
+        var detail = await fixture.Context.ReplayBuildDetails
+            .Include(x => x.PlayerBuilds)
+            .SingleAsync();
+        var ghostTerran = detail.PlayerBuilds.Single(x => x.GamePos == 2);
+
+        Assert.AreEqual(BuildDetailGenerationService.CurrentDetectionVersion, detail.DetectionVersion);
+        Assert.AreEqual((int)TerranBuild.Ghost, ghostTerran.Build);
+    }
+
+    [TestMethod]
+    public async Task ProcessPendingBatchAsync_SkipsCurrentDetectionVersion()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedDetectableReplayAsync();
+        await fixture.SeedBuildDetailAsync(
+            detectionVersion: BuildDetailGenerationService.CurrentDetectionVersion,
+            status: ReplayBuildDetailStatus.NotDetectable,
+            failureReason: "already current");
+
+        var result = await fixture.Service.ProcessPendingBatchAsync();
+        fixture.Context.ChangeTracker.Clear();
+
+        Assert.AreEqual(0, result.Candidates);
+
+        var detail = await fixture.Context.ReplayBuildDetails.SingleAsync();
+        Assert.AreEqual(BuildDetailGenerationService.CurrentDetectionVersion, detail.DetectionVersion);
+        Assert.AreEqual(ReplayBuildDetailStatus.NotDetectable, detail.Status);
+        Assert.AreEqual("already current", detail.FailureReason);
+        Assert.AreEqual(0, await fixture.Context.ReplayPlayerBuildDetails.CountAsync());
+    }
+
+    [TestMethod]
     public async Task ProcessPendingBatchAsync_DetectsNonTeStandardReplay()
     {
         await using var fixture = await TestFixture.CreateAsync();
@@ -154,7 +207,10 @@ public sealed class BuildDetailGenerationServiceTests
             return new TestFixture(connection, context, service);
         }
 
-        public async Task SeedDetectableReplayAsync(bool withMin5Spawns = true, bool te = true)
+        public async Task SeedDetectableReplayAsync(
+            bool withMin5Spawns = true,
+            bool te = true,
+            (string Unit, int Count)[]? terranPlayer2Units = null)
         {
             var replay = new Replay
             {
@@ -179,7 +235,7 @@ public sealed class BuildDetailGenerationServiceTests
             Context.Replays.Add(replay);
 
             AddPlayer(1, 101, Commander.Protoss, PlayerResult.Win, withMin5Spawns, [("Stalker", 5)]);
-            AddPlayer(2, 102, Commander.Terran, PlayerResult.Win, withMin5Spawns, [("Marine", 8), ("Marauder", 2)]);
+            AddPlayer(2, 102, Commander.Terran, PlayerResult.Win, withMin5Spawns, terranPlayer2Units ?? [("Marine", 8), ("Marauder", 2)]);
             AddPlayer(3, 103, Commander.Zerg, PlayerResult.Win, withMin5Spawns, [("Roach", 4), ("Queen", 3)]);
             AddPlayer(4, 104, Commander.Terran, PlayerResult.Los, withMin5Spawns, [("Marine", 8)]);
             AddPlayer(5, 105, Commander.Zerg, PlayerResult.Los, withMin5Spawns, [("Hydralisk", 6)]);
@@ -212,6 +268,44 @@ public sealed class BuildDetailGenerationServiceTests
                 });
             }
 
+            await Context.SaveChangesAsync();
+        }
+
+        public async Task SeedBuildDetailAsync(
+            int detectionVersion,
+            ReplayBuildDetailStatus status = ReplayBuildDetailStatus.Detected,
+            string? failureReason = null)
+        {
+            var createdAt = new DateTime(2026, 1, 1, 0, 2, 0);
+            var buildDetail = new ReplayBuildDetail
+            {
+                ReplayId = 1,
+                DetectionVersion = detectionVersion,
+                Status = status,
+                CreatedAt = createdAt,
+                UpdatedAt = createdAt,
+                FailureReason = failureReason
+            };
+
+            if (status == ReplayBuildDetailStatus.Detected)
+            {
+                buildDetail.PlayerBuilds.Add(new ReplayPlayerBuildDetail
+                {
+                    ReplayPlayerId = 102,
+                    OppReplayPlayerId = 105,
+                    GamePos = 2,
+                    TeamId = 1,
+                    Commander = Commander.Terran,
+                    Build = (int)TerranBuild.Bio,
+                    Lane = 2,
+                    OppGamePos = 5,
+                    OppCommander = Commander.Zerg,
+                    OppBuild = (int)ZergBuild.Hydras,
+                    Won = true
+                });
+            }
+
+            Context.ReplayBuildDetails.Add(buildDetail);
             await Context.SaveChangesAsync();
         }
 

@@ -134,6 +134,64 @@ public sealed class BuildDetectTests
     }
 
     [TestMethod]
+    public void CanDetectTerranGhostBuild()
+    {
+        AssertTerranBuild(
+            TerranBuild.Ghost,
+            new UnitDto { Name = "Marine", Count = 19 },
+            new UnitDto { Name = "Ghost", Count = 3 },
+            new UnitDto { Name = "Hellion", Count = 3 });
+    }
+
+    [TestMethod]
+    public void TwoTerranGhostsDoNotClassifyAsGhost()
+    {
+        AssertTerranBuild(
+            TerranBuild.Bio,
+            new UnitDto { Name = "Marine", Count = 7 },
+            new UnitDto { Name = "Hellion", Count = 6 },
+            new UnitDto { Name = "Marauder", Count = 6 },
+            new UnitDto { Name = "Ghost", Count = 2 },
+            new UnitDto { Name = "Reaper", Count = 2 });
+    }
+
+    [TestMethod]
+    public void CanDetectTerranGhostBuildFromNormalizedAliases()
+    {
+        AssertTerranBuild(
+            TerranBuild.Ghost,
+            new UnitDto { Name = "GhostAlternate", Count = 2 },
+            new UnitDto { Name = "GhostNova", Count = 1 },
+            new UnitDto { Name = "MarineLightweight", Count = 4 });
+    }
+
+    [TestMethod]
+    public void TerranGhostDoesNotOverrideHigherPriorityBuilds()
+    {
+        AssertTerranBuild(
+            TerranBuild.BC,
+            new UnitDto { Name = "Battlecruiser", Count = 1 },
+            new UnitDto { Name = "Ghost", Count = 3 });
+
+        AssertTerranBuild(
+            TerranBuild.LibBio,
+            new UnitDto { Name = "Liberator", Count = 1 },
+            new UnitDto { Name = "MarineLightweight", Count = 12 },
+            new UnitDto { Name = "Ghost", Count = 3 });
+
+        AssertTerranBuild(
+            TerranBuild.Banshees,
+            new UnitDto { Name = "Banshee", Count = 6 },
+            new UnitDto { Name = "Ghost", Count = 3 });
+
+        AssertTerranBuild(
+            TerranBuild.RavenViking,
+            new UnitDto { Name = "Raven", Count = 4 },
+            new UnitDto { Name = "Viking", Count = 4 },
+            new UnitDto { Name = "Ghost", Count = 3 });
+    }
+
+    [TestMethod]
     public void CanDetectTerranBanshees()
     {
         AssertTerranBuild(TerranBuild.Banshees, new UnitDto { Name = "Banshee", Count = 3 });
