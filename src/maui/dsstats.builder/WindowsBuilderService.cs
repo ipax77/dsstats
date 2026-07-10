@@ -11,29 +11,26 @@ public sealed class WindowsBuilderService : IBuilderService
     public bool Supports(Commander commander) => IsAvailable && BuilderUnitCatalog.IsSupported(commander);
 
     public Task BuildAsync(BuilderRequest request, CancellationToken cancellationToken = default)
+        => BuildAsync([request], cancellationToken);
+
+    public Task BuildAsync(IReadOnlyList<BuilderRequest> requests, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
-        if (!Supports(request.Commander))
+        ArgumentNullException.ThrowIfNull(requests);
+        if (requests.Count == 0)
         {
-            throw new NotSupportedException($"{request.Commander} is not supported by the Direct Strike builder.");
+            throw new ArgumentException("At least one build request is required.", nameof(requests));
+        }
+        foreach (var request in requests)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            if (!Supports(request.Commander))
+            {
+                throw new NotSupportedException($"{request.Commander} is not supported by the Direct Strike builder.");
+            }
         }
 
         return Task.Run(async () =>
         {
-            var effectiveRequest = request;
-            if (request.Mirror)
-            {
-                var mirrored = SpawnBuilderFen.Decode(SpawnBuilderFen.Mirror(
-                    SpawnBuilderFen.Encode(request.Commander, request.Team, request.Spawn)));
-                effectiveRequest = request with
-                {
-                    Team = mirrored.Team,
-                    Spawn = mirrored.Spawn,
-                    Upgrades = mirrored.Upgrades,
-                    Mirror = false
-                };
-            }
-
             var width = NativeMethods.GetSystemMetrics(NativeMethods.SmCxScreen);
             var height = NativeMethods.GetSystemMetrics(NativeMethods.SmCyScreen);
             if (width <= 0 || height <= 0)
@@ -41,7 +38,12 @@ public sealed class WindowsBuilderService : IBuilderService
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not determine the primary display size.");
             }
 
-            var actions = BuildPlanner.CreateActions(effectiveRequest, width, height);
+            List<BuilderAction> actions = [];
+            foreach (var request in requests)
+            {
+                var effectiveRequest = request.Mirror ? SpawnBuilderFen.Mirror(request) : request;
+                actions.AddRange(BuildPlanner.CreateActions(effectiveRequest, width, height));
+            }
             await InputPlayer.PlayAsync(actions, cancellationToken).ConfigureAwait(false);
         }, cancellationToken);
     }
@@ -55,7 +57,7 @@ internal static class BuildPlanner
     {
         var screen = new ScreenTransform(request.Team, screenWidth, screenHeight);
         List<BuilderAction> actions = new(Math.Max(64, request.Spawn.Units.Sum(unit => unit.Count) * 3));
-        AddSetup(actions, request.Commander, request.Team, screen);
+        AddSetup(actions, request, screen);
 
         var placedUnits = PlacementPlanner.Place(request);
         placedUnits.Sort((left, right) =>
@@ -124,9 +126,33 @@ internal static class BuildPlanner
             }
         }
 
+        ResetToggleStates(actions, request.Team, screen, toggleStates);
         AddUpgrades(actions, request);
 
         return actions;
+    }
+
+    private static void ResetToggleStates(
+        List<BuilderAction> actions,
+        int team,
+        ScreenTransform screen,
+        IReadOnlyDictionary<char, bool> toggleStates)
+    {
+        if (!toggleStates.Any(pair => !pair.Value))
+        {
+            return;
+        }
+
+        var worker = team == 1 ? '1' : '2';
+        actions.Add(BuilderAction.Key(worker, 100));
+        actions.Add(BuilderAction.Key('Q', 100));
+        foreach (var (key, isDefault) in toggleStates.OrderBy(pair => pair.Key))
+        {
+            if (!isDefault)
+            {
+                AddToggle(actions, key, screen);
+            }
+        }
     }
 
     private static void AddUpgrades(List<BuilderAction> actions, BuilderRequest request)
@@ -185,23 +211,39 @@ internal static class BuildPlanner
         actions.Add(BuilderAction.Move(screen.Center, ShortDelay));
     }
 
-    private static void AddSetup(List<BuilderAction> actions, Commander commander, int team, ScreenTransform screen)
+    private static void AddSetup(List<BuilderAction> actions, BuilderRequest request, ScreenTransform screen)
     {
         for (var index = 0; index < 5; index++)
         {
             actions.Add(BuilderAction.VirtualKey(NativeMethods.VkPrior, ShortDelay));
         }
 
-        var worker = team == 1 ? '1' : '2';
+        var worker = request.Team == 1 ? '1' : '2';
         actions.Add(BuilderAction.Key(worker, ShortDelay));
         actions.Add(BuilderAction.Key(worker, ShortDelay));
         AddChatCommand(actions, "Infinite");
+        if (request.Preparation?.ClearUnits == true)
+        {
+            AddChatCommand(actions, "Clear");
+        }
+        if (request.Preparation?.ResetResearch == true)
+        {
+            AddChatCommand(actions, "Reset");
+        }
+        if (request.Preparation?.ToggleBase == true)
+        {
+            AddChatCommand(actions, "Base");
+        }
+        if (request.Preparation?.EnableVision == true)
+        {
+            AddChatCommand(actions, "Vision");
+        }
         AddChatCommand(actions, "Tier");
 
-        if (team == 1)
+        if (request.Team == 1)
         {
             AddChatCommand(actions, "Repick");
-            var column = commander switch
+            var column = request.Commander switch
             {
                 Commander.Protoss => 0,
                 Commander.Terran => 1,
@@ -213,7 +255,7 @@ internal static class BuildPlanner
         }
         else
         {
-            AddChatCommand(actions, $"Enemy {commander}");
+            AddChatCommand(actions, $"Enemy {request.Commander}");
         }
 
         var center = screen.Center;

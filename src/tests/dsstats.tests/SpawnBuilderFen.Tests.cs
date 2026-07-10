@@ -79,6 +79,33 @@ public sealed class SpawnBuilderFenTests
     }
 
     [TestMethod]
+    public void MirroringBuilderRequestPreservesUpgradesAndPreparation()
+    {
+        BuilderRequest request = new(
+            Commander.Terran,
+            1,
+            new SpawnDto
+            {
+                Units = [new() { Name = "Marine", Count = 1, Positions = [165, 174] }]
+            },
+            [
+                new UpgradeDto { Name = "Stimpack", Gameloop = 180 },
+                new UpgradeDto { Name = "TerranInfantryWeaponsLevel1", Gameloop = 240 }
+            ],
+            new BuilderPreparationOptions(ResetResearch: true),
+            Mirror: true);
+
+        var mirrored = SpawnBuilderFen.Mirror(request);
+
+        Assert.AreEqual(2, mirrored.Team);
+        Assert.IsFalse(mirrored.Mirror);
+        CollectionAssert.AreEqual(
+            new[] { "Stimpack", "TerranInfantryWeaponsLevel1" },
+            mirrored.Upgrades!.Select(upgrade => upgrade.Name).ToArray());
+        Assert.IsTrue(mirrored.Preparation!.ResetResearch);
+    }
+
+    [TestMethod]
     public void TerranToggleFormsRemainDistinctAndUseCorrectLayers()
     {
         SpawnDto spawn = new()

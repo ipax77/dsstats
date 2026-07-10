@@ -8,6 +8,7 @@
 @inject SpawnPositionHydrationService SpawnPositionHydration
 @inject IUnitLifeCostService UnitLifeCostService
 @inject IBuilderService BuilderService
+@inject NavigationManager Navigation
 
 <div class="card bgchart w-auto">
     <div class="card-header bgchart2 rounded">
@@ -218,6 +219,14 @@
                     </button>
                     @if (BuilderService.IsAvailable)
                     {
+                        <button type="button" class="btn btn-sm btn-outline-info"
+                                disabled="@(builderBusy || openingDsBuild)" @onclick="OpenInDsBuild">
+                            @if (openingDsBuild)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                            }
+                            Open DS Build
+                        </button>
                         <button type="button" class="btn btn-sm btn-outline-warning"
                                 disabled="@(builderBusy || DisplayedSpawn is null)" @onclick="StartBuilder">
                             Start build
@@ -275,6 +284,8 @@
     private bool builderBusy;
     private bool builderFailed;
     private bool showBuilderFen;
+    private bool openingDsBuild;
+    private int builderFenRefreshVersion;
     private string builderFen = string.Empty;
     private string builderStatus = string.Empty;
     private Commander currentUnitLifeCostCommander = Commander.None;
@@ -430,6 +441,10 @@
     public void Update()
     {
         ComputeDisplayInfo();
+        if (showBuilderFen)
+        {
+            _ = InvokeAsync(RefreshBuilderFen);
+        }
         InvokeAsync(StateHasChanged);
     }
 
@@ -447,6 +462,7 @@
         }
 
         ComputeDisplayInfo();
+        await RefreshBuilderFen();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -535,6 +551,7 @@
             await buildChart.UpdateChartAsync(SelectedSpawnWave?.Spawn, _unitDisplayInfo);
         }
 
+        await RefreshBuilderFen();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -556,15 +573,53 @@
         showBuilderFen = !showBuilderFen;
         if (!showBuilderFen)
         {
+            builderFenRefreshVersion++;
             return;
         }
 
-        var spawn = await GetPositionedBuilderSpawn();
-        builderFen = spawn is null
-            ? string.Empty
-            : SpawnBuilderFen.Encode(Player.Race, Player.TeamId, spawn, GetBuilderUpgrades());
-        builderStatus = spawn is null ? "No positioned units are available for this spawn." : string.Empty;
-        builderFailed = spawn is null;
+        await RefreshBuilderFen();
+    }
+
+    private async Task RefreshBuilderFen()
+    {
+        if (!showBuilderFen)
+        {
+            return;
+        }
+
+        var version = ++builderFenRefreshVersion;
+        try
+        {
+            var spawn = await GetPositionedBuilderSpawn();
+            if (version != builderFenRefreshVersion || !showBuilderFen)
+            {
+                return;
+            }
+
+            builderFen = spawn is null
+                ? string.Empty
+                : SpawnBuilderFen.Encode(Player.Race, Player.TeamId, spawn, GetBuilderUpgrades());
+            builderStatus = spawn is null ? "No positioned units are available for this spawn." : string.Empty;
+            builderFailed = spawn is null;
+        }
+        catch (Exception)
+        {
+            if (version != builderFenRefreshVersion || !showBuilderFen)
+            {
+                return;
+            }
+
+            builderFen = string.Empty;
+            builderFailed = true;
+            builderStatus = "Could not update the builder FEN for this spawn.";
+        }
+        finally
+        {
+            if (version == builderFenRefreshVersion)
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
     }
 
     private async Task StartBuilder()
@@ -602,7 +657,9 @@
 
             builderStatus = "Building; do not move the mouse or use the keyboard.";
             await InvokeAsync(StateHasChanged);
-            await BuilderService.BuildAsync(new(Player.Race, Player.TeamId, spawn, upgrades), token);
+            await BuilderService.BuildAsync(
+                new BuilderRequest(Player.Race, Player.TeamId, spawn, upgrades),
+                token);
             builderStatus = "Build completed.";
         }
         catch (OperationCanceledException)
@@ -621,6 +678,90 @@
         }
     }
 
+    private async Task OpenInDsBuild()
+    {
+        if (openingDsBuild)
+        {
+            return;
+        }
+
+        openingDsBuild = true;
+        builderFailed = false;
+        builderStatus = "Preparing player and opponent DS-FEN strings...";
+        try
+        {
+            var spawn = await GetPositionedBuilderSpawn();
+            if (spawn is null)
+            {
+                builderFailed = true;
+                builderStatus = "No positioned units are available for this spawn.";
+                return;
+            }
+
+            var targetSecond = GetBuilderTargetSecond();
+            var playerFen = SpawnBuilderFen.Encode(
+                Player.Race,
+                Player.TeamId,
+                spawn,
+                GetBuilderUpgrades(Player, targetSecond));
+
+            string? opponentFen = null;
+            var opponentGamePos = Player.GamePos <= 3 ? Player.GamePos + 3 : Player.GamePos - 3;
+            var opponent = ReplayHelper.ReplayDetails.Replay.Players
+                .FirstOrDefault(candidate => candidate.GamePos == opponentGamePos);
+            if (opponent is not null && BuilderUnitCatalog.IsSupported(opponent.Race))
+            {
+                var opponentSpawn = await GetOpponentPositionedSpawn(opponent);
+                if (opponentSpawn is not null)
+                {
+                    opponentFen = SpawnBuilderFen.Encode(
+                        opponent.Race,
+                        opponent.TeamId,
+                        opponentSpawn,
+                        GetBuilderUpgrades(opponent, targetSecond));
+                }
+            }
+
+            var destination = $"dsbuild?fen={Uri.EscapeDataString(playerFen)}";
+            if (!string.IsNullOrEmpty(opponentFen))
+            {
+                destination += $"&opponentFen={Uri.EscapeDataString(opponentFen)}";
+            }
+            Navigation.NavigateTo(destination);
+        }
+        catch (Exception)
+        {
+            builderFailed = true;
+            builderStatus = "Could not prepare the DS Build page.";
+        }
+        finally
+        {
+            openingDsBuild = false;
+        }
+    }
+
+    private async Task<SpawnDto?> GetOpponentPositionedSpawn(ReplayPlayerDto opponent)
+    {
+        if (chartMode != BuildChartMode.Spawn || SelectedSpawnWave is null)
+        {
+            return await SpawnPositionHydration.EnsureChartSpawnAsync(
+                ReplayHelper.ReplayDetails,
+                opponent.GamePos,
+                ReplayHelper.Breakpoint,
+                ReplayRepository);
+        }
+
+        var waves = await SpawnPositionHydration.GetSpawnWavesAsync(
+            ReplayHelper.ReplayDetails,
+            opponent.GamePos,
+            ReplayRepository);
+        return waves
+            .OrderBy(wave => wave.SpawnNumber == SelectedSpawnWave.SpawnNumber ? 0 : 1)
+            .ThenBy(wave => Math.Abs(wave.StartGameloop - SelectedSpawnWave.StartGameloop))
+            .Select(wave => wave.Spawn)
+            .FirstOrDefault();
+    }
+
     private Task<SpawnDto?> GetPositionedBuilderSpawn(CancellationToken token = default)
     {
         if (chartMode == BuildChartMode.Spawn && SelectedSpawnWave is not null)
@@ -636,9 +777,11 @@
             token);
     }
 
-    private IReadOnlyList<UpgradeDto> GetBuilderUpgrades()
-    {
-        var targetSecond = chartMode == BuildChartMode.Spawn && SelectedSpawnWave is not null
+    private IReadOnlyList<UpgradeDto> GetBuilderUpgrades() =>
+        GetBuilderUpgrades(Player, GetBuilderTargetSecond());
+
+    private int GetBuilderTargetSecond() =>
+        chartMode == BuildChartMode.Spawn && SelectedSpawnWave is not null
             ? (int)(SelectedSpawnWave.EndGameloop / 22.4)
             : ReplayHelper.Breakpoint switch
             {
@@ -648,7 +791,9 @@
                 _ => Player.Duration
             };
 
-        return Player.Upgrades
+    private static IReadOnlyList<UpgradeDto> GetBuilderUpgrades(ReplayPlayerDto player, int targetSecond)
+    {
+        return player.Upgrades
             .Where(upgrade => upgrade.Gameloop <= targetSecond)
             .OrderBy(upgrade => upgrade.Gameloop)
             .ToList();
@@ -667,6 +812,7 @@
         spawnWaveLoadFailed = false;
         chartMode = BuildChartMode.Breakpoint;
         spawnWaveLoadVersion++;
+        builderFenRefreshVersion++;
         builderCts?.Cancel();
         builderFen = string.Empty;
         builderStatus = string.Empty;

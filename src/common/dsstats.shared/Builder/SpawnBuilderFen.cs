@@ -96,6 +96,7 @@ public static class SpawnBuilderFen
     public static SpawnBuilderFenResult Decode(string fen)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fen);
+        fen = fen.Trim();
         var parts = fen.AsSpan();
         var prefixEnd = parts.IndexOf(' ');
         if (prefixEnd < 0 || !parts[..prefixEnd].SequenceEqual(Prefix))
@@ -186,6 +187,23 @@ public static class SpawnBuilderFen
         }
 
         return Encode(decoded.Commander, targetTeam, decoded.Spawn, decoded.Upgrades);
+    }
+
+    public static BuilderRequest Mirror(BuilderRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var mirrored = Decode(Mirror(Encode(
+            request.Commander,
+            request.Team,
+            request.Spawn,
+            request.Upgrades)));
+        return request with
+        {
+            Team = mirrored.Team,
+            Spawn = mirrored.Spawn,
+            Upgrades = mirrored.Upgrades,
+            Mirror = false
+        };
     }
 
     private static void EncodeBoard(ReadOnlySpan<char> board, StringBuilder output)

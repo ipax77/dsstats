@@ -1,0 +1,469 @@
+@page "/dsbuild"
+@using dsstats.shared
+@using dsstats.shared.Builder
+@implements IDisposable
+@inject IBuilderService BuilderService
+
+<PageTitle>DS Build</PageTitle>
+
+<div class="container py-3" style="max-width: 900px;">
+    <div class="bgchart border rounded">
+        <h1>DS Build</h1>
+        <p class="lead">
+            Recreate a Direct Strike spawn in the Tutorial map from a DS-FEN string.
+        </p>
+    </div>
+    <div class="alert alert-warning" role="alert">
+        <h2 class="h5">Before starting</h2>
+        <ol class="mb-0">
+            <li>Launch the <strong>Direct Strike Tutorial</strong> map in StarCraft II.</li>
+            <li>Keep the position 1 and position 4 workers centered in their build areas.</li>
+            <li>Bind the position 1 worker to hotkey <strong>1</strong> and the position 4 worker to hotkey <strong>2</strong>.</li>
+            <li>Paste a DS-FEN below and choose the side where it should be built.</li>
+            <li>Press <strong>Start build</strong>, switch to StarCraft II during the countdown, and do not use the mouse or keyboard until completion.</li>
+        </ol>
+    </div>
+
+    <div class="card bgchart text-light mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <label for="dsFen" class="form-label fw-bold">Player DS-FEN</label>
+                <div class="form-check form-switch">
+                    <input id="buildPrimary" class="form-check-input" type="checkbox" disabled="@builderBusy" @bind="buildPrimary" />
+                    <label class="form-check-label" for="buildPrimary">Build player</label>
+                </div>
+            </div>
+            <textarea id="dsFen" class="form-control bg-dark text-light" rows="7"
+                      placeholder="DSF1 ..." disabled="@builderBusy"
+                      @bind="fen" @bind:event="oninput"></textarea>
+            <div class="form-text text-light-emphasis">
+                DSF1 stores the commander, original side, ground and air placement layers, toggle forms, and upgrades.
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <label for="opponentFen" class="form-label fw-bold">Opponent DS-FEN (optional)</label>
+                <div class="form-check form-switch">
+                    <input id="buildOpponent" class="form-check-input" type="checkbox"
+                           disabled="@(builderBusy || string.IsNullOrWhiteSpace(opponentFen))" @bind="buildOpponent" />
+                    <label class="form-check-label" for="buildOpponent">Build opponent</label>
+                </div>
+            </div>
+            <textarea id="opponentFen" class="form-control bg-dark text-light" rows="7"
+                      placeholder="Optional opponent DSF1 ..." disabled="@builderBusy"
+                      @bind="opponentFen" @bind:event="oninput"></textarea>
+            <div class="form-text text-light-emphasis">
+                When both builds are enabled they are prepared in one run, with global preparation commands executed once.
+            </div>
+
+            <div class="row g-3 align-items-end mt-1">
+                <div class="col-md-4">
+                    <label for="targetPosition" class="form-label fw-bold">Build on</label>
+                    <select id="targetPosition" class="form-select bg-dark text-light"
+                            disabled="@builderBusy" @bind="targetTeam">
+                        <option value="1">Position 1 — top side</option>
+                        <option value="2">Position 4 — opponent side</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="opponentTargetPosition" class="form-label fw-bold">Opponent build on</label>
+                    <select id="opponentTargetPosition" class="form-select bg-dark text-light"
+                            disabled="@(builderBusy || !buildOpponent)" @bind="opponentTargetTeam">
+                        <option value="1">Position 1 — top side</option>
+                        <option value="2">Position 4 — opponent side</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="button" class="btn btn-outline-info"
+                            disabled="@(builderBusy || (string.IsNullOrWhiteSpace(fen) && string.IsNullOrWhiteSpace(opponentFen)))"
+                            @onclick="ValidateFens">
+                        Check FENs
+                    </button>
+                    <button type="button" class="btn btn-warning"
+                            disabled="@(builderBusy || !HasSelectedBuild || !BuilderService.IsAvailable)"
+                            @onclick="StartBuilder">
+                        Start build
+                    </button>
+                    @if (builderBusy)
+                    {
+                        <button type="button" class="btn btn-outline-danger" @onclick="CancelBuilder">Cancel</button>
+                    }
+                </div>
+            </div>
+
+            <div class="row g-3 mt-2">
+                <div class="col-md-6">
+                    <fieldset disabled="@builderBusy">
+                        <legend class="h6">Build options</legend>
+                        <div class="form-check form-switch">
+                            <input id="skipUpgrades" class="form-check-input" type="checkbox" @bind="skipUpgrades" />
+                            <label class="form-check-label" for="skipUpgrades">Skip upgrades</label>
+                        </div>
+                        <div class="small text-light-emphasis">
+                            Useful when rebuilding units while the tutorial already has the required research.
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="col-md-6">
+                    <fieldset disabled="@builderBusy">
+                        <legend class="h6">Tutorial preparation commands</legend>
+                        <div class="form-check">
+                            <input id="commandClear" class="form-check-input" type="checkbox" @bind="clearUnits" />
+                            <label class="form-check-label" for="commandClear"><strong>Clear</strong> — clear all units</label>
+                        </div>
+                        <div class="form-check">
+                            <input id="commandReset" class="form-check-input" type="checkbox" @bind="resetResearch" />
+                            <label class="form-check-label" for="commandReset"><strong>Reset</strong> — reset research</label>
+                        </div>
+                        <div class="form-check">
+                            <input id="commandBase" class="form-check-input" type="checkbox" @bind="toggleBase" />
+                            <label class="form-check-label" for="commandBase"><strong>Base</strong> — toggle an unkillable base</label>
+                        </div>
+                        <div class="form-check">
+                            <input id="commandVision" class="form-check-input" type="checkbox" @bind="enableVision" />
+                            <label class="form-check-label" for="commandVision"><strong>Vision</strong> — enable full map vision</label>
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3" aria-live="polite">
+        <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                <span class="badge @GetStageClass(BuildStage.Countdown)">1. Countdown</span>
+                <span class="bi bi-arrow-right"></span>
+                <span class="badge @GetStageClass(BuildStage.Building)">2. Building</span>
+                <span class="bi bi-arrow-right"></span>
+                <span class="badge @GetStageClass(BuildStage.Finished)">3. Finished</span>
+            </div>
+            @if (buildStage == BuildStage.Countdown)
+            {
+                <div class="display-3 fw-bold text-warning">@countdownSeconds</div>
+                <div>Switch to StarCraft II now.</div>
+            }
+            else if (buildStage == BuildStage.Building)
+            {
+                <div class="alert alert-danger mb-0 fw-bold">
+                    Building in progress — do not use the mouse or keyboard.
+                </div>
+            }
+            else if (buildStage == BuildStage.Finished)
+            {
+                <div class="alert alert-success mb-0">Build finished. Unit toggle modes were restored to their defaults.</div>
+            }
+            else if (buildStage == BuildStage.Cancelled)
+            {
+                <div class="alert alert-secondary mb-0">Build cancelled.</div>
+            }
+            else if (buildStage == BuildStage.Failed)
+            {
+                <div class="alert alert-danger mb-0">The build failed.</div>
+            }
+            else
+            {
+                <div class="text-muted">Ready. Validate a DS-FEN and start when the tutorial map is prepared.</div>
+            }
+        </div>
+    </div>
+
+    @if (decodedFen is not null)
+    {
+        <div class="alert alert-info" role="status">
+            <div class="fw-bold mb-1">Player build</div>
+            <div><strong>Commander:</strong> @decodedFen.Commander</div>
+            <div><strong>Units:</strong> @decodedFen.Spawn.Units.Sum(unit => unit.Count)</div>
+            <div><strong>Upgrades:</strong> @decodedFen.Upgrades.Count</div>
+            <div><strong>Upgrade execution:</strong> @(skipUpgrades ? "Skipped" : "Enabled")</div>
+            <div><strong>Encoded side:</strong> @GetPositionLabel(decodedFen.Team)</div>
+            <div><strong>Target side:</strong> @GetPositionLabel(targetTeam)</div>
+            <div><strong>Mirroring:</strong> @(decodedFen.Team == targetTeam ? "Not required" : "Applied automatically")</div>
+        </div>
+    }
+
+    @if (decodedOpponentFen is not null)
+    {
+        <div class="alert alert-info" role="status">
+            <div class="fw-bold mb-1">Opponent build</div>
+            <div><strong>Commander:</strong> @decodedOpponentFen.Commander</div>
+            <div><strong>Units:</strong> @decodedOpponentFen.Spawn.Units.Sum(unit => unit.Count)</div>
+            <div><strong>Upgrades:</strong> @decodedOpponentFen.Upgrades.Count</div>
+            <div><strong>Upgrade execution:</strong> @(skipUpgrades ? "Skipped" : "Enabled")</div>
+            <div><strong>Encoded side:</strong> @GetPositionLabel(decodedOpponentFen.Team)</div>
+            <div><strong>Target side:</strong> @GetPositionLabel(opponentTargetTeam)</div>
+            <div><strong>Mirroring:</strong> @(decodedOpponentFen.Team == opponentTargetTeam ? "Not required" : "Applied automatically")</div>
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(status))
+    {
+        <div class="alert @(failed ? "alert-danger" : "alert-secondary")" role="status">
+            @status
+        </div>
+    }
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h2 class="h5">How DS-FEN works</h2>
+            <p class="mb-2">
+                A DS-FEN represents one spawn. Ground and air units are stored separately, followed by the commander,
+                side, unit forms, and the upgrades available for that spawn. This keeps landed Vikings distinct from
+                flying Vikings and preserves right-click forms such as Thor AP mode.
+            </p>
+            <p class="mb-0">
+                If the selected target differs from the encoded side, the formation is reflected into the opposite
+                build area before input is sent. The original text is not modified. Any unit menu toggles used during
+                construction are returned to their default state when placement is complete.
+            </p>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, SupplyParameterFromQuery(Name = "fen")]
+    public string? FenQuery { get; set; }
+
+    [Parameter, SupplyParameterFromQuery(Name = "opponentFen")]
+    public string? OpponentFenQuery { get; set; }
+
+    private string fen = string.Empty;
+    private string opponentFen = string.Empty;
+    private int targetTeam = 1;
+    private int opponentTargetTeam = 2;
+    private bool buildPrimary = true;
+    private bool buildOpponent;
+    private SpawnBuilderFenResult? decodedFen;
+    private SpawnBuilderFenResult? decodedOpponentFen;
+    private CancellationTokenSource? builderCts;
+    private bool failed;
+    private bool skipUpgrades;
+    private bool clearUnits;
+    private bool resetResearch = true;
+    private bool toggleBase;
+    private bool enableVision;
+    private BuildStage buildStage;
+    private int countdownSeconds;
+    private string status = string.Empty;
+    private bool queryLoaded;
+    private bool builderBusy => buildStage is BuildStage.Countdown or BuildStage.Building;
+    private bool HasSelectedBuild =>
+        (buildPrimary && !string.IsNullOrWhiteSpace(fen))
+        || (buildOpponent && !string.IsNullOrWhiteSpace(opponentFen));
+
+    protected override void OnParametersSet()
+    {
+        if (queryLoaded)
+        {
+            return;
+        }
+
+        queryLoaded = true;
+        if (!string.IsNullOrWhiteSpace(FenQuery))
+        {
+            fen = FenQuery;
+            buildPrimary = true;
+        }
+        if (!string.IsNullOrWhiteSpace(OpponentFenQuery))
+        {
+            opponentFen = OpponentFenQuery;
+            buildOpponent = true;
+        }
+        if (!string.IsNullOrWhiteSpace(fen) || !string.IsNullOrWhiteSpace(opponentFen))
+        {
+            ValidateFens();
+        }
+    }
+
+    private void ValidateFens()
+    {
+        failed = false;
+        decodedFen = null;
+        decodedOpponentFen = null;
+        List<string> errors = [];
+
+        if (!string.IsNullOrWhiteSpace(fen))
+        {
+            if (SpawnBuilderFen.TryDecode(fen, out var decoded))
+            {
+                decodedFen = decoded;
+            }
+            else
+            {
+                errors.Add("The player DS-FEN is invalid.");
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(opponentFen))
+        {
+            if (SpawnBuilderFen.TryDecode(opponentFen, out var decoded))
+            {
+                decodedOpponentFen = decoded;
+            }
+            else
+            {
+                errors.Add("The opponent DS-FEN is invalid.");
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            failed = true;
+            status = string.Join(' ', errors) + " Check the format, commander, units, and upgrades.";
+            return;
+        }
+
+        var validBuilds = (decodedFen is null ? 0 : 1) + (decodedOpponentFen is null ? 0 : 1);
+        status = validBuilds == 0
+            ? "Enter at least one DS-FEN."
+            : $"{validBuilds} DS-FEN {(validBuilds == 1 ? "is" : "strings are")} valid and ready.";
+    }
+
+    private async Task StartBuilder()
+    {
+        if (builderBusy)
+        {
+            return;
+        }
+
+        ValidateFens();
+        List<BuilderRequest> requests = [];
+        if (buildPrimary)
+        {
+            if (decodedFen is null || decodedFen.Spawn.Units.Count == 0)
+            {
+                failed = true;
+                status = "The selected player build has no valid buildable units.";
+                return;
+            }
+            requests.Add(new(
+                decodedFen.Commander,
+                decodedFen.Team,
+                decodedFen.Spawn,
+                skipUpgrades ? [] : decodedFen.Upgrades,
+                Mirror: decodedFen.Team != targetTeam));
+        }
+
+        if (buildOpponent)
+        {
+            if (decodedOpponentFen is null || decodedOpponentFen.Spawn.Units.Count == 0)
+            {
+                failed = true;
+                status = "The selected opponent build has no valid buildable units.";
+                return;
+            }
+            requests.Add(new(
+                decodedOpponentFen.Commander,
+                decodedOpponentFen.Team,
+                decodedOpponentFen.Spawn,
+                skipUpgrades ? [] : decodedOpponentFen.Upgrades,
+                Mirror: decodedOpponentFen.Team != opponentTargetTeam));
+        }
+
+        if (requests.Count == 0)
+        {
+            failed = true;
+            status = "Select the player build, the opponent build, or both.";
+            return;
+        }
+        var unsupported = requests.FirstOrDefault(request => !BuilderService.Supports(request.Commander));
+        if (unsupported is not null)
+        {
+            failed = true;
+            status = $"{unsupported.Commander} is not supported by this builder version.";
+            return;
+        }
+
+        var preparation = new BuilderPreparationOptions(
+            ClearUnits: clearUnits,
+            ResetResearch: resetResearch,
+            ToggleBase: toggleBase,
+            EnableVision: enableVision);
+        requests[0] = requests[0] with { Preparation = preparation };
+
+        builderCts?.Cancel();
+        builderCts?.Dispose();
+        builderCts = new();
+        var token = builderCts.Token;
+        buildStage = BuildStage.Countdown;
+        failed = false;
+        try
+        {
+            for (var seconds = 5; seconds > 0; seconds--)
+            {
+                countdownSeconds = seconds;
+                status = $"Switch to StarCraft II — building {GetBuildTargetText()} in {seconds}s.";
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(TimeSpan.FromSeconds(1), token);
+            }
+
+            countdownSeconds = 0;
+            buildStage = BuildStage.Building;
+            status = "Building; do not move the mouse or use the keyboard.";
+            await InvokeAsync(StateHasChanged);
+            await BuilderService.BuildAsync(requests, token);
+            buildStage = BuildStage.Finished;
+            status = "Build completed.";
+        }
+        catch (OperationCanceledException)
+        {
+            buildStage = BuildStage.Cancelled;
+            status = "Build cancelled.";
+        }
+        catch (Exception)
+        {
+            buildStage = BuildStage.Failed;
+            failed = true;
+            status = "Build failed. Verify the tutorial map, worker hotkeys, primary display, and display scaling.";
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void CancelBuilder() => builderCts?.Cancel();
+
+    private static string GetPositionLabel(int team) => team == 1 ? "position 1" : "position 4";
+
+    private string GetBuildTargetText()
+    {
+        if (buildPrimary && buildOpponent)
+        {
+            return $"player on {GetPositionLabel(targetTeam)} and opponent on {GetPositionLabel(opponentTargetTeam)}";
+        }
+        return buildPrimary
+            ? $"player on {GetPositionLabel(targetTeam)}"
+            : $"opponent on {GetPositionLabel(opponentTargetTeam)}";
+    }
+
+    private string GetStageClass(BuildStage stage)
+    {
+        if (buildStage == stage)
+        {
+            return stage switch
+            {
+                BuildStage.Countdown => "text-bg-warning",
+                BuildStage.Building => "text-bg-danger",
+                BuildStage.Finished => "text-bg-success",
+                _ => "text-bg-primary"
+            };
+        }
+        return "text-bg-secondary";
+    }
+
+    public void Dispose()
+    {
+        builderCts?.Cancel();
+        builderCts?.Dispose();
+    }
+
+    private enum BuildStage
+    {
+        Ready,
+        Countdown,
+        Building,
+        Finished,
+        Cancelled,
+        Failed
+    }
+}
