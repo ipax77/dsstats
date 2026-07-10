@@ -1,11 +1,13 @@
 @using Microsoft.JSInterop
 @using dsstats.shared
+@using dsstats.shared.Builder
 @using dsstats.shared.Interfaces
 @using dsstats.shared.Units
 @implements IDisposable
 @inject IReplayRepository ReplayRepository
 @inject SpawnPositionHydrationService SpawnPositionHydration
 @inject IUnitLifeCostService UnitLifeCostService
+@inject IBuilderService BuilderService
 
 <div class="card bgchart w-auto">
     <div class="card-header bgchart2 rounded">
@@ -207,6 +209,42 @@
                 }
             </table>
         </div>
+        @if (BuilderUnitCatalog.IsSupported(Player.Race))
+        {
+            <div class="mt-3 border-top pt-2" style="max-width: 500px;">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <button type="button" class="btn btn-sm btn-outline-info" disabled="@builderBusy" @onclick="ToggleBuilderFen">
+                        @(showBuilderFen ? "Hide FEN" : "Builder FEN")
+                    </button>
+                    @if (BuilderService.IsAvailable)
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                disabled="@(builderBusy || DisplayedSpawn is null)" @onclick="StartBuilder">
+                            Start build
+                        </button>
+                        @if (builderBusy)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="CancelBuilder">Cancel</button>
+                        }
+                    }
+                    @if (!string.IsNullOrEmpty(builderStatus))
+                    {
+                        <span class="small @(builderFailed ? "text-danger" : "text-warning")">@builderStatus</span>
+                    }
+                </div>
+                @if (showBuilderFen)
+                {
+                    <textarea class="form-control form-control-sm mt-2 bg-dark text-light"
+                              rows="4" readonly aria-label="Direct Strike builder FEN">@builderFen</textarea>
+                }
+                @if (BuilderService.IsAvailable)
+                {
+                    <div class="small text-warning mt-2">
+                        Use the Direct Strike Tutorial map, keep both workers centered, and bind the top/bottom workers to 1/2.
+                    </div>
+                }
+            </div>
+        }
     </div>
 </div>
 
@@ -233,6 +271,12 @@
     private string? currentReplayHash;
     private bool loadingSpawnWaves;
     private bool spawnWaveLoadFailed;
+    private CancellationTokenSource? builderCts;
+    private bool builderBusy;
+    private bool builderFailed;
+    private bool showBuilderFen;
+    private string builderFen = string.Empty;
+    private string builderStatus = string.Empty;
     private Commander currentUnitLifeCostCommander = Commander.None;
     private IReadOnlyDictionary<string, DsUnitLifeCostDto> unitLifeCosts = EmptyUnitLifeCosts;
     private static readonly IReadOnlyDictionary<string, DsUnitLifeCostDto> EmptyUnitLifeCosts = new Dictionary<string, DsUnitLifeCostDto>();
@@ -507,6 +551,90 @@
             : time.ToString(@"mm\:ss");
     }
 
+    private async Task ToggleBuilderFen()
+    {
+        showBuilderFen = !showBuilderFen;
+        if (!showBuilderFen)
+        {
+            return;
+        }
+
+        var spawn = await GetPositionedBuilderSpawn();
+        builderFen = spawn is null ? string.Empty : SpawnBuilderFen.Encode(Player.Race, Player.TeamId, spawn);
+        builderStatus = spawn is null ? "No positioned units are available for this spawn." : string.Empty;
+        builderFailed = spawn is null;
+    }
+
+    private async Task StartBuilder()
+    {
+        if (builderBusy || !BuilderService.Supports(Player.Race))
+        {
+            return;
+        }
+
+        builderCts?.Cancel();
+        builderCts?.Dispose();
+        builderCts = new();
+        var token = builderCts.Token;
+        builderBusy = true;
+        builderFailed = false;
+        try
+        {
+            var spawn = await GetPositionedBuilderSpawn(token);
+            if (spawn is null)
+            {
+                builderFailed = true;
+                builderStatus = "No positioned units are available for this spawn.";
+                return;
+            }
+
+            builderFen = SpawnBuilderFen.Encode(Player.Race, Player.TeamId, spawn);
+            showBuilderFen = true;
+            for (var seconds = 5; seconds > 0; seconds--)
+            {
+                builderStatus = $"Switch to StarCraft II — building starts in {seconds}s.";
+                await InvokeAsync(StateHasChanged);
+                await Task.Delay(TimeSpan.FromSeconds(1), token);
+            }
+
+            builderStatus = "Building; do not move the mouse or use the keyboard.";
+            await InvokeAsync(StateHasChanged);
+            await BuilderService.BuildAsync(new(Player.Race, Player.TeamId, spawn), token);
+            builderStatus = "Build completed.";
+        }
+        catch (OperationCanceledException)
+        {
+            builderStatus = "Build cancelled.";
+        }
+        catch (Exception)
+        {
+            builderFailed = true;
+            builderStatus = "Build failed. Verify the tutorial map, worker hotkeys, and display scaling.";
+        }
+        finally
+        {
+            builderBusy = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private Task<SpawnDto?> GetPositionedBuilderSpawn(CancellationToken token = default)
+    {
+        if (chartMode == BuildChartMode.Spawn && SelectedSpawnWave is not null)
+        {
+            return Task.FromResult<SpawnDto?>(SelectedSpawnWave.Spawn);
+        }
+
+        return SpawnPositionHydration.EnsureChartSpawnAsync(
+            ReplayHelper.ReplayDetails,
+            Player.GamePos,
+            ReplayHelper.Breakpoint,
+            ReplayRepository,
+            token);
+    }
+
+    private void CancelBuilder() => builderCts?.Cancel();
+
     private void ResetSpawnWaveState()
     {
         spawnWaveLoadCts?.Cancel();
@@ -518,12 +646,19 @@
         spawnWaveLoadFailed = false;
         chartMode = BuildChartMode.Breakpoint;
         spawnWaveLoadVersion++;
+        builderCts?.Cancel();
+        builderFen = string.Empty;
+        builderStatus = string.Empty;
+        builderFailed = false;
+        showBuilderFen = false;
     }
 
     public void Dispose()
     {
         spawnWaveLoadCts?.Cancel();
         spawnWaveLoadCts?.Dispose();
+        builderCts?.Cancel();
+        builderCts?.Dispose();
     }
 
     private enum BuildChartMode

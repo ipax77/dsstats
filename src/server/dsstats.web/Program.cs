@@ -1,5 +1,6 @@
 using dsstats.apiServices;
 using dsstats.shared;
+using dsstats.shared.Builder;
 using dsstats.shared.InHouse;
 using dsstats.shared.Interfaces;
 using dsstats.weblib.Replays;
@@ -45,6 +46,7 @@ builder.Services.Configure<ReplayUserRatingClientOptions>(options =>
 builder.Services.AddScoped<ISpawnPlaybackSidecarDecoder, DotNetSpawnPlaybackSidecarDecoder>();
 builder.Services.AddScoped<SpawnPlaybackSidecarCache>();
 builder.Services.AddScoped<SpawnPositionHydrationService>();
+builder.Services.AddSingleton<IBuilderService, UnavailableBuilderService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<IReplayImportService, ReplayImportService>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();

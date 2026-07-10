@@ -10,5 +10,6 @@
   <Project Path="../server/dsstats.db/dsstats.db.csproj" />
   <Project Path="../server/dsstats.dbServices/dsstats.dbServices.csproj" />
   <Project Path="../server/dsstats.migrations.sqlite/dsstats.migrations.sqlite.csproj" />
+  <Project Path="dsstats.builder/dsstats.builder.csproj" />
   <Project Path="dsstats.maui/dsstats.maui.csproj" />
 </Solution>
