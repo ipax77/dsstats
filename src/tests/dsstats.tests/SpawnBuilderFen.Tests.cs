@@ -79,6 +79,36 @@ public sealed class SpawnBuilderFenTests
     }
 
     [TestMethod]
+    public void TerranToggleFormsRemainDistinctAndUseCorrectLayers()
+    {
+        SpawnDto spawn = new()
+        {
+            Units =
+            [
+                new() { Name = "Thor", Count = 1, Positions = [84, 93] },
+                new() { Name = "ThorAP", Count = 1, Positions = [85, 92] },
+                new() { Name = "VikingFighter", Count = 1, Positions = [84, 93] },
+                new() { Name = "VikingAssault", Count = 1, Positions = [86, 91] }
+            ]
+        };
+
+        var fen = SpawnBuilderFen.Encode(Commander.Terran, 2, spawn);
+        var decoded = SpawnBuilderFen.Decode(fen);
+
+        CollectionAssert.AreEquivalent(
+            new[] { "Thor", "ThorAP", "Viking", "VikingAssault" },
+            decoded.Spawn.Units.Select(unit => unit.Name).ToArray());
+        Assert.IsTrue(BuilderUnitCatalog.TryGetUnit(Commander.Terran, "Viking", out var fighter));
+        Assert.IsTrue(fighter.IsAir);
+        Assert.IsTrue(fighter.IsDefaultToggleState);
+        Assert.IsTrue(BuilderUnitCatalog.TryGetUnit(Commander.Terran, "VikingAssault", out var assault));
+        Assert.IsFalse(assault.IsAir);
+        Assert.IsFalse(assault.IsDefaultToggleState);
+        Assert.IsTrue(BuilderUnitCatalog.TryGetUnit(Commander.Terran, "ThorAP", out var thorAp));
+        Assert.IsFalse(thorAp.IsDefaultToggleState);
+    }
+
+    [TestMethod]
     public void SpawnPlaybackAdvertisesBuilderFenVersion()
     {
         SpawnPlaybackInfoDto info = new();

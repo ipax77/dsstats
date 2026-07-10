@@ -85,14 +85,16 @@ public static class BuilderUnitCatalog
             new("Hellbat", 'f', 't', 2, RequiresToggle: true, IsDefaultToggleState: false),
             new("Medivac", 'g', 'a', 2, IsAir: true),
             new("Banshee", 'h', 's', 2, IsAir: true),
-            new("Viking", 'i', 'd', 2, IsAir: true),
+            new("Viking", 'i', 'd', 2, IsAir: true, RequiresToggle: true),
             new("Raven", 'j', 'f', 2, IsAir: true),
             new("Siege Tank", 'k', 'g', 2),
             new("Cyclone", 'l', 'z', 2, RequiresToggle: true),
             new("Widow Mine", 'm', 'z', 1, RequiresToggle: true, IsDefaultToggleState: false),
             new("Liberator", 'n', 'x', 2, IsAir: true),
-            new("Thor", 'o', 'c', 3),
-            new("Battlecruiser", 'p', 'v', 3, IsAir: true));
+            new("Thor", 'o', 'c', 3, RequiresToggle: true),
+            new("Battlecruiser", 'p', 'v', 3, IsAir: true),
+            new("ThorAP", 'q', 'c', 3, RequiresToggle: true, IsDefaultToggleState: false),
+            new("VikingAssault", 'r', 'd', 2, RequiresToggle: true, IsDefaultToggleState: false));
 
         catalogs[Commander.Zerg] = Create(
             new("Zergling", 'a', 'q', 1),
