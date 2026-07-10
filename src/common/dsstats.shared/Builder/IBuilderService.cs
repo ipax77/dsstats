@@ -1,6 +1,11 @@
 namespace dsstats.shared.Builder;
 
-public sealed record BuilderRequest(Commander Commander, int Team, SpawnDto Spawn, bool Mirror = false);
+public sealed record BuilderRequest(
+    Commander Commander,
+    int Team,
+    SpawnDto Spawn,
+    IReadOnlyList<UpgradeDto>? Upgrades = null,
+    bool Mirror = false);
 
 public interface IBuilderService
 {

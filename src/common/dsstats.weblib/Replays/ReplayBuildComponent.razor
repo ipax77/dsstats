@@ -560,7 +560,9 @@
         }
 
         var spawn = await GetPositionedBuilderSpawn();
-        builderFen = spawn is null ? string.Empty : SpawnBuilderFen.Encode(Player.Race, Player.TeamId, spawn);
+        builderFen = spawn is null
+            ? string.Empty
+            : SpawnBuilderFen.Encode(Player.Race, Player.TeamId, spawn, GetBuilderUpgrades());
         builderStatus = spawn is null ? "No positioned units are available for this spawn." : string.Empty;
         builderFailed = spawn is null;
     }
@@ -588,7 +590,8 @@
                 return;
             }
 
-            builderFen = SpawnBuilderFen.Encode(Player.Race, Player.TeamId, spawn);
+            var upgrades = GetBuilderUpgrades();
+            builderFen = SpawnBuilderFen.Encode(Player.Race, Player.TeamId, spawn, upgrades);
             showBuilderFen = true;
             for (var seconds = 5; seconds > 0; seconds--)
             {
@@ -599,7 +602,7 @@
 
             builderStatus = "Building; do not move the mouse or use the keyboard.";
             await InvokeAsync(StateHasChanged);
-            await BuilderService.BuildAsync(new(Player.Race, Player.TeamId, spawn), token);
+            await BuilderService.BuildAsync(new(Player.Race, Player.TeamId, spawn, upgrades), token);
             builderStatus = "Build completed.";
         }
         catch (OperationCanceledException)
@@ -631,6 +634,24 @@
             ReplayHelper.Breakpoint,
             ReplayRepository,
             token);
+    }
+
+    private IReadOnlyList<UpgradeDto> GetBuilderUpgrades()
+    {
+        var targetSecond = chartMode == BuildChartMode.Spawn && SelectedSpawnWave is not null
+            ? (int)(SelectedSpawnWave.EndGameloop / 22.4)
+            : ReplayHelper.Breakpoint switch
+            {
+                Breakpoint.Min5 => 300,
+                Breakpoint.Min10 => 600,
+                Breakpoint.Min15 => 900,
+                _ => Player.Duration
+            };
+
+        return Player.Upgrades
+            .Where(upgrade => upgrade.Gameloop <= targetSecond)
+            .OrderBy(upgrade => upgrade.Gameloop)
+            .ToList();
     }
 
     private void CancelBuilder() => builderCts?.Cancel();

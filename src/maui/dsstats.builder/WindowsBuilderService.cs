@@ -25,7 +25,13 @@ public sealed class WindowsBuilderService : IBuilderService
             {
                 var mirrored = SpawnBuilderFen.Decode(SpawnBuilderFen.Mirror(
                     SpawnBuilderFen.Encode(request.Commander, request.Team, request.Spawn)));
-                effectiveRequest = request with { Team = mirrored.Team, Spawn = mirrored.Spawn, Mirror = false };
+                effectiveRequest = request with
+                {
+                    Team = mirrored.Team,
+                    Spawn = mirrored.Spawn,
+                    Upgrades = mirrored.Upgrades,
+                    Mirror = false
+                };
             }
 
             var width = NativeMethods.GetSystemMetrics(NativeMethods.SmCxScreen);
@@ -118,7 +124,48 @@ internal static class BuildPlanner
             }
         }
 
+        AddUpgrades(actions, request);
+
         return actions;
+    }
+
+    private static void AddUpgrades(List<BuilderAction> actions, BuilderRequest request)
+    {
+        if (request.Upgrades is not { Count: > 0 } upgrades)
+        {
+            return;
+        }
+
+        List<BuilderUpgradeDefinition> abilities = [];
+        List<BuilderUpgradeDefinition> armoryUpgrades = [];
+        foreach (var upgrade in upgrades.OrderBy(upgrade => upgrade.Gameloop))
+        {
+            if (!BuilderUnitCatalog.TryGetUpgrade(request.Commander, upgrade.Name, out var definition))
+            {
+                continue;
+            }
+            (definition.IsAbility ? abilities : armoryUpgrades).Add(definition);
+        }
+
+        var worker = request.Team == 1 ? '1' : '2';
+        if (abilities.Count > 0)
+        {
+            actions.Add(BuilderAction.Key(worker, 100));
+            actions.Add(BuilderAction.Key('W', 100));
+            foreach (var ability in abilities)
+            {
+                actions.Add(BuilderAction.Key(ability.BuildKey, 200));
+            }
+        }
+
+        if (armoryUpgrades.Count > 0)
+        {
+            actions.Add(BuilderAction.Key(worker, 100));
+            foreach (var upgrade in armoryUpgrades)
+            {
+                actions.Add(BuilderAction.Key(upgrade.BuildKey, 200));
+            }
+        }
     }
 
     private static int GetRegion(PixelPoint point, ScreenTransform screen) =>

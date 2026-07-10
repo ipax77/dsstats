@@ -7,7 +7,8 @@ namespace dsstats.shared.Builder;
 public sealed record SpawnBuilderFenResult(
     Commander Commander,
     int Team,
-    SpawnDto Spawn);
+    SpawnDto Spawn,
+    IReadOnlyList<UpgradeDto> Upgrades);
 
 public static class SpawnBuilderFen
 {
@@ -21,7 +22,11 @@ public static class SpawnBuilderFen
     private static readonly BuildGrid Team2Grid = BuildGrid.Create(
         new(84, 93), new(101, 76), new(90, 65), new(73, 82));
 
-    public static string Encode(Commander commander, int team, SpawnDto spawn)
+    public static string Encode(
+        Commander commander,
+        int team,
+        SpawnDto spawn,
+        IReadOnlyList<UpgradeDto>? upgrades = null)
     {
         ArgumentNullException.ThrowIfNull(spawn);
         ValidateMetadata(commander, team);
@@ -55,6 +60,17 @@ public static class SpawnBuilderFen
         EncodeBoard(ground, output);
         output.Append('|');
         EncodeBoard(air, output);
+        output.Append('|');
+        if (upgrades is not null)
+        {
+            foreach (var upgrade in upgrades)
+            {
+                if (BuilderUnitCatalog.TryGetUpgrade(commander, upgrade.Name, out var definition))
+                {
+                    output.Append(definition.Symbol);
+                }
+            }
+        }
         return output.ToString();
     }
 
@@ -99,10 +115,18 @@ public static class SpawnBuilderFen
             throw new FormatException("Builder FEN must contain ground and air layers.");
         }
 
+        var upgradeSeparator = parts[(layerSeparator + 1)..].IndexOf('|');
+        var airLayer = upgradeSeparator < 0
+            ? parts[(layerSeparator + 1)..]
+            : parts.Slice(layerSeparator + 1, upgradeSeparator);
+        var upgradeLayer = upgradeSeparator < 0
+            ? ReadOnlySpan<char>.Empty
+            : parts[(layerSeparator + upgradeSeparator + 2)..];
+
         var grid = GetGrid(team);
         Dictionary<char, List<int>> positionsBySymbol = [];
         DecodeBoard(parts[..layerSeparator], commander, false, grid, positionsBySymbol);
-        DecodeBoard(parts[(layerSeparator + 1)..], commander, true, grid, positionsBySymbol);
+        DecodeBoard(airLayer, commander, true, grid, positionsBySymbol);
 
         List<UnitDto> units = new(positionsBySymbol.Count);
         foreach (var definition in BuilderUnitCatalog.GetUnits(commander))
@@ -118,7 +142,17 @@ public static class SpawnBuilderFen
             }
         }
 
-        return new(commander, team, new SpawnDto { Units = units });
+        List<UpgradeDto> upgrades = new(upgradeLayer.Length);
+        foreach (var symbol in upgradeLayer)
+        {
+            if (!BuilderUnitCatalog.TryGetUpgrade(commander, symbol, out var definition))
+            {
+                throw new FormatException("Invalid upgrade symbol in builder FEN.");
+            }
+            upgrades.Add(new() { Name = definition.Name });
+        }
+
+        return new(commander, team, new SpawnDto { Units = units }, upgrades);
     }
 
     public static string Mirror(string fen)
@@ -151,7 +185,7 @@ public static class SpawnBuilderFen
             }
         }
 
-        return Encode(decoded.Commander, targetTeam, decoded.Spawn);
+        return Encode(decoded.Commander, targetTeam, decoded.Spawn, decoded.Upgrades);
     }
 
     private static void EncodeBoard(ReadOnlySpan<char> board, StringBuilder output)

@@ -109,6 +109,28 @@ public sealed class SpawnBuilderFenTests
     }
 
     [TestMethod]
+    public void RoundTripPreservesBuilderUpgradesInAcquisitionOrder()
+    {
+        SpawnDto spawn = new()
+        {
+            Units = [new() { Name = "Marine", Count = 1, Positions = [84, 93] }]
+        };
+        UpgradeDto[] upgrades =
+        [
+            new() { Name = "ShieldWall", Gameloop = 120 },
+            new() { Name = "StimPack", Gameloop = 180 },
+            new() { Name = "TerranInfantryWeaponsLevel1", Gameloop = 240 }
+        ];
+
+        var fen = SpawnBuilderFen.Encode(Commander.Terran, 2, spawn, upgrades);
+        var decoded = SpawnBuilderFen.Decode(fen);
+
+        CollectionAssert.AreEqual(
+            new[] { "ShieldWall", "Stimpack", "TerranInfantryWeaponsLevel1" },
+            decoded.Upgrades.Select(upgrade => upgrade.Name).ToArray());
+    }
+
+    [TestMethod]
     public void SpawnPlaybackAdvertisesBuilderFenVersion()
     {
         SpawnPlaybackInfoDto info = new();

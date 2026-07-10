@@ -13,6 +13,8 @@ public sealed record BuilderUnitDefinition(
     bool IsDefaultToggleState = true,
     bool IsAbility = false);
 
+public sealed record BuilderUpgradeDefinition(string Name, char Symbol, char BuildKey, bool IsAbility);
+
 public static class BuilderUnitCatalog
 {
     private static readonly FrozenDictionary<Commander, CommanderCatalog> Catalogs = CreateCatalogs();
@@ -50,6 +52,28 @@ public static class BuilderUnitCatalog
             return true;
         }
 
+        definition = null!;
+        return false;
+    }
+
+    public static bool TryGetUpgrade(Commander commander, string name, out BuilderUpgradeDefinition definition)
+    {
+        if (Catalogs.TryGetValue(commander, out var catalog)
+            && catalog.UpgradesByName.TryGetValue(name, out definition!))
+        {
+            return true;
+        }
+        definition = null!;
+        return false;
+    }
+
+    public static bool TryGetUpgrade(Commander commander, char symbol, out BuilderUpgradeDefinition definition)
+    {
+        if (Catalogs.TryGetValue(commander, out var catalog)
+            && catalog.UpgradesBySymbol.TryGetValue(symbol, out definition!))
+        {
+            return true;
+        }
         definition = null!;
         return false;
     }
@@ -112,6 +136,93 @@ public static class BuilderUnitCatalog
             new("Ultralisk", 'm', 'x', 2),
             new("Brood Lord", 'n', 'c', 2, IsAir: true));
 
+        catalogs[Commander.Protoss].SetUpgrades(
+            new("Charge", 'a', 'q', true),
+            new("BlinkTech", 'b', 'w', true),
+            new("AdeptPiercingAttack", 'c', 'e', true),
+            new("ObserverGraviticBooster", 'd', 'r', true),
+            new("PsiStormTech", 'e', 'a', true),
+            new("PhoenixRangeUpgrade", 'f', 's', true),
+            new("ExtendedThermalLance", 'g', 'd', true),
+            new("VoidRaySpeedUpgrade", 'h', 'f', true),
+            new("DarkTemplarBlinkUpgrade", 'i', 'z', true),
+            new("ProtossGroundWeaponsLevel1", 'j', 'a', false),
+            new("ProtossGroundWeaponsLevel2", 'k', 'a', false),
+            new("ProtossGroundWeaponsLevel3", 'l', 'a', false),
+            new("ProtossGroundArmorsLevel1", 'm', 's', false),
+            new("ProtossGroundArmorsLevel2", 'n', 's', false),
+            new("ProtossGroundArmorsLevel3", 'o', 's', false),
+            new("ProtossShieldsLevel1", 'p', 'd', false),
+            new("ProtossShieldsLevel2", 'q', 'd', false),
+            new("ProtossShieldsLevel3", 'r', 'd', false),
+            new("ProtossAirWeaponsLevel1", 's', 'f', false),
+            new("ProtossAirWeaponsLevel2", 't', 'f', false),
+            new("ProtossAirWeaponsLevel3", 'u', 'f', false),
+            new("ProtossAirArmorsLevel1", 'v', 'g', false),
+            new("ProtossAirArmorsLevel2", 'w', 'g', false),
+            new("ProtossAirArmorsLevel3", 'x', 'g', false));
+
+        catalogs[Commander.Terran].SetUpgrades(
+            new("ShieldWall", 'a', 'q', true),
+            new("PunisherGrenades", 'b', 'w', true),
+            new("Stimpack", 'c', 'e', true),
+            new("PersonalCloaking", 'd', 'r', true),
+            new("HighCapacityBarrels", 'e', 'a', true),
+            new("MedivacCaduceusReactor", 'f', 's', true),
+            new("MedivacIncreaseSpeedBoost", 'g', 's', true),
+            new("BansheeCloak", 'h', 'd', true),
+            new("BansheeSpeed", 'i', 'f', true),
+            new("HiSecAutoTracking", 'j', 'g', true),
+            new("CycloneLockOnDamageUpgrade", 'k', 'z', true),
+            new("DrillClaws", 'l', 'x', true),
+            new("LiberatorAGRangeUpgrade", 'm', 'c', true),
+            new("BattlecruiserEnableSpecializations", 'n', 'v', true),
+            new("TerranInfantryWeaponsLevel1", 'o', 'a', false),
+            new("TerranInfantryWeaponsLevel2", 'p', 'a', false),
+            new("TerranInfantryWeaponsLevel3", 'q', 'a', false),
+            new("TerranInfantryArmorsLevel1", 'r', 's', false),
+            new("TerranInfantryArmorsLevel2", 's', 's', false),
+            new("TerranInfantryArmorsLevel3", 't', 's', false),
+            new("TerranVehicleWeaponsLevel1", 'u', 'd', false),
+            new("TerranVehicleWeaponsLevel2", 'v', 'd', false),
+            new("TerranVehicleWeaponsLevel3", 'w', 'd', false),
+            new("TerranVehicleAndShipArmorsLevel1", 'x', 'f', false),
+            new("TerranVehicleAndShipArmorsLevel2", 'y', 'f', false),
+            new("TerranVehicleAndShipArmorsLevel3", 'z', 'f', false),
+            new("TerranShipWeaponsLevel1", 'A', 'g', false),
+            new("TerranShipWeaponsLevel2", 'B', 'g', false),
+            new("TerranShipWeaponsLevel3", 'C', 'g', false));
+
+        catalogs[Commander.Zerg].SetUpgrades(
+            new("zerglingmovementspeed", 'a', 'q', true),
+            new("zerglingattackspeed", 'b', 'w', true),
+            new("CentrifugalHooks", 'c', 'e', true),
+            new("GlialReconstitution", 'd', 'r', true),
+            new("TunnelingClaws", 'e', 't', true),
+            new("EvolveGroovedSpines", 'f', 'a', true),
+            new("LurkerRange", 'g', 's', true),
+            new("DiggingClaws", 'h', 'd', true),
+            new("NeuralParasite", 'i', 'g', true),
+            new("ChitinousPlating", 'j', 'z', true),
+            new("AnabolicSynthesis", 'k', 'x', true),
+            new("MuscularAugments", 'l', 'c', true),
+            new("overlordspeed", 'm', 'v', true),
+            new("ZergMeleeWeaponsLevel1", 'n', 'a', false),
+            new("ZergMeleeWeaponsLevel2", 'o', 'a', false),
+            new("ZergMeleeWeaponsLevel3", 'p', 'a', false),
+            new("ZergGroundArmorsLevel1", 'q', 's', false),
+            new("ZergGroundArmorsLevel2", 'r', 's', false),
+            new("ZergGroundArmorsLevel3", 's', 's', false),
+            new("ZergMissileWeaponsLevel1", 't', 'd', false),
+            new("ZergMissileWeaponsLevel2", 'u', 'd', false),
+            new("ZergMissileWeaponsLevel3", 'v', 'd', false),
+            new("ZergFlyerWeaponsLevel1", 'w', 'f', false),
+            new("ZergFlyerWeaponsLevel2", 'x', 'f', false),
+            new("ZergFlyerWeaponsLevel3", 'y', 'f', false),
+            new("ZergFlyerArmorsLevel1", 'z', 'g', false),
+            new("ZergFlyerArmorsLevel2", 'A', 'g', false),
+            new("ZergFlyerArmorsLevel3", 'B', 'g', false));
+
         return catalogs.ToFrozenDictionary();
     }
 
@@ -124,10 +235,20 @@ public static class BuilderUnitCatalog
             Units = units;
             ByName = units.ToFrozenDictionary(unit => unit.Name, StringComparer.OrdinalIgnoreCase);
             BySymbol = units.ToFrozenDictionary(unit => unit.Symbol);
+            UpgradesByName = FrozenDictionary<string, BuilderUpgradeDefinition>.Empty;
+            UpgradesBySymbol = FrozenDictionary<char, BuilderUpgradeDefinition>.Empty;
         }
 
         public IReadOnlyList<BuilderUnitDefinition> Units { get; }
         public FrozenDictionary<string, BuilderUnitDefinition> ByName { get; }
         public FrozenDictionary<char, BuilderUnitDefinition> BySymbol { get; }
+        public FrozenDictionary<string, BuilderUpgradeDefinition> UpgradesByName { get; private set; }
+        public FrozenDictionary<char, BuilderUpgradeDefinition> UpgradesBySymbol { get; private set; }
+
+        public void SetUpgrades(params BuilderUpgradeDefinition[] upgrades)
+        {
+            UpgradesByName = upgrades.ToFrozenDictionary(upgrade => upgrade.Name, StringComparer.OrdinalIgnoreCase);
+            UpgradesBySymbol = upgrades.ToFrozenDictionary(upgrade => upgrade.Symbol);
+        }
     }
 }
