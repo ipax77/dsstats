@@ -44,6 +44,7 @@ public sealed class WindowsBuilderService : IBuilderService
                 var effectiveRequest = request.Mirror ? SpawnBuilderFen.Mirror(request) : request;
                 actions.AddRange(BuildPlanner.CreateActions(effectiveRequest, width, height));
             }
+            BuildPlanner.AddChatCommand(actions, "Clear Battle");
             await InputPlayer.PlayAsync(actions, cancellationToken).ConfigureAwait(false);
         }, cancellationToken);
     }
@@ -264,7 +265,7 @@ internal static class BuildPlanner
         actions.Add(BuilderAction.Key(worker, 200, control: true));
     }
 
-    private static void AddChatCommand(List<BuilderAction> actions, string command)
+    internal static void AddChatCommand(List<BuilderAction> actions, string command)
     {
         actions.Add(BuilderAction.VirtualKey(NativeMethods.VkReturn, ShortDelay));
         foreach (var character in command)

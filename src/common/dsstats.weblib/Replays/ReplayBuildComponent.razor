@@ -9,6 +9,7 @@
 @inject IUnitLifeCostService UnitLifeCostService
 @inject IBuilderService BuilderService
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
 <div class="card bgchart w-auto">
     <div class="card-header bgchart2 rounded">
@@ -727,6 +728,7 @@
             {
                 destination += $"&opponentFen={Uri.EscapeDataString(opponentFen)}";
             }
+            await JSRuntime.InvokeVoidAsync("closeModalByIdAndWait", "replayModal");
             Navigation.NavigateTo(destination);
         }
         catch (Exception)
