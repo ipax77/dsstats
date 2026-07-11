@@ -108,6 +108,10 @@ internal static class BuildPlanner
                 }
             }
 
+            if (region == 2)
+            {
+                screenPoint = screen.Map(unit.Position, unit.Definition.Footprint, bottomView: true);
+            }
             screenPoint = region switch
             {
                 1 => screen.OffsetY(screenPoint, 125),
@@ -198,7 +202,9 @@ internal static class BuildPlanner
     }
 
     private static int GetRegion(PixelPoint point, ScreenTransform screen) =>
-        point.Y <= 15 * screen.ScaleY ? 1 : point.Y >= 1140 * screen.ScaleY ? 2 : 0;
+        point.Y <= 15 * screen.ScaleY
+            ? 1
+            : point.Y >= screen.BottomRegionStart * screen.ScaleY ? 2 : 0;
 
     private static void AddScroll(List<BuilderAction> actions, ScreenTransform screen, int logicalOffset)
     {
@@ -453,12 +459,16 @@ internal sealed class ScreenTransform
     private readonly double scaleX;
     private readonly double scaleY;
     private readonly Homography homography;
+    private readonly Homography? bottomHomography;
 
     public ScreenTransform(int team, int width, int height)
     {
         scaleX = width / 2560d;
         scaleY = height / 1440d;
         Center = Scale(team == 1 ? new PixelPoint(1410, 470) : new PixelPoint(1278, 581));
+        // P4's lower border crosses the interior white line near the old cutoff.
+        // Scroll the complete edge segment so adjacent cells share one camera state.
+        BottomRegionStart = team == 1 ? 1140 : 1050;
         PixelPoint[] destination = team == 1
             ? [new(1124, -110), new(2100, 765), new(1468, 1423), new(485, 437)]
             // The exact opponent right vertex lies on the map boundary. Keep the
@@ -467,18 +477,28 @@ internal sealed class ScreenTransform
         homography = new(
             [new(0, 0), new(17, -17), new(6, -28), new(-11, -11)],
             destination);
+        if (team == 2)
+        {
+            // At the lower camera limit P4 has a slightly flatter perspective,
+            // measured from the blue border as +0.936 and -1.013.
+            bottomHomography = new(
+                [new(0, 0), new(17, -17), new(6, -28), new(-11, -11)],
+                [new(1128, -50), new(2104, 860), new(1469, 1503), new(482, 579)]);
+        }
     }
 
     public PixelPoint Center { get; }
+    public int BottomRegionStart { get; }
     public double ScaleY => scaleY;
     public PixelPoint Scale(PixelPoint point) => new((int)(point.X * scaleX), (int)(point.Y * scaleY));
     public PixelPoint OffsetY(PixelPoint point, int logicalOffset) => new(point.X, point.Y + (int)(logicalOffset * scaleY));
 
-    public PixelPoint Map(GridPoint point, int footprint)
+    public PixelPoint Map(GridPoint point, int footprint, bool bottomView = false)
     {
         var x = footprint % 2 == 0 ? point.X - .5 : point.X;
         var y = footprint % 2 == 0 ? point.Y + .5 : point.Y;
-        return Scale(homography.Transform(x, y));
+        var transform = bottomView && bottomHomography is not null ? bottomHomography : homography;
+        return Scale(transform.Transform(x, y));
     }
 }
 
