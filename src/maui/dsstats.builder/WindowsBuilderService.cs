@@ -53,6 +53,8 @@ public sealed class WindowsBuilderService : IBuilderService
 internal static class BuildPlanner
 {
     private const int ShortDelay = 15;
+    private const int ZoomStepDelay = 100;
+    private const int ZoomSettleDelay = 1000;
 
     public static List<BuilderAction> CreateActions(BuilderRequest request, int screenWidth, int screenHeight)
     {
@@ -91,7 +93,7 @@ internal static class BuildPlanner
                     actions.Add(BuilderAction.Key(worker, ShortDelay));
                     actions.Add(BuilderAction.Key(worker, ShortDelay));
                     actions.Add(BuilderAction.Key('Q', ShortDelay));
-                    AddScroll(actions, screen, -500);
+                    AddScroll(actions, screen, request.Team == 2 ? -665 : -500);
                 }
             }
 
@@ -109,7 +111,7 @@ internal static class BuildPlanner
             screenPoint = region switch
             {
                 1 => screen.OffsetY(screenPoint, 125),
-                2 => screen.OffsetY(screenPoint, -300),
+                2 => screen.OffsetY(screenPoint, request.Team == 2 ? -400 : -300),
                 _ => screenPoint
             };
             if (definition.IsAbility)
@@ -200,7 +202,10 @@ internal static class BuildPlanner
 
     private static void AddScroll(List<BuilderAction> actions, ScreenTransform screen, int logicalOffset)
     {
-        actions.Add(BuilderAction.Move(screen.Center, ShortDelay, middle: true));
+        // Move first, then press the middle button. Pressing it before SetCursorPos
+        // turns the jump from the previous unit into an unintended camera drag.
+        actions.Add(BuilderAction.Move(screen.Center, ShortDelay));
+        actions.Add(BuilderAction.RelativeMove(0, 0, 1, middle: true));
         var remaining = Math.Abs((int)(logicalOffset * screen.ScaleY));
         var direction = Math.Sign(logicalOffset);
         while (remaining > 0)
@@ -216,11 +221,13 @@ internal static class BuildPlanner
     {
         for (var index = 0; index < 5; index++)
         {
-            actions.Add(BuilderAction.VirtualKey(NativeMethods.VkPrior, ShortDelay));
+            actions.Add(BuilderAction.VirtualKey(NativeMethods.VkPrior, ZoomStepDelay));
         }
 
         var worker = request.Team == 1 ? '1' : '2';
-        actions.Add(BuilderAction.Key(worker, ShortDelay));
+        // A fresh tutorial map animates the camera while zooming out. Wait before
+        // selecting the worker so setup and the first placements use the final view.
+        actions.Add(BuilderAction.Key(worker, ZoomSettleDelay));
         actions.Add(BuilderAction.Key(worker, ShortDelay));
         AddChatCommand(actions, "Infinite");
         if (request.Preparation?.ClearUnits == true)
@@ -454,7 +461,9 @@ internal sealed class ScreenTransform
         Center = Scale(team == 1 ? new PixelPoint(1410, 470) : new PixelPoint(1278, 581));
         PixelPoint[] destination = team == 1
             ? [new(1124, -110), new(2100, 765), new(1468, 1423), new(485, 437)]
-            : [new(1128, -50), new(2114, 828), new(1469, 1503), new(482, 498)];
+            // The exact opponent right vertex lies on the map boundary. Keep the
+            // calibrated click slightly inside so StarCraft accepts the placement.
+            : [new(1128, -50), new(2104, 825), new(1469, 1503), new(482, 498)];
         homography = new(
             [new(0, 0), new(17, -17), new(6, -28), new(-11, -11)],
             destination);

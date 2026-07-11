@@ -36,13 +36,16 @@
                     @if (!string.IsNullOrEmpty(message)) { <div class="small mt-2 @(failed ? "text-danger" : "text-success")">@message</div> }
                 </div>
                 <div class="col-lg-8">
-                    <svg class="spawn-editor-board" viewBox="0 0 500 340" role="application" aria-label="Direct Strike build placement grid">
+                    <svg class="spawn-editor-board" viewBox="0 0 @(SpawnBuilderFen.Width * 20) @(SpawnBuilderFen.Height * 20)" role="application" aria-label="Direct Strike build placement grid">
                         @for (var y = 0; y < SpawnBuilderFen.Height; y++)
                         {
                             @for (var x = 0; x < SpawnBuilderFen.Width; x++)
                             {
                                 var cell = new BuildCell(x, y);
-                                <rect class="grid-cell" x="@(x * 20)" y="@((SpawnBuilderFen.Height - 1 - y) * 20)" width="20" height="20" @onclick="() => BoardClick(cell)" />
+                                if (SpawnBuilderFen.IsValidCell(editor.Team, new(x, y)))
+                                {
+                                    <rect class="grid-cell" x="@(x * 20)" y="@((SpawnBuilderFen.Height - 1 - y) * 20)" width="20" height="20" @onclick="() => BoardClick(cell)" />
+                                }
                             }
                         }
                         @foreach (var unit in VisibleUnits)

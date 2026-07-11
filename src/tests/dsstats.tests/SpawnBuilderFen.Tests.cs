@@ -7,15 +7,30 @@ namespace dsstats.tests;
 public sealed class SpawnBuilderFenTests
 {
     [TestMethod]
+    [DataRow(1, 165, 174, 11, 28)]
+    [DataRow(1, 182, 157, 28, 11)]
+    [DataRow(1, 171, 146, 17, 0)]
+    [DataRow(1, 154, 163, 0, 17)]
+    [DataRow(2, 84, 93, 11, 28)]
+    public void GridCornersRoundTrip(int team, int mapX, int mapY, int cellX, int cellY)
+    {
+        Assert.IsTrue(SpawnBuilderFen.TryGetCell(team, mapX, mapY, out var cell));
+        Assert.AreEqual(new SpawnBuilderFen.Cell(cellX, cellY), cell);
+        Assert.IsTrue(SpawnBuilderFen.TryGetMapPosition(team, cell, out var restoredX, out var restoredY));
+        Assert.AreEqual(mapX, restoredX);
+        Assert.AreEqual(mapY, restoredY);
+    }
+
+    [TestMethod]
     public void Editor_UsesSeparateGroundAndAirCollisionLayers()
     {
         var editor = new SpawnBuildEditor(Commander.Terran, 1);
         var marine = BuilderUnitCatalog.GetUnits(Commander.Terran).Single(u => u.Name == "Marine");
         var medivac = BuilderUnitCatalog.GetUnits(Commander.Terran).Single(u => u.Name == "Medivac");
 
-        Assert.IsTrue(editor.Execute(new AddUnit(marine, new(3, 3)), out _));
-        Assert.IsTrue(editor.Execute(new AddUnit(medivac, new(3, 3)), out _));
-        Assert.IsFalse(editor.Execute(new AddUnit(marine, new(3, 3)), out var error));
+        Assert.IsTrue(editor.Execute(new AddUnit(marine, new(14, 14)), out _));
+        Assert.IsTrue(editor.Execute(new AddUnit(medivac, new(14, 14)), out _));
+        Assert.IsFalse(editor.Execute(new AddUnit(marine, new(14, 14)), out var error));
         StringAssert.Contains(error, "collides");
     }
 
@@ -34,13 +49,13 @@ public sealed class SpawnBuilderFenTests
     {
         var editor = new SpawnBuildEditor(Commander.Zerg, 2);
         var zergling = BuilderUnitCatalog.GetUnits(Commander.Zerg).Single(u => u.Name == "Zergling");
-        Assert.IsTrue(editor.Execute(new AddUnit(zergling, new(5, 6)), out _));
+        Assert.IsTrue(editor.Execute(new AddUnit(zergling, new(14, 14)), out _));
 
         var fen = SpawnBuilderFen.Encode(editor.Commander, editor.Team, editor.ToSpawn());
         var restored = SpawnBuildEditor.From(SpawnBuilderFen.Decode(fen));
 
         Assert.AreEqual(1, restored.Units.Count);
-        Assert.AreEqual(new BuildCell(5, 6), restored.Units[0].Cell);
+        Assert.AreEqual(new BuildCell(14, 14), restored.Units[0].Cell);
     }
     [TestMethod]
     [DataRow(Commander.Protoss, 2, "Stalker", "Carrier", 84, 93)]
@@ -87,13 +102,16 @@ public sealed class SpawnBuilderFenTests
         var fen = SpawnBuilderFen.Encode(Commander.Protoss, 2, spawn);
 
         StringAssert.StartsWith(fen, "DSF1 1 2 ");
-        Assert.IsTrue(fen.Length < 180);
+        Assert.IsTrue(fen.Length < 300);
         Assert.IsTrue(SpawnBuilderFen.TryDecode(fen, out _));
     }
 
     [TestMethod]
     public void DecodeRejectsUnsupportedOrMalformedFen()
     {
+        Assert.IsFalse(SpawnBuilderFen.TryDecode(null, out _));
+        Assert.IsFalse(SpawnBuilderFen.TryDecode(string.Empty, out _));
+        Assert.IsFalse(SpawnBuilderFen.TryDecode("   ", out _));
         Assert.IsFalse(SpawnBuilderFen.TryDecode("DSF2 1 2 25|25", out _));
         Assert.IsFalse(SpawnBuilderFen.TryDecode("DSF1 10 2 25|25", out _));
         Assert.IsFalse(SpawnBuilderFen.TryDecode("DSF1 1 3 25|25", out _));

@@ -1,4 +1,3 @@
-using System.Collections.Frozen;
 using System.Globalization;
 using System.Text;
 
@@ -13,8 +12,8 @@ public sealed record SpawnBuilderFenResult(
 public static class SpawnBuilderFen
 {
     public const ushort FormatVersion = 1;
-    public const int Width = 25;
-    public const int Height = 17;
+    public const int Width = 29;
+    public const int Height = 29;
 
     public readonly record struct Cell(int X, int Y);
     private const string Prefix = "DSF1";
@@ -78,9 +77,15 @@ public static class SpawnBuilderFen
 
     public static bool TryDecode(string? fen, out SpawnBuilderFenResult result)
     {
+        if (string.IsNullOrWhiteSpace(fen))
+        {
+            result = null!;
+            return false;
+        }
+
         try
         {
-            result = Decode(fen ?? string.Empty);
+            result = Decode(fen);
             return true;
         }
         catch (FormatException)
@@ -351,17 +356,20 @@ public static class SpawnBuilderFen
         return true;
     }
 
+    public static bool IsValidCell(int team, Cell cell) =>
+        team is 1 or 2 && GetGrid(team).TryDenormalize(new(cell.X, cell.Y), out _);
+
     private readonly record struct GridPoint(int X, int Y);
 
     private sealed class BuildGrid
     {
-        private readonly FrozenDictionary<GridPoint, GridPoint> toNormalized;
-        private readonly GridPoint[] toMap;
+        private readonly GridPoint origin;
+        private readonly GridPoint[] vertices;
 
-        private BuildGrid(FrozenDictionary<GridPoint, GridPoint> toNormalized, GridPoint[] toMap)
+        private BuildGrid(GridPoint origin, GridPoint[] vertices)
         {
-            this.toNormalized = toNormalized;
-            this.toMap = toMap;
+            this.origin = origin;
+            this.vertices = vertices;
         }
 
         public static BuildGrid Create(GridPoint top, GridPoint right, GridPoint bottom, GridPoint left)
@@ -371,37 +379,34 @@ public static class SpawnBuilderFen
             var maxX = vertices.Max(point => point.X);
             var minY = vertices.Min(point => point.Y);
             var maxY = vertices.Max(point => point.Y);
-            List<GridPoint> points = new(Width * Height);
-            for (var y = minY; y <= maxY; y++)
+            if (maxX - minX + 1 != Width || maxY - minY + 1 != Height)
             {
-                for (var x = minX; x <= maxX; x++)
-                {
-                    var point = new GridPoint(x, y);
-                    if (IsInside(point, vertices))
-                    {
-                        points.Add(point);
-                    }
-                }
+                throw new InvalidOperationException("Builder grid dimensions do not match its map bounds.");
             }
-
-            var map = new Dictionary<GridPoint, GridPoint>(points.Count);
-            for (var index = 0; index < points.Count; index++)
-            {
-                map[points[index]] = new(index % Width, index / Width);
-            }
-            return new(map.ToFrozenDictionary(), [.. points]);
+            return new(new(minX, minY), vertices);
         }
 
-        public bool TryNormalize(GridPoint point, out GridPoint normalized) =>
-            toNormalized.TryGetValue(point, out normalized);
+        public bool TryNormalize(GridPoint point, out GridPoint normalized)
+        {
+            if (IsInside(point, vertices))
+            {
+                normalized = new(point.X - origin.X, point.Y - origin.Y);
+                return true;
+            }
+            normalized = default;
+            return false;
+        }
 
         public bool TryDenormalize(GridPoint point, out GridPoint mapPoint)
         {
-            var index = point.Y * Width + point.X;
-            if ((uint)index < (uint)toMap.Length)
+            if ((uint)point.X < Width && (uint)point.Y < Height)
             {
-                mapPoint = toMap[index];
-                return true;
+                var candidate = new GridPoint(origin.X + point.X, origin.Y + point.Y);
+                if (IsInside(candidate, vertices))
+                {
+                    mapPoint = candidate;
+                    return true;
+                }
             }
             mapPoint = default;
             return false;

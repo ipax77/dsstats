@@ -164,6 +164,12 @@ public sealed class SpawnBuildEditor
         var size = definition.Footprint;
         if (!cell.IsOnBoard || cell.X + size > SpawnBuilderFen.Width || cell.Y + size > SpawnBuilderFen.Height)
         { error = "The unit footprint is outside the build area."; return false; }
+        for (var y = cell.Y; y < cell.Y + size; y++)
+        for (var x = cell.X; x < cell.X + size; x++)
+        {
+            if (!SpawnBuilderFen.IsValidCell(Team, new(x, y)))
+            { error = "The unit footprint is outside the build area."; return false; }
+        }
         var offset = definition.IsAir ? SpawnBuilderFen.Width * SpawnBuilderFen.Height : 0;
         for (var y = cell.Y; y < cell.Y + size; y++) for (var x = cell.X; x < cell.X + size; x++)
         { var occupant = occupied[offset + y * SpawnBuilderFen.Width + x]; if (occupant != 0 && occupant != ignoredId) { error = "The unit footprint collides with another unit on this layer."; return false; } }
