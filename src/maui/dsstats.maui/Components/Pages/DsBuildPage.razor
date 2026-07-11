@@ -1,6 +1,7 @@
 @page "/dsbuild"
 @using dsstats.shared
 @using dsstats.shared.Builder
+@using dsstats.maui.Components.Builder
 @implements IDisposable
 @inject IBuilderService BuilderService
 
@@ -39,6 +40,13 @@
             <div class="form-text text-light-emphasis">
                 DSF1 stores the commander, original side, ground and air placement layers, toggle forms, and upgrades.
             </div>
+            <button type="button" class="btn btn-sm btn-outline-info mt-2" disabled="@builderBusy" @onclick="() => showEditor = !showEditor">
+                @(showEditor ? "Hide editor" : string.IsNullOrWhiteSpace(fen) ? "Create FEN" : "Edit / create FEN")
+            </button>
+            @if (showEditor)
+            {
+                <SpawnBuildEditorView Fen="@fen" FenChanged="PlayerFenChanged" />
+            }
 
             <div class="d-flex justify-content-between align-items-center mt-3">
                 <label for="opponentFen" class="form-label fw-bold">Opponent DS-FEN (optional)</label>
@@ -245,6 +253,7 @@
     private int countdownSeconds;
     private string status = string.Empty;
     private bool queryLoaded;
+    private bool showEditor;
     private bool builderBusy => buildStage is BuildStage.Countdown or BuildStage.Building;
     private bool HasSelectedBuild =>
         (buildPrimary && !string.IsNullOrWhiteSpace(fen))
@@ -316,6 +325,12 @@
         status = validBuilds == 0
             ? "Enter at least one DS-FEN."
             : $"{validBuilds} DS-FEN {(validBuilds == 1 ? "is" : "strings are")} valid and ready.";
+    }
+
+    private void PlayerFenChanged(string value)
+    {
+        fen = value;
+        ValidateFens();
     }
 
     private async Task StartBuilder()

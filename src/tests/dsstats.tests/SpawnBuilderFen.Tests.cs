@@ -7,6 +7,42 @@ namespace dsstats.tests;
 public sealed class SpawnBuilderFenTests
 {
     [TestMethod]
+    public void Editor_UsesSeparateGroundAndAirCollisionLayers()
+    {
+        var editor = new SpawnBuildEditor(Commander.Terran, 1);
+        var marine = BuilderUnitCatalog.GetUnits(Commander.Terran).Single(u => u.Name == "Marine");
+        var medivac = BuilderUnitCatalog.GetUnits(Commander.Terran).Single(u => u.Name == "Medivac");
+
+        Assert.IsTrue(editor.Execute(new AddUnit(marine, new(3, 3)), out _));
+        Assert.IsTrue(editor.Execute(new AddUnit(medivac, new(3, 3)), out _));
+        Assert.IsFalse(editor.Execute(new AddUnit(marine, new(3, 3)), out var error));
+        StringAssert.Contains(error, "collides");
+    }
+
+    [TestMethod]
+    public void Editor_RejectsFootprintsOutsideBoundary()
+    {
+        var editor = new SpawnBuildEditor(Commander.Protoss, 1);
+        var carrier = BuilderUnitCatalog.GetUnits(Commander.Protoss).Single(u => u.Name == "Carrier");
+
+        Assert.IsFalse(editor.Execute(new AddUnit(carrier, new(24, 16)), out var error));
+        StringAssert.Contains(error, "outside");
+    }
+
+    [TestMethod]
+    public void Editor_RoundTripsThroughFen()
+    {
+        var editor = new SpawnBuildEditor(Commander.Zerg, 2);
+        var zergling = BuilderUnitCatalog.GetUnits(Commander.Zerg).Single(u => u.Name == "Zergling");
+        Assert.IsTrue(editor.Execute(new AddUnit(zergling, new(5, 6)), out _));
+
+        var fen = SpawnBuilderFen.Encode(editor.Commander, editor.Team, editor.ToSpawn());
+        var restored = SpawnBuildEditor.From(SpawnBuilderFen.Decode(fen));
+
+        Assert.AreEqual(1, restored.Units.Count);
+        Assert.AreEqual(new BuildCell(5, 6), restored.Units[0].Cell);
+    }
+    [TestMethod]
     [DataRow(Commander.Protoss, 2, "Stalker", "Carrier", 84, 93)]
     [DataRow(Commander.Terran, 1, "MarineLightweight", "Battlecruiser", 165, 174)]
     [DataRow(Commander.Zerg, 2, "Roach", "Mutalisk", 84, 93)]

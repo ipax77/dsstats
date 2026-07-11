@@ -15,6 +15,8 @@ public static class SpawnBuilderFen
     public const ushort FormatVersion = 1;
     public const int Width = 25;
     public const int Height = 17;
+
+    public readonly record struct Cell(int X, int Y);
     private const string Prefix = "DSF1";
 
     private static readonly BuildGrid Team1Grid = BuildGrid.Create(
@@ -323,6 +325,31 @@ public static class SpawnBuilderFen
     }
 
     private static BuildGrid GetGrid(int team) => team == 1 ? Team1Grid : Team2Grid;
+
+    public static bool TryGetCell(int team, int mapX, int mapY, out Cell cell)
+    {
+        if (team is not (1 or 2)
+            || !GetGrid(team).TryNormalize(new(mapX, mapY), out var normalized))
+        {
+            cell = default;
+            return false;
+        }
+        cell = new(normalized.X, normalized.Y);
+        return true;
+    }
+
+    public static bool TryGetMapPosition(int team, Cell cell, out int mapX, out int mapY)
+    {
+        if (team is not (1 or 2)
+            || !GetGrid(team).TryDenormalize(new(cell.X, cell.Y), out var position))
+        {
+            mapX = mapY = 0;
+            return false;
+        }
+        mapX = position.X;
+        mapY = position.Y;
+        return true;
+    }
 
     private readonly record struct GridPoint(int X, int Y);
 
