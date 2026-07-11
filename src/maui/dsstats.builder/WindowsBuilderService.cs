@@ -321,10 +321,6 @@ internal static class PlacementPlanner
     private const int Side = 29;
     private static readonly GridPoint[] Directions =
         [new(1, 1), new(1, -1), new(-1, 1), new(-1, -1), new(1, 0), new(-1, 0), new(0, 1), new(0, -1)];
-    private static readonly GridPoint[] SmallFootprint = [new(0, 0)];
-    private static readonly GridPoint[] MediumFootprint = [new(0, 0), new(-1, 0), new(-1, 1), new(0, 1)];
-    private static readonly GridPoint[] LargeFootprint =
-        [new(0, 0), new(-1, 0), new(-1, 1), new(0, 1), new(1, 1), new(1, 0), new(1, -1), new(0, -1), new(-1, -1)];
 
     public static List<PlacedUnit> Place(BuilderRequest request)
     {
@@ -339,7 +335,9 @@ internal static class PlacementPlanner
             }
             for (var index = 0; index + 1 < positions.Count; index += 2)
             {
-                var point = new GridPoint(positions[index] - top.X, positions[index + 1] - top.Y);
+                var point = NormalizeAnchor(
+                    new(positions[index] - top.X, positions[index + 1] - top.Y),
+                    definition.Footprint);
                 if (IsInside(point))
                 {
                     source.Add(new(definition, point));
@@ -412,28 +410,67 @@ internal static class PlacementPlanner
 
     private static bool CanOccupy(GridPoint center, int size, bool[] occupancy)
     {
-        foreach (var offset in GetFootprint(size))
+        GetFootprintBounds(size, out var minX, out var maxX, out var minY, out var maxY);
+        for (var y = minY; y <= maxY; y++)
         {
-            var point = new GridPoint(center.X + offset.X, center.Y + offset.Y);
-            if (!IsInside(point) || occupancy[ToIndex(point)]) return false;
+            for (var x = minX; x <= maxX; x++)
+            {
+                var point = new GridPoint(center.X + x, center.Y + y);
+                if (!IsInside(point) || occupancy[ToIndex(point)]) return false;
+            }
         }
         return true;
     }
 
     private static void Occupy(GridPoint center, int size, bool[] occupancy)
     {
-        foreach (var offset in GetFootprint(size))
+        GetFootprintBounds(size, out var minX, out var maxX, out var minY, out var maxY);
+        for (var y = minY; y <= maxY; y++)
         {
-            occupancy[ToIndex(new(center.X + offset.X, center.Y + offset.Y))] = true;
+            for (var x = minX; x <= maxX; x++)
+            {
+                occupancy[ToIndex(new(center.X + x, center.Y + y))] = true;
+            }
         }
     }
 
-    private static ReadOnlySpan<GridPoint> GetFootprint(int size) => size switch
+    private static GridPoint NormalizeAnchor(GridPoint point, int size)
     {
-        1 => SmallFootprint,
-        2 => MediumFootprint,
-        _ => LargeFootprint
-    };
+        if ((size & 1) != 0)
+        {
+            return point;
+        }
+
+        // Replay data can identify any occupied cell of an even-sized unit.
+        // Snap all cells in the same globally aligned size×size block to its
+        // bottom-right anchor, giving 2×2 and 4×4 units one stable identity.
+        var blockX = Math.DivRem(point.X - MinX, size, out var remainderX);
+        var blockY = Math.DivRem(point.Y - MinY, size, out var remainderY);
+        if (remainderX < 0) blockX--;
+        if (remainderY < 0) blockY--;
+        return new(MinX + blockX * size + size - 1, MinY + blockY * size);
+    }
+
+    private static void GetFootprintBounds(
+        int size,
+        out int minX,
+        out int maxX,
+        out int minY,
+        out int maxY)
+    {
+        if ((size & 1) == 0)
+        {
+            minX = 1 - size;
+            maxX = 0;
+            minY = 0;
+            maxY = size - 1;
+            return;
+        }
+
+        var radius = size / 2;
+        minX = minY = -radius;
+        maxX = maxY = radius;
+    }
 
     private static bool IsInside(GridPoint point)
     {
@@ -495,8 +532,9 @@ internal sealed class ScreenTransform
 
     public PixelPoint Map(GridPoint point, int footprint, bool bottomView = false)
     {
-        var x = footprint % 2 == 0 ? point.X - .5 : point.X;
-        var y = footprint % 2 == 0 ? point.Y + .5 : point.Y;
+        var evenCenterOffset = (footprint & 1) == 0 ? (footprint - 1) / 2d : 0;
+        var x = point.X - evenCenterOffset;
+        var y = point.Y + evenCenterOffset;
         var transform = bottomView && bottomHomography is not null ? bottomHomography : homography;
         return Scale(transform.Transform(x, y));
     }
