@@ -24,6 +24,9 @@ public static class BuilderUnitCatalog
     public static IReadOnlyList<BuilderUnitDefinition> GetUnits(Commander commander) =>
         Catalogs.TryGetValue(commander, out var catalog) ? catalog.Units : [];
 
+    public static IReadOnlyList<BuilderUpgradeDefinition> GetUpgrades(Commander commander) =>
+        Catalogs.TryGetValue(commander, out var catalog) ? catalog.Upgrades : [];
+
     public static bool TryGetUnit(Commander commander, string name, out BuilderUnitDefinition definition)
     {
         if (Catalogs.TryGetValue(commander, out var catalog))
@@ -247,8 +250,11 @@ public static class BuilderUnitCatalog
 
         public void SetUpgrades(params BuilderUpgradeDefinition[] upgrades)
         {
+            Upgrades = upgrades;
             UpgradesByName = upgrades.ToFrozenDictionary(upgrade => upgrade.Name, StringComparer.OrdinalIgnoreCase);
             UpgradesBySymbol = upgrades.ToFrozenDictionary(upgrade => upgrade.Symbol);
         }
+
+        public IReadOnlyList<BuilderUpgradeDefinition> Upgrades { get; private set; } = [];
     }
 }

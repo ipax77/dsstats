@@ -218,6 +218,12 @@
                     <button type="button" class="btn btn-sm btn-outline-info" disabled="@builderBusy" @onclick="ToggleBuilderFen">
                         @(showBuilderFen ? "Hide FEN" : "Builder FEN")
                     </button>
+                    <a href="https://github.com/ipax77/dsstats/wiki/DS-Build"
+                       target="_blank" rel="noopener noreferrer"
+                       class="text-info" title="Learn about DS Build"
+                       aria-label="Learn about DS Build">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    </a>
                     @if (BuilderService.IsAvailable)
                     {
                         <button type="button" class="btn btn-sm btn-outline-info"

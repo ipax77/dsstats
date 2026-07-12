@@ -33,6 +33,18 @@
                         <button class="btn btn-sm btn-outline-danger" @onclick="ClearLayer">Clear @layer</button>
                         <button class="btn btn-sm btn-outline-secondary" @onclick="Close">Close</button>
                     </div>
+                    <fieldset class="mt-3">
+                        <legend class="h6">Upgrades</legend>
+                        <div class="small text-light-emphasis mb-2">Selected upgrades are included in the DS-FEN and researched during the build.</div>
+                        @foreach (var upgrade in AvailableUpgrades)
+                        {
+                            var upgradeName = upgrade.Name;
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="@($"upgrade-{upgrade.Symbol}")" checked="@selectedUpgrades.Contains(upgradeName)" @onchange="eventArgs => SetUpgrade(upgradeName, eventArgs.Value is true)" />
+                                <label class="form-check-label" for="@($"upgrade-{upgrade.Symbol}")">@GetUpgradeLabel(upgradeName)</label>
+                            </div>
+                        }
+                    </fieldset>
                     @if (!string.IsNullOrEmpty(message)) { <div class="small mt-2 @(failed ? "text-danger" : "text-success")">@message</div> }
                 </div>
                 <div class="col-lg-8">
@@ -68,6 +80,10 @@
     [Parameter] public string Fen { get; set; } = string.Empty;
     [Parameter] public EventCallback<string> FenChanged { get; set; }
     private static readonly Commander[] SupportedCommanders = [Commander.Protoss, Commander.Terran, Commander.Zerg];
+    private static readonly System.Text.RegularExpressions.Regex UpgradeWordBoundary =
+        new("(?<=[a-z0-9])(?=[A-Z])", System.Text.RegularExpressions.RegexOptions.Compiled);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> UpgradeLabels =
+        new(StringComparer.Ordinal);
     private SpawnBuildEditor? editor;
     private Commander newCommander = Commander.Protoss;
     private int newTeam = 1;
@@ -76,14 +92,19 @@
     private int? selectedId;
     private string message = string.Empty;
     private bool failed;
+    private readonly HashSet<string> selectedUpgrades = new(StringComparer.OrdinalIgnoreCase);
     private IEnumerable<BuilderUnitDefinition> VisibleDefinitions => BuilderUnitCatalog.GetUnits(editor!.Commander).Where(u => u.IsAir == (layer == BuildLayer.Air));
     private IEnumerable<PlacedBuildUnit> VisibleUnits => editor!.Units.Where(u => u.Layer == layer);
+    private IReadOnlyList<BuilderUpgradeDefinition> AvailableUpgrades => BuilderUnitCatalog.GetUpgrades(editor!.Commander);
 
-    private void Create() { editor = new(newCommander, newTeam); LayerChanged(); message = "New empty build created."; }
+    private void Create() { editor = new(newCommander, newTeam); selectedUpgrades.Clear(); LayerChanged(); message = "New empty build created."; }
     private void Import()
     {
         if (!SpawnBuilderFen.TryDecode(Fen, out var decoded)) { failed = true; message = "The FEN cannot be edited because it is invalid."; return; }
-        editor = SpawnBuildEditor.From(decoded); newCommander = decoded.Commander; newTeam = decoded.Team; LayerChanged(); message = "FEN loaded.";
+        editor = SpawnBuildEditor.From(decoded); newCommander = decoded.Commander; newTeam = decoded.Team;
+        selectedUpgrades.Clear();
+        foreach (var upgrade in decoded.Upgrades) selectedUpgrades.Add(upgrade.Name);
+        LayerChanged(); message = "FEN loaded.";
     }
     private void LayerChanged() { selectedId = null; selectedSymbol = VisibleDefinitions.FirstOrDefault()?.Symbol ?? '\0'; }
     private void SetLayer(BuildLayer value) { layer = value; if (editor is not null) LayerChanged(); }
@@ -99,14 +120,32 @@
     private Task ReplaceSelected() { var definition = VisibleDefinitions.First(u => u.Symbol == selectedSymbol); return Run(new ReplaceUnitType(selectedId is int id ? [id] : [], definition)); }
     private Task ClearLayer() => Run(new ClearBuild(layer));
     private void Close() { editor = null; selectedId = null; }
+    private async Task SetUpgrade(string name, bool selected)
+    {
+        if (selected) selectedUpgrades.Add(name); else selectedUpgrades.Remove(name);
+        await UpdateFen();
+        failed = false;
+        message = "FEN updated.";
+    }
+
+    private static string GetUpgradeLabel(string name) => UpgradeLabels.GetOrAdd(name, static value =>
+        UpgradeWordBoundary.Replace(value, " ").Replace("Tech", string.Empty, StringComparison.Ordinal).Trim());
+
+    private Task UpdateFen()
+    {
+        var upgrades = AvailableUpgrades
+            .Where(upgrade => selectedUpgrades.Contains(upgrade.Name))
+            .Select(upgrade => new UpgradeDto { Name = upgrade.Name })
+            .ToArray();
+        return FenChanged.InvokeAsync(SpawnBuilderFen.Encode(editor!.Commander, editor.Team, editor.ToSpawn(), upgrades));
+    }
+
     private async Task Run(IBuildEditCommand command)
     {
         failed = !editor!.Execute(command, out var error); message = error ?? "FEN updated.";
         if (!failed)
         {
-            var existingUpgrades = SpawnBuilderFen.TryDecode(Fen, out var old) && old.Commander == editor.Commander ? old.Upgrades : [];
-            var updated = SpawnBuilderFen.Encode(editor.Commander, editor.Team, editor.ToSpawn(), existingUpgrades);
-            await FenChanged.InvokeAsync(updated);
+            await UpdateFen();
         }
     }
 }
