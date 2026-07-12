@@ -1,0 +1,6 @@
+.spawn-editor-board { width: 100%; min-width: 420px; background: #101820; border: 1px solid #52616b; touch-action: none; }
+.grid-cell { fill: transparent; stroke: #34434d; stroke-width: .6; cursor: crosshair; }
+.grid-cell:hover { fill: rgba(13, 202, 240, .18); }
+.placed-unit rect { fill: #24748a; stroke: #8de8ff; stroke-width: 1.5; cursor: pointer; }
+.placed-unit text { fill: white; font-size: 12px; font-weight: 700; pointer-events: none; }
+.placed-unit.selected rect { fill: #996d08; stroke: #ffc107; stroke-width: 3; }

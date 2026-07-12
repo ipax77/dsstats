@@ -1,8 +1,10 @@
 ﻿using CommunityToolkit.Maui;
 using dsstats.db;
+using dsstats.builder;
 using dsstats.dbServices;
 using dsstats.maui.Services;
 using dsstats.shared;
+using dsstats.shared.Builder;
 using dsstats.shared.Interfaces;
 using dsstats.weblib.Replays;
 using Microsoft.EntityFrameworkCore;
@@ -95,6 +97,7 @@ namespace dsstats.maui
             builder.Services.AddScoped<ISpawnPlaybackSidecarDecoder, DotNetSpawnPlaybackSidecarDecoder>();
             builder.Services.AddScoped<SpawnPlaybackSidecarCache>();
             builder.Services.AddScoped<SpawnPositionHydrationService>();
+            builder.Services.AddSingleton<IBuilderService, WindowsBuilderService>();
 
             var app = builder.Build();
             using var scope = app.Services.CreateScope();

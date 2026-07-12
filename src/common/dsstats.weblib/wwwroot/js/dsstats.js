@@ -1,4 +1,4 @@
-// v3.0
+// v3.1
 
 const cmdrIconsMap = new Map();
 
@@ -21,6 +21,45 @@ function closeModalById(id) {
     if (modal) {
         modal.hide();
     }
+}
+
+function closeModalByIdAndWait(id) {
+    const modalElement = document.getElementById(id);
+    if (!modalElement) {
+        cleanupModalBackdrop();
+        return Promise.resolve();
+    }
+
+    const modal = bootstrap.Modal.getInstance(modalElement);
+    if (!modal || !modalElement.classList.contains('show')) {
+        cleanupModalBackdrop();
+        return Promise.resolve();
+    }
+
+    return new Promise(resolve => {
+        let completed = false;
+        const finish = () => {
+            if (completed) return;
+            completed = true;
+            modalElement.removeEventListener('hidden.bs.modal', finish);
+            cleanupModalBackdrop();
+            resolve();
+        };
+
+        modalElement.addEventListener('hidden.bs.modal', finish, { once: true });
+        modal.hide();
+        // Fallback for interrupted WebView transitions.
+        setTimeout(finish, 500);
+    });
+}
+
+function cleanupModalBackdrop() {
+    if (document.querySelector('.modal.show')) return;
+
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
 }
 
 function scrollModalToTop(modalId) {

@@ -27,8 +27,8 @@
 		<ApplicationIdGuid>32172F77-64E0-4DED-AF1C-39125CA1088D</ApplicationIdGuid>
 
         <!-- Versions -->
-        <ApplicationDisplayVersion>3.0.6</ApplicationDisplayVersion>
-        <ApplicationVersion>5</ApplicationVersion>
+        <ApplicationDisplayVersion>3.0.9</ApplicationDisplayVersion>
+        <ApplicationVersion>6</ApplicationVersion>
 
         <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
         <WindowsPackageType>None</WindowsPackageType>
@@ -78,6 +78,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\dsstats.builder\dsstats.builder.csproj" />
       <ProjectReference Include="..\..\common\dsstats.localization\dsstats.localization.csproj" />
       <ProjectReference Include="..\..\common\dsstats.parser\dsstats.parser.csproj" />
       <ProjectReference Include="..\..\common\dsstats.shared\dsstats.shared.csproj" />

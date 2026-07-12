@@ -30,6 +30,7 @@ public sealed class SpawnPlaybackInfoDto
     public int CompressedLength { get; set; }
     public int UncompressedLength { get; set; }
     public int UnitCount { get; set; }
+    public ushort BuilderFenVersion { get; set; } = Builder.SpawnBuilderFen.FormatVersion;
 }
 
 public class ReplayPlayerDto

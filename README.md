@@ -37,10 +37,11 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 >- Fix maui profiles - allow adding custom folders
 >- Fix display of ignored replays
+>- Add maui ds build
 
 </details>
 
-<details open="open"><summary>v3.0.8</summary>
+<details><summary>v3.0.8</summary>
 
 >- Replay build life and cost
 >- Replay build for each spawn

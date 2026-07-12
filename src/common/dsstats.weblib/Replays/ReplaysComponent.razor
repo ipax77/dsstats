@@ -7,7 +7,7 @@
 @inject IReplayRepository ReplayRepository
 @inject IJSRuntime JSRuntime
 @inject IOptions<HostOptions> HostOptions
-@implements IDisposable
+@implements IAsyncDisposable
 
 <div>
 	<div style="max-width: 1060px;">
@@ -301,9 +301,12 @@
 		return score >= star - 0.75 ? "bi-star-half" : "bi-star";
 	}
 
-	public void Dispose()
+	public ValueTask DisposeAsync()
 	{
 		cts.Cancel();
+		playerModal?.Close();
+		replayModal?.Close();
 		cts.Dispose();
+		return ValueTask.CompletedTask;
 	}
 }
