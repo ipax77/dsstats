@@ -15,6 +15,11 @@ function getNumber(value, fallback = 0) {
 }
 
 export const chartJsCallbacks = {
+    signedComparisonValue(value) {
+        const number = getNumber(value);
+        return `${number >= 0 ? "+" : ""}${number.toFixed(2)}`;
+    },
+
     buildUnitTooltipLabel(context) {
         return context?.raw?.label ?? context?.raw?.Label ?? "";
     },
@@ -49,5 +54,31 @@ export const chartJsCallbacks = {
         }
 
         return `${label} (${bucket}) - AvgGain: ${avgGain}, Winrate: ${winratePercent}%, Games: ${games}`;
+    },
+
+    winrateComparisonTooltipLabel(context) {
+        const point = getTooltipPoint(context);
+        const label = context?.dataset?.label ?? "Period";
+        const metric = point?.metric ?? point?.Metric ?? "Metric";
+        const before = getNumber(point?.before ?? point?.Before);
+        const after = getNumber(point?.after ?? point?.After);
+        const difference = getNumber(point?.difference ?? point?.Difference);
+        const beforeReplays = getNumber(point?.beforeReplays ?? point?.BeforeReplays);
+        const afterReplays = getNumber(point?.afterReplays ?? point?.AfterReplays);
+        const value = label === "Before" ? before : label === "After" ? after : difference;
+        const suffix = metric === "Unadjusted win rate" ? "%" : "";
+
+        if (label === "Change") {
+            const confidenceLow = point?.confidenceLow ?? point?.ConfidenceLow;
+            const confidenceHigh = point?.confidenceHigh ?? point?.ConfidenceHigh;
+            const confidenceStatus = point?.confidenceStatus ?? point?.ConfidenceStatus ?? "";
+            const interval = confidenceLow == null || confidenceHigh == null
+                ? "95% CI unavailable"
+                : `95% CI [${getNumber(confidenceLow).toFixed(2)}, ${getNumber(confidenceHigh).toFixed(2)}]`;
+
+            return `Change: ${difference >= 0 ? "+" : ""}${difference.toFixed(2)}; Before ${before.toFixed(2)} → After ${after.toFixed(2)}; ${interval}; ${confidenceStatus}; replays ${beforeReplays} → ${afterReplays}`;
+        }
+
+        return `${label}: ${value.toFixed(2)}${suffix}; Δ ${difference >= 0 ? "+" : ""}${difference.toFixed(2)}${suffix}; replays ${beforeReplays} → ${afterReplays}`;
     }
 };

@@ -186,6 +186,7 @@ builder.Services.AddStats();
 builder.Services.AddScoped<IBuildsService, BuildsService>();
 builder.Services.AddScoped<IUnitLifeCostService, UnitLifeCostService>();
 builder.Services.AddScoped<IBuildDetailsService, BuildDetailsService>();
+builder.Services.AddScoped<IPatchNotesService, PatchNotesService>();
 
 builder.Services.AddScoped<TransitionService>();
 

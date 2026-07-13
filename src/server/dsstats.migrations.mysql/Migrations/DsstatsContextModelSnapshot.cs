@@ -585,6 +585,73 @@ namespace dsstats.migrations.mysql.Migrations
                     b.ToTable("ManualReplayFolders");
                 });
 
+            modelBuilder.Entity("dsstats.db.PatchNote", b =>
+                {
+                    b.Property<long>("PatchNoteId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("PatchNoteId"));
+
+                    b.Property<short>("Commander")
+                        .HasColumnType("smallint");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("PublishedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<byte>("Source")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasMaxLength(96)
+                        .HasColumnType("varchar(96)");
+
+                    b.Property<string>("SourceMessageId")
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<int>("SourceSequence")
+                        .HasColumnType("int");
+
+                    b.HasKey("PatchNoteId");
+
+                    b.HasIndex("SourceKey")
+                        .IsUnique();
+
+                    b.HasIndex("PublishedAtUtc", "PatchNoteId")
+                        .IsDescending();
+
+                    b.HasIndex("Commander", "PublishedAtUtc", "PatchNoteId")
+                        .IsDescending(false, true, true);
+
+                    b.ToTable("PatchNotes");
+                });
+
+            modelBuilder.Entity("dsstats.db.PatchNoteSyncState", b =>
+                {
+                    b.Property<string>("PatchNoteSyncStateId")
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<string>("Cursor")
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasPrecision(6)
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("PatchNoteSyncStateId");
+
+                    b.ToTable("PatchNoteSyncStates");
+                });
+
             modelBuilder.Entity("dsstats.db.Player", b =>
                 {
                     b.Property<int>("PlayerId")

@@ -1,0 +1,274 @@
+@using dsstats.shared
+@using pax.BlazorChartJs
+
+<ChartComponent ChartJsConfig="chartJsConfig" OnEventTriggered="EventTriggered" />
+
+@code {
+    [Parameter, EditorRequired]
+    public WinrateResponse Response { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public WinrateComparisonMetric Metric { get; set; }
+
+    private ChartJsConfig chartJsConfig = null!;
+    private bool chartReady;
+
+    protected override void OnInitialized()
+    {
+        chartJsConfig = CreateConfig();
+    }
+
+    private void EventTriggered(ChartJsEvent chartEvent)
+    {
+        if (chartEvent is ChartJsInitEvent)
+        {
+            chartReady = true;
+            PrepareData(Response, Metric);
+        }
+    }
+
+    public void PrepareData(WinrateResponse response, WinrateComparisonMetric metric)
+    {
+        Response = response;
+        Metric = metric;
+        if (!chartReady)
+        {
+            return;
+        }
+
+        var rows = response.ComparisonEnts
+            .OrderByDescending(GetDifference)
+            .ToList();
+        var labels = rows.Select(row => row.Commander.ToString()).ToList();
+        var tooltipPoints = rows.Select(row => new ComparisonTooltipPoint
+        {
+            Before = GetValue(row.Before),
+            After = GetValue(row.After),
+            Difference = GetDifference(row),
+            ConfidenceLow = row.AverageGainConfidenceLow,
+            ConfidenceHigh = row.AverageGainConfidenceHigh,
+            ConfidenceStatus = GetConfidenceLabel(row.ConfidenceStatus),
+            BeforeReplays = row.Before.Replays,
+            AfterReplays = row.After.Replays,
+            Metric = Metric == WinrateComparisonMetric.AverageRatingGain ? "Avg rating gain" : "Unadjusted win rate"
+        }).ToList();
+
+        var showChangeLine = Metric == WinrateComparisonMetric.AverageRatingGain;
+        List<ChartJsDataset> datasets =
+        [
+            new ComparisonTooltipDataset
+            {
+                Id = "comparison-before",
+                Label = "Before",
+                Data = rows.Select(row => (object)GetValue(row.Before)).ToList(),
+                TooltipPoints = tooltipPoints,
+                BackgroundColor = new IndexableOption<string>("#7c8599aa"),
+                BorderColor = new IndexableOption<string>("#aab2c3"),
+                BorderWidth = new IndexableOption<double>(2),
+                Order = 1,
+                Datalabels = showChangeLine ? new DataLabelsConfig { Display = false } : null
+            },
+            new ComparisonTooltipDataset
+            {
+                Id = "comparison-after",
+                Label = "After",
+                Data = rows.Select(row => (object)GetValue(row.After)).ToList(),
+                TooltipPoints = tooltipPoints,
+                BackgroundColor = new IndexableOption<string>(rows.Select(row => $"{Data.CmdrColor[row.Commander]}99").ToList()),
+                BorderColor = new IndexableOption<string>(rows.Select(row => Data.CmdrColor[row.Commander]).ToList()),
+                BorderWidth = new IndexableOption<double>(2),
+                Order = 1,
+                Datalabels = showChangeLine ? new DataLabelsConfig { Display = false } : null
+            }
+        ];
+
+        if (showChangeLine)
+        {
+            datasets.Add(new ComparisonTooltipLineDataset
+            {
+                Id = "comparison-change",
+                Type = ChartType.line,
+                Label = "Change",
+                Data = rows.Select(row => (object)GetDifference(row)).ToList(),
+                TooltipPoints = tooltipPoints,
+                YAxisID = "y1",
+                Order = 0,
+                Fill = false,
+                Tension = 0,
+                BorderColor = new IndexableOption<string>("#ffc107"),
+                BackgroundColor = new IndexableOption<string>("#ffc107"),
+                BorderWidth = new IndexableOption<double>(3),
+                PointRadius = new IndexableOption<double>(5),
+                PointHoverRadius = new IndexableOption<double>(7),
+                PointBorderWidth = new IndexableOption<double>(2),
+                PointBorderColor = new IndexableOption<string>("#ffc107"),
+                PointBackgroundColor = new IndexableOption<string>(rows.Select(row => GetChangeColor(GetDifference(row), string.Empty)).ToList()),
+                Datalabels = new DataLabelsConfig
+                {
+                    Display = "auto",
+                    Color = new IndexableOption<string>("#0a050c"),
+                    BackgroundColor = new IndexableOption<string>("#ffc107"),
+                    BorderRadius = 4,
+                    Anchor = "end",
+                    Align = "end",
+                    Clip = false,
+                    Formatter = ChartJsFunction.FromName("signedComparisonValue")
+                }
+            });
+        }
+
+        if (chartJsConfig.Options?.Plugins?.Title is not null
+            && chartJsConfig.Options.Scales?.Y?.Title is not null)
+        {
+            chartJsConfig.Options.Plugins.Title.Text = new IndexableOption<string>(showChangeLine
+                ? "Average Rating Gain — Before, After & Change"
+                : "Before vs After — Unadjusted Win Rate");
+            chartJsConfig.Options.Plugins.Legend!.Display = true;
+            chartJsConfig.Options.Plugins.Datalabels!.Align = "start";
+            chartJsConfig.Options.Plugins.Datalabels.Clip = true;
+            chartJsConfig.Options.Scales!.Y!.Title!.Text = new IndexableOption<string>(showChangeLine
+                ? "Average rating gain"
+                : "Win rate (%)");
+            chartJsConfig.Options.Scales.Y1!.Display = showChangeLine;
+        }
+
+        chartJsConfig.SetDatasetsSmooth(datasets, labels, updateOptions: true);
+    }
+
+    private double GetValue(WinrateComparisonPeriod period)
+    {
+        var value = Metric == WinrateComparisonMetric.AverageRatingGain
+            ? period.AverageRatingGain
+            : period.RawWinrate * 100;
+        return Math.Round(value, 2);
+    }
+
+    private double GetDifference(WinrateComparisonEnt row)
+    {
+        var difference = Metric == WinrateComparisonMetric.AverageRatingGain
+            ? row.AverageGainDifference
+            : row.RawWinrateDifference * 100;
+        return Math.Round(difference, 2);
+    }
+
+    private static string GetChangeColor(double difference, string alpha) => difference switch
+    {
+        > 0 => $"#198754{alpha}",
+        < 0 => $"#dc3545{alpha}",
+        _ => $"#7c8599{alpha}"
+    };
+
+    private static string GetConfidenceLabel(ComparisonConfidenceStatus status) => status switch
+    {
+        ComparisonConfidenceStatus.HigherAfter => "Higher after",
+        ComparisonConfidenceStatus.LowerAfter => "Lower after",
+        ComparisonConfidenceStatus.Inconclusive => "Inconclusive",
+        _ => "Insufficient data"
+    };
+
+    private static ChartJsConfig CreateConfig()
+    {
+        return new ChartJsConfig
+        {
+            Type = ChartType.bar,
+            Options = new ChartJsOptions
+            {
+                MaintainAspectRatio = true,
+                Responsive = true,
+                Interaction = new Interactions
+                {
+                    Mode = "index",
+                    Intersect = false
+                },
+                Plugins = new Plugins
+                {
+                    Title = new Title
+                    {
+                        Display = true,
+                        Text = new IndexableOption<string>("Before vs After"),
+                        Color = "white",
+                        Font = new Font { Size = 16 }
+                    },
+                    Legend = new Legend
+                    {
+                        Display = true,
+                        Labels = new Labels { Color = "#f2f2f2" }
+                    },
+                    Datalabels = new()
+                    {
+                        Display = "auto",
+                        Color = "#0a050c",
+                        BackgroundColor = "#cdc7ce",
+                        BorderRadius = 4,
+                        Anchor = "end",
+                        Align = "start",
+                        Clip = true
+                    },
+                    Tooltip = new Tooltip
+                    {
+                        Callbacks = new TooltipCallbacks
+                        {
+                            Label = ChartJsFunction.FromName("winrateComparisonTooltipLabel")
+                        }
+                    }
+                },
+                Scales = new ChartJsOptionsScales
+                {
+                    X = new LinearAxis
+                    {
+                        Ticks = new ChartJsAxisTick { Color = "#8fa3ff" },
+                        Grid = new ChartJsGrid { Display = false }
+                    },
+                    Y = new LinearAxis
+                    {
+                        Title = new Title
+                        {
+                            Display = true,
+                            Text = new IndexableOption<string>("Average rating gain"),
+                            Color = "#8fa3ff"
+                        },
+                        Ticks = new ChartJsAxisTick { Color = "#8fa3ff" },
+                        Grid = new ChartJsGrid { Display = true, Color = "rgba(113, 116, 143, 0.25)" }
+                    },
+                    Y1 = new LinearAxis
+                    {
+                        Type = "linear",
+                        Display = false,
+                        Position = "right",
+                        Title = new Title
+                        {
+                            Display = true,
+                            Text = new IndexableOption<string>("Change (After − Before)"),
+                            Color = "#ffc107"
+                        },
+                        Ticks = new ChartJsAxisTick { Color = "#ffc107" },
+                        Grid = new ChartJsGrid { Display = true, DrawOnChartArea = false }
+                    }
+                }
+            }
+        };
+    }
+
+    private sealed record ComparisonTooltipDataset : BarDataset
+    {
+        public List<ComparisonTooltipPoint> TooltipPoints { get; set; } = [];
+    }
+
+    private sealed record ComparisonTooltipLineDataset : LineDataset
+    {
+        public List<ComparisonTooltipPoint> TooltipPoints { get; set; } = [];
+    }
+
+    private sealed class ComparisonTooltipPoint
+    {
+        public string Metric { get; set; } = string.Empty;
+        public double Before { get; set; }
+        public double After { get; set; }
+        public double Difference { get; set; }
+        public int BeforeReplays { get; set; }
+        public int AfterReplays { get; set; }
+        public double? ConfidenceLow { get; set; }
+        public double? ConfidenceHigh { get; set; }
+        public string ConfidenceStatus { get; set; } = string.Empty;
+    }
+}

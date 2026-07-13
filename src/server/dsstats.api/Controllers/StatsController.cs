@@ -11,6 +11,18 @@ public class StatsController(IStatsService statsService, IDashboardStatsService 
     [HttpPost]
     public async Task<IActionResult> GetStats([FromBody] StatsRequest request, CancellationToken token = default)
     {
+        if (request.Comparison is not null)
+        {
+            try
+            {
+                request.Comparison.Resolve(DateTime.UtcNow.Date);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         IStatsResponse response;
         switch (request.Type)
         {

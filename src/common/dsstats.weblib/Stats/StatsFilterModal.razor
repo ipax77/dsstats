@@ -16,6 +16,8 @@
 					<DataAnnotationsValidator />
 					<ValidationSummary />
 
+					@if (!HideDateRange)
+					{
 					<div class="mb-3">
 						<label class="form-label">Date Range</label>
 						<div class="row g-md-2">
@@ -29,6 +31,7 @@
 							</div>
 						</div>
 					</div>
+					}
 
 					<div class="mb-3">
 						<label class="form-label">Player Rating Range</label>
@@ -114,6 +117,7 @@
 
 	[Parameter] public EventCallback<StatsFilter?> OnRequest { get; set; }
 	[Parameter] public EventCallback OnClose { get; set; }
+	[Parameter] public bool HideDateRange { get; set; }
 
 	protected override void OnInitialized()
 	{

@@ -1,0 +1,122 @@
+@using dsstats.shared
+
+<div class="table-responsive" style="max-height: 70vh;">
+    <table class="tptable text-nowrap align-middle">
+        <thead class="user-select-none sticky-top">
+            <tr>
+                <th rowspan="2" class="pointer" @onclick="() => SortBy(nameof(WinrateComparisonEnt.Commander))">Commander @SortIcon(nameof(WinrateComparisonEnt.Commander))</th>
+                <th colspan="4" class="text-center border-start">Before</th>
+                <th colspan="4" class="text-center border-start">After</th>
+                <th colspan="3" class="text-center border-start">After − Before</th>
+            </tr>
+            <tr>
+                <th class="text-end border-start">Replays</th>
+                <th class="text-end">Games</th>
+                <th class="text-end">Avg Gain</th>
+                <th class="text-end">Raw WR</th>
+                <th class="text-end border-start">Replays</th>
+                <th class="text-end">Games</th>
+                <th class="text-end">Avg Gain</th>
+                <th class="text-end">Raw WR</th>
+                <th class="text-end border-start pointer" @onclick="() => SortBy(nameof(WinrateComparisonEnt.AverageGainDifference))">Avg Gain @SortIcon(nameof(WinrateComparisonEnt.AverageGainDifference))</th>
+                <th class="text-end pointer" @onclick="() => SortBy(nameof(WinrateComparisonEnt.RawWinrateDifference))">Raw WR @SortIcon(nameof(WinrateComparisonEnt.RawWinrateDifference))</th>
+                <th>Avg Gain 95% CI</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in SortedRows)
+            {
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-1">
+                            <div class="preload-@(row.Commander.ToString().ToLowerInvariant())" style="width: 30px; height: 30px;"></div>
+                            <span>@row.Commander</span>
+                        </div>
+                    </td>
+                    <td class="text-end border-start">@Data.GetNumberString(row.Before.Replays)</td>
+                    <td class="text-end">@Data.GetNumberString(row.Before.Appearances)</td>
+                    <td class="text-end @ValueClass(row.Before.AverageRatingGain)">@row.Before.AverageRatingGain.ToString("N2")</td>
+                    <td class="text-end">@row.Before.RawWinrate.ToString("P1")</td>
+                    <td class="text-end border-start">@Data.GetNumberString(row.After.Replays)</td>
+                    <td class="text-end">@Data.GetNumberString(row.After.Appearances)</td>
+                    <td class="text-end @ValueClass(row.After.AverageRatingGain)">@row.After.AverageRatingGain.ToString("N2")</td>
+                    <td class="text-end">@row.After.RawWinrate.ToString("P1")</td>
+                    <td class="text-end border-start fw-semibold @ValueClass(row.AverageGainDifference)">@Signed(row.AverageGainDifference, "N2")</td>
+                    <td class="text-end @ValueClass(row.RawWinrateDifference)">@Signed(row.RawWinrateDifference * 100, "N1") pp</td>
+                    <td>
+                        <span class="badge @ConfidenceClass(row.ConfidenceStatus)">@ConfidenceText(row)</span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<WinrateComparisonEnt> Rows { get; set; } = [];
+
+    private string sortColumn = nameof(WinrateComparisonEnt.AverageGainDifference);
+    private bool descending = true;
+
+    private IEnumerable<WinrateComparisonEnt> SortedRows => (sortColumn, descending) switch
+    {
+        (nameof(WinrateComparisonEnt.Commander), true) => Rows.OrderByDescending(row => row.Commander),
+        (nameof(WinrateComparisonEnt.Commander), false) => Rows.OrderBy(row => row.Commander),
+        (nameof(WinrateComparisonEnt.RawWinrateDifference), true) => Rows.OrderByDescending(row => row.RawWinrateDifference),
+        (nameof(WinrateComparisonEnt.RawWinrateDifference), false) => Rows.OrderBy(row => row.RawWinrateDifference),
+        (_, true) => Rows.OrderByDescending(row => row.AverageGainDifference),
+        _ => Rows.OrderBy(row => row.AverageGainDifference)
+    };
+
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            descending = !descending;
+            return;
+        }
+
+        sortColumn = column;
+        descending = true;
+    }
+
+    private MarkupString SortIcon(string column)
+    {
+        if (sortColumn != column)
+        {
+            return (MarkupString)string.Empty;
+        }
+
+        return descending
+            ? (MarkupString)"<span class='bi bi-arrow-down-short'></span>"
+            : (MarkupString)"<span class='bi bi-arrow-up-short'></span>";
+    }
+
+    private static string Signed(double value, string format) => $"{(value > 0 ? "+" : string.Empty)}{value.ToString(format)}";
+    private static string ValueClass(double value) => value < 0 ? "text-danger" : value > 0 ? "text-success" : string.Empty;
+
+    private static string ConfidenceClass(ComparisonConfidenceStatus status) => status switch
+    {
+        ComparisonConfidenceStatus.HigherAfter => "text-bg-success",
+        ComparisonConfidenceStatus.LowerAfter => "text-bg-danger",
+        ComparisonConfidenceStatus.Inconclusive => "text-bg-warning",
+        _ => "text-bg-secondary"
+    };
+
+    private static string ConfidenceText(WinrateComparisonEnt row)
+    {
+        if (row.AverageGainConfidenceLow is null || row.AverageGainConfidenceHigh is null)
+        {
+            return "Insufficient data";
+        }
+
+        var status = row.ConfidenceStatus switch
+        {
+            ComparisonConfidenceStatus.HigherAfter => "Higher after",
+            ComparisonConfidenceStatus.LowerAfter => "Lower after",
+            _ => "Inconclusive"
+        };
+        return $"{status}: [{row.AverageGainConfidenceLow:N2}, {row.AverageGainConfidenceHigh:N2}]";
+    }
+}
