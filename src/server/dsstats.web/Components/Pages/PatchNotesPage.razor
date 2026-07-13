@@ -4,6 +4,7 @@
 @using dsstats.shared.Interfaces
 @using dsstats.shared.PatchNotes
 @inject IPatchNotesService PatchNotesService
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <PageTitle>dsstats - Patch Notes</PageTitle>
@@ -19,7 +20,7 @@
 
     <section class="filter-panel mb-4" aria-label="Patch note filters">
         <div class="row g-3 align-items-end">
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
                 <label class="form-label" for="patch-commander">Commander</label>
                 <select id="patch-commander" class="form-select" value="@((int)request.Commander)" @onchange="CommanderChangedAsync">
                     <option value="0">All commanders</option>
@@ -29,7 +30,7 @@
                     }
                 </select>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
                 <label class="form-label" for="patch-unit">Unit</label>
                 <select id="patch-unit" class="form-select" value="@(request.Unit ?? string.Empty)" @onchange="UnitChangedAsync">
                     <option value="">All units</option>
@@ -39,7 +40,25 @@
                     }
                 </select>
             </div>
-            <div class="col-8 col-md-3">
+            <div class="col-12 col-md-2">
+                <label class="form-label" for="patch-date">Patch date</label>
+                <select id="patch-date" class="form-select" value="@FormatDate(request.PatchDate)" @onchange="PatchDateChangedAsync">
+                    <option value="">All patch dates</option>
+                    @if (request.PatchDate is { } selectedDate && !patchDates.Contains(selectedDate))
+                    {
+                        <option value="@FormatDate(selectedDate)">@selectedDate.ToString("dd MMM yyyy") (custom)</option>
+                    }
+                    @foreach (var patchDate in patchDates)
+                    {
+                        <option value="@FormatDate(patchDate)">@patchDate.ToString("dd MMM yyyy")</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-2">
+                <label class="form-label" for="patch-to-date">To date <span class="text-body-secondary">(optional)</span></label>
+                <input id="patch-to-date" type="date" class="form-control" value="@FormatDate(request.ToDate)" @onchange="ToDateChangedAsync" />
+            </div>
+            <div class="col-8 col-md-1">
                 <label class="form-label" for="patch-sort">Order</label>
                 <select id="patch-sort" class="form-select" value="@((int)request.Sort)" @onchange="SortChangedAsync">
                     <option value="0">Newest first</option>
@@ -77,6 +96,16 @@
     }
     else
     {
+        <nav class="d-flex align-items-center justify-content-between mb-4" aria-label="Patch note pages (top)">
+            <button type="button" class="btn btn-outline-secondary" disabled="@(request.Page <= 1)" @onclick="PreviousPageAsync">
+                <span aria-hidden="true">←</span> Previous
+            </button>
+            <span class="text-body-secondary small">Page @currentPage.Page</span>
+            <button type="button" class="btn btn-outline-secondary" disabled="@(!currentPage.HasMore)" @onclick="NextPageAsync">
+                Next <span aria-hidden="true">→</span>
+            </button>
+        </nav>
+
         <div class="patch-note-list">
             @foreach (var note in currentPage.Items)
             {
@@ -91,7 +120,7 @@
             }
         </div>
 
-        <nav class="d-flex align-items-center justify-content-between mt-4" aria-label="Patch note pages">
+        <nav class="d-flex align-items-center justify-content-between mt-4" aria-label="Patch note pages (bottom)">
             <button type="button" class="btn btn-outline-secondary" disabled="@(request.Page <= 1)" @onclick="PreviousPageAsync">
                 <span aria-hidden="true">←</span> Previous
             </button>
@@ -104,6 +133,12 @@
 </div>
 
 @code {
+    [SupplyParameterFromQuery]
+    public string? PatchDate { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ToDate { get; set; }
+
     private static readonly Commander[] CommanderOptions = Enum.GetValues<Commander>()
         .Where(commander => commander is not Commander.None and not Commander.Random)
         .ToArray();
@@ -111,13 +146,45 @@
     private PatchNotesRequest request = new();
     private dsstats.shared.PatchNotes.PatchNotesPage currentPage = new();
     private IReadOnlyList<string> unitNames = [];
+    private IReadOnlyList<DateTime> patchDates = [];
     private CancellationTokenSource? loadCts;
     private string? errorMessage;
     private bool isLoading = true;
+    private bool initialized;
 
     protected override async Task OnInitializedAsync()
     {
-        await ReloadAsync(loadUnits: true);
+        var patchDate = ParseDate(PatchDate);
+        var toDate = ParseDate(ToDate);
+        if (patchDate > toDate)
+        {
+            (patchDate, toDate) = (toDate, patchDate);
+        }
+        request = request with { PatchDate = patchDate, ToDate = toDate };
+        await ReloadAsync(loadUnits: true, loadDates: true);
+        initialized = true;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!initialized)
+        {
+            return;
+        }
+
+        var patchDate = ParseDate(PatchDate);
+        var toDate = ParseDate(ToDate);
+        if (patchDate > toDate)
+        {
+            (patchDate, toDate) = (toDate, patchDate);
+        }
+        if (request.PatchDate == patchDate && request.ToDate == toDate)
+        {
+            return;
+        }
+
+        request = request with { PatchDate = patchDate, ToDate = toDate, Page = 1 };
+        await ReloadAsync();
     }
 
     private async Task CommanderChangedAsync(ChangeEventArgs args)
@@ -131,6 +198,27 @@
     {
         var unit = args.Value?.ToString();
         request = request with { Unit = string.IsNullOrEmpty(unit) ? null : unit, Page = 1 };
+        await ReloadAsync();
+    }
+
+    private async Task PatchDateChangedAsync(ChangeEventArgs args)
+    {
+        var patchDate = ParseDate(args.Value?.ToString());
+        request = request with { PatchDate = patchDate, ToDate = null, Page = 1 };
+        UpdateDateQuery();
+        await ReloadAsync();
+    }
+
+    private async Task ToDateChangedAsync(ChangeEventArgs args)
+    {
+        var toDate = ParseDate(args.Value?.ToString());
+        var patchDate = request.PatchDate;
+        if (toDate < patchDate)
+        {
+            (patchDate, toDate) = (toDate, patchDate);
+        }
+        request = request with { PatchDate = patchDate, ToDate = toDate, Page = 1 };
+        UpdateDateQuery();
         await ReloadAsync();
     }
 
@@ -164,7 +252,7 @@
         await ReloadAsync();
     }
 
-    private async Task ReloadAsync(bool loadUnits = false)
+    private async Task ReloadAsync(bool loadUnits = false, bool loadDates = false)
     {
         if (loadCts is not null)
         {
@@ -178,11 +266,27 @@
         errorMessage = null;
         try
         {
-            if (loadUnits)
+            var pageTask = PatchNotesService.GetPatchNotes(request, token);
+            var unitsTask = loadUnits
+                ? PatchNotesService.GetUnitNames(request.Commander, token)
+                : null;
+            var datesTask = loadDates
+                ? PatchNotesService.GetPatchDates(50, token)
+                : null;
+
+            await Task.WhenAll(
+                pageTask,
+                unitsTask ?? Task.CompletedTask,
+                datesTask ?? Task.CompletedTask);
+            currentPage = await pageTask;
+            if (unitsTask is not null)
             {
-                unitNames = await PatchNotesService.GetUnitNames(request.Commander, token);
+                unitNames = await unitsTask;
             }
-            currentPage = await PatchNotesService.GetPatchNotes(request, token);
+            if (datesTask is not null)
+            {
+                patchDates = await datesTask;
+            }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
@@ -200,6 +304,27 @@
             }
         }
     }
+
+    private void UpdateDateQuery()
+    {
+        var uri = NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            [nameof(PatchDate)] = FormatDate(request.PatchDate),
+            [nameof(ToDate)] = FormatDate(request.ToDate)
+        });
+        NavigationManager.NavigateTo(uri, replace: true);
+    }
+
+    private static DateTime? ParseDate(string? value) => DateTime.TryParseExact(
+        value,
+        "yyyy-MM-dd",
+        System.Globalization.CultureInfo.InvariantCulture,
+        System.Globalization.DateTimeStyles.None,
+        out var parsedDate)
+        ? parsedDate.Date
+        : null;
+
+    private static string? FormatDate(DateTime? value) => value?.ToString("yyyy-MM-dd");
 
     public void Dispose()
     {

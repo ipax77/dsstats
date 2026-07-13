@@ -41,8 +41,8 @@
                 <input id="changeDate" type="date" class="form-control" max="@utcToday.ToString("yyyy-MM-dd")" @bind="changeDate" />
             </div>
             <div class="col-12 col-md-3">
-                <label for="afterToDate" class="form-label">Compare through</label>
-                <input id="afterToDate" type="date" class="form-control" max="@utcToday.ToString("yyyy-MM-dd")" @bind="afterToDate" />
+                <label for="compareDays" class="form-label">Compare days</label>
+                <input id="compareDays" type="number" class="form-control" min="@MinimumCompareDays" max="@MaximumCompareDays" step="1" @bind="compareDays" />
             </div>
             <div class="col-12 col-md-3">
                 <button type="button" class="btn btn-primary w-100" disabled="@isLoading" @onclick="ApplyComparison">Apply comparison</button>
@@ -54,8 +54,12 @@
                 Before: @windows.BeforeFrom.ToString("yyyy-MM-dd")–@windows.BeforeToDate.ToString("yyyy-MM-dd")
                 <span class="mx-2">|</span>
                 After: @windows.AfterFrom.ToString("yyyy-MM-dd")–@windows.AfterToDate.ToString("yyyy-MM-dd")
+                <a class="ms-md-3" href="@GetPatchNotesUrl(windows)">View patch notes for investigation period</a>
             </div>
         }
+        <p class="text-warning bgchart2 p-2 border rounded mt-3 mb-0">
+            <strong>How comparison works:</strong> The selected number of days immediately before the change date is compared with the same number of days starting on the change date. The selected filters apply to both periods.
+        </p>
         @if (!string.IsNullOrEmpty(comparisonError))
         {
             <div class="text-danger small mt-2">@comparisonError</div>
@@ -138,6 +142,9 @@ else if (!comparisonMode && showSampleSizeWarning)
 }
 
 @code {
+    private const int MinimumCompareDays = 3;
+    private const int MaximumCompareDays = 160;
+
     [Parameter, EditorRequired]
     public StatsRequest StatsRequest { get; set; } = default!;
 
@@ -152,7 +159,7 @@ else if (!comparisonMode && showSampleSizeWarning)
     private bool comparisonMode;
     private readonly DateTime utcToday = DateTime.UtcNow.Date;
     private DateTime changeDate;
-    private DateTime afterToDate;
+    private int compareDays;
     private WinrateComparisonMetric comparisonMetric = WinrateComparisonMetric.AverageRatingGain;
     private IReadOnlyList<DateTime> patchDates = [];
     private string? comparisonError;
@@ -180,7 +187,9 @@ else if (!comparisonMode && showSampleSizeWarning)
     {
         comparisonMode = StatsRequest.Comparison is not null;
         changeDate = StatsRequest.Comparison?.ChangeDate.Date ?? utcToday.AddDays(-30);
-        afterToDate = StatsRequest.Comparison?.AfterToDate.Date ?? utcToday;
+        compareDays = StatsRequest.Comparison is null
+            ? GetDaysThroughToday(changeDate)
+            : (StatsRequest.Comparison.AfterToDate.Date - changeDate).Days + 1;
         comparisonMetric = StatsRequest.Comparison?.Metric ?? WinrateComparisonMetric.AverageRatingGain;
         _ = InitializeAsync();
     }
@@ -294,7 +303,13 @@ else if (!comparisonMode && showSampleSizeWarning)
             await EnsurePatchDates();
             if (patchDates.Count > 0 && StatsRequest.Comparison is null)
             {
-                changeDate = patchDates[0];
+                var latestComparablePatch = patchDates.FirstOrDefault(date =>
+                    (utcToday - date).Days + 1 >= MinimumCompareDays);
+                if (latestComparablePatch != default)
+                {
+                    changeDate = latestComparablePatch;
+                    compareDays = GetDaysThroughToday(changeDate);
+                }
             }
             if (!SetComparisonRequest())
             {
@@ -320,10 +335,16 @@ else if (!comparisonMode && showSampleSizeWarning)
 
     private bool SetComparisonRequest()
     {
+        if (compareDays is < MinimumCompareDays or > MaximumCompareDays)
+        {
+            comparisonError = $"Compare days must be between {MinimumCompareDays} and {MaximumCompareDays}.";
+            return false;
+        }
+
         var candidate = new WinrateComparisonRequest
         {
             ChangeDate = changeDate.Date,
-            AfterToDate = afterToDate.Date,
+            AfterToDate = changeDate.Date.AddDays(compareDays - 1),
             Metric = comparisonMetric
         };
         try
@@ -342,9 +363,19 @@ else if (!comparisonMode && showSampleSizeWarning)
 
     private bool TryGetWindows(out WinrateComparisonWindows windows)
     {
+        if (compareDays is < MinimumCompareDays or > MaximumCompareDays)
+        {
+            windows = default!;
+            return false;
+        }
+
         try
         {
-            windows = new WinrateComparisonRequest { ChangeDate = changeDate, AfterToDate = afterToDate }.Resolve(utcToday);
+            windows = new WinrateComparisonRequest
+            {
+                ChangeDate = changeDate,
+                AfterToDate = changeDate.Date.AddDays(compareDays - 1)
+            }.Resolve(utcToday);
             return true;
         }
         catch (ArgumentException)
@@ -362,6 +393,14 @@ else if (!comparisonMode && showSampleSizeWarning)
             comparisonError = null;
         }
     }
+
+    private int GetDaysThroughToday(DateTime fromDate) => Math.Clamp(
+        (utcToday - fromDate.Date).Days + 1,
+        MinimumCompareDays,
+        MaximumCompareDays);
+
+    private static string GetPatchNotesUrl(WinrateComparisonWindows windows) =>
+        $"/te/patch-notes?PatchDate={windows.AfterFrom:yyyy-MM-dd}&ToDate={windows.AfterToDate:yyyy-MM-dd}";
 
     private async Task SetComparisonMetric(WinrateComparisonMetric metric)
     {

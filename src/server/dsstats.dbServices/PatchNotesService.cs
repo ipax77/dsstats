@@ -38,6 +38,30 @@ public sealed class PatchNotesService(
         {
             query = query.Where(note => note.Content.Contains(unit));
         }
+        var patchDate = request.PatchDate?.Date;
+        var toDate = request.ToDate?.Date;
+        if (patchDate > toDate)
+        {
+            (patchDate, toDate) = (toDate, patchDate);
+        }
+        if (patchDate is { } inclusivePatchDate)
+        {
+            query = query.Where(note => note.PublishedAtUtc >= inclusivePatchDate);
+        }
+        if (toDate is { } inclusiveToDate)
+        {
+            var toDateExclusive = inclusiveToDate == DateTime.MaxValue.Date
+                ? DateTime.MaxValue
+                : inclusiveToDate.AddDays(1);
+            query = query.Where(note => note.PublishedAtUtc < toDateExclusive);
+        }
+        else if (patchDate is { } exactPatchDate)
+        {
+            var patchDateExclusive = exactPatchDate == DateTime.MaxValue.Date
+                ? DateTime.MaxValue
+                : exactPatchDate.AddDays(1);
+            query = query.Where(note => note.PublishedAtUtc < patchDateExclusive);
+        }
 
         var orderedQuery = request.Sort == PatchNotesSort.OldestFirst
             ? query.OrderBy(note => note.PublishedAtUtc).ThenBy(note => note.PatchNoteId)
@@ -115,7 +139,7 @@ public sealed class PatchNotesService(
                 .ToArrayAsync(token);
         }) ?? [];
 
-        return dates.Take(count).ToArray();
+        return count >= dates.Length ? dates : dates[..count];
     }
 
     private sealed record UnitNameCatalog(

@@ -44,6 +44,39 @@ public sealed class PatchNotesServiceTests
     }
 
     [TestMethod]
+    public async Task GetPatchNotes_FiltersByInclusiveDateRange()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+
+        var page = await fixture.Service.GetPatchNotes(new PatchNotesRequest
+        {
+            PatchDate = new DateTime(2026, 1, 2),
+            ToDate = new DateTime(2026, 1, 3)
+        });
+
+        Assert.HasCount(2, page.Items);
+        CollectionAssert.AreEqual(
+            new[] { "Brutalisk armor increased.", "Roach cost reduced." },
+            page.Items.Select(item => item.Content).ToArray());
+        Assert.IsFalse(page.HasMore);
+    }
+
+    [TestMethod]
+    public async Task GetPatchNotes_PatchDateWithoutToDateFiltersOneDay()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+
+        var page = await fixture.Service.GetPatchNotes(new PatchNotesRequest
+        {
+            PatchDate = new DateTime(2026, 1, 2)
+        });
+
+        Assert.HasCount(1, page.Items);
+        Assert.AreEqual("Roach cost reduced.", page.Items[0].Content);
+        Assert.IsFalse(page.HasMore);
+    }
+
+    [TestMethod]
     public async Task GetUnitNames_FiltersCommanderAndRemovesDuplicates()
     {
         await using var fixture = await TestFixture.CreateAsync();

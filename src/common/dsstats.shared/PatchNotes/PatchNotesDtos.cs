@@ -10,6 +10,8 @@ public sealed record PatchNotesRequest
 {
     public Commander Commander { get; init; }
     public string? Unit { get; init; }
+    public DateTime? PatchDate { get; init; }
+    public DateTime? ToDate { get; init; }
     public PatchNotesSort Sort { get; init; } = PatchNotesSort.NewestFirst;
     public int Page { get; init; } = 1;
     public int PageSize { get; init; } = 25;
