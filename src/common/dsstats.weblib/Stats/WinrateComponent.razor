@@ -1,95 +1,140 @@
-﻿@using dsstats.shared
+@using dsstats.shared
 @using dsstats.shared.Interfaces
 
 @implements IDisposable
 
 @inject IStatsService StatsService
+@inject IPatchNotesService PatchNotesService
 
 <div class="mb-1" style="max-width: 1000px;">
-    <StatsRequestComponent @ref="statsRequestComponent" Request="StatsRequest" IsLoading="isLoading" OnRequestChanged="Update" />
+    <StatsRequestComponent Request="StatsRequest" IsLoading="isLoading"
+                           ComparisonMode="comparisonMode" OnRequestChanged="Update" />
 </div>
-<div class="btn-group bgchart p-1 rounded">
+
+<div class="d-flex flex-wrap align-items-center gap-2 bgchart p-1 rounded" style="max-width: 1000px;">
     <span class="px-2 text-muted small">Preset</span>
-    <button type="button" class="btn @(IsStrongPlayerFilter ? "btn-info" : "btn-outline-info")"
-            @onclick="SetStrongPlayersFilter">
-        Strong Players
-    </button>
-    <button type="button" class="btn @(IsBalancedTeamsFilter ? "btn-info" : "btn-outline-info")"
-            @onclick="SetBalancedTeamsFilter">
-        Balanced Teams
-    </button>
-    <button type="button" class="btn @(IsLongGamesFilter ? "btn-info" : "btn-outline-info")"
-            @onclick="SetLongGamesFilter">
-        Long Games
-    </button>
+    <button type="button" class="btn @(IsStrongPlayerFilter ? "btn-info" : "btn-outline-info")" @onclick="SetStrongPlayersFilter">Strong Players</button>
+    <button type="button" class="btn @(IsBalancedTeamsFilter ? "btn-info" : "btn-outline-info")" @onclick="SetBalancedTeamsFilter">Balanced Teams</button>
+    <button type="button" class="btn @(IsLongGamesFilter ? "btn-info" : "btn-outline-info")" @onclick="SetLongGamesFilter">Long Games</button>
+    <div class="form-check form-switch ms-md-auto me-2">
+        <input class="form-check-input" type="checkbox" role="switch" id="compareMode" checked="@comparisonMode" @onchange="ToggleComparison" />
+        <label class="form-check-label" for="compareMode">Compare</label>
+    </div>
 </div>
-@if (showSampleSizeWarning)
+
+@if (comparisonMode)
+{
+    <div class="bgchart border rounded p-3 mt-2" style="max-width: 1000px;">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-3">
+                <label for="patchPreset" class="form-label">Recent patch</label>
+                <select id="patchPreset" class="form-select" value="@changeDate.ToString("yyyy-MM-dd")" @onchange="SetPatchDate">
+                    <option value="">Custom date</option>
+                    @foreach (var patchDate in patchDates)
+                    {
+                        <option value="@patchDate.ToString("yyyy-MM-dd")">@patchDate.ToString("yyyy-MM-dd")</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label for="changeDate" class="form-label">Change date</label>
+                <input id="changeDate" type="date" class="form-control" max="@utcToday.ToString("yyyy-MM-dd")" @bind="changeDate" />
+            </div>
+            <div class="col-12 col-md-3">
+                <label for="afterToDate" class="form-label">Compare through</label>
+                <input id="afterToDate" type="date" class="form-control" max="@utcToday.ToString("yyyy-MM-dd")" @bind="afterToDate" />
+            </div>
+            <div class="col-12 col-md-3">
+                <button type="button" class="btn btn-primary w-100" disabled="@isLoading" @onclick="ApplyComparison">Apply comparison</button>
+            </div>
+        </div>
+        @if (TryGetWindows(out var windows))
+        {
+            <div class="small text-muted mt-2">
+                Before: @windows.BeforeFrom.ToString("yyyy-MM-dd")–@windows.BeforeToDate.ToString("yyyy-MM-dd")
+                <span class="mx-2">|</span>
+                After: @windows.AfterFrom.ToString("yyyy-MM-dd")–@windows.AfterToDate.ToString("yyyy-MM-dd")
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(comparisonError))
+        {
+            <div class="text-danger small mt-2">@comparisonError</div>
+        }
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(loadError))
+{
+    <div class="alert alert-danger mt-2" role="alert" style="max-width: 1000px;">@loadError</div>
+}
+else if (!comparisonMode && showSampleSizeWarning)
 {
     <div class="alert alert-warning mt-2" role="alert" style="max-width: 1000px;">
         <strong>Warning:</strong> Some commanders have a low sample size (fewer than 100 games). Interpret these results with caution or adjust the time period.
     </div>
 }
-@if (response != null)
+
+@if (response is not null)
 {
-    <div class="row">
-        <div class="col-auto">
-            @if (response != null)
-            {
+    @if (comparisonMode)
+    {
+        <div class="alert alert-info mt-2 mb-2" style="max-width: 1200px;">
+            <strong>Average rating gain is the primary signal.</strong> It incorporates rating expectations and is more useful when matches are not skill-balanced.
+            Raw win rate is shown only as unadjusted context. Confidence intervals are approximate and do not prove that a patch caused the change.
+        </div>
+        <div class="btn-group mb-2" role="group" aria-label="Comparison chart metric">
+            <button type="button" class="btn @(comparisonMetric == WinrateComparisonMetric.AverageRatingGain ? "btn-info" : "btn-outline-info")"
+                    @onclick="() => SetComparisonMetric(WinrateComparisonMetric.AverageRatingGain)">Avg Rating Gain</button>
+            <button type="button" class="btn @(comparisonMetric == WinrateComparisonMetric.UnadjustedWinrate ? "btn-info" : "btn-outline-info")"
+                    @onclick="() => SetComparisonMetric(WinrateComparisonMetric.UnadjustedWinrate)">Unadjusted Win Rate</button>
+        </div>
+        @if (response.ComparisonEnts.Count == 0)
+        {
+            <div class="alert alert-secondary" style="max-width: 1000px;">No replays match both the comparison dates and the selected filters.</div>
+        }
+        else
+        {
+            <div class="border rounded border-secondary bgchart mb-3"
+                 style="width: min(1200px, 95vw); height: clamp(425px, 45vw, 600px);">
+                <WinrateComparisonChart @ref="comparisonChart" Response="response" Metric="comparisonMetric" />
+            </div>
+            <WinrateComparisonTable Rows="response.ComparisonEnts" />
+        }
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-auto">
                 <div class="border rounded border-secondary bgchart"
                      style="min-width: 850px; width: 55vw; height: calc(55vw * 0.5); min-height: 425px;">
-                    <WinrateChart @ref="winrateChart" Request="StatsRequest" Response="response"></WinrateChart>
+                    <WinrateChart @ref="winrateChart" Request="StatsRequest" Response="response" />
                 </div>
-            }
-        </div>
-        <div class="col-auto table-responsive" style="max-height: 70vh; max-width: 400px;">
-            <table class="tptable w-auto">
-                <thead class="user-select-none">
-                    <tr>
-                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Commander))">
-                            Commander
-                            @GetSortIcon(nameof(WinrateEnt.Commander))
-                        </th>
-                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Count))">
-                            Games
-                            @GetSortIcon(nameof(WinrateEnt.Count))
-                        </th>
-                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.AvgPerformance))">
-                            AvgPerf
-                            @GetSortIcon(nameof(WinrateEnt.AvgPerformance))
-                        </th>
-                        <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Wins))">
-                            Winrate
-                            @GetSortIcon(nameof(WinrateEnt.Wins))
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="text-nowrap">
-                    @if (response != null)
-                    {
+            </div>
+            <div class="col-auto table-responsive" style="max-height: 70vh; max-width: 400px;">
+                <table class="tptable w-auto">
+                    <thead class="user-select-none">
+                        <tr>
+                            <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Commander))">Commander @GetSortIcon(nameof(WinrateEnt.Commander))</th>
+                            <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Count))">Games @GetSortIcon(nameof(WinrateEnt.Count))</th>
+                            <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.AvgPerformance))">AvgPerf @GetSortIcon(nameof(WinrateEnt.AvgPerformance))</th>
+                            <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Wins))">Winrate @GetSortIcon(nameof(WinrateEnt.Wins))</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-nowrap">
                         @foreach (var ent in SortedStats)
                         {
                             <tr class="@(ent.Count < 100 ? "text-danger" : "")">
-                                <td>
-                                    <div class="d-flex">
-                                        <div class="preload-@(ent.Commander.ToString().ToLower())" alt="@ent.Commander" style="width: 30px; height: 30px;"></div>
-                                        <span>@ent.Commander</span>
-                                    </div>
-                                </td>
+                                <td><div class="d-flex"><div class="preload-@(ent.Commander.ToString().ToLowerInvariant())" style="width: 30px; height: 30px;"></div><span>@ent.Commander</span></div></td>
                                 <td>@Data.GetNumberString(ent.Count)</td>
-                                <td>
-                                    <span class="@(ent.AvgPerformance < 0 ? "text-danger" : "text-success")">@ent.AvgPerformance</span>
-                                </td>
-                                <td>
-                                    @((ent.Count == 0 ? 0 : ent.Wins / (double)ent.Count).ToString("P1"))
-                                </td>
+                                <td><span class="@(ent.AvgPerformance < 0 ? "text-danger" : "text-success")">@ent.AvgPerformance</span></td>
+                                <td>@((ent.Count == 0 ? 0 : ent.Wins / (double)ent.Count).ToString("P1"))</td>
                             </tr>
                         }
-                    }
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
-
+    }
 }
 
 @code {
@@ -99,177 +144,271 @@
     [Parameter]
     public EventCallback<StatsRequest> OnRequestChanged { get; set; }
 
-    WinrateResponse? response;
-    WinrateChart? winrateChart;
-    StatsRequestComponent? statsRequestComponent;
-    bool isLoading = true;
-    bool showSampleSizeWarning = false;
-    private readonly CancellationTokenSource cts = new();
+    private WinrateResponse? response;
+    private WinrateChart? winrateChart;
+    private WinrateComparisonChart? comparisonChart;
+    private bool isLoading = true;
+    private bool showSampleSizeWarning;
+    private bool comparisonMode;
+    private readonly DateTime utcToday = DateTime.UtcNow.Date;
+    private DateTime changeDate;
+    private DateTime afterToDate;
+    private WinrateComparisonMetric comparisonMetric = WinrateComparisonMetric.AverageRatingGain;
+    private IReadOnlyList<DateTime> patchDates = [];
+    private string? comparisonError;
+    private string? loadError;
+    private readonly CancellationTokenSource disposeCts = new();
+    private CancellationTokenSource? loadCts;
     private bool disposed;
-
-    private string? currentSortColumn = null;
+    private string? currentSortColumn;
     private bool isDescending = true;
 
-    private IEnumerable<WinrateEnt> SortedStats
-    {
-        get
+    private IEnumerable<WinrateEnt> SortedStats => response is null
+        ? []
+        : currentSortColumn switch
         {
-            if (response == null)
-            {
-                return Enumerable.Empty<WinrateEnt>();
-            }
-            return currentSortColumn switch
-            {
-                nameof(WinrateEnt.Commander) => isDescending
-                    ? response.WinrateEnts.OrderByDescending(e => e.Commander)
-                    : response.WinrateEnts.OrderBy(e => e.Commander),
-                nameof(WinrateEnt.Count) => isDescending
-                    ? response.WinrateEnts.OrderByDescending(e => e.Count)
-                    : response.WinrateEnts.OrderBy(e => e.Count),
-                nameof(WinrateEnt.AvgPerformance) => isDescending
-                    ? response.WinrateEnts.OrderByDescending(e => e.AvgPerformance)
-                    : response.WinrateEnts.OrderBy(e => e.AvgPerformance),
-                nameof(WinrateEnt.Wins) => isDescending
-                    ? response.WinrateEnts.OrderByDescending(e => e.Count == 0 ? 0 : e.Wins / (double)e.Count)
-                    : response.WinrateEnts.OrderBy(e => e.Count == 0 ? 0 : e.Wins / (double)e.Count),
-                _ => response.WinrateEnts.OrderByDescending(e => e.AvgPerformance)
-            };
-        }
-    }
+            nameof(WinrateEnt.Commander) => isDescending ? response.WinrateEnts.OrderByDescending(e => e.Commander) : response.WinrateEnts.OrderBy(e => e.Commander),
+            nameof(WinrateEnt.Count) => isDescending ? response.WinrateEnts.OrderByDescending(e => e.Count) : response.WinrateEnts.OrderBy(e => e.Count),
+            nameof(WinrateEnt.AvgPerformance) => isDescending ? response.WinrateEnts.OrderByDescending(e => e.AvgPerformance) : response.WinrateEnts.OrderBy(e => e.AvgPerformance),
+            nameof(WinrateEnt.Wins) => isDescending
+                ? response.WinrateEnts.OrderByDescending(e => e.Count == 0 ? 0 : e.Wins / (double)e.Count)
+                : response.WinrateEnts.OrderBy(e => e.Count == 0 ? 0 : e.Wins / (double)e.Count),
+            _ => response.WinrateEnts.OrderByDescending(e => e.AvgPerformance)
+        };
 
     protected override void OnInitialized()
     {
-        _ = LoadData();
-        base.OnInitialized();
+        comparisonMode = StatsRequest.Comparison is not null;
+        changeDate = StatsRequest.Comparison?.ChangeDate.Date ?? utcToday.AddDays(-30);
+        afterToDate = StatsRequest.Comparison?.AfterToDate.Date ?? utcToday;
+        comparisonMetric = StatsRequest.Comparison?.Metric ?? WinrateComparisonMetric.AverageRatingGain;
+        _ = InitializeAsync();
     }
 
-    private async Task LoadData()
+    private async Task InitializeAsync()
     {
-        var token = cts.Token;
+        var dataTask = LoadData(notifyParent: false);
+        if (comparisonMode)
+        {
+            await EnsurePatchDates();
+        }
+        await dataTask;
+    }
+
+    private async Task EnsurePatchDates()
+    {
+        if (patchDates.Count > 0 || disposeCts.IsCancellationRequested)
+        {
+            return;
+        }
+
         try
         {
-            response = await StatsService.GetStatsAsync<WinrateResponse>(StatsType.Winrate, StatsRequest, token);
+            patchDates = (await PatchNotesService.GetPatchDates(12, disposeCts.Token))
+                .Where(date => date.Date <= utcToday)
+                .Select(date => date.Date)
+                .Distinct()
+                .OrderByDescending(date => date)
+                .ToArray();
+            if (!comparisonMode && patchDates.Count > 0)
+            {
+                changeDate = patchDates[0];
+            }
+            await InvokeAsync(StateHasChanged);
         }
-        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        catch (OperationCanceledException) when (disposeCts.IsCancellationRequested)
         {
         }
         catch
         {
-        }
-        finally
-        {
-            if (!disposed && !token.IsCancellationRequested)
-            {
-                isLoading = false;
-                await InvokeAsync(StateHasChanged);
-                if (!disposed && response != null)
-                {
-                    winrateChart?.PrepareData(response, StatsRequest);
-                }
-            }
+            // Presets are optional; the date input remains usable.
         }
     }
 
-    private async Task Update()
+    private Task Update() => LoadData(notifyParent: true);
+
+    private async Task LoadData(bool notifyParent)
     {
         if (disposed)
         {
             return;
         }
 
-        var token = cts.Token;
+        var nextCts = CancellationTokenSource.CreateLinkedTokenSource(disposeCts.Token);
+        var previousCts = Interlocked.Exchange(ref loadCts, nextCts);
+        previousCts?.Cancel();
+        previousCts?.Dispose();
+        var token = nextCts.Token;
         isLoading = true;
+        loadError = null;
         await InvokeAsync(StateHasChanged);
+
         try
         {
-            response = await StatsService.GetStatsAsync<WinrateResponse>(StatsType.Winrate, StatsRequest, token);
-            if (disposed || token.IsCancellationRequested)
+            var loaded = await StatsService.GetStatsAsync<WinrateResponse>(StatsType.Winrate, StatsRequest, token);
+            if (token.IsCancellationRequested || !ReferenceEquals(loadCts, nextCts))
             {
                 return;
             }
 
-            winrateChart?.PrepareData(response, StatsRequest);
+            response = loaded;
+            showSampleSizeWarning = loaded.WinrateEnts.Any(row => row.Count < 100);
             isLoading = false;
-            showSampleSizeWarning = response.WinrateEnts.Any(a => a.Count < 100);
             await InvokeAsync(StateHasChanged);
-            await OnRequestChanged.InvokeAsync(StatsRequest);
+            await Task.Yield();
+
+            if (comparisonMode)
+            {
+                comparisonChart?.PrepareData(loaded, comparisonMetric);
+            }
+            else
+            {
+                winrateChart?.PrepareData(loaded, StatsRequest);
+            }
+
+            if (notifyParent)
+            {
+                await OnRequestChanged.InvokeAsync(StatsRequest);
+            }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
         }
-    }
-
-    public void Dispose()
-    {
-        disposed = true;
-        cts.Cancel();
-        cts.Dispose();
-    }
-
-    private bool IsStrongPlayerFilter => StatsRequest.Filter != null &&
-                                        StatsRequest.Filter.RatingRange.From == 2000 &&
-                                        StatsRequest.Filter.RatingRange.To == Data.MaxBuildRating;
-
-    private bool IsBalancedTeamsFilter => StatsRequest.Filter != null &&
-                                         StatsRequest.Filter.Exp2WinRange.From >= 40 &&
-                                         StatsRequest.Filter.Exp2WinRange.To <= 60;
-    private bool IsLongGamesFilter => StatsRequest.Filter != null &&
-                                        StatsRequest.Filter.DurationRange.From >= 900;
-
-    private void SetStrongPlayersFilter()
-    {
-        if (StatsRequest.Filter == null)
+        catch
         {
-            StatsRequest.Filter = new StatsFilter();
+            if (ReferenceEquals(loadCts, nextCts))
+            {
+                loadError = "Winrate statistics could not be loaded. Please try again.";
+                isLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }
         }
-        if (IsStrongPlayerFilter)
+    }
+
+    private async Task ToggleComparison(ChangeEventArgs args)
+    {
+        comparisonMode = args.Value is true || string.Equals(args.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        comparisonError = null;
+        if (comparisonMode)
         {
-            StatsRequest.Filter.RatingRange.From = 0;
-            StatsRequest.Filter.RatingRange.To = Data.MaxBuildRating;
+            await EnsurePatchDates();
+            if (patchDates.Count > 0 && StatsRequest.Comparison is null)
+            {
+                changeDate = patchDates[0];
+            }
+            if (!SetComparisonRequest())
+            {
+                comparisonMode = false;
+                return;
+            }
         }
         else
         {
-            StatsRequest.Filter.RatingRange.From = 2000;
-            StatsRequest.Filter.RatingRange.To = Data.MaxBuildRating;
+            StatsRequest.Comparison = null;
         }
+
+        await Update();
+    }
+
+    private async Task ApplyComparison()
+    {
+        if (SetComparisonRequest())
+        {
+            await Update();
+        }
+    }
+
+    private bool SetComparisonRequest()
+    {
+        var candidate = new WinrateComparisonRequest
+        {
+            ChangeDate = changeDate.Date,
+            AfterToDate = afterToDate.Date,
+            Metric = comparisonMetric
+        };
+        try
+        {
+            candidate.Resolve(utcToday);
+            comparisonError = null;
+            StatsRequest.Comparison = candidate;
+            return true;
+        }
+        catch (ArgumentException ex)
+        {
+            comparisonError = ex.Message;
+            return false;
+        }
+    }
+
+    private bool TryGetWindows(out WinrateComparisonWindows windows)
+    {
+        try
+        {
+            windows = new WinrateComparisonRequest { ChangeDate = changeDate, AfterToDate = afterToDate }.Resolve(utcToday);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            windows = default!;
+            return false;
+        }
+    }
+
+    private void SetPatchDate(ChangeEventArgs args)
+    {
+        if (DateTime.TryParse(args.Value?.ToString(), out var selected))
+        {
+            changeDate = selected.Date;
+            comparisonError = null;
+        }
+    }
+
+    private async Task SetComparisonMetric(WinrateComparisonMetric metric)
+    {
+        if (comparisonMetric == metric)
+        {
+            return;
+        }
+
+        comparisonMetric = metric;
+        if (StatsRequest.Comparison is not null)
+        {
+            StatsRequest.Comparison = StatsRequest.Comparison with { Metric = metric };
+        }
+        comparisonChart?.PrepareData(response ?? new(), metric);
+        await OnRequestChanged.InvokeAsync(StatsRequest);
+    }
+
+    private bool IsStrongPlayerFilter => StatsRequest.Filter is not null
+        && StatsRequest.Filter.RatingRange.From == 2000
+        && StatsRequest.Filter.RatingRange.To == Data.MaxBuildRating;
+    private bool IsBalancedTeamsFilter => StatsRequest.Filter is not null
+        && StatsRequest.Filter.Exp2WinRange.From >= 40
+        && StatsRequest.Filter.Exp2WinRange.To <= 60;
+    private bool IsLongGamesFilter => StatsRequest.Filter is not null
+        && StatsRequest.Filter.DurationRange.From >= 900;
+
+    private void SetStrongPlayersFilter()
+    {
+        StatsRequest.Filter ??= new StatsFilter();
+        StatsRequest.Filter.RatingRange.From = IsStrongPlayerFilter ? Data.MinBuildRating : 2000;
+        StatsRequest.Filter.RatingRange.To = Data.MaxBuildRating;
         _ = Update();
     }
 
     private void SetBalancedTeamsFilter()
     {
-        if (StatsRequest.Filter == null)
-        {
-            StatsRequest.Filter = new StatsFilter();
-        }
-        if (IsBalancedTeamsFilter)
-        {
-            StatsRequest.Filter.Exp2WinRange.From = 0;
-            StatsRequest.Filter.Exp2WinRange.To = 100;
-        }
-        else
-        {
-            StatsRequest.Filter.Exp2WinRange.From = 40;
-            StatsRequest.Filter.Exp2WinRange.To = 60;
-        }
+        StatsRequest.Filter ??= new StatsFilter();
+        StatsRequest.Filter.Exp2WinRange.From = IsBalancedTeamsFilter ? 0 : 40;
+        StatsRequest.Filter.Exp2WinRange.To = IsBalancedTeamsFilter ? 100 : 60;
         _ = Update();
     }
 
     private void SetLongGamesFilter()
     {
-        if (StatsRequest.Filter == null)
-        {
-            StatsRequest.Filter = new StatsFilter();
-        }
-        if (IsLongGamesFilter)
-        {
-            StatsRequest.Filter.DurationRange.From = Data.MinDuration;
-            StatsRequest.Filter.DurationRange.To = Data.MaxDuration;
-        }
-        else
-        {
-            StatsRequest.Filter.DurationRange.From = 900;
-            StatsRequest.Filter.DurationRange.To = Data.MaxDuration;
-        }
+        StatsRequest.Filter ??= new StatsFilter();
+        StatsRequest.Filter.DurationRange.From = IsLongGamesFilter ? Data.MinDuration : 900;
+        StatsRequest.Filter.DurationRange.To = Data.MaxDuration;
         _ = Update();
     }
 
@@ -277,12 +416,10 @@
     {
         if (currentSortColumn == columnName)
         {
-            // Toggle direction if the same column is clicked
             isDescending = !isDescending;
         }
         else
         {
-            // New column clicked, set new column and default to descending
             currentSortColumn = columnName;
             isDescending = true;
         }
@@ -292,12 +429,19 @@
     {
         if (currentSortColumn != columnName)
         {
-            return (MarkupString)""; // No icon if not the current sort column
+            return (MarkupString)string.Empty;
         }
-
-        // Use Bootstrap Icons (bi) for direction indicators
         return isDescending
             ? (MarkupString)"<span class='bi bi-arrow-down-short ms-1'></span>"
             : (MarkupString)"<span class='bi bi-arrow-up-short ms-1'></span>";
+    }
+
+    public void Dispose()
+    {
+        disposed = true;
+        disposeCts.Cancel();
+        loadCts?.Cancel();
+        loadCts?.Dispose();
+        disposeCts.Dispose();
     }
 }

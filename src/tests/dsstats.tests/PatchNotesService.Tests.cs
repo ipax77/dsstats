@@ -55,6 +55,22 @@ public sealed class PatchNotesServiceTests
         CollectionAssert.AreEqual(new[] { "Brutalisk", "Marine", "Roach" }, all.ToArray());
     }
 
+    [TestMethod]
+    public async Task GetPatchDates_ReturnsDistinctNewestDatesAndCachesResults()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+
+        var dates = await fixture.Service.GetPatchDates(3);
+        CollectionAssert.AreEqual(
+            new[] { new DateTime(2026, 1, 4), new DateTime(2026, 1, 3), new DateTime(2026, 1, 2) },
+            dates.ToArray());
+
+        fixture.Context.PatchNotes.Add(TestFixture.CreateNote("new", Commander.Abathur, new DateTime(2026, 2, 1), "New patch."));
+        await fixture.Context.SaveChangesAsync();
+        var cached = await fixture.Service.GetPatchDates(1);
+        Assert.AreEqual(new DateTime(2026, 1, 4), cached[0]);
+    }
+
     private sealed class TestFixture : IAsyncDisposable
     {
         private readonly SqliteConnection connection;
@@ -74,6 +90,7 @@ public sealed class PatchNotesServiceTests
         }
 
         public PatchNotesService Service { get; }
+        public DsstatsContext Context => context;
 
         public static async Task<TestFixture> CreateAsync()
         {
@@ -101,7 +118,7 @@ public sealed class PatchNotesServiceTests
             return new TestFixture(connection, context, cache, service);
         }
 
-        private static PatchNote CreateNote(string key, Commander commander, DateTime date, string content) => new()
+        public static PatchNote CreateNote(string key, Commander commander, DateTime date, string content) => new()
         {
             SourceKey = key,
             Source = PatchNoteSource.Manual,

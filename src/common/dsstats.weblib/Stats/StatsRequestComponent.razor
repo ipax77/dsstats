@@ -19,7 +19,7 @@
             </div>
             <div class="col-12 col-md-2">
                 <label for="timeselect" class="col-form-label">Time Period</label>
-                <InputSelect id="timeselect" class="form-select" @bind-Value="Request.TimePeriod">
+                <InputSelect id="timeselect" class="form-select" disabled="@ComparisonMode" @bind-Value="Request.TimePeriod">
                     @foreach (TimePeriod type in Enum.GetValues(typeof(TimePeriod)))
                     {
                         @if (type == TimePeriod.None)
@@ -81,7 +81,7 @@
     </EditForm>
 </div>
 
-<StatsFilterModal @ref="statsFilterModal" OnRequest="FilterRequest" />
+<StatsFilterModal @ref="statsFilterModal" OnRequest="FilterRequest" HideDateRange="ComparisonMode" />
 
 @code {
     [Parameter, EditorRequired]
@@ -89,6 +89,9 @@
 
     [Parameter, EditorRequired]
     public bool IsLoading { get; set; }
+
+    [Parameter]
+    public bool ComparisonMode { get; set; }
 
     [Parameter]
     public EventCallback OnRequestChanged { get; set; }

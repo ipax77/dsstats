@@ -22,4 +22,10 @@ public sealed class PatchNotesService(IHttpClientFactory httpClientFactory) : IP
         return await httpClient.GetFromJsonAsync<string[]>(
             $"api10/PatchNotes/units?commander={(int)commander}", token) ?? [];
     }
+
+    public async Task<IReadOnlyList<DateTime>> GetPatchDates(int count = 12, CancellationToken token = default)
+    {
+        return await httpClient.GetFromJsonAsync<DateTime[]>(
+            $"api10/PatchNotes/dates?count={count}", token) ?? [];
+    }
 }

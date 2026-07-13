@@ -97,6 +97,18 @@
     [SupplyParameterFromQuery]
     public string? FromExp2Win { get; set; }
 
+    [SupplyParameterFromQuery]
+    public string? Cmp { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? CmpDate { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? CmpTo { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? CmpMetric { get; set; }
+
     private static readonly FrozenDictionary<string, string> paramMap = new Dictionary<string, string>
     {
         { nameof(StatsRequest.Type), "St" },
@@ -127,7 +139,7 @@
 
     protected override void OnInitialized()
     {
-        // InitRequest();
+        InitRequest();
         base.OnInitialized();
     }
 
@@ -140,8 +152,42 @@
             TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days),
             Interest = EnumExtensions.ParseEnumOrDefault(Int, Commander.None),
             WithLeavers = bool.TryParse(WithL, out var wl) && wl,
-            Filter = InitFilter()
+            Filter = InitFilter(),
+            Comparison = InitComparison()
         };
+    }
+
+    private WinrateComparisonRequest? InitComparison()
+    {
+        if (!bool.TryParse(Cmp, out var compare) || !compare)
+        {
+            return null;
+        }
+
+        var today = DateTime.UtcNow.Date;
+        var changeDate = DateTime.TryParseExact(CmpDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var parsedChange)
+            ? parsedChange.Date
+            : today.AddDays(-30);
+        var afterToDate = DateTime.TryParseExact(CmpTo, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var parsedTo)
+            ? parsedTo.Date
+            : today;
+        var metric = EnumExtensions.ParseEnumOrDefault(CmpMetric, WinrateComparisonMetric.AverageRatingGain);
+        var comparison = new WinrateComparisonRequest
+        {
+            ChangeDate = changeDate,
+            AfterToDate = afterToDate,
+            Metric = metric
+        };
+
+        try
+        {
+            comparison.Resolve(today);
+            return comparison;
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
     }
 
     private static StatsType NormalizeStatsType(StatsType type)
@@ -275,7 +321,7 @@
 
         if (newRequest.Filter != null)
         {
-            if (newRequest.Filter.DateRange.From != DateTime.Today.AddDays(-90))
+            if (newRequest.Comparison is null && newRequest.Filter.DateRange.From != DateTime.Today.AddDays(-90))
             {
                 queryDic["FromDate"] = newRequest.Filter.DateRange.From.ToString("yyyy-MM-dd");
             }
@@ -285,7 +331,7 @@
             }
 
 
-            if (newRequest.Filter.DateRange.To != DateTime.Today)
+            if (newRequest.Comparison is null && newRequest.Filter.DateRange.To != DateTime.Today)
             {
                 queryDic["ToDate"] = newRequest.Filter.DateRange.To.ToString("yyyy-MM-dd");
             }
@@ -348,6 +394,23 @@
             queryDic["FromDuration"] = null;
             queryDic["ToDuration"] = null;
             queryDic["FromExp2Win"] = null;
+        }
+
+        if (newRequest.Comparison is not null)
+        {
+            queryDic["Cmp"] = true;
+            queryDic["CmpDate"] = newRequest.Comparison.ChangeDate.ToString("yyyy-MM-dd");
+            queryDic["CmpTo"] = newRequest.Comparison.AfterToDate.ToString("yyyy-MM-dd");
+            queryDic["CmpMetric"] = newRequest.Comparison.Metric == WinrateComparisonMetric.AverageRatingGain
+                ? null
+                : newRequest.Comparison.Metric.ToString();
+        }
+        else
+        {
+            queryDic["Cmp"] = null;
+            queryDic["CmpDate"] = null;
+            queryDic["CmpTo"] = null;
+            queryDic["CmpMetric"] = null;
         }
 
         var baseUri = NavigationManager.Uri.Split('?')[0];

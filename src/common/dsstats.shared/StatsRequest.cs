@@ -48,6 +48,7 @@ public sealed class StatsRequest
     public Commander Interest { get; set; }
     public bool WithLeavers { get; set; }
     public StatsFilter? Filter { get; set; }
+    public WinrateComparisonRequest? Comparison { get; set; }
 }
 
 public sealed class UserStatsRequest
@@ -107,6 +108,7 @@ public sealed class CountResponse : IStatsResponse
 public sealed class WinrateResponse : IStatsResponse
 {
     public List<WinrateEnt> WinrateEnts { get; set; } = [];
+    public IReadOnlyList<WinrateComparisonEnt> ComparisonEnts { get; set; } = Array.Empty<WinrateComparisonEnt>();
 }
 
 public sealed class SynergyResponse : IStatsResponse

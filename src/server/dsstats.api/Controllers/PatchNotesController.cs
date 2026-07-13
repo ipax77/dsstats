@@ -24,4 +24,12 @@ public sealed class PatchNotesController(IPatchNotesService patchNotesService) :
     {
         return Ok(await patchNotesService.GetUnitNames(commander, token));
     }
+
+    [HttpGet("dates")]
+    public async Task<ActionResult<IReadOnlyList<DateTime>>> GetPatchDates(
+        [FromQuery] int count = 12,
+        CancellationToken token = default)
+    {
+        return Ok(await patchNotesService.GetPatchDates(count, token));
+    }
 }

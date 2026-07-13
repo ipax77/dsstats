@@ -15,6 +15,7 @@ public sealed class PatchNotesService(
     private const int MaximumPageSize = 100;
     private const int MaximumUnitNameLength = 100;
     private const string UnitNamesCacheKey = "patch_notes_unit_names";
+    private const string PatchDatesCacheKey = "patch_notes_dates";
     private static readonly IReadOnlyList<string> EmptyUnitNames = Array.Empty<string>();
 
     public async Task<PatchNotesPage> GetPatchNotes(PatchNotesRequest request, CancellationToken token = default)
@@ -97,6 +98,24 @@ public sealed class PatchNotesService(
         }
 
         return catalog.All;
+    }
+
+    public async Task<IReadOnlyList<DateTime>> GetPatchDates(int count = 12, CancellationToken token = default)
+    {
+        count = Math.Clamp(count, 1, 50);
+        var dates = await memoryCache.GetOrCreateAsync(PatchDatesCacheKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
+            await using var context = await contextFactory.CreateDbContextAsync(token);
+            return await context.PatchNotes.AsNoTracking()
+                .Select(note => note.PublishedAtUtc.Date)
+                .Distinct()
+                .OrderByDescending(date => date)
+                .Take(50)
+                .ToArrayAsync(token);
+        }) ?? [];
+
+        return dates.Take(count).ToArray();
     }
 
     private sealed record UnitNameCatalog(

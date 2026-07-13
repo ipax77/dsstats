@@ -72,9 +72,13 @@ public static class StatsRequestExtensions
     {
         var interestPart = includeInterest ? request.Interest.ToString() : "all";
 
+        var comparisonPart = request.Comparison is null
+            ? string.Empty
+            : $"|compare:{request.Comparison.ChangeDate:yyyy-MM-dd}:{request.Comparison.AfterToDate:yyyy-MM-dd}";
+
         if (request.Filter is null)
         {
-            return $"{statsType}:{request.TimePeriod}|{request.RatingType}|{interestPart}|{request.WithLeavers}";
+            return $"{statsType}:{request.TimePeriod}|{request.RatingType}|{interestPart}|{request.WithLeavers}{comparisonPart}";
         }
 
         return $"{statsType}:{request.RatingType}|{interestPart}|{request.WithLeavers}"
@@ -82,7 +86,8 @@ public static class StatsRequestExtensions
             + $"{request.Filter.RatingRange.From}|{request.Filter.RatingRange.To}"
             + $"{request.Filter.DurationRange.From}|{request.Filter.DurationRange.To}"
             + $"{request.Filter.Exp2WinRange.From}|{request.Filter.Exp2WinRange.To}"
-            + $"{request.Filter.TeamRatingRange.From}|{request.Filter.TeamRatingRange.To}";
+            + $"{request.Filter.TeamRatingRange.From}|{request.Filter.TeamRatingRange.To}"
+            + comparisonPart;
     }
 }
 
