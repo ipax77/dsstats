@@ -57,6 +57,7 @@ builder.Services.AddScoped<IUnitLifeCostService, UnitLifeCostService>();
 builder.Services.AddScoped<IBuildDetailsService, BuildDetailsService>();
 builder.Services.AddScoped<IDashboardStatsService, DashboardStatsService>();
 builder.Services.AddScoped<IInHouseClosedGameSessionService, InHouseClosedGameSessionService>();
+builder.Services.AddScoped<IPatchNotesService, PatchNotesService>();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

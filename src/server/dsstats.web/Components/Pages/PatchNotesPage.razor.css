@@ -1,0 +1,134 @@
+.patch-notes-page {
+    --patch-accent: #69c4c3;
+    --patch-accent-soft: #9bd8d4;
+    --patch-border: rgba(102, 182, 187, .38);
+    --patch-panel: rgba(5, 18, 30, .9);
+    --patch-panel-strong: rgba(7, 24, 38, .95);
+    --patch-text: #dce9ea;
+    --patch-muted: #9db5bb;
+    max-width: 960px;
+}
+
+.patch-notes-header {
+    backdrop-filter: blur(5px);
+    background: linear-gradient(110deg, rgba(5, 20, 32, .94), rgba(8, 32, 44, .88));
+    border: 1px solid var(--patch-border);
+    border-left: 4px solid var(--patch-accent);
+    border-radius: .65rem;
+    box-shadow: 0 .5rem 1.5rem rgba(0, 7, 15, .24);
+    max-width: 100%;
+    padding: .85rem 1.25rem;
+    width: fit-content;
+}
+
+.patch-notes-header h1 {
+    color: #edf7f6;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, .45);
+}
+
+.patch-notes-header .text-body-secondary {
+    color: #b4c9cd !important;
+}
+
+.patch-notes-eyebrow {
+    color: var(--patch-accent-soft);
+    font-weight: 700;
+    letter-spacing: .12em;
+}
+
+.filter-panel,
+.patch-notes-state {
+    backdrop-filter: blur(5px);
+    background: linear-gradient(135deg, var(--patch-panel-strong), rgba(9, 32, 45, .91));
+    border: 1px solid var(--patch-border);
+    border-radius: .75rem;
+    box-shadow: 0 .5rem 1.5rem rgba(0, 7, 15, .24);
+    padding: 1rem;
+}
+
+.filter-panel .form-label {
+    color: #c1d4d7;
+}
+
+.filter-panel .form-select {
+    background-color: #081a28;
+    border-color: rgba(105, 196, 195, .35);
+    color: var(--patch-text);
+}
+
+.filter-panel .form-select:hover {
+    border-color: rgba(105, 196, 195, .65);
+}
+
+.filter-panel .form-select:focus {
+    border-color: var(--patch-accent);
+    box-shadow: 0 0 0 .2rem rgba(105, 196, 195, .16);
+}
+
+.patch-note-list {
+    display: grid;
+    gap: .75rem;
+}
+
+.patch-note-card {
+    backdrop-filter: blur(4px);
+    background: linear-gradient(100deg, var(--patch-panel-strong), rgba(7, 25, 38, .88));
+    border: 1px solid var(--patch-border);
+    border-left: 3px solid var(--patch-accent);
+    border-radius: .5rem;
+    box-shadow: 0 .35rem 1rem rgba(0, 7, 15, .18);
+    padding: 1rem 1.15rem;
+    transition: background-color .15s ease, border-color .15s ease;
+}
+
+.patch-note-card:hover {
+    background: linear-gradient(100deg, rgba(8, 30, 45, .97), rgba(10, 36, 49, .92));
+    border-color: rgba(119, 207, 207, .55);
+}
+
+.patch-note-meta {
+    align-items: center;
+    color: var(--patch-muted);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: .8rem;
+    font-weight: 600;
+    gap: .5rem;
+    margin-bottom: .5rem;
+    text-transform: uppercase;
+}
+
+.patch-note-dot {
+    background: var(--patch-accent);
+    border-radius: 50%;
+    height: .3rem;
+    width: .3rem;
+}
+
+.commander-badge {
+    color: var(--patch-accent-soft);
+}
+
+.patch-note-content {
+    color: var(--patch-text);
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.patch-notes-state .text-body-secondary,
+.patch-notes-page nav .text-body-secondary {
+    color: var(--patch-muted) !important;
+}
+
+.patch-notes-page .btn-outline-secondary {
+    background-color: rgba(5, 20, 31, .84);
+    border-color: rgba(105, 196, 195, .45);
+    color: #bcd5d7;
+}
+
+.patch-notes-page .btn-outline-secondary:hover:not(:disabled) {
+    background-color: rgba(34, 91, 99, .86);
+    border-color: var(--patch-accent);
+    color: #f0f8f8;
+}
