@@ -143,6 +143,7 @@ else if (!comparisonMode && showSampleSizeWarning)
 
 @code {
     private const int MinimumCompareDays = 3;
+    private const int DefaultCompareDays = 90;
     private const int MaximumCompareDays = 160;
 
     [Parameter, EditorRequired]
@@ -188,7 +189,7 @@ else if (!comparisonMode && showSampleSizeWarning)
         comparisonMode = StatsRequest.Comparison is not null;
         changeDate = StatsRequest.Comparison?.ChangeDate.Date ?? utcToday.AddDays(-30);
         compareDays = StatsRequest.Comparison is null
-            ? GetDaysThroughToday(changeDate)
+            ? GetDefaultCompareDays(changeDate)
             : (StatsRequest.Comparison.AfterToDate.Date - changeDate).Days + 1;
         comparisonMetric = StatsRequest.Comparison?.Metric ?? WinrateComparisonMetric.AverageRatingGain;
         _ = InitializeAsync();
@@ -308,7 +309,7 @@ else if (!comparisonMode && showSampleSizeWarning)
                 if (latestComparablePatch != default)
                 {
                     changeDate = latestComparablePatch;
-                    compareDays = GetDaysThroughToday(changeDate);
+                    compareDays = GetDefaultCompareDays(changeDate);
                 }
             }
             if (!SetComparisonRequest())
@@ -390,14 +391,15 @@ else if (!comparisonMode && showSampleSizeWarning)
         if (DateTime.TryParse(args.Value?.ToString(), out var selected))
         {
             changeDate = selected.Date;
+            compareDays = GetDefaultCompareDays(changeDate);
             comparisonError = null;
         }
     }
 
-    private int GetDaysThroughToday(DateTime fromDate) => Math.Clamp(
+    private int GetDefaultCompareDays(DateTime fromDate) => Math.Clamp(
         (utcToday - fromDate.Date).Days + 1,
         MinimumCompareDays,
-        MaximumCompareDays);
+        DefaultCompareDays);
 
     private static string GetPatchNotesUrl(WinrateComparisonWindows windows) =>
         $"/te/patch-notes?PatchDate={windows.AfterFrom:yyyy-MM-dd}&ToDate={windows.AfterToDate:yyyy-MM-dd}";
