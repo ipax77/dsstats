@@ -65,6 +65,8 @@ public class DsstatsContext : DbContext
     public DbSet<ReplaySpawnPlayback> ReplaySpawnPlaybacks { get; set; }
     public DbSet<ReplayUserRatingCollect> ReplayUserRatingCollects { get; set; }
     public DbSet<ReplayUserRatingSummary> ReplayUserRatingSummaries { get; set; }
+    public DbSet<PatchNote> PatchNotes { get; set; }
+    public DbSet<PatchNoteSyncState> PatchNoteSyncStates { get; set; }
 
     public int Week(DateTime date) => throw new InvalidOperationException($"{nameof(Week)} cannot be called client side.");
 
@@ -230,6 +232,28 @@ public class DsstatsContext : DbContext
                 .WithMany()
                 .HasForeignKey(i => i.ReplayId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PatchNote>(entity =>
+        {
+            entity.Property(i => i.SourceKey).HasMaxLength(96).IsRequired();
+            entity.Property(i => i.Source).HasConversion<byte>();
+            entity.Property(i => i.SourceMessageId).HasMaxLength(32);
+            entity.Property(i => i.PublishedAtUtc).HasPrecision(6);
+            entity.Property(i => i.Commander).HasConversion<short>();
+            entity.Property(i => i.Content).IsRequired();
+            entity.HasIndex(i => i.SourceKey).IsUnique();
+            entity.HasIndex(i => new { i.PublishedAtUtc, i.PatchNoteId })
+                .IsDescending(true, true);
+            entity.HasIndex(i => new { i.Commander, i.PublishedAtUtc, i.PatchNoteId })
+                .IsDescending(false, true, true);
+        });
+
+        modelBuilder.Entity<PatchNoteSyncState>(entity =>
+        {
+            entity.Property(i => i.PatchNoteSyncStateId).HasMaxLength(32);
+            entity.Property(i => i.Cursor).HasMaxLength(32);
+            entity.Property(i => i.UpdatedAtUtc).HasPrecision(6);
         });
 
         modelBuilder.Entity<ReplayPlayer>(entity =>
