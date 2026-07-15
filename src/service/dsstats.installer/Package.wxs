@@ -3,7 +3,7 @@
 <!-- Define the variables in "$(var.*) expressions" -->
 <?define Name = "Dsstats Service" ?>
 <?define Manufacturer = "ipax77" ?>
-<?define Version = "3.0.6.0" ?>
+<?define Version = "3.0.7.0" ?>
 <?define UpgradeCode = "88b88f8c-abb7-4aa7-9cb4-7571e4c4c924"?>
 <?define BinPath = "..\dsstats.service\bin\Release\net10.0\win-x64\publish" ?>
 
@@ -27,7 +27,6 @@
             <Component Id="ServiceExecutable" Bitness="always64">
                 <File Id="dsstats.service.exe" Source="$(var.BinPath)\dsstats.service.exe"/>
                 <File Id="AppSettingsJsonFile" Source="$(var.BinPath)\appsettings.json" />
-                <File Id="sqlite" Source="$(var.BinPath)\..\e_sqlite3.dll"/>
                 <RemoveFile Name="*.*" On="both" />
 
                 <ServiceInstall Id="ServiceInstaller"
@@ -46,10 +45,15 @@
                                 Name="dsstats.worker"
                                 Wait="true" />
             </Component>
+
+            <Component Id="SqliteNative" Bitness="always64">
+                <File Id="sqlite" Source="$(var.BinPath)\..\e_sqlite3.dll"/>
+            </Component>
         </DirectoryRef>
 
         <Feature Id="Service" Title="dsstats.worker Setup" Level="1">
             <ComponentRef Id="ServiceExecutable" />
+            <ComponentRef Id="SqliteNative" />
         </Feature>
 
     </Package>
