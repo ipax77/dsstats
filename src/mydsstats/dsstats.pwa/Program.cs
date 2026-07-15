@@ -2,6 +2,7 @@ using dsstats.indexedDb.Services;
 using dsstats.pwa;
 using dsstats.pwa.Services;
 using dsstats.shared;
+using dsstats.shared.Builder;
 using dsstats.shared.InHouse;
 using dsstats.shared.Interfaces;
 using dsstats.weblib.Replays;
@@ -93,6 +94,7 @@ builder.Services.AddScoped<AuthenticationStateProvider, InHouseAuthenticationSta
 builder.Services.AddScoped<IPlayerService, dsstats.apiServices.PlayerService>();
 builder.Services.AddScoped<IStatsService, dsstats.apiServices.StatsService>();
 builder.Services.AddScoped<IUnitLifeCostService, NoOpUnitLifeCostService>();
+builder.Services.AddSingleton<IBuilderService, UnavailableBuilderService>();
 
 builder.Services.AddSingleton<DecodeService>();
 
