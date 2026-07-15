@@ -33,7 +33,17 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v3.0.9</summary>
+<details open="open"><summary>v3.0.10</summary>
+
+>- Update Sc2DirectStrike.Parser to v0.2.2
+>- Improve spawn-unit matching for commander-decorated and Starlight/Lightweight unit names while continuing to exclude produced units
+>- Handle AFK duration using the first zero-income stats event after the AFK signal
+>- Use each player's final positive-income stats for final killed, lost, and upgrade totals without changing compatibility hashes
+>- Special thanks to monkey for reporting the issue
+
+</details>
+
+<details><summary>v3.0.9</summary>
 
 >- Fix maui profiles - allow adding custom folders
 >- Fix display of ignored replays
