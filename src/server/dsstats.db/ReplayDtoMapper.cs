@@ -63,6 +63,7 @@ public static class ReplayDtoMapper
             Messages = dto.Messages,
             Pings = dto.Pings,
             IsMvp = dto.IsMvp,
+            ScanCount = dto.ScanCount,
             IsUploader = dto.IsUploader,
             Spawns = dto.Spawns.Select(s => s.ToEntity(stripSpawnUnitPositions)).ToList(),
             TierUpgrades = dto.TierUpgrades.ToArray(),
@@ -127,6 +128,11 @@ public static class ReplayDtoMapper
                 Count = s.Count,
                 Positions = stripSpawnUnitPositions ? null : s.Positions?.ToArray(),
                 Unit = new() { Name = s.Name }
+            }).ToList(),
+            Modifications = dto.Modifications.Select(s => new SpawnModification()
+            {
+                Count = s.Count,
+                Unit = new() { Name = s.TargetUnitName }
             }).ToList()
         };
     }

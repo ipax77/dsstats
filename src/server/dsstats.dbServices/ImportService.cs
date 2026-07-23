@@ -104,6 +104,13 @@ public partial class ImportService(
                             spawnUnit.UnitId = GetOrCreateUnitId(spawnUnit.Unit.Name, context);
                             spawnUnit.Unit = null;
                         }
+
+                        foreach (var modification in spawn.Modifications)
+                        {
+                            if (modification.Unit == null) continue;
+                            modification.UnitId = GetOrCreateUnitId(modification.Unit.Name, context);
+                            modification.Unit = null;
+                        }
                     }
 
                     foreach (var playerUpgrade in rp.Upgrades)
@@ -330,6 +337,13 @@ public partial class ImportService(
                         ArgumentNullException.ThrowIfNull(unit.Unit);
                         unit.UnitId = GetOrCreateUnitId(unit.Unit.Name, context);
                         unit.Unit = null;
+                    }
+
+                    foreach (var modification in spawn.Modifications)
+                    {
+                        ArgumentNullException.ThrowIfNull(modification.Unit);
+                        modification.UnitId = GetOrCreateUnitId(modification.Unit.Name, context);
+                        modification.Unit = null;
                     }
                 }
             }

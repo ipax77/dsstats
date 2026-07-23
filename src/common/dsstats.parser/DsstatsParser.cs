@@ -15,6 +15,7 @@ using ExternalSpawnDto = Sc2DirectStrike.Parser.SpawnDto;
 using ExternalToonIdDto = Sc2DirectStrike.Parser.ToonIdDto;
 using ExternalUnitDto = Sc2DirectStrike.Parser.UnitDto;
 using ExternalUpgradeDto = Sc2DirectStrike.Parser.UpgradeDto;
+using ExternalBuildUnitModificationCountDto = Sc2DirectStrike.Parser.BuildUnitModificationCountDto;
 
 namespace dsstats.parser;
 
@@ -227,6 +228,7 @@ public static class DsstatsParser
             Cannon = ToSeconds(replay.Cannon),
             Bunker = ToSeconds(replay.Bunker),
             WinnerTeam = replay.WinnerTeam,
+            ResumedFromReplay = replay.ResumedFromReplay,
             MiddleChanges = ToMiddleChanges(replay),
             Players = replay.Players.Select(ToDsstatsDto).ToList()
         };
@@ -249,6 +251,7 @@ public static class DsstatsParser
             Messages = player.Messages,
             Pings = player.Pings,
             IsMvp = player.IsMvp,
+            ScanCount = player.ScanCount,
             Spawns = player.Spawns.Select(ToDsstatsDto).ToList(),
             Upgrades = player.Upgrades.Select(ToDsstatsDto).ToList(),
             TierUpgrades = player.TierUpgrades.Select(ToSeconds).ToList(),
@@ -304,8 +307,14 @@ public static class DsstatsParser
             KilledValue = spawn.KilledValue,
             LostValue = spawn.LostValue,
             UpgradeSpent = spawn.UpgradeSpent,
-            Units = spawn.Units.Select(ToDsstatsDto).ToList()
+            Units = spawn.Units.Select(ToDsstatsDto).ToList(),
+            Modifications = spawn.BuildUnitModifications.Select(ToDsstatsDto).ToList()
         };
+    }
+
+    private static BuildUnitModificationCountDto ToDsstatsDto(this ExternalBuildUnitModificationCountDto mod)
+    {
+        return new(mod.TargetUnitName, mod.Count);
     }
 
     private static UnitDto ToDsstatsDto(ExternalUnitDto unit)

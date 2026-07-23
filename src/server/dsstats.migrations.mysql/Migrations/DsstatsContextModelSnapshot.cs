@@ -17,7 +17,7 @@ namespace dsstats.migrations.mysql.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.17")
+                .HasAnnotation("ProductVersion", "9.0.18")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -1016,6 +1016,9 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Property<int>("Result")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ScanCount")
+                        .HasColumnType("int");
+
                     b.Property<int>("SelectedRace")
                         .HasColumnType("int");
 
@@ -1424,6 +1427,32 @@ namespace dsstats.migrations.mysql.Migrations
                     b.HasIndex("ReplayPlayerId");
 
                     b.ToTable("Spawns");
+                });
+
+            modelBuilder.Entity("dsstats.db.SpawnModification", b =>
+                {
+                    b.Property<int>("SpawnModificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("SpawnModificationId"));
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SpawnId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UnitId")
+                        .HasColumnType("int");
+
+                    b.HasKey("SpawnModificationId");
+
+                    b.HasIndex("SpawnId");
+
+                    b.HasIndex("UnitId");
+
+                    b.ToTable("SpawnModifications");
                 });
 
             modelBuilder.Entity("dsstats.db.SpawnUnit", b =>
@@ -2180,6 +2209,25 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Navigation("ReplayPlayer");
                 });
 
+            modelBuilder.Entity("dsstats.db.SpawnModification", b =>
+                {
+                    b.HasOne("dsstats.db.Spawn", "Spawn")
+                        .WithMany("Modifications")
+                        .HasForeignKey("SpawnId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("dsstats.db.Unit", "Unit")
+                        .WithMany()
+                        .HasForeignKey("UnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Spawn");
+
+                    b.Navigation("Unit");
+                });
+
             modelBuilder.Entity("dsstats.db.SpawnUnit", b =>
                 {
                     b.HasOne("dsstats.db.Spawn", "Spawn")
@@ -2295,6 +2343,8 @@ namespace dsstats.migrations.mysql.Migrations
 
             modelBuilder.Entity("dsstats.db.Spawn", b =>
                 {
+                    b.Navigation("Modifications");
+
                     b.Navigation("Units");
                 });
 

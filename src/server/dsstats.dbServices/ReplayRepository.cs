@@ -79,6 +79,15 @@ public partial class ReplayRepository(
                 spawnUnit.Unit!.Name))
             .ToListAsync();
 
+        var modifications = await (
+            from modification in context.SpawnModifications.AsNoTracking()
+            where spawnIds.Contains(modification.SpawnId)
+            select new ReplayDetailUnitRow(
+                modification.SpawnId,
+                modification.Count,
+                modification.Unit!.Name))
+            .ToListAsync();
+
         var upgrades = await (
             from upgrade in context.PlayerUpgrades.AsNoTracking()
             let replayPlayerId = EF.Property<int?>(upgrade, "ReplayPlayerId")
@@ -91,6 +100,7 @@ public partial class ReplayRepository(
 
         var spawnsByPlayerId = spawns.ToLookup(spawn => spawn.ReplayPlayerId);
         var unitsBySpawnId = units.ToLookup(unit => unit.SpawnId);
+        var modificatoinsBySpawnId = modifications.ToLookup(unit => unit.SpawnId);
         var upgradesByPlayerId = upgrades.ToLookup(upgrade => upgrade.ReplayPlayerId);
 
         replay.Replay.Players = players
@@ -109,6 +119,7 @@ public partial class ReplayRepository(
                 Messages = player.Messages,
                 Pings = player.Pings,
                 IsMvp = player.IsMvp,
+                ScanCount = player.ScanCount,
                 IsUploader = player.IsUploader,
                 Spawns = spawnsByPlayerId[player.ReplayPlayerId]
                     .OrderBy(spawn => spawn.Breakpoint)
@@ -127,7 +138,10 @@ public partial class ReplayRepository(
                                 Name = unit.UnitName,
                                 Positions = null
                             })
-                            .ToList()
+                            .ToList(),
+                        Modifications = modificatoinsBySpawnId[spawn.SpawnId]
+                            .Select(unit => new BuildUnitModificationCountDto(unit.UnitName, unit.Count))
+                            .ToList(),
                     })
                     .ToList(),
                 TierUpgrades = player.TierUpgrades.ToList(),
