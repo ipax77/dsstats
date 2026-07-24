@@ -76,16 +76,8 @@ public partial class ReplayRepository(
             select new ReplayDetailUnitRow(
                 spawnUnit.SpawnId,
                 spawnUnit.Count,
+                spawnUnit.Special,
                 spawnUnit.Unit!.Name))
-            .ToListAsync();
-
-        var modifications = await (
-            from modification in context.SpawnModifications.AsNoTracking()
-            where spawnIds.Contains(modification.SpawnId)
-            select new ReplayDetailUnitRow(
-                modification.SpawnId,
-                modification.Count,
-                modification.Unit!.Name))
             .ToListAsync();
 
         var upgrades = await (
@@ -100,7 +92,6 @@ public partial class ReplayRepository(
 
         var spawnsByPlayerId = spawns.ToLookup(spawn => spawn.ReplayPlayerId);
         var unitsBySpawnId = units.ToLookup(unit => unit.SpawnId);
-        var modificatoinsBySpawnId = modifications.ToLookup(unit => unit.SpawnId);
         var upgradesByPlayerId = upgrades.ToLookup(upgrade => upgrade.ReplayPlayerId);
 
         replay.Replay.Players = players
@@ -135,12 +126,10 @@ public partial class ReplayRepository(
                             .Select(unit => new UnitDto
                             {
                                 Count = unit.Count,
+                                Special = unit.Special,
                                 Name = unit.UnitName,
                                 Positions = null
                             })
-                            .ToList(),
-                        Modifications = modificatoinsBySpawnId[spawn.SpawnId]
-                            .Select(unit => new BuildUnitModificationCountDto(unit.UnitName, unit.Count))
                             .ToList(),
                     })
                     .ToList(),
@@ -948,6 +937,7 @@ internal sealed record ReplayDetailSpawnRow(
 internal sealed record ReplayDetailUnitRow(
     int SpawnId,
     int Count,
+    int? Special,
     string UnitName);
 
 internal sealed record ReplayDetailUpgradeRow(

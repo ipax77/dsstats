@@ -193,7 +193,13 @@
                                     <span class="unit-color-indicator" style="background-color: @($"{unitColor}CC")"></span>
                                 </td>
                                 <td>@unitInfo.Name</td>
-                                <td class="text-start">@unit.Count</td>
+                                <td class="text-start">
+                                    @unit.Count
+                                    @if (unit.Special > 0)
+                                    {
+                                        <span>/@unit.Special</span>
+                                    }
+                                </td>
                                 @if (HasLifeCostInfo)
                                 {
                                     <td class="text-end">@FormatUnitCost(unit)</td>
@@ -217,7 +223,6 @@
                 }
             </table>
         </div>
-        <ReplaySpawnModificationComponent Commander="Player.Race" Modifications="DisplayedSpawn?.Modifications" />
         @if (BuilderUnitCatalog.IsSupported(Player.Race))
         {
             <div class="mt-3 border-top pt-2" style="max-width: 500px;">

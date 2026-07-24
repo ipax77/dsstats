@@ -29,7 +29,6 @@ public class DsstatsContext : DbContext
     public DbSet<Player> Players { get; set; }
     public DbSet<Spawn> Spawns { get; set; }
     public DbSet<SpawnUnit> SpawnUnits { get; set; }
-    public DbSet<SpawnModification> SpawnModifications { get; set; }
     public DbSet<Unit> Units { get; set; }
     public DbSet<PlayerUpgrade> PlayerUpgrades { get; set; }
     public DbSet<Upgrade> Upgrades { get; set; }

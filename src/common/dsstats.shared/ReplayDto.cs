@@ -82,19 +82,15 @@ public class SpawnDto
     public int LostValue { get; set; }
     public int UpgradeSpent { get; set; }
     public List<UnitDto> Units { get; set; } = [];
-    public List<BuildUnitModificationCountDto> Modifications { get; set; } = [];
 }
 
 public class UnitDto
 {
     public string Name { get; set; } = string.Empty;
     public int Count { get; set; }
+    public int? Special { get; set; }
     public List<int>? Positions { get; set; }
 }
-
-public sealed record BuildUnitModificationCountDto(
-    string TargetUnitName,
-    int Count);
 
 public sealed class ReplaySpawnPositionsDto
 {

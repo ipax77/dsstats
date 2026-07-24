@@ -1364,30 +1364,6 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.ToTable("Spawns");
                 });
 
-            modelBuilder.Entity("dsstats.db.SpawnModification", b =>
-                {
-                    b.Property<int>("SpawnModificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Count")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SpawnId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("UnitId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("SpawnModificationId");
-
-                    b.HasIndex("SpawnId");
-
-                    b.HasIndex("UnitId");
-
-                    b.ToTable("SpawnModifications");
-                });
-
             modelBuilder.Entity("dsstats.db.SpawnUnit", b =>
                 {
                     b.Property<int>("SpawnUnitId")
@@ -1401,6 +1377,9 @@ namespace dsstats.migrations.sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("SpawnId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("Special")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("UnitId")
@@ -2124,25 +2103,6 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.Navigation("ReplayPlayer");
                 });
 
-            modelBuilder.Entity("dsstats.db.SpawnModification", b =>
-                {
-                    b.HasOne("dsstats.db.Spawn", "Spawn")
-                        .WithMany("Modifications")
-                        .HasForeignKey("SpawnId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("dsstats.db.Unit", "Unit")
-                        .WithMany()
-                        .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Spawn");
-
-                    b.Navigation("Unit");
-                });
-
             modelBuilder.Entity("dsstats.db.SpawnUnit", b =>
                 {
                     b.HasOne("dsstats.db.Spawn", "Spawn")
@@ -2258,8 +2218,6 @@ namespace dsstats.migrations.sqlite.Migrations
 
             modelBuilder.Entity("dsstats.db.Spawn", b =>
                 {
-                    b.Navigation("Modifications");
-
                     b.Navigation("Units");
                 });
 

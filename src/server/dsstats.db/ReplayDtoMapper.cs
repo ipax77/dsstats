@@ -126,14 +126,10 @@ public static class ReplayDtoMapper
             Units = dto.Units.Select(s => new SpawnUnit()
             {
                 Count = s.Count,
+                Special = s.Special,
                 Positions = stripSpawnUnitPositions ? null : s.Positions?.ToArray(),
                 Unit = new() { Name = s.Name }
             }).ToList(),
-            Modifications = dto.Modifications.Select(s => new SpawnModification()
-            {
-                Count = s.Count,
-                Unit = new() { Name = s.TargetUnitName }
-            }).ToList()
         };
     }
 

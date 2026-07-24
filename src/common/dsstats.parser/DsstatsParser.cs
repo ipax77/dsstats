@@ -15,7 +15,6 @@ using ExternalSpawnDto = Sc2DirectStrike.Parser.SpawnDto;
 using ExternalToonIdDto = Sc2DirectStrike.Parser.ToonIdDto;
 using ExternalUnitDto = Sc2DirectStrike.Parser.UnitDto;
 using ExternalUpgradeDto = Sc2DirectStrike.Parser.UpgradeDto;
-using ExternalBuildUnitModificationCountDto = Sc2DirectStrike.Parser.BuildUnitModificationCountDto;
 
 namespace dsstats.parser;
 
@@ -298,6 +297,13 @@ public static class DsstatsParser
 
     private static SpawnDto ToDsstatsDto(ExternalSpawnDto spawn)
     {
+        var mods = spawn.BuildUnitModifications
+            .GroupBy(x => GetBuildUnitDisplayName(x.TargetUnitName))
+            .ToDictionary(
+                group => group.Key,
+                group => group.Sum(x => x.Count),
+                StringComparer.Ordinal);
+
         return new()
         {
             Breakpoint = ToBreakpoint(spawn.Breakpoint),
@@ -307,23 +313,47 @@ public static class DsstatsParser
             KilledValue = spawn.KilledValue,
             LostValue = spawn.LostValue,
             UpgradeSpent = spawn.UpgradeSpent,
-            Units = spawn.Units.Select(ToDsstatsDto).ToList(),
-            Modifications = spawn.BuildUnitModifications.Select(ToDsstatsDto).ToList()
+            Units = spawn.Units
+                .Select(unit => ToDsstatsDto(unit, mods))
+                .ToList(),
         };
     }
 
-    private static BuildUnitModificationCountDto ToDsstatsDto(this ExternalBuildUnitModificationCountDto mod)
+    private static UnitDto ToDsstatsDto(
+        ExternalUnitDto unit,
+        Dictionary<string, int> mods)
     {
-        return new(mod.TargetUnitName, mod.Count);
-    }
+        var mappedName = GetBuildUnitDisplayName(unit.Name);
 
-    private static UnitDto ToDsstatsDto(ExternalUnitDto unit)
-    {
         return new()
         {
             Name = unit.Name,
             Count = unit.Count,
-            Positions = unit.Positions.ToList()
+            Special = mods.TryGetValue(mappedName, out var count)
+                ? count
+                : null,
+            Positions = unit.Positions.ToList(),
+        };
+    }
+
+    private static string GetBuildUnitDisplayName(string rawUnitName)
+    {
+        return rawUnitName switch
+        {
+            "AbathurMutalisk" => "Mutalisk",
+            "ViperAbathur" => "Viper",
+            "GuardianStarlight" => "Guardian",
+            "VileRoach" => "Roach",
+            "SwarmHostAbathur" => "Swarm Host",
+            "AscendantStarlight" => "Ascendant",
+            "SupplicantStarlight" => "Supplicant",
+            "HonorGuard" => "Honor Guard",
+            "HighArchon" => "High Archon",
+            "ArtanisObserver" => "Observer",
+            "ImmortalArtanis" => "Immortal",
+            "Mirage" or "MirageKarax" or "KaraxMirage" => "Mirage",
+            "VoidRayVorazun" => "Void Ray",
+            _ => rawUnitName,
         };
     }
 

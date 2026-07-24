@@ -1429,32 +1429,6 @@ namespace dsstats.migrations.mysql.Migrations
                     b.ToTable("Spawns");
                 });
 
-            modelBuilder.Entity("dsstats.db.SpawnModification", b =>
-                {
-                    b.Property<int>("SpawnModificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("SpawnModificationId"));
-
-                    b.Property<int>("Count")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SpawnId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UnitId")
-                        .HasColumnType("int");
-
-                    b.HasKey("SpawnModificationId");
-
-                    b.HasIndex("SpawnId");
-
-                    b.HasIndex("UnitId");
-
-                    b.ToTable("SpawnModifications");
-                });
-
             modelBuilder.Entity("dsstats.db.SpawnUnit", b =>
                 {
                     b.Property<int>("SpawnUnitId")
@@ -1470,6 +1444,9 @@ namespace dsstats.migrations.mysql.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<int>("SpawnId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Special")
                         .HasColumnType("int");
 
                     b.Property<int>("UnitId")
@@ -2209,25 +2186,6 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Navigation("ReplayPlayer");
                 });
 
-            modelBuilder.Entity("dsstats.db.SpawnModification", b =>
-                {
-                    b.HasOne("dsstats.db.Spawn", "Spawn")
-                        .WithMany("Modifications")
-                        .HasForeignKey("SpawnId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("dsstats.db.Unit", "Unit")
-                        .WithMany()
-                        .HasForeignKey("UnitId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Spawn");
-
-                    b.Navigation("Unit");
-                });
-
             modelBuilder.Entity("dsstats.db.SpawnUnit", b =>
                 {
                     b.HasOne("dsstats.db.Spawn", "Spawn")
@@ -2343,8 +2301,6 @@ namespace dsstats.migrations.mysql.Migrations
 
             modelBuilder.Entity("dsstats.db.Spawn", b =>
                 {
-                    b.Navigation("Modifications");
-
                     b.Navigation("Units");
                 });
 

@@ -12,7 +12,6 @@ public class Spawn
     public int KilledValue { get; set; }
     public int UpgradeSpent { get; set; }
     public ICollection<SpawnUnit> Units { get; set; } = [];
-    public ICollection<SpawnModification> Modifications { get; set; } = [];
     public int ReplayPlayerId { get; set; }
     public ReplayPlayer? ReplayPlayer { get; set; }
 }
