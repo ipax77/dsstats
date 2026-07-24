@@ -44,7 +44,7 @@ public partial class DecodeService : IDisposable
         Initdata = true,
         Details = true,
         Metadata = true,
-        GameEvents = false,
+        GameEvents = true,
         MessageEvents = true,
         TrackerEvents = true,
         AttributeEvents = false,
