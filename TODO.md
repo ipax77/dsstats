@@ -29,6 +29,38 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 - [x] Do not infer `false` when the game-event stream was not decoded.
 - [ ] Add recovered, normal, and unavailable/unsupported replay tests covering all three `ResumedFromReplay` states.
 
+### 2.1. Raynor free scans
+
+- [x] Initially support data build `97563`.
+- [x] Detect a successful Raynor scan from `SCmdEvent` ability `1142:0`.
+- [x] Require both:
+  - The issuing player is Raynor.
+  - The command has a target point (`TargetX` and `TargetY` are present).
+- [x] Do not count the untargeted `1142:0` command emitted during setup. In the supplied
+  replay it occurs at gameloop `109`, has command flags `320`, and has no target.
+- [x] Keep normal paid scans as the separate ability `1416:0`. Their successful commands
+  also carry a target point; do not merge the ability signatures before cost is derived.
+- [ ] Decide how the public contract distinguishes paid and free scans. A single
+  `ScanCount` is sufficient for total usage, but is insufficient for calculating mineral
+  cost safely as `ScanCount * 25`.
+- [x] Keep detection in the existing single game-event pass. Use constant comparisons
+  and the already-resolved player; do not add another event pass, collection, or database
+  interaction.
+- [x] Add the supplied Raynor replay as a regression fixture:
+  - Path: `C:\data\ds\testreplays\Raynor_Scans\Direct Strike (10897).SC2Replay`.
+  - Data build is `97563`; game mode is Brawl Commanders.
+  - PAX is game-event user `3`, parser `GamePos` `4`, and Raynor.
+  - PAX reaches Tier 2 at gameloop `6360`.
+  - There are 46 PAX `1142:0` commands in total: one untargeted setup command and
+    45 targeted scan casts.
+  - Assert PAX's exact 45 scan gameloops:
+    `6419`, `7341`, `7965`, `9039`, `9926`, `10293`, `11504`, `12271`,
+    `12626`, `12933`, `13572`, `14584`, `15230`, `15832`, `16134`, `16850`,
+    `17928`, `18191`, `19537`, `20276`, `21020`, `22308`, `23556`, `24227`,
+    `24793`, `26478`, `27185`, `30316`, `31659`, `32334`, `32731`, `33294`,
+    `34038`, `34231`, `34944`, `36215`, `36636`, `37137`, `37997`, `39271`,
+    `40097`, `40477`, `42219`, `44060`, and `44551`.
+
 ## 3. Add building-area unit modifications to `Sc2DirectStrike.Parser`
 
 - [x] Add a generalized player-level building-area modification timeline:
@@ -265,7 +297,8 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 - [ ] Configure every dsstats replay-decoding entry point to enable the parser's complete game-event decoding options.
 - [ ] Do not add scan count to the existing compatibility hash; preserve hash compatibility for existing replays.
 - [ ] Display the scan count in the replay team/player table.
-- [ ] Display or provide a tooltip for the mineral cost at 25 minerals per scan.
+- [ ] Display or provide a tooltip for the mineral cost at 25 minerals per paid scan.
+  Raynor ability `1142:0` scans are free and must not contribute to mineral cost.
 - [ ] Show a dash for unknown (`null`) and `0` for a supported, analyzed replay without scans.
 - [ ] Surface `ResumedFromReplay` in replay details as Yes, No, or Unknown; do not treat Unknown as No.
 - [ ] Make `ResumedFromReplay` available to duplicate detection as an explicit signal, without automatically discarding a replay solely because the value is `true`.
@@ -332,6 +365,17 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 - Tracker events contain no explicit scan event. Periodic mineral snapshots can indirectly validate the 25-mineral deduction but are not reliable enough for primary detection.
 - The game-event protocol contains `SHijackReplayGameEvent`. `SGameUserJoinEvent` additionally contains `m_hijack` and `m_hijackCloneGameUserId`, which can support resumed-replay detection.
 - Ability-link IDs can change with SC2 data builds. Ability link 1416 is confirmed for data builds 97425 and 97563. Earlier observed candidates (1409 and 1415) must not be treated as supported until verified.
+- Raynor uses a distinct free-scan command in data build `97563`: ability `1142`,
+  command index `0`. Successful casts have a point target and command flags `256`.
+- In the Raynor sample, PAX issues 46 `1142:0` commands. The command at gameloop
+  `109` is not a cast: it has flags `320`, no target, and predates Tier 2. The remaining
+  45 commands all have point targets and begin at gameloop `6419`, immediately after
+  Tier 2 at `6360`.
+- Tracker events contain `RaynorScanModification` at gameloop `1`, but no per-cast
+  scan event. It describes the commander setup and cannot be used to count scans.
+- The brawl replay emits multiple `StagingAreaNextSpawn` upgrades per shared spawn.
+  Those events can corroborate charge grants but are unnecessary and ambiguous for
+  counting actual casts. The targeted `SCmdEvent` is authoritative.
 - Full game-event materialization for the sample produced about 9,506 event objects and added roughly 5.3 MB of allocation.
 - Optional event filters were prototyped and removed. They could not avoid traversing the variable-length bitstream, saved only about 1.6 MB per replay for full game events, and did not demonstrate a CPU benefit worth the added public API.
 - The end-to-end MediumRun benchmark decodes and creates DTOs for four replays per operation. Tracker-only averaged 1.248 seconds; tracker plus complete game events averaged 1.335 seconds, an increase of about 7.0%.
