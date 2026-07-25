@@ -25,6 +25,7 @@ public class ReplayPlayer
     public int[] TierUpgrades { get; set; } = [];
     public int[] Refineries { get; set; } = [];
     public bool IsMvp { get; set; }
+    public int? ScanCount { get; set; }
     public bool IsUploader { get; set; }
     public int ReplayId { get; set; }
     public Replay? Replay { get; set; }

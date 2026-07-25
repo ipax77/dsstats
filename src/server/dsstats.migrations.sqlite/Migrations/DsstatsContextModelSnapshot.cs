@@ -15,7 +15,7 @@ namespace dsstats.migrations.sqlite.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.17");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.18");
 
             modelBuilder.Entity("DsAbilityDsUnit", b =>
                 {
@@ -969,6 +969,9 @@ namespace dsstats.migrations.sqlite.Migrations
                     b.Property<int>("Result")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ScanCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("SelectedRace")
                         .HasColumnType("INTEGER");
 
@@ -1374,6 +1377,9 @@ namespace dsstats.migrations.sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("SpawnId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("Special")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("UnitId")

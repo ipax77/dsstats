@@ -1,6 +1,6 @@
 {
   "name": "dsstats10",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -12,17 +12,17 @@
   "license": "ISC",
   "devDependencies": {
     "@types/glob": "^8.1.0",
-    "@types/node": "^24.12.4",
+    "@types/node": "^24.13.3",
     "brotli-wasm": "^3.0.1",
     "fake-indexeddb": "^6.2.5",
     "glob": "^13.0.6",
-    "happy-dom": "^20.9.0",
-    "pako": "^2.1.0",
-    "terser-webpack-plugin": "^5.6.0",
-    "ts-loader": "^9.5.7",
+    "happy-dom": "^20.11.1",
+    "pako": "^2.2.0",
+    "terser-webpack-plugin": "^5.6.1",
+    "ts-loader": "^9.6.2",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4",
-    "webpack": "^5.106.2",
+    "vitest": "^3.2.7",
+    "webpack": "^5.109.0",
     "webpack-cli": "^6.0.1"
   }
 }

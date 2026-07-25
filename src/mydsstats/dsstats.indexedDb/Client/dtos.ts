@@ -145,6 +145,7 @@ export interface ReplayDto {
     cannon: number;
     bunker: number;
     winnerTeam: number;
+    resumedFromReplay?: boolean;
     middleChanges: number[];
     players: ReplayPlayerDto[];
     spawnPlayback?: SpawnPlaybackInfoDto;
@@ -173,6 +174,7 @@ export interface ReplayPlayerDto {
     messages: number;
     pings: number;
     isMvp: boolean;
+    scanCount?: number;
     isUploader: boolean;
     spawns: SpawnDto[];
     upgrades: UpgradeDto[];
@@ -206,6 +208,7 @@ export interface SpawnDto {
 export interface UnitDto {
     name: string;
     count: number;
+    special?: number;
     positions: number[];
 }
 

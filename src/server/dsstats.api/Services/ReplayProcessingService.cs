@@ -25,7 +25,7 @@ public class ReplayProcessingService(
         Initdata = true,
         Details = true,
         Metadata = true,
-        GameEvents = false,
+        GameEvents = true,
         MessageEvents = false,
         TrackerEvents = true,
         AttributeEvents = false,

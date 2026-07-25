@@ -17,6 +17,7 @@ public class ReplayDto
     public int Cannon { get; set; }
     public int Bunker { get; set; }
     public int WinnerTeam { get; set; }
+    public bool? ResumedFromReplay { get; set; }
     public List<int> MiddleChanges { get; set; } = [];
     public List<ReplayPlayerDto> Players { get; set; } = [];
     public SpawnPlaybackInfoDto? SpawnPlayback { get; set; }
@@ -48,6 +49,7 @@ public class ReplayPlayerDto
     public int Messages { get; set; }
     public int Pings { get; set; }
     public bool IsMvp { get; set; }
+    public int? ScanCount { get; init; }
     public bool IsUploader { get; set; }
     public List<SpawnDto> Spawns { get; set; } = [];
     public List<UpgradeDto> Upgrades { get; set; } = [];
@@ -86,6 +88,7 @@ public class UnitDto
 {
     public string Name { get; set; } = string.Empty;
     public int Count { get; set; }
+    public int? Special { get; set; }
     public List<int>? Positions { get; set; }
 }
 
@@ -140,6 +143,7 @@ public static class ReplayDtoExtensions
 {
     public static bool IsValid(this ReplayDto replayDto)
     {
+        if (replayDto.ResumedFromReplay == true) return false;
         if (replayDto.Players.Count <= 1) return false;
         if (replayDto.Players.Any(a => a.Player.ToonId.Id == 0)) return false;
 

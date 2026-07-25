@@ -23,7 +23,7 @@ public partial class DecodeService : IDisposable
     public bool Decoding { get; private set; }
     public ReplayDto? LatestReplay { get; private set; }
     public string? LatestReplayHash { get; private set; }
-    public static readonly Version Version = new(1, 11);
+    public static readonly Version Version = new(1, 12);
     private int _currentWorkerCount = -1;
 
     public DecodeService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory,
@@ -44,7 +44,7 @@ public partial class DecodeService : IDisposable
         Initdata = true,
         Details = true,
         Metadata = true,
-        GameEvents = false,
+        GameEvents = true,
         MessageEvents = true,
         TrackerEvents = true,
         AttributeEvents = false,
