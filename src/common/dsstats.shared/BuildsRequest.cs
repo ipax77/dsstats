@@ -5,7 +5,7 @@ namespace dsstats.shared;
 public class BuildsRequest
 {
     public RatingType RatingType { get; set; }
-    public TimePeriod TimePeriod { get; set; }
+    public TimePeriod TimePeriod { get; set; } = TimePeriod.Last90Days;
     public Commander Interest { get; set; }
     public Commander Versus { get; set; }
     public int FromRating { get; set; }

@@ -18,7 +18,8 @@ public partial class BuildsService(
 
     public async Task<BuildsResponse> GetBuildResponse(BuildsRequest request, CancellationToken token = default)
     {
-        var memKey = request.GetMemKey();
+        NormalizeRequest(request);
+        var memKey = $"{request.GetMemKey()}_spawn_{request.WithSpawnInfo}";
         try
         {
             return await memoryCache.GetOrCreateAsync(memKey, async entry =>
@@ -29,7 +30,7 @@ public partial class BuildsService(
                 await SetBuildResponseLifeAndCost(response, request.Interest, token);
                 if (request.WithSpawnInfo)
                 {
-                    response.Replays = await GetBuildReplays(request);
+                    response.Replays = await GetBuildReplays(request, context, token);
                 }
                 return response;
             }) ?? new();
@@ -42,6 +43,7 @@ public partial class BuildsService(
 
     public async Task<List<BuildUpgradeTimingDto>> GetUpgradeTimings(BuildsRequest request, bool includeAnecdotal = false, CancellationToken token = default)
     {
+        NormalizeRequest(request);
         var memKey = $"{request.GetMemKey()}_upgrade_timing_{includeAnecdotal}";
         try
         {
@@ -66,6 +68,7 @@ public partial class BuildsService(
 
     public async Task<List<BuildGasTimingDto>> GetGasTimings(BuildsRequest request, bool includeAnecdotal = false, CancellationToken token = default)
     {
+        NormalizeRequest(request);
         var memKey = $"{request.GetMemKey()}_gas_timing_{includeAnecdotal}";
         try
         {
@@ -86,6 +89,22 @@ public partial class BuildsService(
         {
             return [];
         }
+    }
+
+    private static void NormalizeRequest(BuildsRequest request)
+    {
+        request.Players ??= [];
+        request.TimePeriod = request.TimePeriod switch
+        {
+            TimePeriod.Last90Days
+                or TimePeriod.Previous90Days
+                or TimePeriod.Last12Months
+                or TimePeriod.Previous12Months
+                or TimePeriod.ThisYear
+                or TimePeriod.LastYear
+                or TimePeriod.AllTime => request.TimePeriod,
+            _ => TimePeriod.Last90Days
+        };
     }
 
     private async Task<BuildsResponse> CreateBuildsResponse(BuildsRequest request, DsstatsContext context, CancellationToken token)
