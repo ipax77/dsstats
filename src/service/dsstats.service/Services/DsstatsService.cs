@@ -38,7 +38,7 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
     };
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
     private int _startupLogged;
-    internal readonly Version CurrentVersion = new(3, 0, 7);
+    internal readonly Version CurrentVersion = new(3, 0, 8);
 
     public async Task StartImportAsync(CancellationToken token)
     {
