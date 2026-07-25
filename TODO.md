@@ -15,6 +15,8 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 
 - [x] Decode the complete game-event stream through the Direct Strike decoder options; keep event selection and interpretation in the parser.
 - [x] Identify scans by supported data-build ability mappings and command index 0.
+- [x] Treat data build `97425` as the minimum supported scan build; keep the mapping enabled
+  for newer builds until a specific incompatible build is identified.
 - [x] Map each command's `UserId` to the correct Direct Strike player.
 - [x] Expose nullable `ScanCount` on the Direct Strike player contract:
   - `null`: game events were not analyzed or the data build is unsupported.
@@ -31,7 +33,8 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 
 ### 2.1. Raynor free scans
 
-- [x] Initially support data build `97563`.
+- [x] Verify the Raynor free-scan signature at data build `97563`; the overall scan
+  analysis minimum remains `97425`.
 - [x] Detect a successful Raynor scan from `SCmdEvent` ability `1142:0`.
 - [x] Require both:
   - The issuing player is Raynor.
@@ -93,7 +96,7 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 
 ### 3.1. Abathur biomass
 
-- [x] Initially support data build `97563`.
+- [x] Treat data build `97563` as the minimum build for Abathur biomass.
 - [x] Identify the issuing Abathur player from `SCmdEvent.UserId`.
 - [x] Detect a manual biomass application by correlating:
   - `SCmdEvent` ability link `1124`.
@@ -127,6 +130,7 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 
 ### 3.2. Alarak Power Overwhelming
 
+- [x] Treat data build `97563` as the minimum build for Alarak Power Overwhelming.
 - [x] Detect a building-area sacrifice from `SUnitDiedEvent` and its linked tracker units:
   - Victim type is `SupplicantStarlight`.
   - Victim creator ability is `SupplicantPlace`.
@@ -170,7 +174,7 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 
 ### 3.3. Artanis Guardian Shell
 
-- [x] Initially support data build `97425`.
+- [x] Treat data build `97425` as the minimum build for Artanis Guardian Shell.
 - [x] Identify the issuing Artanis player from `SCmdEvent.UserId`.
 - [x] Detect command index `0` with the unit-specific Guardian Shell ability link:
   - `1114` → `HonorGuard`
@@ -216,7 +220,7 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 
 ### 3.4. Karax Orbital Strike Beacon
 
-- [x] Initially support data build `97425`.
+- [x] Treat data build `97425` as the minimum build for Karax Orbital Strike Beacon.
 - [x] Identify the issuing Karax player from `SCmdEvent.UserId`.
 - [x] Detect Orbital Strike Beacon from `SCmdEvent` ability `2014:0`.
 - [x] Expose and use `m_data.TargetUnit.m_tag` from the command payload:
@@ -245,7 +249,7 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 
 ### 3.5. Vorazun Dark Pylon
 
-- [x] Initially support data build `97425`.
+- [x] Treat data build `97425` as the minimum build for Vorazun Dark Pylon.
 - [x] Detect a Dark Pylon application from `SUnitBornEvent` and its creator unit:
   - `UnitTypeName == "VorazunDarkPylon"`.
   - `CreatorAbilityName == "InventoryUnit"`.
@@ -282,6 +286,12 @@ This checklist tracks the cross-repository work required to detect Direct Strike
     | 20566 | 15:18.125 | Void Ray | 297271338 |
 
 - [x] Assert the seven corroborating `2013:0` command gameloops: `15202`, `16103`, `17438`, `18878`, `19043`, `20234`, and `20565`.
+- [x] Verify the supplied data-build `97563` replay `Direct Strike (10899).SC2Replay`:
+  - PAX is parser `GamePos` `4`.
+  - PAX has five placed `VoidRayVorazun` units.
+  - Three have Dark Pylon by the 15-minute breakpoint and all five have it at `All`.
+  - Use the shared minimum-build thresholds; keep the existing single tracker pass, indexes,
+    allocation behavior, and zero database interaction unchanged.
 
 ## 4. Preserve scan and building-area information in dsstats
 
@@ -364,7 +374,10 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 - PAX scan gameloops: 5671, 9919, 11399, 14277, 16723, 18288, 20859, 22936, 24060, and 25187.
 - Tracker events contain no explicit scan event. Periodic mineral snapshots can indirectly validate the 25-mineral deduction but are not reliable enough for primary detection.
 - The game-event protocol contains `SHijackReplayGameEvent`. `SGameUserJoinEvent` additionally contains `m_hijack` and `m_hijackCloneGameUserId`, which can support resumed-replay detection.
-- Ability-link IDs can change with SC2 data builds. Ability link 1416 is confirmed for data builds 97425 and 97563. Earlier observed candidates (1409 and 1415) must not be treated as supported until verified.
+- Ability-link IDs can change with SC2 data builds. Ability link 1416 is confirmed for data
+  builds 97425 and 97563 and is treated as forward-compatible from build 97425. If a later
+  incompatible build is found, represent it explicitly. Earlier observed candidates (1409
+  and 1415) remain unsupported.
 - Raynor uses a distinct free-scan command in data build `97563`: ability `1142`,
   command index `0`. Successful casts have a point target and command flags `256`.
 - In the Raynor sample, PAX issues 46 `1142:0` commands. The command at gameloop
@@ -421,6 +434,6 @@ This checklist tracks the cross-repository work required to detect Direct Strike
 - [x] Verify the supplied replay's exact scan counts, user-to-player mapping, and mineral costs.
 - [ ] Add or obtain known normal and resumed/recovered replay fixtures and verify `ResumedFromReplay` as `false` and `true` respectively; verify `null` when game events or protocol support are unavailable.
 - [x] Pack the updated `s2protocol.NET` package (version 0.9.6) into a temporary local NuGet feed.
-- [x] Pack the updated `Sc2DirectStrike.Parser` package (version 0.2.3) into the same temporary feed.
-- [ ] Test dsstats against the locally packed packages.
+- [x] Pack the updated `Sc2DirectStrike.Parser` package (version 0.2.6) into the same temporary feed.
+- [x] Test dsstats against the locally packed packages, including mydsstats and replay `10899`.
 - [x] Do not publish either package as part of this work.
