@@ -76,6 +76,7 @@ public partial class ReplayRepository(
             select new ReplayDetailUnitRow(
                 spawnUnit.SpawnId,
                 spawnUnit.Count,
+                spawnUnit.Special,
                 spawnUnit.Unit!.Name))
             .ToListAsync();
 
@@ -109,6 +110,7 @@ public partial class ReplayRepository(
                 Messages = player.Messages,
                 Pings = player.Pings,
                 IsMvp = player.IsMvp,
+                ScanCount = player.ScanCount,
                 IsUploader = player.IsUploader,
                 Spawns = spawnsByPlayerId[player.ReplayPlayerId]
                     .OrderBy(spawn => spawn.Breakpoint)
@@ -124,10 +126,11 @@ public partial class ReplayRepository(
                             .Select(unit => new UnitDto
                             {
                                 Count = unit.Count,
+                                Special = unit.Special,
                                 Name = unit.UnitName,
                                 Positions = null
                             })
-                            .ToList()
+                            .ToList(),
                     })
                     .ToList(),
                 TierUpgrades = player.TierUpgrades.ToList(),
@@ -934,6 +937,7 @@ internal sealed record ReplayDetailSpawnRow(
 internal sealed record ReplayDetailUnitRow(
     int SpawnId,
     int Count,
+    int? Special,
     string UnitName);
 
 internal sealed record ReplayDetailUpgradeRow(

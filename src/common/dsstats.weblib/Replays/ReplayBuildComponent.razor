@@ -36,6 +36,12 @@
                     Gas @BreakpointSpawn?.GasCount
                 </button>
             </div>
+            @if (Player.ScanCount > 0)
+            {
+                <div>
+                    <span class="badge text-bg-light">Scans: @ReplayHelper.GetNumberString(Player.ScanCount)</span>
+                </div>
+            }
             <div class="">
                 <button class="btn btn-sm btn-outline-light bgchart" type="button" data-bs-toggle="collapse"
                         data-bs-target="@($"#Player{Player.GamePos}Upgrades")" aria-expanded="false"
@@ -187,7 +193,13 @@
                                     <span class="unit-color-indicator" style="background-color: @($"{unitColor}CC")"></span>
                                 </td>
                                 <td>@unitInfo.Name</td>
-                                <td class="text-start">@unit.Count</td>
+                                <td class="text-start">
+                                    @unit.Count
+                                    @if (unit.Special > 0)
+                                    {
+                                        <span>/@unit.Special</span>
+                                    }
+                                </td>
                                 @if (HasLifeCostInfo)
                                 {
                                     <td class="text-end">@FormatUnitCost(unit)</td>

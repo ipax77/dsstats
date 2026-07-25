@@ -227,6 +227,7 @@ public static class DsstatsParser
             Cannon = ToSeconds(replay.Cannon),
             Bunker = ToSeconds(replay.Bunker),
             WinnerTeam = replay.WinnerTeam,
+            ResumedFromReplay = replay.ResumedFromReplay,
             MiddleChanges = ToMiddleChanges(replay),
             Players = replay.Players.Select(ToDsstatsDto).ToList()
         };
@@ -249,6 +250,7 @@ public static class DsstatsParser
             Messages = player.Messages,
             Pings = player.Pings,
             IsMvp = player.IsMvp,
+            ScanCount = player.ScanCount,
             Spawns = player.Spawns.Select(ToDsstatsDto).ToList(),
             Upgrades = player.Upgrades.Select(ToDsstatsDto).ToList(),
             TierUpgrades = player.TierUpgrades.Select(ToSeconds).ToList(),
@@ -295,6 +297,13 @@ public static class DsstatsParser
 
     private static SpawnDto ToDsstatsDto(ExternalSpawnDto spawn)
     {
+        var mods = spawn.BuildUnitModifications
+            .GroupBy(x => GetBuildUnitDisplayName(x.TargetUnitName))
+            .ToDictionary(
+                group => group.Key,
+                group => group.Sum(x => x.Count),
+                StringComparer.Ordinal);
+
         return new()
         {
             Breakpoint = ToBreakpoint(spawn.Breakpoint),
@@ -304,17 +313,47 @@ public static class DsstatsParser
             KilledValue = spawn.KilledValue,
             LostValue = spawn.LostValue,
             UpgradeSpent = spawn.UpgradeSpent,
-            Units = spawn.Units.Select(ToDsstatsDto).ToList()
+            Units = spawn.Units
+                .Select(unit => ToDsstatsDto(unit, mods))
+                .ToList(),
         };
     }
 
-    private static UnitDto ToDsstatsDto(ExternalUnitDto unit)
+    private static UnitDto ToDsstatsDto(
+        ExternalUnitDto unit,
+        Dictionary<string, int> mods)
     {
+        var mappedName = GetBuildUnitDisplayName(unit.Name);
+
         return new()
         {
             Name = unit.Name,
             Count = unit.Count,
-            Positions = unit.Positions.ToList()
+            Special = mods.TryGetValue(mappedName, out var count)
+                ? count
+                : null,
+            Positions = unit.Positions.ToList(),
+        };
+    }
+
+    private static string GetBuildUnitDisplayName(string rawUnitName)
+    {
+        return rawUnitName switch
+        {
+            "AbathurMutalisk" => "Mutalisk",
+            "ViperAbathur" => "Viper",
+            "GuardianStarlight" => "Guardian",
+            "VileRoach" => "Roach",
+            "SwarmHostAbathur" => "Swarm Host",
+            "AscendantStarlight" => "Ascendant",
+            "SupplicantStarlight" => "Supplicant",
+            "HonorGuard" => "Honor Guard",
+            "HighArchon" => "High Archon",
+            "ArtanisObserver" => "Observer",
+            "ImmortalArtanis" => "Immortal",
+            "Mirage" or "MirageKarax" or "KaraxMirage" => "Mirage",
+            "VoidRayVorazun" => "Void Ray",
+            _ => rawUnitName,
         };
     }
 
