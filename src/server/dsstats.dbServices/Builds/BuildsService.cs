@@ -94,17 +94,7 @@ public partial class BuildsService(
     private static void NormalizeRequest(BuildsRequest request)
     {
         request.Players ??= [];
-        request.TimePeriod = request.TimePeriod switch
-        {
-            TimePeriod.Last90Days
-                or TimePeriod.Previous90Days
-                or TimePeriod.Last12Months
-                or TimePeriod.Previous12Months
-                or TimePeriod.ThisYear
-                or TimePeriod.LastYear
-                or TimePeriod.AllTime => request.TimePeriod,
-            _ => TimePeriod.Last90Days
-        };
+        request.TimePeriod = Data.NormalizeBasicTimePeriod(request.TimePeriod);
     }
 
     private async Task<BuildsResponse> CreateBuildsResponse(BuildsRequest request, DsstatsContext context, CancellationToken token)

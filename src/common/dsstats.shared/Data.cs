@@ -170,15 +170,33 @@ public static class Data
 
     public static List<TimePeriod> GetBasicTimePeriods()
     {
-        return [
-                TimePeriod.Last90Days,
-                TimePeriod.Previous90Days,
-                TimePeriod.Last12Months,
-                TimePeriod.Previous12Months,
-                TimePeriod.ThisYear ,
-                TimePeriod.LastYear ,
-                TimePeriod.AllTime ,
-        ];
+        return [.. BasicTimePeriods];
+    }
+
+    public static IReadOnlyList<TimePeriod> BasicTimePeriods { get; } = Array.AsReadOnly(
+    [
+        TimePeriod.Last90Days,
+        TimePeriod.Previous90Days,
+        TimePeriod.Last12Months,
+        TimePeriod.Previous12Months,
+        TimePeriod.ThisYear,
+        TimePeriod.LastYear,
+        TimePeriod.AllTime
+    ]);
+
+    public static TimePeriod NormalizeBasicTimePeriod(TimePeriod timePeriod)
+    {
+        return timePeriod switch
+        {
+            TimePeriod.Last90Days
+                or TimePeriod.Previous90Days
+                or TimePeriod.Last12Months
+                or TimePeriod.Previous12Months
+                or TimePeriod.ThisYear
+                or TimePeriod.LastYear
+                or TimePeriod.AllTime => timePeriod,
+            _ => TimePeriod.Last90Days
+        };
     }
 
     public static List<Commander> GetStandardCommanders() => [Commander.Protoss, Commander.Terran, Commander.Zerg];
