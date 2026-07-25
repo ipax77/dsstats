@@ -6,9 +6,11 @@ namespace dsstats.dbServices.Builds;
 
 public partial class BuildsService
 {
-    public async Task<List<ReplayListDto>> GetBuildReplays(BuildsRequest request)
+    private static async Task<List<ReplayListDto>> GetBuildReplays(
+        BuildsRequest request,
+        DsstatsContext context,
+        CancellationToken token)
     {
-        await using var context = await contextFactory.CreateDbContextAsync();
         bool noOpp = request.Versus == Commander.None;
         var timeInfo = Data.GetTimePeriodInfo(request.TimePeriod);
         var minDuration = request.Breakpoint switch
@@ -24,7 +26,7 @@ public partial class BuildsService
         var playerIds = request.Players.Select(s => s.PlayerId).ToHashSet();
         var noPlayers = playerIds.Count == 0;
 
-        var replays = from r in context.Replays
+        var replays = from r in context.Replays.AsNoTracking()
                       where r.Gametime >= timeInfo.Start
                         && (!timeInfo.HasEnd || r.Gametime < timeInfo.End)
                         && (noDuration || r.Duration > minDuration)
@@ -32,7 +34,7 @@ public partial class BuildsService
                         && r.Players.Any(p => p.Race == request.Interest
                             && (noOpp || p.OppRace == request.Versus))
                       // Join to ratings once
-                      join rr in context.Set<ReplayRating>() on r.ReplayId equals rr.ReplayId
+                      join rr in context.Set<ReplayRating>().AsNoTracking() on r.ReplayId equals rr.ReplayId
                       where rr.RatingType == request.RatingType
                         && rr.LeaverType == LeaverType.None
                         // Rating filter: only apply if we have specific players OR rating bounds
@@ -66,7 +68,7 @@ public partial class BuildsService
 
         var list = await replays
             .Take(10)
-            .ToListAsync();
+            .ToListAsync(token);
 
         return list.Select(replay =>
         {

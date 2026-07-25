@@ -320,6 +320,9 @@
 	BuildsResponse response = new();
 	bool isLoading = false;
 	CancellationTokenSource cts = new();
+	CancellationTokenSource? loadCts;
+	int loadVersion;
+	private static readonly TimeSpan LoadDebounce = TimeSpan.FromMilliseconds(250);
 
 	BuildSpawnComponent? buildSpawnComponent;
 	bool showSpawns;
@@ -348,21 +351,57 @@
 
 	private async Task LoadData(bool dry = false)
 	{
+		var version = ++loadVersion;
+		var currentLoadCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
+		var previousLoadCts = loadCts;
+		loadCts = currentLoadCts;
+		previousLoadCts?.Cancel();
+		var token = currentLoadCts.Token;
+
 		isLoading = true;
 		upgradeTimingModal?.Clear();
 		gasTimingModal?.Clear();
 		await InvokeAsync(StateHasChanged);
-		response = await BuildsService.GetBuildResponse(Request, cts.Token);
-		isLoading = false;
-		await InvokeAsync(StateHasChanged);
-		replayHash = response.Replays.FirstOrDefault()?.ReplayHash ?? string.Empty;
-		if (showSpawns)
+		try
 		{
-			buildSpawnComponent?.Update(response.Replays.FirstOrDefault()?.ReplayHash ?? string.Empty, Request);
+			if (!dry)
+			{
+				await Task.Delay(LoadDebounce, token);
+			}
+
+			var loadedResponse = await BuildsService.GetBuildResponse(Request, token);
+			token.ThrowIfCancellationRequested();
+			if (version != loadVersion)
+			{
+				return;
+			}
+
+			response = loadedResponse;
+			replayHash = response.Replays.FirstOrDefault()?.ReplayHash ?? string.Empty;
+			if (showSpawns)
+			{
+				buildSpawnComponent?.Update(replayHash, Request);
+			}
+			if (!dry)
+			{
+				await OnRequestChanged.InvokeAsync(Request);
+			}
 		}
-		if (!dry)
+		catch (OperationCanceledException) when (token.IsCancellationRequested)
 		{
-			await OnRequestChanged.InvokeAsync(Request);
+		}
+		finally
+		{
+			if (version == loadVersion)
+			{
+				isLoading = false;
+				if (!cts.IsCancellationRequested)
+				{
+					await InvokeAsync(StateHasChanged);
+				}
+				loadCts = null;
+			}
+			currentLoadCts.Dispose();
 		}
 	}
 
@@ -455,6 +494,7 @@
 
 	public void Dispose()
 	{
+		loadCts?.Cancel();
 		cts.Cancel();
 		cts.Dispose();
 	}

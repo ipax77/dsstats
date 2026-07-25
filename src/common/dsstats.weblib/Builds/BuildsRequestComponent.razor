@@ -19,9 +19,9 @@
 			<div class="col-auto">
 				<label for="timePeriod" class="form-label">Time Period</label>
 				<InputSelect id="timePeriod" @bind-Value="Request.TimePeriod" class="form-select">
-					@foreach (var value in Enum.GetValues<TimePeriod>())
+					@foreach (var value in Data.BasicTimePeriods)
 					{
-						<option value="@value">@value</option>
+						<option value="@value">@Data.GetTimePeriodInfo(value).Name</option>
 					}
 				</InputSelect>
 			</div>

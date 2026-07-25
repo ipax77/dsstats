@@ -66,12 +66,13 @@ public static class RequestExtensions
     public static Dictionary<string, object?> BuildQueryParams(this BuildsRequest request, FrozenDictionary<string, string> paramMap)
     {
         var queryDic = new Dictionary<string, object?>();
+        var timePeriod = Data.NormalizeBasicTimePeriod(request.TimePeriod);
 
         queryDic[paramMap[nameof(BuildsRequest.RatingType)]] =
             request.RatingType != RatingType.All ? (int)request.RatingType : null;
 
         queryDic[paramMap[nameof(BuildsRequest.TimePeriod)]] =
-            request.TimePeriod != TimePeriod.Last90Days ? (int)request.TimePeriod : null;
+            timePeriod != TimePeriod.Last90Days ? (int)timePeriod : null;
 
         queryDic[paramMap[nameof(BuildsRequest.Interest)]] =
             request.Interest != Commander.Abathur ? request.Interest.ToString() : null;

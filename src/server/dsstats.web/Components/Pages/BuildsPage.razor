@@ -60,7 +60,8 @@
 		Request = new BuildsRequest
 		{
 			RatingType = EnumExtensions.ParseEnumOrDefault(Rt, RatingType.All),
-			TimePeriod = EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days),
+			TimePeriod = Data.NormalizeBasicTimePeriod(
+				EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days)),
 			Interest = EnumExtensions.ParseEnumOrDefault(Int, Commander.Abathur),
 			Versus = EnumExtensions.ParseEnumOrDefault(Vs, Commander.None),
 			Breakpoint = EnumExtensions.ParseEnumOrDefault(Bp, Breakpoint.Min10),

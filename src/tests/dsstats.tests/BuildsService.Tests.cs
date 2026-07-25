@@ -240,6 +240,147 @@ public sealed class BuildsServiceTests
         Assert.AreEqual(1, anecdotalRatingFilteredGasTimings[0].Gas);
     }
 
+    [TestMethod]
+    [DataRow(TimePeriod.None)]
+    [DataRow(TimePeriod.Custom)]
+    [DataRow((TimePeriod)999)]
+    public async Task GetBuildResponse_UnsupportedTimePeriod_UsesLast90Days(TimePeriod timePeriod)
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedReplayPlayerAsync(
+            replayId: 600,
+            playerId: 601,
+            commander: Commander.Abathur,
+            oppCommander: Commander.Alarak,
+            gametime: DateTime.UtcNow.AddDays(-1));
+
+        var request = CreateRequest(Breakpoint.Min5);
+        request.TimePeriod = timePeriod;
+        request.WithSpawnInfo = true;
+
+        var response = await fixture.Service.GetBuildResponse(request);
+
+        Assert.AreEqual(TimePeriod.Last90Days, request.TimePeriod);
+        Assert.AreEqual(1, response.Stats.Count);
+        Assert.AreEqual(1, response.Replays.Count);
+        Assert.AreEqual("hash-600", response.Replays[0].ReplayHash);
+    }
+
+    [TestMethod]
+    public async Task GetBuildResponse_NullPlayers_IsTreatedAsEmpty()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedReplayPlayerAsync(
+            replayId: 610,
+            playerId: 611,
+            commander: Commander.Abathur,
+            oppCommander: Commander.Alarak,
+            gametime: DateTime.UtcNow.AddDays(-1));
+
+        var request = CreateRequest(Breakpoint.Min5);
+        request.TimePeriod = TimePeriod.Last90Days;
+        request.WithSpawnInfo = true;
+        request.Players = null!;
+
+        var response = await fixture.Service.GetBuildResponse(request);
+
+        Assert.IsNotNull(request.Players);
+        Assert.AreEqual(1, response.Replays.Count);
+    }
+
+    [TestMethod]
+    public async Task GetBuildResponse_WithSpawnInfo_UsesDistinctCacheEntries()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await fixture.SeedReplayPlayerAsync(
+            replayId: 620,
+            playerId: 621,
+            commander: Commander.Abathur,
+            oppCommander: Commander.Alarak,
+            gametime: DateTime.UtcNow.AddDays(-1));
+
+        var withoutSpawnInfo = CreateRequest(Breakpoint.Min5);
+        withoutSpawnInfo.TimePeriod = TimePeriod.Last90Days;
+        var withoutReplays = await fixture.Service.GetBuildResponse(withoutSpawnInfo);
+
+        var withSpawnInfo = CreateRequest(Breakpoint.Min5);
+        withSpawnInfo.TimePeriod = TimePeriod.Last90Days;
+        withSpawnInfo.WithSpawnInfo = true;
+        var withReplays = await fixture.Service.GetBuildResponse(withSpawnInfo);
+
+        Assert.AreEqual(0, withoutReplays.Replays.Count);
+        Assert.AreEqual(1, withReplays.Replays.Count);
+    }
+
+    [TestMethod]
+    public async Task GetBuildResponse_ReplayPreview_AppliesFiltersOrderAndLimit()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        var now = DateTime.UtcNow;
+        for (var i = 0; i < 12; i++)
+        {
+            await fixture.SeedReplayPlayerAsync(
+                replayId: 700 + i,
+                playerId: 701,
+                commander: Commander.Abathur,
+                oppCommander: Commander.Alarak,
+                ratingBefore: 1800,
+                gametime: now.AddMinutes(-i));
+        }
+
+        await fixture.SeedReplayPlayerAsync(
+            replayId: 720,
+            playerId: 701,
+            commander: Commander.Abathur,
+            oppCommander: Commander.Dehaka,
+            ratingBefore: 1800,
+            gametime: now.AddMinutes(1));
+        await fixture.SeedReplayPlayerAsync(
+            replayId: 721,
+            playerId: 701,
+            commander: Commander.Abathur,
+            oppCommander: Commander.Alarak,
+            ratingBefore: 1000,
+            gametime: now.AddMinutes(2));
+        await fixture.SeedReplayPlayerAsync(
+            replayId: 722,
+            playerId: 701,
+            commander: Commander.Abathur,
+            oppCommander: Commander.Alarak,
+            ratingBefore: 1800,
+            duration: 500,
+            gametime: now.AddMinutes(3));
+
+        var request = CreateRequest(Breakpoint.Min10);
+        request.TimePeriod = TimePeriod.Last90Days;
+        request.WithSpawnInfo = true;
+        request.FromRating = 1500;
+        request.ToRating = 2000;
+        request.Players = [CreatePlayerDto(701)];
+
+        var response = await fixture.Service.GetBuildResponse(request);
+
+        Assert.AreEqual(10, response.Replays.Count);
+        CollectionAssert.AreEqual(
+            Enumerable.Range(700, 10).Select(id => $"hash-{id}").ToList(),
+            response.Replays.Select(replay => replay.ReplayHash).ToList());
+    }
+
+    [TestMethod]
+    public async Task GetBuildResponse_CanceledRequest_ReturnsEmptyResponse()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        var response = await fixture.Service.GetBuildResponse(
+            CreateRequest(Breakpoint.Min5),
+            cancellation.Token);
+
+        Assert.AreEqual(0, response.Stats.Count);
+        Assert.AreEqual(0, response.Replays.Count);
+    }
+
     private static BuildsRequest CreateRequest(Breakpoint breakpoint)
     {
         return new()
@@ -335,6 +476,8 @@ public sealed class BuildsServiceTests
             double ratingBefore = 1800,
             LeaverType leaverType = LeaverType.None,
             RatingType ratingType = RatingType.Commanders,
+            int duration = 900,
+            DateTime? gametime = null,
             int[]? refineries = null,
             (string Upgrade, int Time)[]? upgrades = null,
             (string Unit, int Count)[]? min5Units = null,
@@ -366,9 +509,9 @@ public sealed class BuildsServiceTests
                 RegionId = 1,
                 TE = false,
                 PlayerCount = 6,
-                Gametime = new DateTime(2026, 1, 1).AddDays(replayId),
+                Gametime = gametime ?? new DateTime(2026, 1, 1).AddDays(replayId),
                 BaseBuild = 90000,
-                Duration = 900,
+                Duration = duration,
                 WinnerTeam = 1,
                 ReplayHash = $"hash-{replayId}",
                 CompatHash = $"compat-{replayId}",
