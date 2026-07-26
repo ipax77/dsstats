@@ -186,13 +186,12 @@
                     {
                     @foreach (var unit in DisplayedSpawn.Units.OrderByDescending(o => o.Count))
                         {
-                            var unitInfo = UnitMap.GetUnitInfo(unit.Name, Player.Race);
-                            var unitColor = _unitDisplayInfo.TryGetValue(unit.Name, out var di) ? di.Color : "#CCCCCC";
-                            <tr @onmouseover="e => HighlightUnits(unitInfo.Name)">
+                            var representation = GetUnitRepresentation(unit.Name);
+                            <tr @onmouseover="e => HighlightUnits(representation.DisplayName)">
                                 <td>
-                                    <span class="unit-color-indicator" style="background-color: @($"{unitColor}CC")"></span>
+                                    <span class="unit-color-indicator" style="background-color: @($"{representation.Color}CC")"></span>
                                 </td>
-                                <td>@unitInfo.Name</td>
+                                <td>@representation.DisplayName</td>
                                 <td class="text-start">
                                     @unit.Count
                                     @if (unit.Special > 0)
@@ -345,7 +344,7 @@
         }
     }
 
-    private Dictionary<string, (double Radius, string Color)> _unitDisplayInfo = [];
+    private Dictionary<string, ResolvedUnitRepresentation> _unitDisplayInfo = [];
 
     protected override async Task OnParametersSetAsync()
     {
@@ -362,10 +361,36 @@
 
     private void ComputeDisplayInfo()
     {
-        _unitDisplayInfo = DisplayedSpawn?.Units
-            .DistinctBy(u => u.Name)
-            .ToDictionary(u => u.Name, u => UnitMapNg.GetColorAndRadius(u.Name, Player.Race))
-            ?? [];
+        var units = DisplayedSpawn?.Units;
+        if (units is null || units.Count == 0)
+        {
+            _unitDisplayInfo = [];
+            return;
+        }
+
+        Dictionary<string, ResolvedUnitRepresentation> representations =
+            new(units.Count, StringComparer.Ordinal);
+        foreach (var unit in units)
+        {
+            if (representations.ContainsKey(unit.Name))
+            {
+                continue;
+            }
+
+            var representation = UnitMapNg.Resolve(unit.Name, Player.Race);
+            if (unitLifeCosts.TryGetValue(representation.CanonicalName, out var lifeCost))
+            {
+                representation = representation with
+                {
+                    Cost = lifeCost.Cost,
+                    Life = lifeCost.Life
+                };
+            }
+
+            representations.Add(unit.Name, representation);
+        }
+
+        _unitDisplayInfo = representations;
     }
 
     private async Task HighlightUnits(string name)
@@ -395,49 +420,65 @@
         {
             unitLifeCosts = EmptyUnitLifeCosts;
         }
+
+        ComputeDisplayInfo();
     }
 
     private string FormatUnitCost(UnitDto unit)
     {
-        return TryGetUnitLifeCost(unit.Name, out var unitLifeCost)
-            ? FormatTotal(unitLifeCost.Cost, unit.Count)
+        var representation = GetUnitRepresentation(unit.Name);
+        return representation.Cost is int cost
+            ? FormatTotal(cost, unit.Count)
             : string.Empty;
     }
 
     private string FormatUnitLife(UnitDto unit)
     {
-        return TryGetUnitLifeCost(unit.Name, out var unitLifeCost)
-            ? FormatTotal(unitLifeCost.Life, unit.Count)
+        var representation = GetUnitRepresentation(unit.Name);
+        return representation.Life is int life
+            ? FormatTotal(life, unit.Count)
             : string.Empty;
     }
 
     private string FormatSpawnCost(SpawnDto spawn)
     {
-        return FormatSpawnTotal(spawn, unitLifeCost => unitLifeCost.Cost);
+        return FormatSpawnTotal(spawn, useCost: true);
     }
 
     private string FormatSpawnLife(SpawnDto spawn)
     {
-        return FormatSpawnTotal(spawn, unitLifeCost => unitLifeCost.Life);
+        return FormatSpawnTotal(spawn, useCost: false);
     }
 
-    private string FormatSpawnTotal(SpawnDto spawn, Func<DsUnitLifeCostDto, int> selector)
+    private string FormatSpawnTotal(SpawnDto spawn, bool useCost)
     {
         var total = 0L;
         foreach (var unit in spawn.Units)
         {
-            if (TryGetUnitLifeCost(unit.Name, out var unitLifeCost))
+            var representation = GetUnitRepresentation(unit.Name);
+            var value = useCost
+                ? representation.Cost
+                : representation.Life;
+            if (value is int resolvedValue)
             {
-                total += selector(unitLifeCost) * (long)unit.Count;
+                total += resolvedValue * (long)unit.Count;
             }
         }
 
         return total.ToString("N0");
     }
 
-    private bool TryGetUnitLifeCost(string unitName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out DsUnitLifeCostDto? unitLifeCost)
+    private ResolvedUnitRepresentation GetUnitRepresentation(string unitName)
     {
-        return unitLifeCosts.TryGetValue(UnitMap.GetNormalizedUnitName(unitName, Player.Race), out unitLifeCost);
+        if (_unitDisplayInfo.TryGetValue(unitName, out var representation))
+        {
+            return representation;
+        }
+
+        representation = UnitMapNg.Resolve(unitName, Player.Race);
+        return unitLifeCosts.TryGetValue(representation.CanonicalName, out var lifeCost)
+            ? representation with { Cost = lifeCost.Cost, Life = lifeCost.Life }
+            : representation;
     }
 
     private static string FormatTotal(int value, int count)

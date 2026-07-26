@@ -108,7 +108,7 @@ public partial class BuildsService
 
         foreach (var buildUnit in buildResponse.Units)
         {
-            var unitName = MapUnitName(buildUnit.Name, cmdr);
+            var unitName = UnitMapNg.Resolve(buildUnit.Name, cmdr).CanonicalName;
             if (!unitLifeCosts.TryGetValue(unitName, out var unitLifeCost))
             {
                 continue;
@@ -118,11 +118,6 @@ public partial class BuildsService
             buildUnit.Life = Math.Round(unitLifeCost.Life * buildUnit.Count, 2);
             buildUnit.Cost = Math.Round(unitLifeCost.Cost * buildUnit.Count, 2);
         }
-    }
-
-    private static string MapUnitName(string unitName, Commander cmdr)
-    {
-        return UnitMap.GetNormalizedUnitName(unitName, cmdr);
     }
 }
 

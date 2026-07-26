@@ -32,6 +32,7 @@ public static partial class UnitMap
             ["InfestedMarine"] = "Infested Marine",
             ["InfestedSiegeTank"] = "Infested Siege Tank",
             ["VolatileInfested"] = "Volatile Infested",
+            ["BroodQueen"] = "Brood Queen",
 
             // normalized names
             ["Brood Queen"] = "Brood Queen",

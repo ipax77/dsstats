@@ -17,6 +17,7 @@ public static partial class UnitMap
             ["VultureStarlight"] = "Vulture",
             ["RaynorHyperion"] = "Hyperion",
             ["VikingAssault"] = "Viking",
+            ["SiegeTank"] = "Siege Tank",
 
             // v2 names
             ["SpiderMine"] = "Spider Mine",
