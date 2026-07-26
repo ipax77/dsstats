@@ -299,10 +299,7 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
         }
     }
 
-    public void Close()
-    {
-        OnClose.InvokeAsync();
-    }
+    public Task Close() => OnClose.InvokeAsync();
 
     public async ValueTask DisposeAsync()
     {

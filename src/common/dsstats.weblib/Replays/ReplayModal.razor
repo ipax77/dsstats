@@ -39,10 +39,10 @@
         JSRuntime.InvokeVoidAsync("openModalById", modalId);
     }
 
-    public void Close()
+    public async Task Close()
     {
-        JSRuntime.InvokeVoidAsync("closeModalById", modalId);
-        OnClose.InvokeAsync();
+        await JSRuntime.InvokeVoidAsync("closeModalById", modalId);
         ReplayDetails = null;
+        await OnClose.InvokeAsync();
     }
 }

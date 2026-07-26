@@ -494,8 +494,8 @@ public partial class SpawnPlaybackCanvas
                 continue;
             }
 
-            var normalizedName = UnitMap.GetNormalizedUnitName(unitKind.Name, commander);
-            if (!lifeCosts.TryGetValue(normalizedName, out var unitLifeCost))
+            var representation = UnitMapNg.Resolve(unitKind.Name, commander);
+            if (!lifeCosts.TryGetValue(representation.CanonicalName, out var unitLifeCost))
             {
                 continue;
             }

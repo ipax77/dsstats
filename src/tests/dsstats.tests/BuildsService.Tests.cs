@@ -127,6 +127,45 @@ public sealed class BuildsServiceTests
     }
 
     [TestMethod]
+    public async Task GetBuildResponse_RestoredRawAliases_ResolveCanonicalLifeAndCost()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        (string RawName, string CanonicalName, Commander Commander, int Cost, int Life)[] aliases =
+        [
+            ("SiegeTank", "Siege Tank", Commander.Raynor, 150, 400),
+            ("SiegeTank", "Siege Tank", Commander.Swann, 175, 500),
+            ("BroodQueen", "Brood Queen", Commander.Stukov, 125, 300),
+            ("ShadowGuard", "Shadow Guard", Commander.Vorazun, 200, 250)
+        ];
+
+        for (var i = 0; i < aliases.Length; i++)
+        {
+            var alias = aliases[i];
+            await fixture.AddDsUnitAsync(alias.CanonicalName, alias.Commander, alias.Cost, alias.Life);
+            await fixture.SeedReplayPlayerAsync(
+                replayId: 60 + i,
+                playerId: 601 + i,
+                commander: alias.Commander,
+                oppCommander: Commander.Alarak,
+                min5Units: [(alias.RawName, 2)]);
+        }
+
+        foreach (var alias in aliases)
+        {
+            var request = CreateRequest(Breakpoint.Min5);
+            request.Interest = alias.Commander;
+
+            var response = await fixture.Service.GetBuildResponse(request);
+            var unit = response.Units.Single();
+
+            Assert.AreEqual(alias.CanonicalName, unit.Name);
+            Assert.AreEqual(2, unit.Count);
+            Assert.AreEqual(alias.Cost * 2, unit.Cost);
+            Assert.AreEqual(alias.Life * 2, unit.Life);
+        }
+    }
+
+    [TestMethod]
     public async Task UnitLifeCostService_CachesProjectionAndSeparatesCommanders()
     {
         await using var fixture = await TestFixture.CreateAsync();

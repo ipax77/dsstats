@@ -4,6 +4,17 @@ namespace dsstats.shared.Units;
 
 public sealed record BuildUnitNg(string Name, Commander Commander, UnitSize Size, UnitColor Color, WeaponTarget MovementType);
 
+public readonly record struct ResolvedUnitRepresentation(
+    string CanonicalName,
+    string DisplayName,
+    UnitSize Size,
+    UnitType Type,
+    WeaponTarget MovementType,
+    double Radius,
+    string Color,
+    int? Cost = null,
+    int? Life = null);
+
 public static partial class UnitMapNg
 {
     public static string GetUnitColor(UnitColor unitColor) =>
@@ -29,38 +40,79 @@ public static partial class UnitMapNg
 
     public static (double radius, string color) GetColorAndRadius(string unitName, Commander commander)
     {
-        if (_unitMap.TryGetValue((unitName, commander), out var unit))
-        {
-            var radius = unit.Size switch
-            {
-                UnitSize.VerySmall => 3,
-                UnitSize.Small     => 6,
-                UnitSize.Normal    => 10,
-                UnitSize.Big       => 15,
-                UnitSize.Hero      => 20,
-                UnitSize.VeryBig   => 25,
-                _                  => 12
-            };
-
-            if (unit.MovementType.HasFlag(WeaponTarget.Air))
-            {
-                radius += 2;
-            }
-
-            return (radius, GetUnitColor(unit.Color));
-        }
-
-        return (12, "#EC7063");
+        var representation = Resolve(unitName, commander);
+        return (representation.Radius, representation.Color);
     }
 
-    private static readonly FrozenDictionary<(string Name, Commander Commander), BuildUnitNg> _unitMap;
+    public static ResolvedUnitRepresentation Resolve(string unitName, Commander commander)
+    {
+        if (_unitMap.TryGetValue((unitName, commander), out var representation))
+        {
+            return representation;
+        }
+
+        var canonicalName = UnitMap.GetNormalizedUnitName(unitName, commander);
+        var unitInfo = UnitMap.GetUnitInfo(unitName, commander);
+        return new(
+            canonicalName,
+            unitInfo.Name,
+            unitInfo.Size,
+            unitInfo.Type,
+            ToWeaponTarget(unitInfo.Type),
+            12,
+            "#EC7063");
+    }
+
+    private static readonly FrozenDictionary<(string Name, Commander Commander), ResolvedUnitRepresentation> _unitMap;
 
     static UnitMapNg()
     {
         _unitMap = _rawUnits
-            .Select(u => new BuildUnitNg(u.Name, u.Commander, u.Size, u.Color, u.MovementType))
-            .ToFrozenDictionary(u => (u.Name, u.Commander));
+            .ToFrozenDictionary(
+                unit => (unit.Name, unit.Commander),
+                unit => CreateRepresentation(unit));
     }
+
+    private static ResolvedUnitRepresentation CreateRepresentation(
+        (string Name, Commander Commander, UnitSize Size, UnitColor Color, WeaponTarget MovementType) unit)
+    {
+        var unitInfo = UnitMap.GetUnitInfo(unit.Name, unit.Commander);
+        return new(
+            UnitMap.GetNormalizedUnitName(unit.Name, unit.Commander),
+            unitInfo.Name,
+            unit.Size,
+            unitInfo.Type,
+            unit.MovementType,
+            GetRadius(unit.Size, unit.MovementType),
+            GetUnitColor(unit.Color));
+    }
+
+    private static double GetRadius(UnitSize size, WeaponTarget movementType)
+    {
+        var radius = size switch
+        {
+            UnitSize.VerySmall => 3,
+            UnitSize.Small     => 6,
+            UnitSize.Normal    => 10,
+            UnitSize.Big       => 15,
+            UnitSize.Hero      => 20,
+            UnitSize.VeryBig   => 25,
+            _                  => 12
+        };
+
+        return movementType.HasFlag(WeaponTarget.Air)
+            ? radius + 2
+            : radius;
+    }
+
+    private static WeaponTarget ToWeaponTarget(UnitType unitType) =>
+        unitType switch
+        {
+            UnitType.Air => WeaponTarget.Air,
+            UnitType.Ground => WeaponTarget.Ground,
+            UnitType.AirAndGround => WeaponTarget.Air | WeaponTarget.Ground,
+            _ => WeaponTarget.None
+        };
 
     private static readonly (string Name, Commander Commander, UnitSize Size, UnitColor Color, WeaponTarget MovementType)[] _rawUnits =
     [

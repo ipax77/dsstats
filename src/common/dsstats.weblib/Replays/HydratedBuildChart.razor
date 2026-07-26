@@ -1,6 +1,7 @@
 @using Microsoft.JSInterop
 @using dsstats.shared
 @using dsstats.shared.Interfaces
+@using dsstats.shared.Units
 @inject IReplayRepository ReplayRepository
 @inject SpawnPositionHydrationService SpawnPositionHydration
 @implements IDisposable
@@ -51,7 +52,7 @@ else
     public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
 
     [Parameter]
-    public Dictionary<string, (double Radius, string Color)>? UnitDisplayInfo { get; set; }
+    public IReadOnlyDictionary<string, ResolvedUnitRepresentation>? UnitDisplayInfo { get; set; }
 
     [Parameter]
     public SpawnDto? PositionedSpawn { get; set; }
@@ -68,7 +69,7 @@ else
     private BuildChart? buildChart;
     private CancellationTokenSource? loadCts;
     private SpawnDto? positionedSpawn;
-    private Dictionary<string, (double Radius, string Color)>? effectiveUnitDisplayInfo;
+    private IReadOnlyDictionary<string, ResolvedUnitRepresentation>? effectiveUnitDisplayInfo;
     private string chartKey = string.Empty;
     private int loadVersion;
     private bool isLoading;
@@ -117,7 +118,7 @@ else
 
     public async Task UpdateChartAsync(
         SpawnDto? spawn,
-        Dictionary<string, (double Radius, string Color)>? unitDisplayInfo)
+        IReadOnlyDictionary<string, ResolvedUnitRepresentation>? unitDisplayInfo)
     {
         effectiveUnitDisplayInfo = unitDisplayInfo;
         positionedSpawn = spawn;

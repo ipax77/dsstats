@@ -26,7 +26,7 @@
     public Lazy<Task<IJSObjectReference>> moduleTask { get; set; } = default!;
 
     [Parameter]
-    public Dictionary<string, (double Radius, string Color)>? UnitDisplayInfo { get; set; }
+    public IReadOnlyDictionary<string, ResolvedUnitRepresentation>? UnitDisplayInfo { get; set; }
 
     private CustomChartJsConfig chartConfig = null!;
     private ChartComponent? chartComponent;
@@ -79,12 +79,16 @@
             return builder;
         }
 
-        var unitInfo = UnitMap.GetUnitInfo(dbName, Cmdr);
-        (var radius, var color) = UnitDisplayInfo is not null && UnitDisplayInfo.TryGetValue(dbName, out var di)
-            ? di
-            : UnitMapNg.GetColorAndRadius(dbName, Cmdr);
+        var representation = UnitDisplayInfo is not null && UnitDisplayInfo.TryGetValue(dbName, out var resolved)
+            ? resolved
+            : UnitMapNg.Resolve(dbName, Cmdr);
 
-        builder = new(dbName, unitInfo.Name, radius, color, initialCapacity);
+        builder = new(
+            dbName,
+            representation.DisplayName,
+            representation.Radius,
+            representation.Color,
+            initialCapacity);
         builders.Add(dbName, builder);
         return builder;
     }
@@ -109,12 +113,20 @@
         return (x, y);
     }
 
-    public async Task Update(SpawnDto? spawn, Commander cmdr, int team, Dictionary<string, (double Radius, string Color)>? unitDisplayInfo = null)
+    public async Task Update(
+        SpawnDto? spawn,
+        Commander cmdr,
+        int team,
+        IReadOnlyDictionary<string, ResolvedUnitRepresentation>? unitDisplayInfo = null)
     {
         await UpdateCore(spawn, cmdr, team, unitDisplayInfo, smooth: false);
     }
 
-    public async Task UpdateSmooth(SpawnDto? spawn, Commander cmdr, int team, Dictionary<string, (double Radius, string Color)>? unitDisplayInfo = null)
+    public async Task UpdateSmooth(
+        SpawnDto? spawn,
+        Commander cmdr,
+        int team,
+        IReadOnlyDictionary<string, ResolvedUnitRepresentation>? unitDisplayInfo = null)
     {
         await UpdateCore(spawn, cmdr, team, unitDisplayInfo, smooth: true);
     }
@@ -123,7 +135,7 @@
         SpawnDto? spawn,
         Commander cmdr,
         int team,
-        Dictionary<string, (double Radius, string Color)>? unitDisplayInfo,
+        IReadOnlyDictionary<string, ResolvedUnitRepresentation>? unitDisplayInfo,
         bool smooth)
     {
         Team = team;

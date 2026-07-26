@@ -17,6 +17,7 @@ public static partial class UnitMap
             // v2 names
             ["DarkArchon"] = "Dark Archon",
             ["DarkTemplar"] = "Dark Templar",
+            ["ShadowGuard"] = "Shadow Guard",
             ["VoidRay"] = "Void Ray",
 
             // normalized names

@@ -41,7 +41,6 @@ public static partial class SpawnPlaybackFactoryNg
             List<SpawnPlaybackPlayerNg> players = new(sidecarPlayers.Length);
             List<SpawnPlaybackUnitKindNg> unitKinds = [];
             Dictionary<UnitKindKey, int> unitKindIndexes = [];
-            Dictionary<(Commander Commander, string UnitName), (double Radius, string Color)> displayCache = [];
             Dictionary<PathKey, int> pathIndexes = [];
             List<PathKey> paths = [];
             Dictionary<PlayerUnitSummaryKey, int> killsByPlayerUnit = [];
@@ -106,7 +105,7 @@ public static partial class SpawnPlaybackFactoryNg
                         boundsTargetY = MapHeight - sidecarUnit.SpawnY;
                     }
 
-                    int unitKindIndex = GetUnitKindIndex(unitKinds, unitKindIndexes, displayCache, commander, sidecarUnit.Name);
+                    int unitKindIndex = GetUnitKindIndex(unitKinds, unitKindIndexes, commander, sidecarUnit.Name);
                     PathKey path = CreatePath(
                         sidecarUnit.SpawnX,
                         sidecarUnit.SpawnY,
@@ -280,38 +279,24 @@ public static partial class SpawnPlaybackFactoryNg
     private static int GetUnitKindIndex(
         List<SpawnPlaybackUnitKindNg> unitKinds,
         Dictionary<UnitKindKey, int> unitKindIndexes,
-        Dictionary<(Commander Commander, string UnitName), (double Radius, string Color)> displayCache,
         Commander commander,
         string unitName)
     {
-        var unitInfo = UnitMap.GetUnitInfo(unitName, commander);
-        var key = new UnitKindKey(commander, unitInfo.Name);
+        var representation = UnitMapNg.Resolve(unitName, commander);
+        var key = new UnitKindKey(commander, representation.DisplayName);
         if (unitKindIndexes.TryGetValue(key, out int index))
         {
             return index;
         }
 
-        var displayInfo = GetDisplayInfo(displayCache, commander, unitInfo.Name);
         index = unitKinds.Count;
         unitKindIndexes.Add(key, index);
-        unitKinds.Add(new(unitInfo.Name, commander.ToString(), displayInfo.Radius, displayInfo.Color));
+        unitKinds.Add(new(
+            representation.DisplayName,
+            commander.ToString(),
+            representation.Radius,
+            representation.Color));
         return index;
-    }
-
-    private static (double Radius, string Color) GetDisplayInfo(
-        Dictionary<(Commander Commander, string UnitName), (double Radius, string Color)> cache,
-        Commander commander,
-        string unitName)
-    {
-        var key = (commander, unitName);
-        if (cache.TryGetValue(key, out var displayInfo))
-        {
-            return displayInfo;
-        }
-
-        displayInfo = UnitMapNg.GetColorAndRadius(unitName, commander);
-        cache[key] = displayInfo;
-        return displayInfo;
     }
 
     private static void AddSpawnRange(

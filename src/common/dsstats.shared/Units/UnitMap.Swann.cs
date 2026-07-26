@@ -15,6 +15,7 @@ public static partial class UnitMap
             ["SwannThor"] = "Thor",
             ["ARES"] = "A.R.E.S.",
             ["WraithStarlight"] = "Wraith",
+            ["SiegeTank"] = "Siege Tank",
 
             // v2 names
             ["ScienceVessel"] = "Science Vessel",
