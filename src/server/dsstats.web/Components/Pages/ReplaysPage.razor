@@ -139,8 +139,12 @@
 			queryDic["ToonIds"] = null;
 		}
 
-		NavigationManager.NavigateTo(
-			NavigationManager.GetUriWithQueryParameters(
-				new Dictionary<string, object?>(queryDic)));
+		var uri = NavigationManager.GetUriWithQueryParameters(
+			new Dictionary<string, object?>(queryDic));
+
+		if (!string.Equals(uri, NavigationManager.Uri, StringComparison.Ordinal))
+		{
+			NavigationManager.NavigateTo(uri);
+		}
 	}
 }

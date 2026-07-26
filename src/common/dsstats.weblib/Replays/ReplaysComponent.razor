@@ -7,7 +7,6 @@
 @inject IReplayRepository ReplayRepository
 @inject IJSRuntime JSRuntime
 @inject IOptions<HostOptions> HostOptions
-@implements IAsyncDisposable
 
 <div>
 	<div style="max-width: 1060px;">
@@ -136,8 +135,6 @@
 	[Parameter]
 	public EventCallback<ReplaysRequest> OnRequestChanged { get; set; }
 
-	CancellationTokenSource cts = new();
-
 	int replaysCount;
 
 	Virtualize<ReplayListDto>? virtualizeComponent;
@@ -149,18 +146,18 @@
 	bool isLoading = true;
 	bool IsServerHost => HostOptions.Value.Kind == HostAppKind.BlazorServer;
 
-	protected override void OnInitialized()
-	{
-		_ = SetCount();
-		base.OnInitialized();
-	}
-
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
-		if (firstRender && !string.IsNullOrWhiteSpace(ReplaysRequest.ReplayHash))
+		if (firstRender)
 		{
-			await LoadReplay(ReplaysRequest.ReplayHash);
+			await SetCount();
+
+			if (!string.IsNullOrWhiteSpace(ReplaysRequest.ReplayHash))
+			{
+				await LoadReplay(ReplaysRequest.ReplayHash);
+			}
 		}
+
 		await base.OnAfterRenderAsync(firstRender);
 	}
 
@@ -248,11 +245,11 @@
 		ReplaysRequest.IncludeReplayUserRatings = IsServerHost;
 	}
 
-	private void CloseReplay()
+	private async Task CloseReplay()
 	{
 		ReplayDetails = null;
 		ReplaysRequest.ReplayHash = null;
-		OnRequestChanged.InvokeAsync(ReplaysRequest);
+		await OnRequestChanged.InvokeAsync(ReplaysRequest);
 	}
 
 	private async Task LoadNextReplay(bool next)
@@ -301,12 +298,4 @@
 		return score >= star - 0.75 ? "bi-star-half" : "bi-star";
 	}
 
-	public ValueTask DisposeAsync()
-	{
-		cts.Cancel();
-		playerModal?.Close();
-		replayModal?.Close();
-		cts.Dispose();
-		return ValueTask.CompletedTask;
-	}
 }
