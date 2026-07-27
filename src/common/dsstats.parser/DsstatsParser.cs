@@ -1,21 +1,10 @@
 using dsstats.shared;
 using dsstats.shared.InHouse;
-using dsstats.shared.Units;
 using s2protocol.NET;
 using s2protocol.NET.Models;
-using ExternalDirectStrikeObserver = Sc2DirectStrike.Parser.DirectStrikeObserver;
-using ExternalDirectStrikeReplay = Sc2DirectStrike.Parser.DirectStrikeReplay;
-using ExternalBreakpoint = Sc2DirectStrike.Parser.Breakpoint;
-using ExternalCommander = Sc2DirectStrike.Parser.Commander;
-using ExternalGameMode = Sc2DirectStrike.Parser.GameMode;
-using ExternalPlayerResult = Sc2DirectStrike.Parser.PlayerResult;
-using ExternalPlayerDto = Sc2DirectStrike.Parser.PlayerDto;
-using ExternalReplayDto = Sc2DirectStrike.Parser.ReplayDto;
-using ExternalReplayPlayerDto = Sc2DirectStrike.Parser.ReplayPlayerDto;
-using ExternalSpawnDto = Sc2DirectStrike.Parser.SpawnDto;
-using ExternalToonIdDto = Sc2DirectStrike.Parser.ToonIdDto;
-using ExternalUnitDto = Sc2DirectStrike.Parser.UnitDto;
-using ExternalUpgradeDto = Sc2DirectStrike.Parser.UpgradeDto;
+using DirectStrikeObserver = Sc2DirectStrike.Parser.DirectStrikeObserver;
+using DirectStrikeReplay = Sc2DirectStrike.Parser.DirectStrikeReplay;
+using Sc2DirectStrikeParser = Sc2DirectStrike.Parser.Sc2DirectStrikeParser;
 
 namespace dsstats.parser;
 
@@ -43,17 +32,16 @@ public static class DsstatsParser
     }
 
     /// <summary>
-    /// Parses a Direct Strike replay through the external Sc2DirectStrike parser and maps it to the dsstats DTO contract.
+    /// Parses a Direct Strike replay and maps it to the dsstats DTO contract.
     /// </summary>
     /// <param name="replay">Decoded SC2 replay.</param>
-    /// <param name="compat">Kept for source compatibility. The external parser always emits compat hashes.</param>
+    /// <param name="compat">Kept for source compatibility. The parser always emits compat hashes.</param>
     public static ReplayDto ParseReplay(Sc2Replay replay, bool compat = true)
     {
         ArgumentNullException.ThrowIfNull(replay);
 
-        ExternalReplayDto externalReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.ParseDto(replay);
-        ReplayDto dto = externalReplay.ToDsstatsDto();
-        SetMvp(dto);
+        DirectStrikeReplay directStrikeReplay = Sc2DirectStrikeParser.Parse(replay);
+        ReplayDto dto = DirectStrikeReplayDtoMapper.Map(replay, directStrikeReplay);
         return dto;
     }
 
@@ -66,11 +54,8 @@ public static class DsstatsParser
     {
         ArgumentNullException.ThrowIfNull(replay);
 
-        ExternalDirectStrikeReplay directStrikeReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.Parse(replay);
-        ExternalReplayDto externalReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.ParseDto(replay, directStrikeReplay);
-        ReplayDto dto = externalReplay.ToDsstatsDto();
-        SetMvp(dto);
-
+        DirectStrikeReplay directStrikeReplay = Sc2DirectStrikeParser.Parse(replay);
+        ReplayDto dto = DirectStrikeReplayDtoMapper.Map(replay, directStrikeReplay);
         SpawnPlaybackEncodedSidecar? encodedSidecar = null;
         try
         {
@@ -93,21 +78,19 @@ public static class DsstatsParser
         return new(dto, encodedSidecar);
     }
 
-    public static ExternalDirectStrikeReplay ParseDirectStrikeReplay(Sc2Replay replay)
+    public static DirectStrikeReplay ParseDirectStrikeReplay(Sc2Replay replay)
     {
         ArgumentNullException.ThrowIfNull(replay);
 
-        return Sc2DirectStrike.Parser.Sc2DirectStrikeParser.Parse(replay);
+        return Sc2DirectStrikeParser.Parse(replay);
     }
 
     public static InHouseParsedReplayDto ParseInHouseReplay(Sc2Replay replay)
     {
         ArgumentNullException.ThrowIfNull(replay);
 
-        var directStrikeReplay = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.Parse(replay);
-        var dto = Sc2DirectStrike.Parser.Sc2DirectStrikeParser.ParseDto(replay, directStrikeReplay).ToDsstatsDto();
-        SetMvp(dto);
-
+        var directStrikeReplay = Sc2DirectStrikeParser.Parse(replay);
+        var dto = DirectStrikeReplayDtoMapper.Map(replay, directStrikeReplay);
         return new()
         {
             Replay = dto,
@@ -212,59 +195,7 @@ public static class DsstatsParser
         };
     }
 
-    private static ReplayDto ToDsstatsDto(this ExternalReplayDto replay)
-    {
-        return new()
-        {
-            FileName = replay.FileName,
-            CompatHash = replay.CompatHash,
-            Title = replay.Title,
-            Version = replay.Version,
-            GameMode = ToGameMode(replay.GameMode),
-            RegionId = replay.RegionId,
-            Gametime = replay.Gametime,
-            BaseBuild = replay.BaseBuild,
-            Duration = ToSeconds(replay.Duration),
-            Cannon = ToSeconds(replay.Cannon),
-            Bunker = ToSeconds(replay.Bunker),
-            WinnerTeam = replay.WinnerTeam,
-            ResumedFromReplay = replay.ResumedFromReplay,
-            MiddleChanges = ToMiddleChanges(replay),
-            Players = replay.Players.Select(ToDsstatsDto).ToList()
-        };
-    }
-
-    private static ReplayPlayerDto ToDsstatsDto(ExternalReplayPlayerDto player)
-    {
-        Commander commander = ToCommander(player.Race);
-
-        return new()
-        {
-            CompatHash = player.CompatHash,
-            Name = player.Name,
-            Clan = player.Clan,
-            Race = commander,
-            SelectedRace = ToCommander(player.SelectedRace),
-            TeamId = player.TeamId,
-            GamePos = player.GamePos,
-            Result = ToPlayerResult(player.Result),
-            Duration = ToSeconds(player.Duration),
-            Apm = player.Apm,
-            Messages = player.Messages,
-            Pings = player.Pings,
-            IsMvp = player.IsMvp,
-            ScanCount = player.ScanCount,
-            Spawns = player.Spawns
-                .Select(spawn => ToDsstatsDto(spawn, commander))
-                .ToList(),
-            Upgrades = player.Upgrades.Select(ToDsstatsDto).ToList(),
-            TierUpgrades = player.TierUpgrades.Select(ToSeconds).ToList(),
-            Refineries = player.Refineries.Select(ToSeconds).ToList(),
-            Player = ToDsstatsDto(player.Player)
-        };
-    }
-
-    private static InHouseReplayObserverDto ToDsstatsDto(ExternalDirectStrikeObserver observer)
+    private static InHouseReplayObserverDto ToDsstatsDto(DirectStrikeObserver observer)
     {
         return new()
         {
@@ -277,115 +208,6 @@ public static class DsstatsParser
                 Realm = observer.Realm,
                 Id = observer.Id,
             },
-        };
-    }
-
-    private static PlayerDto ToDsstatsDto(ExternalPlayerDto player)
-    {
-        return new()
-        {
-            PlayerId = player.PlayerId,
-            Name = player.Name,
-            ToonId = ToDsstatsDto(player.ToonId)
-        };
-    }
-
-    private static ToonIdDto ToDsstatsDto(ExternalToonIdDto toonId)
-    {
-        return new()
-        {
-            Region = toonId.Region,
-            Realm = toonId.Realm,
-            Id = toonId.Id
-        };
-    }
-
-    private static SpawnDto ToDsstatsDto(ExternalSpawnDto spawn, Commander commander)
-    {
-        var mods = spawn.BuildUnitModifications
-            .GroupBy(
-                modification => UnitMap.GetNormalizedUnitName(modification.TargetUnitName, commander),
-                StringComparer.Ordinal)
-            .ToDictionary(
-                group => group.Key,
-                group => group.Sum(x => x.Count),
-                StringComparer.Ordinal);
-
-        return new()
-        {
-            Breakpoint = ToBreakpoint(spawn.Breakpoint),
-            Income = spawn.Income,
-            GasCount = spawn.GasCount,
-            ArmyValue = spawn.ArmyValue,
-            KilledValue = spawn.KilledValue,
-            LostValue = spawn.LostValue,
-            UpgradeSpent = spawn.UpgradeSpent,
-            Units = spawn.Units
-                .Select(unit => ToDsstatsDto(unit, mods, commander))
-                .ToList(),
-        };
-    }
-
-    private static UnitDto ToDsstatsDto(
-        ExternalUnitDto unit,
-        Dictionary<string, int> mods,
-        Commander commander)
-    {
-        string normalizedName = UnitMap.GetNormalizedUnitName(unit.Name, commander);
-
-        return new()
-        {
-            Name = unit.Name,
-            Count = unit.Count,
-            Special = mods.TryGetValue(normalizedName, out int count)
-                ? count
-                : null,
-            Positions = unit.Positions.ToList(),
-        };
-    }
-
-    private static UpgradeDto ToDsstatsDto(ExternalUpgradeDto upgrade)
-    {
-        return new()
-        {
-            Name = upgrade.Name,
-            Gameloop = ToSeconds(upgrade.Time)
-        };
-    }
-
-    private static List<int> ToMiddleChanges(ExternalReplayDto replay)
-    {
-        if (replay.FirstTeamCrossedMiddle is not (1 or 2) || replay.MiddleChanges.Count == 0)
-        {
-            return [];
-        }
-
-        List<int> middleChanges = new(replay.MiddleChanges.Count + 1)
-        {
-            replay.FirstTeamCrossedMiddle
-        };
-        middleChanges.AddRange(replay.MiddleChanges.Select(ToSeconds));
-        return middleChanges;
-    }
-
-    private static int ToSeconds(TimeSpan value)
-    {
-        return value <= TimeSpan.Zero ? 0 : (int)value.TotalSeconds;
-    }
-
-    private static GameMode ToGameMode(ExternalGameMode value) => (GameMode)(int)value;
-
-    private static Commander ToCommander(ExternalCommander value) => (Commander)(int)value;
-
-    private static Breakpoint ToBreakpoint(ExternalBreakpoint value) => (Breakpoint)(int)value;
-
-    private static PlayerResult ToPlayerResult(ExternalPlayerResult value)
-    {
-        return value switch
-        {
-            ExternalPlayerResult.Win => PlayerResult.Win,
-            ExternalPlayerResult.Loss => PlayerResult.Los,
-            _ => PlayerResult.None
         };
     }
 
@@ -410,25 +232,6 @@ public static class DsstatsParser
             _ => selectedRace
         };
         return GetRace(race);
-    }
-
-    private static void SetMvp(ReplayDto replay)
-    {
-        List<SpawnDto> allSpawns = replay.Players
-            .SelectMany(player => player.Spawns)
-            .Where(spawn => spawn.Breakpoint == Breakpoint.All)
-            .ToList();
-
-        if (allSpawns.Count == 0)
-        {
-            return;
-        }
-
-        int maxKills = allSpawns.Max(spawn => spawn.KilledValue);
-        foreach (ReplayPlayerDto player in replay.Players.Where(player => player.Spawns.Any(spawn => spawn.KilledValue == maxKills)))
-        {
-            player.IsMvp = true;
-        }
     }
 
     internal static (int, int) GetMiddleIncome(DsstatsReplay replay, int targetGameloop)

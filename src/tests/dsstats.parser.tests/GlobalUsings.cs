@@ -1,0 +1,10 @@
+global using dsstats.parser;
+global using dsstats.shared.Units;
+global using Breakpoint = dsstats.shared.Breakpoint;
+global using PlayerDto = dsstats.shared.PlayerDto;
+global using ReplayDto = dsstats.shared.ReplayDto;
+global using ReplayPlayerDto = dsstats.shared.ReplayPlayerDto;
+global using SpawnDto = dsstats.shared.SpawnDto;
+global using ToonIdDto = dsstats.shared.ToonIdDto;
+global using UnitDto = dsstats.shared.UnitDto;
+global using UpgradeDto = dsstats.shared.UpgradeDto;
