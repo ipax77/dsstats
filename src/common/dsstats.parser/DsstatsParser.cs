@@ -1,5 +1,6 @@
 using dsstats.shared;
 using dsstats.shared.InHouse;
+using dsstats.shared.Units;
 using s2protocol.NET;
 using s2protocol.NET.Models;
 using ExternalDirectStrikeObserver = Sc2DirectStrike.Parser.DirectStrikeObserver;
@@ -235,12 +236,14 @@ public static class DsstatsParser
 
     private static ReplayPlayerDto ToDsstatsDto(ExternalReplayPlayerDto player)
     {
+        Commander commander = ToCommander(player.Race);
+
         return new()
         {
             CompatHash = player.CompatHash,
             Name = player.Name,
             Clan = player.Clan,
-            Race = ToCommander(player.Race),
+            Race = commander,
             SelectedRace = ToCommander(player.SelectedRace),
             TeamId = player.TeamId,
             GamePos = player.GamePos,
@@ -251,7 +254,9 @@ public static class DsstatsParser
             Pings = player.Pings,
             IsMvp = player.IsMvp,
             ScanCount = player.ScanCount,
-            Spawns = player.Spawns.Select(ToDsstatsDto).ToList(),
+            Spawns = player.Spawns
+                .Select(spawn => ToDsstatsDto(spawn, commander))
+                .ToList(),
             Upgrades = player.Upgrades.Select(ToDsstatsDto).ToList(),
             TierUpgrades = player.TierUpgrades.Select(ToSeconds).ToList(),
             Refineries = player.Refineries.Select(ToSeconds).ToList(),
@@ -295,10 +300,12 @@ public static class DsstatsParser
         };
     }
 
-    private static SpawnDto ToDsstatsDto(ExternalSpawnDto spawn)
+    private static SpawnDto ToDsstatsDto(ExternalSpawnDto spawn, Commander commander)
     {
         var mods = spawn.BuildUnitModifications
-            .GroupBy(x => GetBuildUnitDisplayName(x.TargetUnitName))
+            .GroupBy(
+                modification => UnitMap.GetNormalizedUnitName(modification.TargetUnitName, commander),
+                StringComparer.Ordinal)
             .ToDictionary(
                 group => group.Key,
                 group => group.Sum(x => x.Count),
@@ -314,46 +321,26 @@ public static class DsstatsParser
             LostValue = spawn.LostValue,
             UpgradeSpent = spawn.UpgradeSpent,
             Units = spawn.Units
-                .Select(unit => ToDsstatsDto(unit, mods))
+                .Select(unit => ToDsstatsDto(unit, mods, commander))
                 .ToList(),
         };
     }
 
     private static UnitDto ToDsstatsDto(
         ExternalUnitDto unit,
-        Dictionary<string, int> mods)
+        Dictionary<string, int> mods,
+        Commander commander)
     {
-        var mappedName = GetBuildUnitDisplayName(unit.Name);
+        string normalizedName = UnitMap.GetNormalizedUnitName(unit.Name, commander);
 
         return new()
         {
             Name = unit.Name,
             Count = unit.Count,
-            Special = mods.TryGetValue(mappedName, out var count)
+            Special = mods.TryGetValue(normalizedName, out int count)
                 ? count
                 : null,
             Positions = unit.Positions.ToList(),
-        };
-    }
-
-    private static string GetBuildUnitDisplayName(string rawUnitName)
-    {
-        return rawUnitName switch
-        {
-            "AbathurMutalisk" => "Mutalisk",
-            "ViperAbathur" => "Viper",
-            "GuardianStarlight" => "Guardian",
-            "VileRoach" => "Roach",
-            "SwarmHostAbathur" => "Swarm Host",
-            "AscendantStarlight" => "Ascendant",
-            "SupplicantStarlight" => "Supplicant",
-            "HonorGuard" => "Honor Guard",
-            "HighArchon" => "High Archon",
-            "ArtanisObserver" => "Observer",
-            "ImmortalArtanis" => "Immortal",
-            "Mirage" or "MirageKarax" or "KaraxMirage" => "Mirage",
-            "VoidRayVorazun" => "Void Ray",
-            _ => rawUnitName,
         };
     }
 

@@ -11,11 +11,6 @@ internal static partial class DsstatsReplayMapper
             return [];
         }
 
-        if (player.Name == "oVANQUISHo")
-        {
-            Console.WriteLine("Debug");
-        }
-
         // Group units into waves
         var waves = new List<List<DsUnit>>();
         var currentWave = new List<DsUnit>();

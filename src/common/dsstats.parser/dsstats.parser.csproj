@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Sc2DirectStrike.Parser" Version="0.2.6" />
+    <PackageReference Include="Sc2DirectStrike.Parser" Version="0.2.8" />
   </ItemGroup>
 
   <PropertyGroup>

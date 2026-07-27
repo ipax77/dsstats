@@ -143,6 +143,51 @@ public sealed class DsstatsParserTests
     }
 
     [TestMethod]
+    [DeploymentItem("testdata/Direct Strike (10915).SC2Replay")]
+    public async Task MapsCanonicalAbathurBiomassToRawSwarmHosts()
+    {
+        var replayDto = await GetReplayDto("Direct Strike (10915).SC2Replay");
+
+        ReplayPlayerDto pax = replayDto.Players.Single(player => player.Name == "PAX");
+        Assert.AreEqual(Commander.Abathur, pax.Race);
+        Assert.AreEqual(5, pax.GamePos);
+        UnitDto paxSwarmHosts = pax.Spawns
+            .Single(spawn => spawn.Breakpoint == Breakpoint.All)
+            .Units
+            .Single(unit => unit.Name == "SwarmHostMP");
+        Assert.AreEqual(5, paxSwarmHosts.Count);
+        Assert.AreEqual(3, paxSwarmHosts.Special);
+
+        ReplayPlayerDto mourissou = replayDto.Players.Single(player => player.Name == "Mourissou");
+        Assert.AreEqual(Commander.Abathur, mourissou.Race);
+        Assert.AreEqual(3, mourissou.GamePos);
+        UnitDto mourissouSwarmHosts = mourissou.Spawns
+            .Single(spawn => spawn.Breakpoint == Breakpoint.All)
+            .Units
+            .Single(unit => unit.Name == "SwarmHostMP");
+        Assert.AreEqual(9, mourissouSwarmHosts.Count);
+    }
+
+    [TestMethod]
+    [DeploymentItem("testdata/Direct Strike (10912).SC2Replay")]
+    public async Task MapsCanonicalGuardianShellToRawArtanisUnits()
+    {
+        var replayDto = await GetReplayDto("Direct Strike (10912).SC2Replay");
+
+        ReplayPlayerDto pax = replayDto.Players.Single(player => player.Name == "PAX");
+        Assert.AreEqual(Commander.Artanis, pax.Race);
+        Assert.AreEqual(4, pax.GamePos);
+        List<UnitDto> finalUnits = pax.Spawns
+            .Single(spawn => spawn.Breakpoint == Breakpoint.All)
+            .Units;
+
+        Assert.AreEqual(7, finalUnits.Single(unit => unit.Name == "HonorGuard").Special);
+        Assert.AreEqual(3, finalUnits.Single(unit => unit.Name == "PhoenixArtanis").Special);
+        Assert.AreEqual(1, finalUnits.Single(unit => unit.Name == "ArtanisObserver").Special);
+        Assert.AreEqual(3, finalUnits.Single(unit => unit.Name == "ReaverStarlight").Special);
+    }
+
+    [TestMethod]
     [DeploymentItem("testdata/Direct Strike TE (1787).SC2Replay")]
     public async Task CanSetReplayLength()
     {

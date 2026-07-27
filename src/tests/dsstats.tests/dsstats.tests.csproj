@@ -66,6 +66,12 @@
 	<None Update="testdata\Direct Strike %289181%29.SC2Replay">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>
+	<None Update="testdata\Direct Strike %2810912%29.SC2Replay">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+	<None Update="testdata\Direct Strike %2810915%29.SC2Replay">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
   <None Update="testdata\Direct Strike TE %281787%29.SC2Replay">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>
