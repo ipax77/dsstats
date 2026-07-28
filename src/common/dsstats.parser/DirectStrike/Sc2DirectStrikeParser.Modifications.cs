@@ -257,38 +257,36 @@ public static partial class Sc2DirectStrikeParser
 
     private static void TrackGuardianShellCommand(DirectStrikePlayerContext context, SCmdEvent command)
     {
-        string? displayUnitName = command switch
+        string? displayUnitName = GetGuardianShellDisplayUnitName(command);
+        context.PendingGuardianShellTarget = null;
+        if (displayUnitName is null)
         {
-            { AbilLink: 1114, AbilCmdIndex: 0 } => "Honor Guard",
-            { AbilLink: 1115, AbilCmdIndex: 0 } => "Dragoon",
-            { AbilLink: 1116, AbilCmdIndex: 0 } => "High Templar",
-            { AbilLink: 1117, AbilCmdIndex: 0 } => "High Archon",
-            { AbilLink: 1118, AbilCmdIndex: 0 } => "Phoenix",
-            { AbilLink: 1119, AbilCmdIndex: 0 } => "Observer",
-            { AbilLink: 1120, AbilCmdIndex: 0 } => "Immortal",
-            { AbilLink: 1121, AbilCmdIndex: 0 } => "Reaver",
-            { AbilLink: 1122, AbilCmdIndex: 0 } => "Purifier Tempest",
-            _ => null,
-        };
-        if (displayUnitName is null
-            || !context.BuildAreaUnitsByDisplayName.TryGetValue(displayUnitName, out List<DirectStrikeBuildAreaUnit>? units))
+            context.PendingGuardianShellCommand = null;
+            return;
+        }
+
+        context.PendingGuardianShellCommand = new(displayUnitName, command.Sequence);
+        if (!context.BuildAreaUnitsByDisplayName.TryGetValue(
+                displayUnitName,
+                out List<DirectStrikeBuildAreaUnit>? units))
         {
             return;
         }
 
-        DirectStrikeBuildAreaUnit? target = null;
-        for (int i = units.Count - 1; i >= 0; i--)
+        DirectStrikeBuildAreaUnit? target = context.SelectedBuildAreaUnit;
+        if (target is null
+            || !IsEligibleGuardianShellTarget(context, target, displayUnitName, command.Gameloop))
         {
-            DirectStrikeBuildAreaUnit unit = units[i];
-            if (!unit.IsPlaced
-                || unit.Gameloop > command.Gameloop
-                || context.ModifiedTargets.Contains((BuildUnitModificationType.GuardianShell, unit.UnitTag)))
+            target = null;
+            for (int i = units.Count - 1; i >= 0; i--)
             {
-                continue;
+                DirectStrikeBuildAreaUnit unit = units[i];
+                if (IsEligibleGuardianShellTarget(context, unit, displayUnitName, command.Gameloop))
+                {
+                    target = unit;
+                    break;
+                }
             }
-
-            target = unit;
-            break;
         }
 
         if (target is DirectStrikeBuildAreaUnit resolvedTarget)
@@ -302,6 +300,141 @@ public static partial class Sc2DirectStrikeParser
                 null,
                 rejectDuplicate: true);
         }
+    }
+
+    private static string? GetGuardianShellDisplayUnitName(SCmdEvent command)
+    {
+        return command switch
+        {
+            { AbilLink: 1114, AbilCmdIndex: 0 } => "Honor Guard",
+            { AbilLink: 1115, AbilCmdIndex: 0 } => "Dragoon",
+            { AbilLink: 1116, AbilCmdIndex: 0 } => "High Templar",
+            { AbilLink: 1117, AbilCmdIndex: 0 } => "High Archon",
+            { AbilLink: 1118, AbilCmdIndex: 0 } => "Phoenix",
+            { AbilLink: 1119, AbilCmdIndex: 0 } => "Observer",
+            { AbilLink: 1120, AbilCmdIndex: 0 } => "Immortal",
+            { AbilLink: 1121, AbilCmdIndex: 0 } => "Reaver",
+            { AbilLink: 1122, AbilCmdIndex: 0 } => "Purifier Tempest",
+            _ => null,
+        };
+    }
+
+    private static void TrackBuildUnitSelection(
+        DirectStrikePlayerContext context,
+        SSelectionDeltaEvent selection)
+    {
+        if (context.BuildUnitModificationType != BuildUnitModificationType.GuardianShell
+            || context.BuildUnitModificationAnalysisStatus != BuildUnitModificationAnalysisStatus.Analyzed
+            || selection.ControlGroupId != 10)
+        {
+            return;
+        }
+
+        context.SelectedBuildAreaUnit = null;
+        context.PendingGuardianShellTarget = null;
+        int? selectedUnitTag = GetSingleSelectedUnitTag(selection.Delta.AddUnitTags);
+        if (selectedUnitTag is not int unitTag
+            || !context.BuildAreaUnitsByTag.TryGetValue(unitTag, out DirectStrikeBuildAreaUnit? target)
+            || !target.IsPlaced)
+        {
+            context.PendingGuardianShellCommand = null;
+            return;
+        }
+
+        context.SelectedBuildAreaUnit = target;
+        if (context.PendingGuardianShellCommand is not PendingGuardianShellCommand pending)
+        {
+            return;
+        }
+
+        if (IsEligibleGuardianShellTarget(
+                context,
+                target,
+                pending.DisplayUnitName,
+                selection.Gameloop))
+        {
+            context.PendingGuardianShellTarget = target;
+        }
+        else
+        {
+            context.PendingGuardianShellCommand = null;
+        }
+    }
+
+    private static int? GetSingleSelectedUnitTag(ICollection<int> unitTags)
+    {
+        if (unitTags.Count != 1)
+        {
+            return null;
+        }
+
+        if (unitTags is List<int> list)
+        {
+            return list[0];
+        }
+
+        if (unitTags is int[] array)
+        {
+            return array[0];
+        }
+
+        foreach (int unitTag in unitTags)
+        {
+            return unitTag;
+        }
+
+        return null;
+    }
+
+    private static void TrackBuildUnitModificationCommandState(
+        DirectStrikePlayerContext context,
+        SCommandManagerStateEvent commandState)
+    {
+        if (context.BuildUnitModificationType != BuildUnitModificationType.GuardianShell
+            || context.BuildUnitModificationAnalysisStatus != BuildUnitModificationAnalysisStatus.Analyzed
+            || context.PendingGuardianShellCommand is not PendingGuardianShellCommand pending
+            || commandState.State != 1
+            || commandState.Sequence is not int sequence
+            || sequence != pending.Sequence + 1)
+        {
+            context.PendingGuardianShellCommand = null;
+            context.PendingGuardianShellTarget = null;
+            return;
+        }
+
+        if (context.PendingGuardianShellTarget is DirectStrikeBuildAreaUnit target
+            && IsEligibleGuardianShellTarget(
+                context,
+                target,
+                pending.DisplayUnitName,
+                commandState.Gameloop))
+        {
+            AddBuildUnitModification(
+                context,
+                BuildUnitModificationType.GuardianShell,
+                commandState.Gameloop,
+                target,
+                1,
+                null,
+                rejectDuplicate: true);
+        }
+
+        context.PendingGuardianShellCommand = new(pending.DisplayUnitName, sequence);
+        context.PendingGuardianShellTarget = null;
+    }
+
+    private static bool IsEligibleGuardianShellTarget(
+        DirectStrikePlayerContext context,
+        DirectStrikeBuildAreaUnit target,
+        string displayUnitName,
+        int gameloop)
+    {
+        return target.IsPlaced
+            && target.Gameloop <= gameloop
+            && string.Equals(target.DisplayUnitName, displayUnitName, StringComparison.Ordinal)
+            && !context.ModifiedTargets.Contains((
+                BuildUnitModificationType.GuardianShell,
+                target.UnitTag));
     }
 
     private static void TrackOrbitalStrikeBeaconCommand(DirectStrikePlayerContext context, SCmdEvent command)

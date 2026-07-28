@@ -122,15 +122,26 @@ public sealed partial class ParseTests
         Assert.AreEqual(Commander.Artanis, player.Commander);
         Assert.AreEqual(4, player.GamePos);
         CollectionAssert.AreEqual(
-            new[] { 161, 367, 641, 1377, 1936, 2452, 3058, 4406, 6070, 8714, 13268, 20587, 23317, 30060 },
+            new[]
+            {
+                161, 367, 641, 1377, 1936, 2452, 3058, 4406,
+                6070, 6119, 6150, 6183, 8714, 13268, 20587, 23317, 30060,
+            },
             player.BuildUnitModifications.Select(modification => modification.Gameloop).ToArray());
         CollectionAssert.AreEqual(
             new[]
             {
                 "HonorGuard", "HonorGuard", "HonorGuard", "HonorGuard", "HonorGuard", "HonorGuard", "HonorGuard",
-                "Observer", "Phoenix", "Phoenix", "Phoenix", "Reaver", "Reaver", "Reaver",
+                "Observer", "Phoenix", "Phoenix", "Phoenix", "Phoenix", "Phoenix", "Phoenix",
+                "Reaver", "Reaver", "Reaver",
             },
             player.BuildUnitModifications.Select(modification => modification.TargetUnitName).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { 45875218, 17563654, 46923785, 31719431, 61603857, 62128193 },
+            player.BuildUnitModifications
+                .Where(modification => modification.TargetUnitName == "Phoenix")
+                .Select(modification => modification.TargetUnitTag)
+                .ToArray());
 
         CollectionAssert.AreEqual(
             new[] { 7, 3, 1, 3 },
@@ -151,11 +162,11 @@ public sealed partial class ParseTests
             .SelectMany(other => other.BuildUnitModifications)
             .Any(modification => paxTargetTags.Contains(modification.TargetUnitTag)));
 
-        AssertBreakpoint(dto, Breakpoint.Min5, ("HonorGuard", 7), ("Observer", 1), ("Phoenix", 1));
-        AssertBreakpoint(dto, Breakpoint.Min10, ("HonorGuard", 7), ("Observer", 1), ("Phoenix", 3));
-        AssertBreakpoint(dto, Breakpoint.Min15, ("HonorGuard", 7), ("Observer", 1), ("Phoenix", 3));
+        AssertBreakpoint(dto, Breakpoint.Min5, ("HonorGuard", 7), ("Observer", 1), ("Phoenix", 4));
+        AssertBreakpoint(dto, Breakpoint.Min10, ("HonorGuard", 7), ("Observer", 1), ("Phoenix", 6));
+        AssertBreakpoint(dto, Breakpoint.Min15, ("HonorGuard", 7), ("Observer", 1), ("Phoenix", 6));
         AssertBreakpoint(dto, Breakpoint.All,
-            ("HonorGuard", 7), ("Observer", 1), ("Phoenix", 3), ("Reaver", 3));
+            ("HonorGuard", 7), ("Observer", 1), ("Phoenix", 6), ("Reaver", 3));
     }
 
     [TestMethod]
@@ -229,16 +240,26 @@ public sealed partial class ParseTests
         AssertModificationAnalysis(player, BuildUnitModificationType.GuardianShell);
         AssertGuardianShellCommandCounts(replay, player, (1115, 13), (1120, 1));
         CollectionAssert.AreEqual(
-            new[] { 2673, 3875, 4273, 4665, 5854, 6939, 7105, 8666, 8855, 8963, 9162, 9382, 9945, 19972 },
+            new[]
+            {
+                2673, 3875, 4273, 4665, 5854, 6939, 7105,
+                8666, 8855, 8963, 9162, 9382, 9945, 19972, 20048,
+            },
             player.BuildUnitModifications.Select(modification => modification.Gameloop).ToArray());
         CollectionAssert.AreEqual(
-            Enumerable.Repeat("Dragoon", 13).Append("Immortal").ToArray(),
+            Enumerable.Repeat("Dragoon", 13).Concat(Enumerable.Repeat("Immortal", 2)).ToArray(),
             player.BuildUnitModifications.Select(modification => modification.TargetUnitName).ToArray());
+        CollectionAssert.AreEqual(
+            new[] { 29360212, 278134786 },
+            player.BuildUnitModifications
+                .Where(modification => modification.TargetUnitName == "Immortal")
+                .Select(modification => modification.TargetUnitTag)
+                .ToArray());
 
         AssertBreakpoint(dto, Breakpoint.Min5, ("Dragoon", 5));
         AssertBreakpoint(dto, Breakpoint.Min10, ("Dragoon", 13));
-        AssertBreakpoint(dto, Breakpoint.Min15, ("Dragoon", 13), ("Immortal", 1));
-        AssertBreakpoint(dto, Breakpoint.All, ("Dragoon", 13), ("Immortal", 1));
+        AssertBreakpoint(dto, Breakpoint.Min15, ("Dragoon", 13), ("Immortal", 2));
+        AssertBreakpoint(dto, Breakpoint.All, ("Dragoon", 13), ("Immortal", 2));
     }
 
     [TestMethod]

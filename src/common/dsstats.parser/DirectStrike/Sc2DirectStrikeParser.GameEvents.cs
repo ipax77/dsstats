@@ -32,28 +32,44 @@ public static partial class Sc2DirectStrikeParser
         }
 
         Dictionary<int, DirectStrikePlayer> playersByUserId = GetPlayersByUserId(replay, directStrikeReplay);
-        Dictionary<DirectStrikePlayer, DirectStrikePlayerContext> contextsByPlayer = new(playerContexts.Length);
-        foreach (DirectStrikePlayerContext context in playerContexts)
+        Dictionary<int, DirectStrikePlayerContext> contextsByUserId = new(playerContexts.Length);
+        foreach (KeyValuePair<int, DirectStrikePlayer> entry in playersByUserId)
         {
-            contextsByPlayer.Add(context.Player, context);
+            for (int i = 0; i < playerContexts.Length; i++)
+            {
+                DirectStrikePlayerContext context = playerContexts[i];
+                if (ReferenceEquals(context.Player, entry.Value))
+                {
+                    contextsByUserId.Add(entry.Key, context);
+                    break;
+                }
+            }
         }
 
         foreach (GameEvent gameEvent in gameEvents.BaseGameEvents)
         {
-            if (gameEvent is not SCmdEvent command
-                || !playersByUserId.TryGetValue(command.UserId, out DirectStrikePlayer? player))
+            if (gameEvent is not (SCmdEvent or SSelectionDeltaEvent or SCommandManagerStateEvent)
+                || !contextsByUserId.TryGetValue(gameEvent.UserId, out DirectStrikePlayerContext? context))
             {
                 continue;
             }
 
-            if (analyzeScans && IsScanCommand(player, command))
+            switch (gameEvent)
             {
-                player.ScanCount++;
-            }
+                case SCmdEvent command:
+                    if (analyzeScans && IsScanCommand(context.Player, command))
+                    {
+                        context.Player.ScanCount++;
+                    }
 
-            if (contextsByPlayer.TryGetValue(player, out DirectStrikePlayerContext? context))
-            {
-                TrackBuildUnitModificationCommand(context, command);
+                    TrackBuildUnitModificationCommand(context, command);
+                    break;
+                case SSelectionDeltaEvent selection:
+                    TrackBuildUnitSelection(context, selection);
+                    break;
+                case SCommandManagerStateEvent commandState:
+                    TrackBuildUnitModificationCommandState(context, commandState);
+                    break;
             }
         }
     }

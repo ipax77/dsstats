@@ -81,6 +81,8 @@ internal sealed class DirectStrikeBuildAreaUnit(
 
 internal sealed record PendingBiomassItem(int Gameloop, DirectStrikeBuildAreaUnit Target);
 
+internal readonly record struct PendingGuardianShellCommand(string DisplayUnitName, int Sequence);
+
 internal sealed record DirectStrikePlayerContext(DirectStrikePlayer Player, int DetailsIndex, int? MetadataPlayerId)
 {
     public List<DirectStrikePlayerRefinery> Refineries { get; } = [];
@@ -88,6 +90,9 @@ internal sealed record DirectStrikePlayerContext(DirectStrikePlayer Player, int 
     public Dictionary<string, List<DirectStrikeBuildAreaUnit>> BuildAreaUnitsByDisplayName { get; } = new(StringComparer.Ordinal);
     public Dictionary<string, string>? CanonicalBuildUnitNamesByRawName { get; set; }
     public List<PendingBiomassItem> PendingBiomassItems { get; } = [];
+    public DirectStrikeBuildAreaUnit? SelectedBuildAreaUnit { get; set; }
+    public DirectStrikeBuildAreaUnit? PendingGuardianShellTarget { get; set; }
+    public PendingGuardianShellCommand? PendingGuardianShellCommand { get; set; }
     public List<DirectStrikeBuildUnitModification> BuildUnitModifications { get; } = [];
     public HashSet<(BuildUnitModificationType Type, int TargetUnitTag)> ModifiedTargets { get; } = [];
     public BuildUnitModificationType BuildUnitModificationType { get; set; }

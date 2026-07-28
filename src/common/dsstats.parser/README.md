@@ -169,7 +169,9 @@ The following behavior is part of the parser contract:
 - modification analysis reports whether it was analyzed, unsupported for the
   data build, or missing required events;
 - modification commands remain one command to one eligible unit unless the
-  mechanic explicitly represents a stack or consumed source;
+  replay explicitly encodes a batch through selected-unit command-manager
+  continuation states, as Guardian Shell does, or the mechanic represents a
+  stack or consumed source;
 - minimum supported data builds are inclusive and fixture-backed;
 - replay and player compatibility hashes remain stable unless an intentional
   compatibility-version change is made;
@@ -189,7 +191,8 @@ Keep fixture coverage for at least:
 - built units, morphed units, and lightweight/starlight variants;
 - exclusion of summons and unit-produced entities;
 - Abathur biomass and the `SwarmHostMP` alias;
-- all Artanis Guardian Shell targets, including `PhoenixArtanis`;
+- all Artanis Guardian Shell targets, including `PhoenixArtanis`, batched
+  selections, and distinct target tags;
 - modification breakpoints, command gameloops, target tags, and player
   isolation;
 - legacy and forward-compatible data-build boundaries;

@@ -183,7 +183,7 @@ public sealed class DsstatsParserTests
             .Units;
 
         Assert.AreEqual(7, finalUnits.Single(unit => unit.Name == "HonorGuard").Special);
-        Assert.AreEqual(3, finalUnits.Single(unit => unit.Name == "PhoenixArtanis").Special);
+        Assert.AreEqual(6, finalUnits.Single(unit => unit.Name == "PhoenixArtanis").Special);
         Assert.AreEqual(1, finalUnits.Single(unit => unit.Name == "ArtanisObserver").Special);
         Assert.AreEqual(3, finalUnits.Single(unit => unit.Name == "ReaverStarlight").Special);
     }
