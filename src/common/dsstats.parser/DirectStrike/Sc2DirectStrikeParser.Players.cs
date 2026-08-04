@@ -124,11 +124,11 @@ public static partial class Sc2DirectStrikeParser
         return false;
     }
 
-    private static bool TryGetPlayerContextBySlotId(int slotId, DirectStrikePlayerContext[] playerContexts, out DirectStrikePlayerContext? context)
+    internal static bool TryGetPlayerContextBySlotId(int? slotId, DirectStrikePlayerContext[] playerContexts, out DirectStrikePlayerContext? context)
     {
-        if (slotId >= 0 && slotId < playerContexts.Length)
+        if (slotId is { } value && (uint)value < (uint)playerContexts.Length)
         {
-            context = playerContexts[slotId];
+            context = playerContexts[value];
             return true;
         }
 

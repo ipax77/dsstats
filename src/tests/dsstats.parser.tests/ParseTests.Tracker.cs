@@ -7,6 +7,68 @@ namespace Sc2DirectStrike.Tests;
 public sealed partial class ParseTests
 {
     [TestMethod]
+    public void SlotIdLookupHandlesNullableAndOutOfRangeValues()
+    {
+        DirectStrikePlayerContext[] playerContexts =
+        [
+            new(new DirectStrikePlayer(), 0, null),
+            new(new DirectStrikePlayer(), 1, null),
+        ];
+
+        Assert.IsTrue(Sc2DirectStrikeParser.TryGetPlayerContextBySlotId(1, playerContexts, out DirectStrikePlayerContext? context));
+        Assert.AreSame(playerContexts[1], context);
+
+        foreach (int? invalidSlotId in new int?[] { null, -1, playerContexts.Length, int.MaxValue })
+        {
+            Assert.IsFalse(Sc2DirectStrikeParser.TryGetPlayerContextBySlotId(invalidSlotId, playerContexts, out context));
+            Assert.IsNull(context);
+        }
+    }
+
+    [TestMethod]
+    public async Task MissingUserAndSlotIdsFallBackToPlayerId()
+    {
+        Sc2Replay replay = await GetReplay("testdata/Direct Strike TE (1904).SC2Replay");
+        DirectStrikeReplay expected = Sc2DirectStrikeParser.Parse(replay);
+
+        Assert.IsNotNull(replay.TrackerEvents);
+        Assert.IsInstanceOfType<IList<SPlayerSetupEvent>>(replay.TrackerEvents.SPlayerSetupEvents);
+        IList<SPlayerSetupEvent> setupEvents = (IList<SPlayerSetupEvent>)replay.TrackerEvents.SPlayerSetupEvents;
+        Assert.IsGreaterThan(0, setupEvents.Count);
+
+        for (int i = 0; i < setupEvents.Count; i++)
+        {
+            SPlayerSetupEvent setupEvent = setupEvents[i];
+            setupEvents[i] = new(
+                setupEvent.PlayerId,
+                setupEvent.EventId,
+                setupEvent.Bits,
+                setupEvent.Gameloop,
+                setupEvent.Type,
+                null,
+                null);
+        }
+
+        DirectStrikeReplay actual = Sc2DirectStrikeParser.Parse(replay);
+        Assert.AreEqual(expected.Players.Count, actual.Players.Count);
+        Assert.IsGreaterThan(
+            0,
+            expected.Players.Sum(player => player.RefineryTimes.Length + player.TierUpgrades.Length + player.Upgrades.Count));
+
+        for (int i = 0; i < expected.Players.Count; i++)
+        {
+            DirectStrikePlayer expectedPlayer = expected.Players[i];
+            DirectStrikePlayer actualPlayer = actual.Players[i];
+
+            Assert.AreEqual(expectedPlayer.TeamId, actualPlayer.TeamId, $"Unexpected team for player index {i}.");
+            Assert.AreEqual(expectedPlayer.GamePos, actualPlayer.GamePos, $"Unexpected game position for player index {i}.");
+            CollectionAssert.AreEqual(expectedPlayer.RefineryTimes, actualPlayer.RefineryTimes, $"Unexpected refinery timings for player index {i}.");
+            CollectionAssert.AreEqual(expectedPlayer.TierUpgrades, actualPlayer.TierUpgrades, $"Unexpected tier timings for player index {i}.");
+            CollectionAssert.AreEqual(expectedPlayer.Upgrades.ToArray(), actualPlayer.Upgrades.ToArray(), $"Unexpected upgrades for player index {i}.");
+        }
+    }
+
+    [TestMethod]
     [DataRow("testdata/Direct Strike (10060).SC2Replay")]
     [DataRow("testdata/Direct Strike (10096).SC2Replay")]
     [DataRow("testdata/Direct Strike (10124).SC2Replay")]
@@ -651,7 +713,7 @@ public sealed partial class ParseTests
         foreach (SPlayerSetupEvent setupEvent in replay.TrackerEvents?.SPlayerSetupEvents ?? [])
         {
             if ((TryGetPlayerIndexByUserId(setupEvent.UserId, slots, playerIndexesByToon, out int playerIndex)
-                    || playerIndexesBySlotId.TryGetValue(setupEvent.SlotId, out playerIndex)
+                    || (setupEvent.SlotId is { } slotId && playerIndexesBySlotId.TryGetValue(slotId, out playerIndex))
                     || TryGetPlayerIndexByPlayerId(setupEvent.PlayerId, dsReplay, out playerIndex)))
             {
                 playerIndexesByControlPlayerId.TryAdd(setupEvent.PlayerId, playerIndex);
