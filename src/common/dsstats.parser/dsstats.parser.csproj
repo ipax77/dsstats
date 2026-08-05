@@ -5,17 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="DsstatsParser.Compat.cs" />
-    <Compile Remove="DsstatsParser.Tracker.cs" />
-    <Compile Remove="DsstatsReplay.cs" />
-    <Compile Remove="DsstatsReplayMapper.cs" />
-    <Compile Remove="DsstatsReplayMapper.Spawn.cs" />
-    <Compile Remove="MapLayout.cs" />
-    <Compile Remove="PlayerLayout.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Sc2DirectStrike.Parser" Version="0.2.6" />
+    <PackageReference Include="s2protocol.NET" Version="1.0.0" />
   </ItemGroup>
 
   <PropertyGroup>

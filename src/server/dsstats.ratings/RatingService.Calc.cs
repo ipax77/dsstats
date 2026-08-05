@@ -104,7 +104,7 @@ public partial class RatingService
             {
                 player.Rating.Wins++;
             }
-            if (player.IsMvp)
+            if (calcData.LeaverType == LeaverType.None && player.IsMvp)
             {
                 player.Rating.Mvps++;
             }

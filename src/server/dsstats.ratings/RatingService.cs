@@ -291,7 +291,7 @@ public partial class RatingService(
                             .Select(p => new PlayerCalcDto
                             {
                                 ReplayPlayerId = p.ReplayPlayerId,
-                                IsLeaver = p.Duration < r.Duration - 90,
+                                IsLeaver = p.Duration < r.Duration - ReplayRules.LeaverGracePeriodSeconds,
                                 IsMvp = p.IsMvp,
                                 Team = p.TeamId,
                                 Race = p.Race,

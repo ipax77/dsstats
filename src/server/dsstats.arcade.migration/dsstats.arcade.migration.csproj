@@ -11,7 +11,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.*" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql.Json.Microsoft" Version="9.0.0" />
-    <PackageReference Include="s2protocol.NET" Version="0.9.6" />
+    <PackageReference Include="s2protocol.NET" Version="0.9.7" />
   </ItemGroup>
 
   <ItemGroup>

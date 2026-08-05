@@ -232,6 +232,8 @@ public static class ReplayV2DtoMapper
 {
     public static ReplayDto ToV3Dto(this ReplayV2Dto dto)
     {
+        bool hasLeaver = HasLeaver(dto);
+
         return new()
         {
             Title = dto.TournamentEdition ? "Direct Strike TE" : "Direct Strike",
@@ -245,7 +247,7 @@ public static class ReplayV2DtoMapper
             Bunker = dto.Bunker,
             WinnerTeam = dto.WinnerTeam,
             MiddleChanges = GetMiddle(dto.Middle),
-            Players = dto.ReplayPlayers.Select(p => p.ToV3Dto(dto)).ToList(),
+            Players = dto.ReplayPlayers.Select(p => ToV3Dto(p, dto, hasLeaver)).ToList(),
             CompatHash = dto.CompatHash ?? string.Empty,
         };
     }
@@ -268,6 +270,9 @@ public static class ReplayV2DtoMapper
     }
 
     public static ReplayPlayerDto ToV3Dto(this ReplayPlayerV2Dto dto, ReplayV2Dto replay)
+        => ToV3Dto(dto, replay, HasLeaver(replay));
+
+    private static ReplayPlayerDto ToV3Dto(ReplayPlayerV2Dto dto, ReplayV2Dto replay, bool hasLeaver)
     {
         return new()
         {
@@ -280,7 +285,7 @@ public static class ReplayV2DtoMapper
             Result = dto.PlayerResult,
             Duration = dto.Duration,
             Apm = dto.APM,
-            IsMvp = dto.Kills == replay.Maxkillsum,
+            IsMvp = !hasLeaver && dto.Kills == replay.Maxkillsum,
             IsUploader = dto.IsUploader,
             Spawns = dto.Spawns.Select(s => s.ToV3Dto()).ToList(),
             TierUpgrades = dto.TierUpgrades.Split('|', StringSplitOptions.RemoveEmptyEntries).Select(s => (int)(int.Parse(s) / 22.4)).ToList(),
@@ -301,6 +306,19 @@ public static class ReplayV2DtoMapper
                 }
             }
         };
+    }
+
+    private static bool HasLeaver(ReplayV2Dto replay)
+    {
+        foreach (ReplayPlayerV2Dto player in replay.ReplayPlayers)
+        {
+            if (ReplayRules.IsLeaver(replay.Duration, player.Duration))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static SpawnDto ToV3Dto(this SpawnV2Dto dto)

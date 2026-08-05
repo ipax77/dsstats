@@ -132,6 +132,31 @@ public class RatingsServiceTests
     }
 
     [TestMethod]
+    [DataRow(false, 1)]
+    [DataRow(true, 0)]
+    public void CountsMvpOnlyForReplayWithoutLeavers(bool hasLeaver, int expectedMvps)
+    {
+        using var serviceProvider = BuildServiceProvider(out var connection);
+        try
+        {
+            var ratingService = CreateRatingService(serviceProvider);
+            var playerRatingsStore = new PlayerRatingsStore();
+            var replay = GetTestReplay(playerOneIsMvp: true, playerTwoIsLeaver: hasLeaver);
+
+            var result = ratingService.ProcessReplay(replay, RatingType.All, playerRatingsStore);
+
+            Assert.IsNotNull(result);
+            Assert.IsTrue(playerRatingsStore.TryGet(1, RatingType.All, out var rating));
+            Assert.IsNotNull(rating);
+            Assert.AreEqual(expectedMvps, rating.Mvps);
+        }
+        finally
+        {
+            connection.Close();
+        }
+    }
+
+    [TestMethod]
     [DeploymentItem("testdata/calcdtos.json")]
     [DataRow("calcdtos.json")]
     public void CanCalculateReplays(string testData)
@@ -211,7 +236,10 @@ public class RatingsServiceTests
         }
     }
 
-    private ReplayCalcDto GetTestReplay(int winnerTeam = 1)
+    private ReplayCalcDto GetTestReplay(
+        int winnerTeam = 1,
+        bool playerOneIsMvp = false,
+        bool playerTwoIsLeaver = false)
     {
         return new()
         {
@@ -225,14 +253,14 @@ public class RatingsServiceTests
                 new() {
                     ReplayPlayerId = 1,
                     IsLeaver = false,
-                    IsMvp = false,
+                    IsMvp = playerOneIsMvp,
                     Team = 1,
                     Race = Commander.Terran,
                     PlayerId = 1,
                 },
                 new() {
                     ReplayPlayerId = 2,
-                    IsLeaver = false,
+                    IsLeaver = playerTwoIsLeaver,
                     IsMvp = false,
                     Team = 2,
                     Race = Commander.Terran,

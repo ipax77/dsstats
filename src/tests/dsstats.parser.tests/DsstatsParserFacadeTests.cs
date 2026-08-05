@@ -1,15 +1,15 @@
 ﻿using dsstats.parser;
 using dsstats.shared;
-using dsstats.db;
 using s2protocol.NET;
 using System.Collections.ObjectModel;
 using System.Security.Cryptography;
+using System.Text;
 using ExternalDirectStrikePlayer = Sc2DirectStrike.Parser.DirectStrikePlayer;
 using ExternalDirectStrikePlayerSpawn = Sc2DirectStrike.Parser.DirectStrikePlayerSpawn;
 using ExternalDirectStrikeReplay = Sc2DirectStrike.Parser.DirectStrikeReplay;
 using ExternalDirectStrikeSpawnUnit = Sc2DirectStrike.Parser.DirectStrikeSpawnUnit;
 
-namespace dsstats.tests;
+namespace dsstats.parser.tests;
 
 [TestClass]
 public sealed class DsstatsParserTests
@@ -94,8 +94,9 @@ public sealed class DsstatsParserTests
     {
         string replayPath = "Direct Strike (711).SC2Replay";
         var replayDto = await GetReplayDto(replayPath);
-        using var md5 = MD5.Create();
-        var hash = ReplayV2DtoExtensions.GetMd5Hash(md5, replayDto.CompatHash);
+        string hash = Convert.ToHexString(
+                MD5.HashData(Encoding.UTF8.GetBytes(replayDto.CompatHash)))
+            .ToLowerInvariant();
         Assert.AreEqual("d23e01a839e35adac5c079a70156506d", hash);
     }
 
@@ -140,6 +141,51 @@ public sealed class DsstatsParserTests
         var unit = spawn.Units.FirstOrDefault(f => f.Name == "Annihilator");
         Assert.IsNotNull(unit);
         Assert.AreEqual(10, unit.Count);
+    }
+
+    [TestMethod]
+    [DeploymentItem("testdata/Direct Strike (10915).SC2Replay")]
+    public async Task MapsCanonicalAbathurBiomassToRawSwarmHosts()
+    {
+        var replayDto = await GetReplayDto("Direct Strike (10915).SC2Replay");
+
+        ReplayPlayerDto pax = replayDto.Players.Single(player => player.Name == "PAX");
+        Assert.AreEqual(Commander.Abathur, pax.Race);
+        Assert.AreEqual(5, pax.GamePos);
+        UnitDto paxSwarmHosts = pax.Spawns
+            .Single(spawn => spawn.Breakpoint == Breakpoint.All)
+            .Units
+            .Single(unit => unit.Name == "SwarmHostMP");
+        Assert.AreEqual(5, paxSwarmHosts.Count);
+        Assert.AreEqual(3, paxSwarmHosts.Special);
+
+        ReplayPlayerDto mourissou = replayDto.Players.Single(player => player.Name == "Mourissou");
+        Assert.AreEqual(Commander.Abathur, mourissou.Race);
+        Assert.AreEqual(3, mourissou.GamePos);
+        UnitDto mourissouSwarmHosts = mourissou.Spawns
+            .Single(spawn => spawn.Breakpoint == Breakpoint.All)
+            .Units
+            .Single(unit => unit.Name == "SwarmHostMP");
+        Assert.AreEqual(9, mourissouSwarmHosts.Count);
+    }
+
+    [TestMethod]
+    [DeploymentItem("testdata/Direct Strike (10912).SC2Replay")]
+    public async Task MapsCanonicalGuardianShellToRawArtanisUnits()
+    {
+        var replayDto = await GetReplayDto("Direct Strike (10912).SC2Replay");
+
+        ReplayPlayerDto pax = replayDto.Players.Single(player => player.Name == "PAX");
+        Assert.AreEqual(Commander.Artanis, pax.Race);
+        Assert.AreEqual(4, pax.GamePos);
+        List<UnitDto> finalUnits = pax.Spawns
+            .Single(spawn => spawn.Breakpoint == Breakpoint.All)
+            .Units;
+
+        Assert.AreEqual(7, finalUnits.Single(unit => unit.Name == "HonorGuard").Special);
+        Assert.AreEqual(6, finalUnits.Single(unit => unit.Name == "PhoenixArtanis").Special);
+        Assert.AreEqual(1, finalUnits.Single(unit => unit.Name == "ArtanisObserver").Special);
+        Assert.AreEqual(3, finalUnits.Single(unit => unit.Name == "ReaverStarlight").Special);
     }
 
     [TestMethod]
@@ -219,37 +265,6 @@ public sealed class DsstatsParserTests
                 TimeSpan.FromSeconds(301),
                 CreateDirectStrikePlayer(1, 1, CreateSpawnWithUnit()),
                 CreateDirectStrikePlayer(2, 4, CreateSpawnWithUnit()))));
-    }
-
-    [TestMethod]
-    public void CanRoundTripReplayPlayerCompatHash()
-    {
-        ReplayDto replayDto = new()
-        {
-            GameMode = GameMode.Commanders,
-            Players =
-            [
-                new()
-                {
-                    CompatHash = "ds-player-compat-v1-test",
-                    Name = "PAX",
-                    Race = Commander.Raynor,
-                    SelectedRace = Commander.Terran,
-                    GamePos = 1,
-                    TeamId = 1,
-                    Player = new()
-                    {
-                        Name = "PAX",
-                        ToonId = new() { Region = 1, Realm = 1, Id = 1 }
-                    }
-                }
-            ]
-        };
-
-        var entity = replayDto.Players[0].ToEntity(replayDto);
-        var dto = entity.ToDto();
-
-        Assert.AreEqual("ds-player-compat-v1-test", dto.CompatHash);
     }
 
     private async Task<ReplayDto> GetReplayDto(string replayPath)

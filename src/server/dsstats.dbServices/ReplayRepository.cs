@@ -93,6 +93,15 @@ public partial class ReplayRepository(
         var spawnsByPlayerId = spawns.ToLookup(spawn => spawn.ReplayPlayerId);
         var unitsBySpawnId = units.ToLookup(unit => unit.SpawnId);
         var upgradesByPlayerId = upgrades.ToLookup(upgrade => upgrade.ReplayPlayerId);
+        bool hasLeaver = false;
+        foreach (ReplayPlayer player in players)
+        {
+            if (ReplayRules.IsLeaver(replayEntity.Duration, player.Duration))
+            {
+                hasLeaver = true;
+                break;
+            }
+        }
 
         replay.Replay.Players = players
             .Select(player => new ReplayPlayerDto
@@ -109,7 +118,7 @@ public partial class ReplayRepository(
                 Apm = player.Apm,
                 Messages = player.Messages,
                 Pings = player.Pings,
-                IsMvp = player.IsMvp,
+                IsMvp = !hasLeaver && player.IsMvp,
                 ScanCount = player.ScanCount,
                 IsUploader = player.IsUploader,
                 Spawns = spawnsByPlayerId[player.ReplayPlayerId]
