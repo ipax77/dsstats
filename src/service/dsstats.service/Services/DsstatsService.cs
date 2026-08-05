@@ -385,7 +385,6 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
 
     public void Dispose()
     {
-        _replayDecoder.Dispose();
         _dbSemaphore.Dispose();
         configSemaphore.Dispose();
     }
