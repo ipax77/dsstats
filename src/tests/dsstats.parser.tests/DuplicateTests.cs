@@ -115,29 +115,36 @@ public sealed class DuplicateTests
     {
         Assert.IsNotNull(replay.TrackerEvents);
 
-        ReplaceEventsAfter(replay.TrackerEvents, nameof(TrackerEvents.SPlayerStatsEvents), replay.TrackerEvents.SPlayerStatsEvents, gameloop);
-        ReplaceEventsAfter(replay.TrackerEvents, nameof(TrackerEvents.SUnitBornEvents), replay.TrackerEvents.SUnitBornEvents, gameloop);
-        ReplaceEventsAfter(replay.TrackerEvents, nameof(TrackerEvents.SUnitDiedEvents), replay.TrackerEvents.SUnitDiedEvents, gameloop);
-        ReplaceEventsAfter(replay.TrackerEvents, nameof(TrackerEvents.SUnitOwnerChangeEvents), replay.TrackerEvents.SUnitOwnerChangeEvents, gameloop);
-        ReplaceEventsAfter(replay.TrackerEvents, nameof(TrackerEvents.SUnitPositionsEvents), replay.TrackerEvents.SUnitPositionsEvents, gameloop);
-        ReplaceEventsAfter(replay.TrackerEvents, nameof(TrackerEvents.SUnitTypeChangeEvents), replay.TrackerEvents.SUnitTypeChangeEvents, gameloop);
-        ReplaceEventsAfter(replay.TrackerEvents, nameof(TrackerEvents.SUpgradeEvents), replay.TrackerEvents.SUpgradeEvents, gameloop);
-        ReplaceEventsAfter(replay.TrackerEvents, nameof(TrackerEvents.SUnitInitEvents), replay.TrackerEvents.SUnitInitEvents, gameloop);
-        ReplaceEventsAfter(replay.TrackerEvents, nameof(TrackerEvents.SUnitDoneEvents), replay.TrackerEvents.SUnitDoneEvents, gameloop);
+        ICollection<TrackerEvent> events = replay.TrackerEvents.BaseTrackerEvents;
+        List<TrackerEvent> trimmedEvents = new(events.Count);
+        foreach (TrackerEvent trackerEvent in events)
+        {
+            if (trackerEvent.Gameloop <= gameloop || !IsLeaverSensitiveEvent(trackerEvent))
+            {
+                trimmedEvents.Add(trackerEvent);
+            }
+        }
+
+        events.Clear();
+        foreach (TrackerEvent trackerEvent in trimmedEvents)
+        {
+            events.Add(trackerEvent);
+        }
     }
 
-    private static void ReplaceEventsAfter<TEvent>(TrackerEvents trackerEvents, string propertyName, ICollection<TEvent> events, int gameloop)
-        where TEvent : TrackerEvent
-    {
-        var property = typeof(TrackerEvents).GetProperty(propertyName);
-        Assert.IsNotNull(property);
-
-        TEvent[] trimmedEvents = [.. events.Where(trackerEvent => trackerEvent.Gameloop <= gameloop)];
-        property.SetValue(trackerEvents, trimmedEvents);
-    }
+    private static bool IsLeaverSensitiveEvent(TrackerEvent trackerEvent) => trackerEvent is
+        SPlayerStatsEvent or
+        SUnitBornEvent or
+        SUnitDiedEvent or
+        SUnitOwnerChangeEvent or
+        SUnitPositionsEvent or
+        SUnitTypeChangeEvent or
+        SUpgradeEvent or
+        SUnitInitEvent or
+        SUnitDoneEvent;
 
     private async Task<Sc2Replay> GetReplay(string replayPath)
     {
-        return await replayDecoder.DecodeAsync(replayPath, replayDecoderOptions, CancellationToken.None) ?? throw new ArgumentNullException(nameof(replayPath));
+        return await replayDecoder.DecodeAsync(replayPath, replayDecoderOptions, CancellationToken.None);
     }
 }

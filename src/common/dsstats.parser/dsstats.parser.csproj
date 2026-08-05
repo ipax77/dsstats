@@ -5,7 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="s2protocol.NET" Version="0.9.8" />
+    <PackageReference Include="s2protocol.NET" Version="1.0.0" />
   </ItemGroup>
 
   <PropertyGroup>

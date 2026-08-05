@@ -32,22 +32,31 @@ public sealed partial class ParseTests
         DirectStrikeReplay expected = Sc2DirectStrikeParser.Parse(replay);
 
         Assert.IsNotNull(replay.TrackerEvents);
-        Assert.IsInstanceOfType<IList<SPlayerSetupEvent>>(replay.TrackerEvents.SPlayerSetupEvents);
-        IList<SPlayerSetupEvent> setupEvents = (IList<SPlayerSetupEvent>)replay.TrackerEvents.SPlayerSetupEvents;
-        Assert.IsGreaterThan(0, setupEvents.Count);
-
-        for (int i = 0; i < setupEvents.Count; i++)
+        ICollection<TrackerEvent> events = replay.TrackerEvents.BaseTrackerEvents;
+        List<TrackerEvent> updatedEvents = new(events.Count);
+        int setupEventCount = 0;
+        foreach (TrackerEvent trackerEvent in events)
         {
-            SPlayerSetupEvent setupEvent = setupEvents[i];
-            setupEvents[i] = new(
-                setupEvent.PlayerId,
-                setupEvent.EventId,
-                setupEvent.Bits,
-                setupEvent.Gameloop,
-                setupEvent.Type,
-                null,
-                null);
+            if (trackerEvent is SPlayerSetupEvent setupEvent)
+            {
+                setupEventCount++;
+                updatedEvents.Add(new SPlayerSetupEvent(
+                    setupEvent.PlayerId,
+                    setupEvent.EventId,
+                    setupEvent.Bits,
+                    setupEvent.Gameloop,
+                    setupEvent.Type,
+                    null,
+                    null));
+            }
+            else
+            {
+                updatedEvents.Add(trackerEvent);
+            }
         }
+
+        Assert.IsGreaterThan(0, setupEventCount);
+        ReplaceTrackerEvents(replay.TrackerEvents, updatedEvents);
 
         DirectStrikeReplay actual = Sc2DirectStrikeParser.Parse(replay);
         Assert.AreEqual(expected.Players.Count, actual.Players.Count);
@@ -654,11 +663,27 @@ public sealed partial class ParseTests
     {
         Assert.IsNotNull(replay.TrackerEvents);
 
-        var property = typeof(TrackerEvents).GetProperty(nameof(TrackerEvents.SUpgradeEvents));
-        Assert.IsNotNull(property);
+        ICollection<TrackerEvent> events = replay.TrackerEvents.BaseTrackerEvents;
+        List<TrackerEvent> filteredEvents = new(events.Count);
+        foreach (TrackerEvent trackerEvent in events)
+        {
+            if (trackerEvent is not SUpgradeEvent { UpgradeTypeName: "PlayerStateVictory" })
+            {
+                filteredEvents.Add(trackerEvent);
+            }
+        }
 
-        SUpgradeEvent[] upgradeEvents = [.. replay.TrackerEvents.SUpgradeEvents.Where(upgradeEvent => upgradeEvent.UpgradeTypeName != "PlayerStateVictory")];
-        property.SetValue(replay.TrackerEvents, upgradeEvents);
+        ReplaceTrackerEvents(replay.TrackerEvents, filteredEvents);
+    }
+
+    private static void ReplaceTrackerEvents(TrackerEvents trackerEvents, List<TrackerEvent> replacementEvents)
+    {
+        ICollection<TrackerEvent> events = trackerEvents.BaseTrackerEvents;
+        events.Clear();
+        foreach (TrackerEvent trackerEvent in replacementEvents)
+        {
+            events.Add(trackerEvent);
+        }
     }
 
     private static void RemoveObjectiveDeathEvents(Sc2Replay replay)
