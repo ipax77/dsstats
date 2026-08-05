@@ -29,7 +29,7 @@ public static class ReplayQueryExtensions
             Players = s.Players.Select(t => new PlayerCalcDto
             {
                 ReplayPlayerId = t.ReplayPlayerId,
-                IsLeaver = t.Duration < s.Duration - 90,
+                IsLeaver = t.Duration < s.Duration - ReplayRules.LeaverGracePeriodSeconds,
                 IsMvp = t.IsMvp,
                 Team = t.TeamId,
                 Race = t.Race,

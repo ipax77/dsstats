@@ -7,6 +7,7 @@ public static class ReplayDtoMapper
 {
     public static Replay ToEntity(this ReplayDto dto, bool stripSpawnUnitPositions = false)
     {
+        bool hasLeaver = HasLeaver(dto);
         var replay = new Replay
         {
             Title = dto.Title,
@@ -23,7 +24,7 @@ public static class ReplayDtoMapper
             Bunker = dto.Bunker,
             WinnerTeam = dto.WinnerTeam,
             MiddleChanges = dto.MiddleChanges.ToArray(),
-            Players = dto.Players.Select(p => p.ToEntity(dto, stripSpawnUnitPositions)).ToList(),
+            Players = dto.Players.Select(p => ToEntity(p, dto, stripSpawnUnitPositions, hasLeaver)).ToList(),
             Imported = DateTime.UtcNow,
 
             ReplayHash = dto.ComputeHash(),
@@ -40,6 +41,9 @@ public static class ReplayDtoMapper
     }
 
     public static ReplayPlayer ToEntity(this ReplayPlayerDto dto, ReplayDto replay, bool stripSpawnUnitPositions = false)
+        => ToEntity(dto, replay, stripSpawnUnitPositions, HasLeaver(replay));
+
+    private static ReplayPlayer ToEntity(ReplayPlayerDto dto, ReplayDto replay, bool stripSpawnUnitPositions, bool hasLeaver)
     {
         Commander race = dto.Race;
         if (Data.IsCommanderGameMode(replay.GameMode) && (int)dto.Race <= 3)
@@ -62,7 +66,7 @@ public static class ReplayDtoMapper
             Apm = dto.Apm,
             Messages = dto.Messages,
             Pings = dto.Pings,
-            IsMvp = dto.IsMvp,
+            IsMvp = !hasLeaver && dto.IsMvp,
             ScanCount = dto.ScanCount,
             IsUploader = dto.IsUploader,
             Spawns = dto.Spawns.Select(s => s.ToEntity(stripSpawnUnitPositions)).ToList(),
@@ -75,6 +79,19 @@ public static class ReplayDtoMapper
             }).ToList(),
             Player = dto.Player?.ToEntity()
         };
+    }
+
+    private static bool HasLeaver(ReplayDto replay)
+    {
+        foreach (ReplayPlayerDto player in replay.Players)
+        {
+            if (ReplayRules.IsLeaver(replay.Duration, player.Duration))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static Commander GetOppRace(ReplayPlayerDto player, ReplayDto replay)
@@ -135,13 +152,15 @@ public static class ReplayDtoMapper
 
     public static ReplayDto ToDto(this Replay replay)
     {
+        bool hasLeaver = HasLeaver(replay);
+
         return new ReplayDto
         {
             Title = replay.Title,
             FileName = replay.FileName ?? string.Empty,
             Version = replay.Version,
             GameMode = replay.GameMode,
-            Players = replay.Players.Select(p => p.ToDto()).ToList(),
+            Players = replay.Players.Select(p => ToDto(p, hasLeaver)).ToList(),
             Gametime = replay.Gametime,
             RegionId = replay.RegionId,
             BaseBuild = replay.BaseBuild,
@@ -155,6 +174,9 @@ public static class ReplayDtoMapper
     }
 
     public static ReplayPlayerDto ToDto(this ReplayPlayer replayPlayer)
+        => ToDto(replayPlayer, replayPlayer.Replay is not null && HasLeaver(replayPlayer.Replay));
+
+    private static ReplayPlayerDto ToDto(ReplayPlayer replayPlayer, bool hasLeaver)
     {
         return new ReplayPlayerDto
         {
@@ -170,7 +192,7 @@ public static class ReplayDtoMapper
             Apm = replayPlayer.Apm,
             Messages = replayPlayer.Messages,
             Pings = replayPlayer.Pings,
-            IsMvp = replayPlayer.IsMvp,
+            IsMvp = !hasLeaver && replayPlayer.IsMvp,
             ScanCount = replayPlayer.ScanCount,
             IsUploader = replayPlayer.IsUploader,
             Spawns = replayPlayer.Spawns.Select(s => s.ToDto()).ToList(),
@@ -183,6 +205,19 @@ public static class ReplayDtoMapper
             }).ToList(),
             Player = replayPlayer.Player!.ToDto()
         };
+    }
+
+    private static bool HasLeaver(Replay replay)
+    {
+        foreach (ReplayPlayer player in replay.Players)
+        {
+            if (ReplayRules.IsLeaver(replay.Duration, player.Duration))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static PlayerDto ToDto(this Player player)

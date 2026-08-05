@@ -101,6 +101,8 @@ public sealed partial class ParseTests
             .Select(spawn => spawn.KilledValue)
             .DefaultIfEmpty()
             .Max();
+        bool hasLeaver = dto.Players.Any(player =>
+            dsstats.shared.ReplayRules.IsLeaver(dto.Duration, player.Duration));
 
         for (int i = 0; i < parsedReplay.Players.Count; i++)
         {
@@ -119,7 +121,7 @@ public sealed partial class ParseTests
             Assert.AreEqual(0, actualPlayer.Messages);
             Assert.AreEqual(0, actualPlayer.Pings);
             Assert.AreEqual(
-                actualPlayer.Spawns.Any(spawn =>
+                !hasLeaver && actualPlayer.Spawns.Any(spawn =>
                     spawn.Breakpoint == Breakpoint.All
                     && spawn.KilledValue == maxKilledValue),
                 actualPlayer.IsMvp);

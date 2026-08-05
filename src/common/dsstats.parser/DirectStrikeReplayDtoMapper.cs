@@ -10,6 +10,7 @@ using DsstatsCommander = dsstats.shared.Commander;
 using DsstatsPlayerDto = dsstats.shared.PlayerDto;
 using DsstatsReplayDto = dsstats.shared.ReplayDto;
 using DsstatsReplayPlayerDto = dsstats.shared.ReplayPlayerDto;
+using DsstatsReplayRules = dsstats.shared.ReplayRules;
 using DsstatsSpawnDto = dsstats.shared.SpawnDto;
 using DsstatsToonIdDto = dsstats.shared.ToonIdDto;
 using DsstatsUnitDto = dsstats.shared.UnitDto;
@@ -802,12 +803,16 @@ internal static class DirectStrikeReplayDtoMapper
         return value <= TimeSpan.Zero ? 0 : (int)value.TotalSeconds;
     }
 
-    private static void SetMvp(DsstatsReplayDto replay)
+    internal static void SetMvp(DsstatsReplayDto replay)
     {
         int maxKilledValue = 0;
         bool hasFinalSpawn = false;
+        bool hasLeaver = false;
         foreach (DsstatsReplayPlayerDto player in replay.Players)
         {
+            player.IsMvp = false;
+            hasLeaver |= DsstatsReplayRules.IsLeaver(replay.Duration, player.Duration);
+
             foreach (DsstatsSpawnDto spawn in player.Spawns)
             {
                 if (spawn.Breakpoint == DsstatsBreakpoint.All)
@@ -819,7 +824,7 @@ internal static class DirectStrikeReplayDtoMapper
             }
         }
 
-        if (!hasFinalSpawn)
+        if (hasLeaver || !hasFinalSpawn)
         {
             return;
         }
