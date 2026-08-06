@@ -29,6 +29,9 @@ The app is distributed via the Microsoft Store to make installation as easy as p
 The shared parser and all replay-decoding products follow the centralized
 [parser-aware versioning contract](/VERSIONING.md).
 
+Production releases follow the artifact-promotion procedures in the
+[deployment runbook](/DEPLOY.md).
+
 
 # Contributing
 
