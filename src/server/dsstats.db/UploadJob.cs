@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using dsstats.shared.Upload;
 using System.ComponentModel.DataAnnotations;
 
 namespace dsstats.db;
@@ -7,8 +8,11 @@ public sealed class UploadJob
 {
     public int UploadJobId { get; set; }
     public int[] PlayerIds { get; set; } = [];
-    [MaxLength(10)]
+    [MaxLength(ReplayDecoderVersion.MaxWireValueLength)]
     public string? Version { get; set; }
+    public ReplayDecoderSource? DecoderSource { get; set; }
+    [MaxLength(ReplayDecoderVersion.MaxDecoderVersionLength)]
+    public string? DecoderVersion { get; set; }
     public string BlobFilePath { get; set; } = string.Empty;
     [Precision(0)]
     public DateTime CreatedAt { get; set; }
@@ -22,6 +26,11 @@ public sealed class ReplayUploadJob
 {
     public int ReplayUploadJobId { get; set; }
     public Guid Guid { get; set; }
+    [MaxLength(ReplayDecoderVersion.MaxWireValueLength)]
+    public string? Version { get; set; }
+    public ReplayDecoderSource? DecoderSource { get; set; }
+    [MaxLength(ReplayDecoderVersion.MaxDecoderVersionLength)]
+    public string? DecoderVersion { get; set; }
     public string BlobFilePath { get; set; } = string.Empty;
     [Precision(0)]
     public DateTime CreatedAt { get; set; }

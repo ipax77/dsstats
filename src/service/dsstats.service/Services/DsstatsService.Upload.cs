@@ -183,7 +183,7 @@ internal sealed partial class DsstatsService
             new UploadRequestDto
             {
                 AppGuid = appGuid,
-                AppVersion = "ser" + CurrentVersion.ToString(),
+                AppVersion = UploadVersion,
                 RequestNames = requestNames,
                 Replays = replayDtos,
             },

@@ -15,6 +15,10 @@ public partial class UploadService(
     IOptions<UploadStorageOptions> uploadStorageOptions,
     ILogger<UploadService> logger)
 {
+    private static readonly Version ApiVersion =
+        ReplayDecoderVersion.GetReleaseVersion(typeof(UploadService).Assembly);
+    private static readonly string ApiUploadVersion =
+        ReplayDecoderVersion.Format(ReplayDecoderSource.Api, ApiVersion);
     private readonly UploadStorageOptions storageOptions = uploadStorageOptions.Value;
 
     public async Task<bool> ProcessUploadAsync(UploadDto uploadDto)
@@ -38,6 +42,7 @@ public partial class UploadService(
                 BlobFilePath = filePath,
                 CreatedAt = DateTime.UtcNow,
             };
+            SetDecoderVersion(uploadJob, uploadDto.AppVersion);
             context.UploadJobs.Add(uploadJob);
             await context.SaveChangesAsync();
 
@@ -72,6 +77,7 @@ public partial class UploadService(
                 BlobFilePath = filePath,
                 CreatedAt = DateTime.UtcNow,
             };
+            SetDecoderVersion(uploadJob, request.AppVersion);
             context.UploadJobs.Add(uploadJob);
             await context.SaveChangesAsync();
 
@@ -106,6 +112,9 @@ public partial class UploadService(
             var uploadJob = new ReplayUploadJob
             {
                 Guid = guid,
+                Version = ApiUploadVersion,
+                DecoderSource = ReplayDecoderSource.Api,
+                DecoderVersion = ApiVersion.ToString(3),
                 BlobFilePath = filePath,
                 CreatedAt = DateTime.UtcNow,
             };
@@ -120,6 +129,13 @@ public partial class UploadService(
             logger.LogError(ex, "Error processing replay upload");
             return new() { Error = "Unknown Error", QueuePosition = queueCount };
         }
+    }
+
+    private static void SetDecoderVersion(UploadJob uploadJob, string? rawVersion)
+    {
+        var parsed = ReplayDecoderVersion.Parse(rawVersion);
+        uploadJob.DecoderSource = parsed.Source;
+        uploadJob.DecoderVersion = ReplayDecoderVersion.LimitVersionForStorage(parsed.Version);
     }
 }
 

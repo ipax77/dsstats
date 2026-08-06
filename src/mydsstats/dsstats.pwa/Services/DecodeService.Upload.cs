@@ -20,7 +20,7 @@ public partial class DecodeService
             UploadRequestDto uploadDto = new()
             {
                 AppGuid = config.AppGuid,
-                AppVersion = "myds" + Version.ToString(),
+                AppVersion = UploadVersion,
                 RequestNames = requestNames,
             };
 
@@ -43,7 +43,7 @@ public partial class DecodeService
                 UploadRequestDto uploadStepDto = new()
                 {
                     AppGuid = config.AppGuid,
-                    AppVersion = $"myds{Version}",
+                    AppVersion = UploadVersion,
                     RequestNames = requestNames,
                 };
                 using var response = exportResult.Sidecars.Count > 0

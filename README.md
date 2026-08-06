@@ -26,6 +26,9 @@ The app is distributed via the Microsoft Store to make installation as easy as p
 - **[mydsstats](/src/mydsstats)** — Blazor WASM PWA for browser-based replay uploads (https://mydsstats.pax77.org).
 - **[Service](/src/service)** — Windows Service using the WiX Toolset (deployed to https://github.com/ipax77/dsstats.service)
 
+The shared parser and all replay-decoding products follow the centralized
+[parser-aware versioning contract](/VERSIONING.md).
+
 
 # Contributing
 

@@ -3,6 +3,7 @@ using dsstats.parser;
 using dsstats.pwa.Clients;
 using dsstats.shared;
 using dsstats.shared.InHouse;
+using dsstats.shared.Upload;
 using s2protocol.NET;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -23,7 +24,10 @@ public partial class DecodeService : IDisposable
     public bool Decoding { get; private set; }
     public ReplayDto? LatestReplay { get; private set; }
     public string? LatestReplayHash { get; private set; }
-    public static readonly Version Version = new(1, 14);
+    public static readonly Version Version =
+        ReplayDecoderVersion.GetReleaseVersion(typeof(DecodeService).Assembly);
+    public static readonly string UploadVersion =
+        ReplayDecoderVersion.Format(ReplayDecoderSource.MyDsstats, Version);
     private int _currentWorkerCount = -1;
 
     public DecodeService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory,

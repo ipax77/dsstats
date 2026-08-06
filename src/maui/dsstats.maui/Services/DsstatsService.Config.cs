@@ -59,6 +59,7 @@ public partial class DsstatsService
 
     public async Task SaveConfig(MauiConfigDto dto)
     {
+        dto.Version = CurrentVersion.ToString();
         bool ignoreReplaysChanged = false;
         bool configSaved = false;
         await configSemaphore.WaitAsync();
@@ -132,7 +133,7 @@ public partial class DsstatsService
 
         if (config is null)
         {
-            config = new();
+            config = new() { Version = CurrentVersion.ToString() };
             config.Sc2Profiles = GetInitialNamesAndFolders();
             context.MauiConfig.Add(config);
             await context.SaveChangesAsync();
@@ -140,19 +141,25 @@ public partial class DsstatsService
             return config;
         }
 
+        var changed = false;
+        if (!string.Equals(config.Version, CurrentVersion.ToString(), StringComparison.Ordinal))
+        {
+            config.Version = CurrentVersion.ToString();
+            changed = true;
+        }
+
         if (!sc2ProfilesRefreshedFromDisk)
         {
-            var changed = MauiConfigPersistence.RefreshDiscoveredProfiles(
+            changed |= MauiConfigPersistence.RefreshDiscoveredProfiles(
                 config,
                 GetInitialNamesAndFolders(),
                 context);
-
-            if (changed)
-            {
-                await context.SaveChangesAsync();
-            }
-
             sc2ProfilesRefreshedFromDisk = true;
+        }
+
+        if (changed)
+        {
+            await context.SaveChangesAsync();
         }
 
         return config;

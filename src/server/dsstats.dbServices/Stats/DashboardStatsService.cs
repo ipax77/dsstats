@@ -1,6 +1,7 @@
 ﻿using dsstats.db;
 using dsstats.shared;
 using dsstats.shared.Interfaces;
+using dsstats.shared.Upload;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -11,8 +12,10 @@ public partial class DashboardStatsService(IDbContextFactory<DsstatsContext> con
     private const string MauiUploadSource = "maui";
     private const string MyDsstatsUploadSource = "mydsstats";
     private const string ServiceUploadSource = "service";
+    private const string ApiUploadSource = "api";
     private const string UnknownVersion = "unknown";
-    private static readonly string[] UploadSources = [MauiUploadSource, MyDsstatsUploadSource, ServiceUploadSource];
+    private static readonly string[] UploadSources =
+        [MauiUploadSource, MyDsstatsUploadSource, ServiceUploadSource, ApiUploadSource];
 
     public async Task<DashboardStatsResponse> GetDashboardStatsAsync(CancellationToken token = default)
     {
@@ -45,15 +48,37 @@ public partial class DashboardStatsService(IDbContextFactory<DsstatsContext> con
 
         var uploadVersionGroups = await context.UploadJobs
             .Where(x => x.CreatedAt >= timeInfo.Start)
-            .GroupBy(x => x.Version)
+            .GroupBy(x => new { x.DecoderSource, x.DecoderVersion })
             .Select(g => new
             {
-                Version = g.Key,
+                g.Key.DecoderSource,
+                g.Key.DecoderVersion,
                 Count = g.Count()
             })
             .ToListAsync(token);
 
-        var uploadStats = NormalizeUploadStats(uploadVersionGroups.Select(x => (x.Version, x.Count)));
+        var replayUploadVersionGroups = await context.ReplayUploadJobs
+            .Where(x => x.CreatedAt >= timeInfo.Start)
+            .GroupBy(x => new { x.DecoderSource, x.DecoderVersion })
+            .Select(g => new
+            {
+                g.Key.DecoderSource,
+                g.Key.DecoderVersion,
+                Count = g.Count()
+            })
+            .ToListAsync(token);
+
+        List<(ReplayDecoderSource? Source, string? DecoderVersion, string? RawVersion, int Count)> normalizedGroups =
+            new(uploadVersionGroups.Count + replayUploadVersionGroups.Count);
+        normalizedGroups.AddRange(uploadVersionGroups.Select(x =>
+            (x.DecoderSource, (string?)x.DecoderVersion, (string?)null, x.Count)));
+        normalizedGroups.AddRange(replayUploadVersionGroups.Select(x =>
+            ((ReplayDecoderSource?)(x.DecoderSource ?? ReplayDecoderSource.Api),
+             (string?)(x.DecoderVersion ?? UnknownVersion),
+             (string?)null,
+             x.Count)));
+
+        var uploadStats = NormalizeUploadStats(normalizedGroups);
         var uploads = uploadStats.Sum(x => x.Count);
 
         var totalCount = dsstatsGroup.Sum(x => x.Count) + arcadeCount;
@@ -69,6 +94,11 @@ public partial class DashboardStatsService(IDbContextFactory<DsstatsContext> con
     }
 
     public static List<DashboardUploadSourceStats> NormalizeUploadStats(IEnumerable<(string? Version, int Count)> versionCounts)
+        => NormalizeUploadStats(versionCounts.Select(x =>
+            ((ReplayDecoderSource?)null, (string?)null, x.Version, x.Count)));
+
+    public static List<DashboardUploadSourceStats> NormalizeUploadStats(
+        IEnumerable<(ReplayDecoderSource? Source, string? DecoderVersion, string? RawVersion, int Count)> versionCounts)
     {
         Dictionary<string, Dictionary<string, int>> uploadsBySource = new(StringComparer.OrdinalIgnoreCase);
         foreach (var source in UploadSources)
@@ -76,14 +106,16 @@ public partial class DashboardStatsService(IDbContextFactory<DsstatsContext> con
             uploadsBySource[source] = new(StringComparer.OrdinalIgnoreCase);
         }
 
-        foreach (var (rawVersion, count) in versionCounts)
+        foreach (var (decoderSource, decoderVersion, rawVersion, count) in versionCounts)
         {
             if (count <= 0)
             {
                 continue;
             }
 
-            var (source, version) = NormalizeUploadVersion(rawVersion);
+            var (source, version) = decoderSource is null
+                ? NormalizeUploadVersion(rawVersion)
+                : (GetSourceName(decoderSource.Value), NormalizeVersionSuffix(decoderVersion ?? string.Empty));
             var versions = uploadsBySource[source];
             if (!versions.TryAdd(version, count))
             {
@@ -116,29 +148,17 @@ public partial class DashboardStatsService(IDbContextFactory<DsstatsContext> con
 
     private static (string Source, string Version) NormalizeUploadVersion(string? rawVersion)
     {
-        var version = rawVersion?.Trim();
-        if (string.IsNullOrWhiteSpace(version))
-        {
-            return (MauiUploadSource, UnknownVersion);
-        }
-
-        if (version.StartsWith("myds", StringComparison.OrdinalIgnoreCase))
-        {
-            return (MyDsstatsUploadSource, NormalizeVersionSuffix(version["myds".Length..]));
-        }
-
-        if (version.StartsWith("ser", StringComparison.OrdinalIgnoreCase))
-        {
-            return (ServiceUploadSource, NormalizeVersionSuffix(version["ser".Length..]));
-        }
-
-        if (version.StartsWith("ma", StringComparison.OrdinalIgnoreCase))
-        {
-            return (MauiUploadSource, NormalizeVersionSuffix(version["ma".Length..]));
-        }
-
-        return (MauiUploadSource, version);
+        var parsed = ReplayDecoderVersion.Parse(rawVersion);
+        return (GetSourceName(parsed.Source), parsed.Version);
     }
+
+    private static string GetSourceName(ReplayDecoderSource source) => source switch
+    {
+        ReplayDecoderSource.MyDsstats => MyDsstatsUploadSource,
+        ReplayDecoderSource.Service => ServiceUploadSource,
+        ReplayDecoderSource.Api => ApiUploadSource,
+        _ => MauiUploadSource,
+    };
 
     private static string NormalizeVersionSuffix(string suffix)
     {

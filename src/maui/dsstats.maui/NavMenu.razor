@@ -1,5 +1,6 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using dsstats.maui.Components
+@using dsstats.maui.Services
 @inherits CultureBaseComponent
 <nav class="navbar fixed-top navbar-expand-lg bg-secondary-subtle">
 	<div class="container-fluid">
@@ -36,7 +37,7 @@
 				</li>
 			</ul>
 			<span class="navbar-text">
-				v3.0.11
+				v@DsstatsService.CurrentVersion
 			</span>
 		</div>
 	</div>

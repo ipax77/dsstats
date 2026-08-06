@@ -1,0 +1,43 @@
+<Project>
+  <PropertyGroup>
+    <!-- Public versions use 3.<parser-line>.<product-patch>. -->
+    <DsstatsVersionMajor>3</DsstatsVersionMajor>
+    <DsstatsParserLine>1</DsstatsParserLine>
+
+    <DsstatsParserPatch>0</DsstatsParserPatch>
+    <DsstatsMyDsstatsPatch>0</DsstatsMyDsstatsPatch>
+    <DsstatsServicePatch>0</DsstatsServicePatch>
+    <DsstatsMauiPatch>0</DsstatsMauiPatch>
+    <DsstatsServerPatch>0</DsstatsServerPatch>
+
+    <DsstatsVersionBase>$(DsstatsVersionMajor).$(DsstatsParserLine)</DsstatsVersionBase>
+    <DsstatsParserVersion>$(DsstatsVersionBase).$(DsstatsParserPatch)</DsstatsParserVersion>
+    <DsstatsMyDsstatsVersion>$(DsstatsVersionBase).$(DsstatsMyDsstatsPatch)</DsstatsMyDsstatsVersion>
+    <DsstatsServiceVersion>$(DsstatsVersionBase).$(DsstatsServicePatch)</DsstatsServiceVersion>
+    <DsstatsMauiVersion>$(DsstatsVersionBase).$(DsstatsMauiPatch)</DsstatsMauiVersion>
+    <DsstatsServerVersion>$(DsstatsVersionBase).$(DsstatsServerPatch)</DsstatsServerVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'dsstats.parser'">
+    <DsstatsProductVersion>$(DsstatsParserVersion)</DsstatsProductVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'dsstats.pwa'">
+    <DsstatsProductVersion>$(DsstatsMyDsstatsVersion)</DsstatsProductVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'dsstats.service'">
+    <DsstatsProductVersion>$(DsstatsServiceVersion)</DsstatsProductVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'dsstats.maui'">
+    <DsstatsProductVersion>$(DsstatsMauiVersion)</DsstatsProductVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'dsstats.api' Or '$(MSBuildProjectName)' == 'dsstats.web'">
+    <DsstatsProductVersion>$(DsstatsServerVersion)</DsstatsProductVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(DsstatsProductVersion)' != ''">
+    <Version>$(DsstatsProductVersion)</Version>
+    <VersionPrefix>$(DsstatsProductVersion)</VersionPrefix>
+    <AssemblyVersion>$(DsstatsProductVersion).0</AssemblyVersion>
+    <FileVersion>$(DsstatsProductVersion).0</FileVersion>
+  </PropertyGroup>
+</Project>

@@ -7,8 +7,8 @@ if (-not (Test-Path -LiteralPath $file1)) {
     throw "Installer was not produced at $file1"
 }
 
-[xml]$versionProps = Get-Content -Path "./Directory.Build.props"
-$versionString = $versionProps.Project.PropertyGroup.DsstatsServiceVersion
+$versionString = dotnet msbuild .\dsstats.service\dsstats.service.csproj -getProperty:DsstatsServiceVersion
+$versionString = $versionString.Trim()
 $parsedVersion = $null
 if (-not [Version]::TryParse($versionString, [ref]$parsedVersion)) {
     throw "Invalid service version '$versionString' in Directory.Build.props"
