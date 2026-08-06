@@ -8,6 +8,7 @@ public static partial class Sc2DirectStrikeParser
     private const int ScanMinimumDataBuild = 97425;
     private const int PaidScanAbilityLink = 1416;
     private const int RaynorScanAbilityLink = 1142;
+    private const int DehakaPrimalWurmScanAbilityLink = 1128;
 
     private static void SetGameEventData(
         Sc2Replay replay,
@@ -102,6 +103,7 @@ public static partial class Sc2DirectStrikeParser
     {
         return command is { AbilCmdIndex: 0, TargetX: not null, TargetY: not null }
             && (command.AbilLink == PaidScanAbilityLink
-                || (player.Commander == Commander.Raynor && command.AbilLink == RaynorScanAbilityLink));
+                || (player.Commander == Commander.Raynor && command.AbilLink == RaynorScanAbilityLink)
+                || (player.Commander == Commander.Dehaka && command.AbilLink == DehakaPrimalWurmScanAbilityLink));
     }
 }
