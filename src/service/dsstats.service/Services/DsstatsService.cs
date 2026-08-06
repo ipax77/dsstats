@@ -38,7 +38,7 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
     };
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
     private int _startupLogged;
-    internal readonly Version CurrentVersion = new(3, 0, 9);
+    internal static readonly Version CurrentVersion = GetCurrentVersion();
 
     public async Task StartImportAsync(CancellationToken token)
     {
@@ -387,6 +387,14 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
     {
         _dbSemaphore.Dispose();
         configSemaphore.Dispose();
+    }
+
+    private static Version GetCurrentVersion()
+    {
+        var assemblyVersion = typeof(DsstatsService).Assembly.GetName().Version;
+        return assemblyVersion is null
+            ? new(0, 0, 0)
+            : new(assemblyVersion.Major, assemblyVersion.Minor, Math.Max(0, assemblyVersion.Build));
     }
 
     private void LogStartupStateOnce(AppOptions config)

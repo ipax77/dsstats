@@ -4,5 +4,6 @@
   </ItemGroup>
   <PropertyGroup>
     <InstallerPlatform>x64</InstallerPlatform>
+    <DefineConstants>$(DefineConstants);DsstatsServiceVersion=$(DsstatsServiceVersion)</DefineConstants>
   </PropertyGroup>
 </Project>

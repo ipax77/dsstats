@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <Version>$(DsstatsServiceVersion)</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-dsstats.worker-b8cd172c-ee40-4d05-aa54-f9da07463ba4</UserSecretsId>
@@ -14,7 +15,7 @@
 	<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 	<EnableNETAnalyzers>true</EnableNETAnalyzers>
 	<AnalysisMode>All</AnalysisMode>
-	<AnalysisLevel>latest</AnalysisLevel>
+	<AnalysisLevel>10</AnalysisLevel>
 	<RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
 	<RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
 	<CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
@@ -22,7 +23,7 @@
 	<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	<Nullable>enable</Nullable>
 	<WarningsAsErrors>nullable</WarningsAsErrors>
-	<LangVersion>latest</LangVersion>
+	<LangVersion>14</LangVersion>
 	<WarningsNotAsErrors></WarningsNotAsErrors>
 	<DisabledWarnings>1591</DisabledWarnings>
 	<NoWarn>1591, CA2007, CA1727, CA1848, CA1031, CA1812</NoWarn>

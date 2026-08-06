@@ -13,14 +13,17 @@ internal sealed class Worker(DsstatsService dsstatsService, IOptions<DsstatsConf
         try
         {
             await Task.Delay(TimeSpan.FromMinutes(dsstatsConfig.Value.StartDelayInMinutes), stoppingToken);
-            await dsstatsService.Update(stoppingToken);
+            if (await dsstatsService.Update(stoppingToken))
+            {
+                return;
+            }
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 jobCounter++;
-                if (jobCounter % 10 == 0)
+                if (jobCounter % 10 == 0 && await dsstatsService.Update(stoppingToken))
                 {
-                    await dsstatsService.Update(stoppingToken);
+                    return;
                 }
                 try
                 {
