@@ -16,12 +16,15 @@ Windows copy is `C:\data\ds\serversetup`).
 | Parser | `parser/v3.1.0` | NuGet package |
 | mydsstats | `mydsstats/v3.1.0` | `mydsstats-v3.1.0.zip` |
 | Service | `service/v3.1.0` | MSI and `latest.yml` |
-| Server | `server/v3.1.0` | API and web ZIPs |
+| Server | `server/v3.1.0` | API/web ZIPs and `dsstats-migrations-v3.1.0` |
 | MAUI | `maui/v3.1.0` | Store package |
 
 Every set contains `release-manifest.json` and `SHA256SUMS`. The manifest
 records component, version, source commit, and whether the source tree was
-dirty. CI refuses to produce release artifacts from a dirty checkout.
+dirty. Server manifests also record the latest included EF `MigrationId`. CI
+refuses to produce release artifacts from a dirty checkout. The Linux-x64 EF
+migration bundle is self-contained, so neither the host nor runtime image needs
+the SDK or `dotnet-ef` tool.
 
 ## Create and approve a release
 
@@ -47,7 +50,7 @@ The optimized host layout is:
 ```text
 /opt/dsstats-server/              private Compose and deployment scripts
 /opt/dsstats/
-  releases/server/<version>/      immutable API/web release pairs
+  releases/server/<version>/      immutable API/web/migration release sets
   api-current -> .../api          active API
   web-current -> .../web          active web
 /srv/dsstats/api/                 API configuration and replay data
@@ -87,10 +90,13 @@ sudo install -m 0600 /secure/source/mysql_root_password \
 ```
 
 The API configuration must contain production connection strings using
-`mysql8:3306`, `dsstats:ServerVersion` matching the installed server, and the
-existing authentication/storage settings. Make the API data, shared CSV, and
-Data Protection directories writable by the `app` UID from the approved
-runtime image; releases themselves remain read-only.
+`mysql8:3306`, `dsstats:ServerVersion` matching the installed server,
+`Database:MigrateOnStartup` set to `false`, and the existing
+authentication/storage settings. The one-shot migration container reads this
+same protected configuration file; connection credentials are never passed on
+its command line. Make the API data, shared CSV, and Data Protection
+directories writable by the `app` UID from the approved runtime image;
+releases themselves remain read-only.
 
 Create the shared network once:
 
@@ -105,11 +111,12 @@ database is running, record its exact image digest, version, and Docker network
 gateway:
 
 ```bash
-sudo /opt/dsstats-server/deploy/inspect-production.sh mysql8 dsstats
+sudo /opt/dsstats-server/deploy/inspect-production.sh mysql8 dsstats dsstats10
 ```
 
-Put the reported `MYSQL_IMAGE` digest in `docker/mysql/.env`, the gateway in
-`docker/apps/.env`, and the reported database version in
+Put the reported `MYSQL_IMAGE` digest in `docker/mysql/.env`; put the gateway
+and `DSS_MYSQL_SERVER_VERSION` in `docker/apps/.env`; and put the reported
+baseline in `deploy/deploy.env`. Use the same database version for
 `dsstats:ServerVersion`. Point the production Compose override at the existing
 MySQL data and log directories. Validate the rendered model before stopping
 anything:
@@ -135,10 +142,12 @@ Wait for `healthy`, verify the server version, and test an application login.
 Never run `docker compose down -v`; the named local volume and production data
 directory are intentionally persistent.
 
-## Configure the deployment backup gate
+## Configure optional database backups
 
-`DSS_BACKUP_HOOK` in `deploy/deploy.env` must name an executable. It receives
-the target server version as its only argument. It must perform or verify the
+Normal deployments do not create a full database backup. Pass `--backup` for a
+release whose migration risk or recovery requirements justify the cost.
+`DSS_BACKUP_HOOK` in `deploy/deploy.env` then names an executable. It receives
+the target server version as its only argument, must perform or verify the
 production backup, exit nonzero on failure, and print one non-empty backup
 identifier on stdout. Diagnostics belong on stderr.
 
@@ -153,7 +162,27 @@ backup_id=$(/usr/local/sbin/run-dsstats-backup "$version")
 printf '%s\n' "$backup_id"
 ```
 
-The deployment stops before extraction or activation if this hook fails.
+With `--backup`, deployment stops before migration or activation if this hook
+fails. Without it, the audit record contains `backup=skipped`.
+
+## EF migration and downgrade policy
+
+Production API startup never applies migrations. Each checked server artifact
+contains the EF migration bundle built from the same commit as the API. The
+deployer stops API, runs that bundle to the manifest's latest migration, then
+activates API and web. It records the migration before and after deployment in
+`deployments-v2.tsv`.
+
+For the first conversion, set `DSS_DATABASE_BASELINE_MIGRATION` to the last row
+in `__EFMigrationsHistory`. Use `0` only for a genuinely empty database. Later
+deployments obtain the boundary from the active release manifest.
+
+EF downgrade is deliberately opt-in. A migration's `Down()` method may drop
+tables or columns, truncate values when narrowing a column, or fail partway
+because MySQL DDL is not generally transactional. Inspect every migration
+between the current and target IDs before approving a downgrade. A logical dump
+or storage snapshot remains the only recovery path for deleted row data and
+partially applied DDL.
 
 ## One-time application-container cutover
 
@@ -186,6 +215,13 @@ sudo /opt/dsstats-server/deploy/deploy-server.sh deploy \
   --version 3.1.0 --source release
 ```
 
+Request the configured full backup only when appropriate:
+
+```bash
+sudo /opt/dsstats-server/deploy/deploy-server.sh deploy \
+  --version 3.1.0 --source release --backup
+```
+
 For a pre-release rehearsal with locally generated artifacts:
 
 ```bash
@@ -194,11 +230,20 @@ sudo /opt/dsstats-server/deploy/deploy-server.sh deploy \
   --artifact-dir /path/to/artifacts
 ```
 
-The script verifies the exact file set, manifest, and SHA-256 values; obtains a
-backup identifier; installs an immutable version; switches/recreates API; runs
-liveness and database-backed smoke tests; then switches/recreates web. It never
-pulls a runtime image. A failed activation restores previous application links
-and containers, but never reverses migrations or restores the database.
+The script verifies the exact file set, manifest, and SHA-256 values; installs
+an immutable version; applies its migration bundle; switches/recreates API;
+runs liveness and database-backed smoke tests; then switches/recreates web. It
+never pulls a runtime image. A failed activation restores previous application
+links and containers. By default it leaves the newly applied schema in place.
+
+For a migration whose reviewed `Down()` methods are safe enough, the operator
+may pre-authorize schema downgrade when activation fails:
+
+```bash
+sudo /opt/dsstats-server/deploy/deploy-server.sh deploy \
+  --version 3.1.0 --source release \
+  --database-down-on-failure --accept-data-loss
+```
 
 Roll back application files only:
 
@@ -206,10 +251,28 @@ Roll back application files only:
 sudo /opt/dsstats-server/deploy/deploy-server.sh rollback --version 3.0.9
 ```
 
-Use this only when the old application supports every applied migration.
-Destructive or incompatible migration recovery is a separate, explicitly
-approved database restore operation. Deployment audit records are appended to
-`/var/lib/dsstats/deployments.tsv`.
+Use application-only rollback when the old application supports the applied
+schema. To explicitly run EF `Down()` methods to the target release's recorded
+migration, stop both applications and downgrade before activation:
+
+```bash
+sudo /opt/dsstats-server/deploy/deploy-server.sh rollback \
+  --version 3.0.9 --database-down --accept-data-loss
+```
+
+Migration-aware releases take the target from their manifest. For a legacy
+release without `MigrationId`, also pass the reviewed boundary explicitly:
+
+```bash
+sudo /opt/dsstats-server/deploy/deploy-server.sh rollback \
+  --version 3.0.9 --database-down --accept-data-loss \
+  --target-migration 20260724071102_SpecialUnits
+```
+
+Add `--backup` to either rollback command when a full recovery point is worth
+the time and storage. Full database restore is never automatic. Migration-aware
+deployment audit records are appended to
+`/var/lib/dsstats/deployments-v2.tsv`.
 
 ## Deploy or roll back mydsstats
 
@@ -261,12 +324,12 @@ bash /mnt/c/data/ds/serversetup/deploy/bootstrap-wsl.sh \
 ```
 
 Compatibility mode reads the existing initialization credentials into private
-WSL secret files without printing them, detects the actual MySQL version/image,
-and leaves the database container and data directory untouched. The required
-backup hook still creates and verifies a logical dump before activating API.
-The sample local hook uses balanced gzip compression; for a large development
-database, prefer a hook that validates a recent snapshot to avoid blocking
-every application rehearsal on a full logical export.
+WSL secret files without printing them, detects the actual MySQL version/image
+and EF migration boundary, and leaves the database container and data directory
+untouched. Bootstrap skips the expensive logical dump by default. Add
+`--backup` to the bootstrap command when that rehearsal needs one. The sample
+hook uses balanced gzip compression; for large databases, prefer a hook that
+validates a recent snapshot.
 
 Verify:
 
@@ -279,7 +342,7 @@ curl --fail http://127.0.0.1:6876/
 ```
 
 Also exercise a Blazor connection, a replay/API operation, container restart,
-a deliberately failing backup hook, and a deliberately failing smoke URL.
+a deliberately failing backup hook with `--backup`, and a deliberately failing smoke URL.
 Confirm the prior application links remain active after each failure.
 
 ## Runtime image maintenance and performance

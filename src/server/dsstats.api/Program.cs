@@ -214,19 +214,27 @@ builder.Services.AddResponseCompression(options =>
 
 var app = builder.Build();
 
-using var scope = app.Services.CreateScope();
-await using var dbContext = await scope.ServiceProvider
-    .GetRequiredService<IDbContextFactory<DsstatsContext>>()
-    .CreateDbContextAsync();
-dbContext.Database.Migrate();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+var migrateOnStartup = app.Configuration.GetValue<bool?>("Database:MigrateOnStartup")
+    ?? app.Environment.IsDevelopment();
+if (migrateOnStartup || app.Environment.IsDevelopment())
 {
-    var replayUserRatingService = scope.ServiceProvider.GetRequiredService<ReplayUserRatingService>();
-    replayUserRatingService.CollectPendingVotesAsync().Wait();
+    await using var startupScope = app.Services.CreateAsyncScope();
+    if (migrateOnStartup)
+    {
+        await using var dbContext = await startupScope.ServiceProvider
+            .GetRequiredService<IDbContextFactory<DsstatsContext>>()
+            .CreateDbContextAsync();
+        await dbContext.Database.MigrateAsync();
+    }
+
+    if (app.Environment.IsDevelopment())
+    {
+        var replayUserRatingService = startupScope.ServiceProvider.GetRequiredService<ReplayUserRatingService>();
+        await replayUserRatingService.CollectPendingVotesAsync();
+    }
 }
 
+// Configure the HTTP request pipeline.
 app.Use(async (httpContext, next) =>
 {
     try

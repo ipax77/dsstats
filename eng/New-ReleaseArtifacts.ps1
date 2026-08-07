@@ -71,6 +71,21 @@ try {
                 Compress-Directory $publish (Join-Path $artifactRoot "dsstats-$project-v$Version.zip")
                 Remove-Item -LiteralPath $publish -Recurse -Force
             }
+
+            Invoke-Dotnet @("tool", "restore")
+            $migrationProject = "src/server/dsstats.migrations.mysql/dsstats.migrations.mysql.csproj"
+            $migrationBundle = Join-Path $artifactRoot "dsstats-migrations-v$Version"
+            Invoke-Dotnet @(
+                "tool", "run", "dotnet-ef", "--",
+                "migrations", "bundle",
+                "--project", $migrationProject,
+                "--startup-project", $migrationProject,
+                "--context", "DsstatsContext",
+                "--configuration", "Release",
+                "--self-contained",
+                "--target-runtime", "linux-x64",
+                "--output", $migrationBundle,
+                "--force")
         }
         "service" {
             Invoke-Dotnet @("restore", "src/service/service.slnx")
@@ -108,6 +123,15 @@ try {
         Version = $Version
         CommitSha = $commitSha
         SourceDirty = $sourceDirty
+    }
+    if ($Component -eq "server") {
+        $migrationFiles = @(Get-ChildItem -LiteralPath "src/server/dsstats.migrations.mysql/Migrations" -Filter "*.cs" -File |
+            Where-Object { $_.Name -notlike "*.Designer.cs" -and $_.BaseName -match '^[0-9]{14}_' } |
+            Sort-Object Name)
+        if ($migrationFiles.Count -eq 0) {
+            throw "The MySQL migration project contains no migrations."
+        }
+        $manifest.MigrationId = $migrationFiles[-1].BaseName
     }
     Write-Utf8Lf (Join-Path $artifactRoot "release-manifest.json") (
         $manifest | ConvertTo-Json)
