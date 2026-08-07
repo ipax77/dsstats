@@ -15,6 +15,15 @@ if (-not $artifactRoot.StartsWith($repositoryRoot, [StringComparison]::OrdinalIg
     throw "Artifact output must remain inside the repository."
 }
 
+$commitSha = (& git -C $repositoryRoot rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $commitSha) {
+    throw "Unable to resolve the release commit SHA."
+}
+$sourceDirty = [bool](& git -C $repositoryRoot status --porcelain --untracked-files=normal)
+if (($env:CI -eq "true" -or $env:GITHUB_ACTIONS -eq "true") -and $sourceDirty) {
+    throw "CI release artifacts must be produced from a clean checkout."
+}
+
 if (Test-Path -LiteralPath $artifactRoot) {
     Remove-Item -LiteralPath $artifactRoot -Recurse -Force
 }
@@ -29,6 +38,14 @@ function Invoke-Dotnet([string[]]$Arguments) {
 
 function Compress-Directory([string]$Source, [string]$Destination) {
     Compress-Archive -Path (Join-Path $Source "*") -DestinationPath $Destination -CompressionLevel Optimal
+}
+
+function Write-Utf8Lf([string]$Path, [string]$Content) {
+    $normalizedContent = $Content.Replace("`r`n", "`n").TrimEnd("`r", "`n") + "`n"
+    [System.IO.File]::WriteAllText(
+        $Path,
+        $normalizedContent,
+        [System.Text.UTF8Encoding]::new($false))
 }
 
 Push-Location $repositoryRoot
@@ -85,11 +102,21 @@ try {
         }
     }
 
+    $manifest = [ordered]@{
+        SchemaVersion = 1
+        Component = $Component
+        Version = $Version
+        CommitSha = $commitSha
+        SourceDirty = $sourceDirty
+    }
+    Write-Utf8Lf (Join-Path $artifactRoot "release-manifest.json") (
+        $manifest | ConvertTo-Json)
+
     $checksumLines = Get-ChildItem -LiteralPath $artifactRoot -File | Sort-Object Name | ForEach-Object {
         $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
         "$hash  $($_.Name)"
     }
-    Set-Content -LiteralPath (Join-Path $artifactRoot "SHA256SUMS") -Encoding utf8 -Value $checksumLines
+    Write-Utf8Lf (Join-Path $artifactRoot "SHA256SUMS") ($checksumLines -join "`n")
 }
 finally {
     Pop-Location

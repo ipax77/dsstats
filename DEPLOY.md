@@ -1,319 +1,315 @@
 # Deployment runbook
 
-This runbook promotes the immutable artifacts produced by the central
-`ipax77/dsstats` release workflow. Production hosts must not pull `main` and
-rebuild a release. The tag, compiled files, and checksums reviewed in the
-central repository are the files that reach production.
+Production consumes immutable artifacts from the central `ipax77/dsstats`
+release workflow. A production host never pulls `main`, runs `dotnet publish`,
+or uses a .NET SDK image. Apache terminates TLS; the API and web containers
+listen on loopback HTTP only.
 
-Deployment remains manually approved. The workflow creates release candidates;
-it does not deploy a website, publish the service updater release, sign a
-package, or submit an app to the Microsoft Store.
+Concrete Compose files, Apache virtual hosts, secrets, and deployment scripts
+are private host configuration under `/opt/dsstats-server` (the maintained
+Windows copy is `C:\data\ds\serversetup`).
 
 ## Release artifacts
 
-| Product | Central tag | Produced artifacts | Production destination |
-| --- | --- | --- | --- |
-| Parser | `parser/v3.1.0` | `dsstats.parser.3.1.0.nupkg` | Package/archive only; no standalone production process |
-| mydsstats | `mydsstats/v3.1.0` | `mydsstats-v3.1.0.zip` | Static files for `mydsstats.pax77.org` |
-| Service | `service/v3.1.0` | `dsstats.installer.msi`, `latest.yml` | Public release in `ipax77/dsstats.service` |
-| Server | `server/v3.1.0` | `dsstats-api-v3.1.0.zip`, `dsstats-web-v3.1.0.zip` | API and web application hosts |
-| MAUI | `maui/v3.1.0` | App MSIX and SHA-256 manifest | Manual Microsoft Partner Center submission |
+| Product | Tag | Artifacts |
+| --- | --- | --- |
+| Parser | `parser/v3.1.0` | NuGet package |
+| mydsstats | `mydsstats/v3.1.0` | `mydsstats-v3.1.0.zip` |
+| Service | `service/v3.1.0` | MSI and `latest.yml` |
+| Server | `server/v3.1.0` | API and web ZIPs |
+| MAUI | `maui/v3.1.0` | Store package |
 
-Every artifact set contains `SHA256SUMS`. It covers all other files in that
-set. The service's `latest.yml` additionally contains the MSI checksum expected
-by the updater.
+Every set contains `release-manifest.json` and `SHA256SUMS`. The manifest
+records component, version, source commit, and whether the source tree was
+dirty. CI refuses to produce release artifacts from a dirty checkout.
 
-## 1. Create and approve a release candidate
+## Create and approve a release
 
-1. Merge the version change and product changes to `main` only after CI is
-   green.
-2. Confirm `Directory.Build.props` contains the intended version. A parser-line
-   change must reset all product patches to zero.
-3. Create an annotated, component-specific tag at the reviewed commit and push
-   it to the central repository:
+1. Merge only reviewed, green changes to `main`.
+2. Confirm `Directory.Build.props` contains the intended component version.
+3. Create and push an annotated component tag:
 
    ```bash
    git switch main
    git pull --ff-only origin main
-   git tag -a mydsstats/v3.1.0 -m "mydsstats 3.1.0"
-   git push origin mydsstats/v3.1.0
+   git tag -a server/v3.1.0 -m "server 3.1.0"
+   git push origin server/v3.1.0
    ```
 
-4. Wait for the `Release candidate` workflow. It validates the tag, builds the
-   component, creates `SHA256SUMS`, and opens a draft release in
-   `ipax77/dsstats`.
-5. Review the workflow, release notes, artifact names, and checksums. Never
-   delete and recreate or move an immutable tag. Fix a bad candidate with a new
-   patch version.
-6. Publish the central draft when it is approved for promotion:
+4. Review the draft central release, manifest, filenames, and checksums.
+5. Publish the approved draft. Never move or recreate an immutable tag; issue
+   a new patch version instead.
 
-   ```bash
-   gh release edit mydsstats/v3.1.0 \
-     --repo ipax77/dsstats \
-     --draft=false \
-     --latest=false
-   ```
+## Host layout and prerequisites
 
-For a parser-line release, create the parser tag and a tag for every product
-that will be released from that line. A practical rollout order is server,
-mydsstats, service, then MAUI. This lets the API record the new decoder sources
-before updated clients become common.
+The optimized host layout is:
 
-## 2. Download and verify artifacts
-
-Download into a new, empty directory. Do not reuse a previous candidate
-directory.
-
-```bash
-REPOSITORY=ipax77/dsstats
-TAG=mydsstats/v3.1.0
-CANDIDATE_DIR="$HOME/dsstats-releases/$TAG"
-
-mkdir -p "$CANDIDATE_DIR"
-gh release download "$TAG" --repo "$REPOSITORY" --dir "$CANDIDATE_DIR"
-cd "$CANDIDATE_DIR"
-sha256sum --check SHA256SUMS
+```text
+/opt/dsstats-server/              private Compose and deployment scripts
+/opt/dsstats/
+  releases/server/<version>/      immutable API/web release pairs
+  api-current -> .../api          active API
+  web-current -> .../web          active web
+/srv/dsstats/api/                 API configuration and replay data
+/var/lib/dsstats/                 locks, audit log, Data Protection, shared data
+/var/www/releases/mydsstats/      immutable PWA releases
+/var/www/mydsstats -> .../wwwroot active PWA
 ```
 
-On Windows, the equivalent checksum verification is:
+Required host commands are Bash, Docker Compose, `curl`, `flock`, `unzip`,
+`sha256sum`, and `realpath`. Release-download mode additionally requires an
+authenticated `gh` CLI. Application containers use
+`mcr.microsoft.com/dotnet/aspnet:10.0`; no SDK is installed on the host.
+
+Copy the private setup and create host-local environment files:
+
+```bash
+sudo install -d -o root -g root /opt/dsstats-server
+sudo cp -a /path/to/serversetup/. /opt/dsstats-server/
+sudo cp /opt/dsstats-server/docker/apps/.env.example \
+  /opt/dsstats-server/docker/apps/.env
+sudo cp /opt/dsstats-server/docker/mysql/.env.example \
+  /opt/dsstats-server/docker/mysql/.env
+sudo cp /opt/dsstats-server/deploy/deploy.env.example \
+  /opt/dsstats-server/deploy/deploy.env
+sudo chmod 0755 /opt/dsstats-server/deploy/*.sh
+```
+
+Store MySQL passwords as root-owned files outside the setup directory and use
+the same application password in `/srv/dsstats/api/localserverconfig.json`:
+
+```bash
+sudo install -d -m 0700 /etc/dsstats/secrets
+sudo install -m 0600 /secure/source/mysql_app_password \
+  /etc/dsstats/secrets/mysql_app_password
+sudo install -m 0600 /secure/source/mysql_root_password \
+  /etc/dsstats/secrets/mysql_root_password
+```
+
+The API configuration must contain production connection strings using
+`mysql8:3306`, `dsstats:ServerVersion` matching the installed server, and the
+existing authentication/storage settings. Make the API data, shared CSV, and
+Data Protection directories writable by the `app` UID from the approved
+runtime image; releases themselves remain read-only.
+
+Create the shared network once:
+
+```bash
+docker network inspect dsstats >/dev/null 2>&1 || docker network create dsstats
+```
+
+## Preserve and pin the current MySQL installation
+
+Do not combine this deployment refactor with a MySQL upgrade. While the current
+database is running, record its exact image digest, version, and Docker network
+gateway:
+
+```bash
+sudo /opt/dsstats-server/deploy/inspect-production.sh mysql8 dsstats
+```
+
+Put the reported `MYSQL_IMAGE` digest in `docker/mysql/.env`, the gateway in
+`docker/apps/.env`, and the reported database version in
+`dsstats:ServerVersion`. Point the production Compose override at the existing
+MySQL data and log directories. Validate the rendered model before stopping
+anything:
+
+```bash
+cd /opt/dsstats-server/docker/mysql
+docker compose --env-file .env \
+  -f compose.yaml -f compose.production.yaml config --quiet
+```
+
+Back up MySQL through the established production backup system. In its own
+maintenance window, stop the old MySQL Compose service and start the new
+definition against the unchanged data directory and pinned image:
+
+```bash
+docker compose --env-file .env \
+  -f compose.yaml -f compose.production.yaml up -d mysql8
+docker compose --env-file .env \
+  -f compose.yaml -f compose.production.yaml ps
+```
+
+Wait for `healthy`, verify the server version, and test an application login.
+Never run `docker compose down -v`; the named local volume and production data
+directory are intentionally persistent.
+
+## Configure the deployment backup gate
+
+`DSS_BACKUP_HOOK` in `deploy/deploy.env` must name an executable. It receives
+the target server version as its only argument. It must perform or verify the
+production backup, exit nonzero on failure, and print one non-empty backup
+identifier on stdout. Diagnostics belong on stderr.
+
+Example contract:
+
+```bash
+#!/usr/bin/env bash
+set -Eeuo pipefail
+version=$1
+backup_id=$(/usr/local/sbin/run-dsstats-backup "$version")
+/usr/local/sbin/verify-dsstats-backup "$backup_id"
+printf '%s\n' "$backup_id"
+```
+
+The deployment stops before extraction or activation if this hook fails.
+
+## One-time application-container cutover
+
+First update the Apache files and run `apachectl configtest`. The revised
+virtual hosts still work with the old containers because those already expose
+HTTP ports 6976 and 6876; only the HTTPS Kestrel/WebSocket upstreams are removed.
+Reload Apache after a successful config test.
+
+Validate the application Compose file and pull the approved runtime explicitly:
+
+```bash
+cd /opt/dsstats-server/docker/apps
+docker compose --env-file .env config --quiet
+docker pull "$(sed -n 's/^DOTNET_ASPNET_IMAGE=//p' .env)"
+```
+
+The first cutover is a maintenance operation because no prior release symlinks
+exist. Preserve the old Compose directories and loose `wwwbin` trees. Stop only
+the old API/web containers, then run the first artifact deployment. If it
+fails, the new containers stop; restart the preserved old Compose services.
+Later deployments have automatic symlink rollback.
+
+## Deploy or roll back the server
+
+API and web always use the same `server/v...` release. Deploy a published
+release as root (or as a deployment user with access to all configured paths):
+
+```bash
+sudo /opt/dsstats-server/deploy/deploy-server.sh deploy \
+  --version 3.1.0 --source release
+```
+
+For a pre-release rehearsal with locally generated artifacts:
+
+```bash
+sudo /opt/dsstats-server/deploy/deploy-server.sh deploy \
+  --version 3.1.0 --source local \
+  --artifact-dir /path/to/artifacts
+```
+
+The script verifies the exact file set, manifest, and SHA-256 values; obtains a
+backup identifier; installs an immutable version; switches/recreates API; runs
+liveness and database-backed smoke tests; then switches/recreates web. It never
+pulls a runtime image. A failed activation restores previous application links
+and containers, but never reverses migrations or restores the database.
+
+Roll back application files only:
+
+```bash
+sudo /opt/dsstats-server/deploy/deploy-server.sh rollback --version 3.0.9
+```
+
+Use this only when the old application supports every applied migration.
+Destructive or incompatible migration recovery is a separate, explicitly
+approved database restore operation. Deployment audit records are appended to
+`/var/lib/dsstats/deployments.tsv`.
+
+## Deploy or roll back mydsstats
+
+The PWA deployment is also artifact-only:
+
+```bash
+sudo /opt/dsstats-server/deploy/deploy-mydsstats.sh deploy \
+  --version 3.1.0 --source release
+
+sudo /opt/dsstats-server/deploy/deploy-mydsstats.sh rollback \
+  --version 3.0.9
+```
+
+The deployer extracts to `/var/www/releases/mydsstats/<version>`, validates
+`wwwroot/index.html` and `wwwroot/_framework`, atomically switches
+`/var/www/mydsstats`, and restores the previous link if the public smoke test
+fails. It does not run Git, build, or erase the live directory.
+
+## WSL 2 rehearsal
+
+Keep container state on the native WSL filesystem. The maintained copy may
+remain on Windows, but the bootstrap copies it before running containers.
+
+Generate a local server artifact set from the repository on Windows:
 
 ```powershell
-$candidate = "C:\dsstats-releases\service\v3.1.0"
-Get-Content (Join-Path $candidate "SHA256SUMS") | ForEach-Object {
-    $expected, $name = $_ -split '\s+', 2
-    $path = Join-Path $candidate $name.Trim()
-    $actual = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($actual -ne $expected) {
-        throw "Checksum mismatch: $path"
-    }
-}
+./eng/New-ReleaseArtifacts.ps1 `
+  -Component server -Version 3.1.0 -OutputPath artifacts/server-local
 ```
 
-Stop immediately if a file is missing, an unexpected file is present, or a
-checksum differs. Do not repair or rebuild the candidate locally.
-
-## 3. Deploy mydsstats
-
-The previous `publishMyDsstats.sh` flow pulled `main`, rebuilt the PWA, deleted
-the live directory, and copied the new build in place. Replace that flow with an
-artifact-only deployment. Keep each extracted version so activation and
-rollback are atomic symlink changes.
-
-One-time host preparation is required because `/var/www/mydsstats` is currently
-a real directory. During a maintenance window, move that directory into the
-release store and replace it with a symlink. Confirm that the nginx site root
-continues to resolve `/var/www/mydsstats` before proceeding.
+From WSL, install the setup, create local secrets/configuration, start a healthy
+MySQL instance, and deploy through the production activation path:
 
 ```bash
-sudo install -d -o root -g root /var/www/releases/mydsstats
-LEGACY_RELEASE="/var/www/releases/mydsstats/pre-artifact-$(date -u +%Y%m%dT%H%M%SZ)"
-sudo mv /var/www/mydsstats "$LEGACY_RELEASE"
-sudo ln -s "$LEGACY_RELEASE" /var/www/mydsstats
+bash /mnt/c/data/ds/serversetup/deploy/bootstrap-wsl.sh \
+  --artifact-dir /mnt/c/Users/pax77/source/repos/dsstats/artifacts/server-local \
+  --version 3.1.0
 ```
 
-For each release, download and verify the artifact as the normal deployment
-user, then extract and activate it:
+If a healthy local MySQL container already owns the `mysql8` network alias and
+port 9801, preserve its native-Linux data and reuse it during the rehearsal:
 
 ```bash
-VERSION=3.1.0
-CANDIDATE_DIR="$HOME/dsstats-releases/mydsstats/v$VERSION"
-RELEASE_ROOT="/var/www/releases/mydsstats/$VERSION"
-SITE_DIR="$RELEASE_ROOT/wwwroot"
-NEXT_LINK=/var/www/mydsstats.next
-
-sudo test ! -e "$RELEASE_ROOT"
-sudo install -d -o www-data -g www-data "$RELEASE_ROOT"
-sudo -u www-data unzip -q "$CANDIDATE_DIR/mydsstats-v$VERSION.zip" -d "$RELEASE_ROOT"
-sudo test -f "$SITE_DIR/index.html"
-sudo test -d "$SITE_DIR/_framework"
-sudo chown -R www-data:www-data "$RELEASE_ROOT"
-
-sudo ln -s "$SITE_DIR" "$NEXT_LINK"
-sudo mv -Tf "$NEXT_LINK" /var/www/mydsstats
+bash /mnt/c/data/ds/serversetup/deploy/bootstrap-wsl.sh \
+  --existing-mysql-container mysql8-mysql8-1 \
+  --existing-mysql-database dsstats10 \
+  --artifact-dir /mnt/c/Users/pax77/source/repos/dsstats/artifacts/server-local \
+  --version 3.1.0
 ```
 
-Do not run `buildMydsstats.pl`, `dotnet publish`, or `git pull` during this
-deployment. The new deployment script should accept a version/tag, download the
-central artifact, verify it, extract it, and switch the symlink only.
+Compatibility mode reads the existing initialization credentials into private
+WSL secret files without printing them, detects the actual MySQL version/image,
+and leaves the database container and data directory untouched. The required
+backup hook still creates and verifies a logical dump before activating API.
+The sample local hook uses balanced gzip compression; for a large development
+database, prefer a hook that validates a recent snapshot to avoid blocking
+every application rehearsal on a full logical export.
 
-Smoke-test the public site and a replay decode/upload:
+Verify:
 
 ```bash
-curl --fail --silent --show-error https://mydsstats.pax77.org/ > /dev/null
+curl --fail http://127.0.0.1:6976/health/live
+curl --fail http://127.0.0.1:6976/api10/Stats
+curl --fail http://127.0.0.1:6876/health/live
+curl --fail http://127.0.0.1:6876/
+~/dsstats-server/deploy/measure-runtime.sh
 ```
 
-Confirm that the dashboard records the upload under `mydsstats` with the
-expected three-part decoder version.
+Also exercise a Blazor connection, a replay/API operation, container restart,
+a deliberately failing backup hook, and a deliberately failing smoke URL.
+Confirm the prior application links remain active after each failure.
 
-To roll back static files, point the symlink at the previous release directory:
+## Runtime image maintenance and performance
 
-```bash
-PREVIOUS_VERSION=3.1.0
-sudo ln -s "/var/www/releases/mydsstats/$PREVIOUS_VERSION/wwwroot" /var/www/mydsstats.next
-sudo mv -Tf /var/www/mydsstats.next /var/www/mydsstats
-```
+Runtime changes are separate from application deployment. Pull and test a new
+ASP.NET patch image in WSL, update `DOTNET_ASPNET_IMAGE` to its approved digest,
+then recreate API and web during a maintenance window. Record the digest in the
+deployment log. Apply the same explicit process to MySQL, but only as a planned
+database maintenance project.
 
-Keep at least the current and previous known-good releases.
+Use `deploy/measure-runtime.sh` and `docker stats --no-stream` to record image
+size, startup time, idle CPU/memory, and Docker disk usage. Logs are rotated by
+Compose. Do not add CPU/memory limits until measurements establish safe values.
+Liveness checks never query MySQL; only the deployment smoke test performs a
+database-backed request.
 
-## 4. Deploy server API and web
+## Service and MAUI distribution
 
-API and web share one version and must be promoted from the same `server/v...`
-release. The archives are framework-dependent .NET publishes; the host needs
-the .NET 10 ASP.NET Core runtime, not the SDK.
+For the Windows service, download and verify the central `service/v<version>`
+release, mirror its exact MSI and `latest.yml` to a draft release in
+`ipax77/dsstats.service`, test the updater, then publish the draft. Do not use
+`src/service/deploy.ps1` for production.
 
-The exact production service/container names and publish roots are host
-configuration, not repository data. Record them in the private server
-operations configuration. The example below assumes systemd units named
-`dsstats-api` and `dsstats-web`, versioned release directories under
-`/opt/dsstats/releases`, and stable symlinks used by `ExecStart`. Substitute the
-real names if production uses Docker or different paths.
-
-Converting an existing in-place deployment to stable symlinks is a one-time
-maintenance operation like the mydsstats preparation above: move each current
-publish directory into a named legacy release, point the API/web process at a
-stable `*-current` symlink, and verify that release before the first switch.
-
-Before deployment:
-
-- back up MySQL using the production credential file; do not place credentials
-  on the command line or in this repository;
-- confirm `/data/localserverconfig.json` and other production configuration are
-  external to the publish directories;
-- record the current API/web symlink targets and database backup location;
-- verify both archives with `SHA256SUMS`.
-
-The API calls `Database.Migrate()` at startup. Starting the new API therefore
-applies pending MySQL migrations. Database rollback is not automatic.
-
-```bash
-VERSION=3.1.0
-CANDIDATE_DIR="$HOME/dsstats-releases/server/v$VERSION"
-API_RELEASE="/opt/dsstats/releases/api/$VERSION"
-WEB_RELEASE="/opt/dsstats/releases/web/$VERSION"
-
-sudo test ! -e "$API_RELEASE"
-sudo test ! -e "$WEB_RELEASE"
-sudo install -d -o dsstats -g dsstats "$API_RELEASE" "$WEB_RELEASE"
-sudo -u dsstats unzip -q "$CANDIDATE_DIR/dsstats-api-v$VERSION.zip" -d "$API_RELEASE"
-sudo -u dsstats unzip -q "$CANDIDATE_DIR/dsstats-web-v$VERSION.zip" -d "$WEB_RELEASE"
-sudo test -f "$API_RELEASE/dsstats.api.dll"
-sudo test -f "$WEB_RELEASE/dsstats.web.dll"
-
-sudo ln -s "$API_RELEASE" /opt/dsstats/api.next
-sudo mv -Tf /opt/dsstats/api.next /opt/dsstats/api-current
-sudo systemctl restart dsstats-api
-sudo systemctl is-active --quiet dsstats-api
-API_SMOKE_URL=http://127.0.0.1:5279/api10/Stats # Set to the real host-local API URL.
-curl --fail --silent --show-error "$API_SMOKE_URL" > /dev/null
-
-sudo ln -s "$WEB_RELEASE" /opt/dsstats/web.next
-sudo mv -Tf /opt/dsstats/web.next /opt/dsstats/web-current
-sudo systemctl restart dsstats-web
-sudo systemctl is-active --quiet dsstats-web
-curl --fail --silent --show-error https://dsstats.pax77.org/ > /dev/null
-```
-
-If Docker runs the applications, mount the stable symlinks or versioned release
-directories read-only and recreate only the affected API/web containers. Do not
-build an image from a newly pulled working tree unless a later CI adapter wraps
-these exact archives into the image without rebuilding them.
-
-For an application rollback, switch both symlinks to the previous shared server
-version and restart both processes. Leave a successfully applied additive
-database migration in place when the old application supports it. If a future
-migration is destructive or incompatible, use the documented database restore
-procedure and treat that as a separate, explicitly approved recovery action.
-
-## 5. Publish the Windows service updater release
-
-`src/service/deploy.ps1` is now a legacy build-and-publish helper. Do not use it
-for a production release because it rebuilds the MSI outside the tagged central
-workflow.
-
-Download and verify `service/v<version>` from `ipax77/dsstats`. Check that:
-
-- the MSI ProductVersion is `3.<parser-line>.<patch>.0`;
-- `latest.yml` contains the three-part version;
-- the checksum in `latest.yml` equals the SHA-256 of
-  `dsstats.installer.msi`;
-- `SHA256SUMS` validates both files.
-
-Mirror those exact two files to a draft release in the distribution repository:
-
-```powershell
-$version = "3.1.0"
-$candidate = "C:\dsstats-releases\service\v$version"
-$distributionTag = "v$version"
-
-gh release view $distributionTag --repo ipax77/dsstats.service *> $null
-if ($LASTEXITCODE -eq 0) {
-    throw "Distribution release $distributionTag already exists; do not overwrite it."
-}
-
-gh release create $distributionTag `
-    (Join-Path $candidate "dsstats.installer.msi") `
-    (Join-Path $candidate "latest.yml") `
-    --repo ipax77/dsstats.service `
-    --draft `
-    --generate-notes `
-    --title $distributionTag
-```
-
-Download the two draft assets once from `ipax77/dsstats.service`, verify them
-again, and test the installer/update path on a non-production Windows machine.
-Then make the distribution release public:
-
-```powershell
-gh release edit "v3.1.0" --repo ipax77/dsstats.service --draft=false
-```
-
-Publishing this release is the service deployment gate because clients discover
-the public updater release. If a release is bad, stop further uptake by marking
-it as a prerelease or removing it from the public updater channel, then issue a
-new patch release. Prefer patch-forward recovery; an MSI downgrade may not be
-supported for clients that already upgraded.
-
-## 6. Submit the MAUI Store candidate
-
-`src/maui/build.ps1` is also replaced as the production build step. The central
-`maui/v<version>` release already contains the unsigned Store candidate built
-from the reviewed tag.
-
-1. Download the release and verify `SHA256SUMS` on Windows.
-2. Confirm the app package filename and manifest identity use
-   `3.<parser-line>.<patch>.1`, for example `3.1.0.1`.
-3. Sideload/test the candidate on a clean machine if required. A bundled
-   `Microsoft.WindowsAppRuntime` MSIX is a local testing dependency and is not
-   the dsstats application package.
-4. Upload the dsstats application MSIX to its existing Microsoft Partner Center
-   submission. Do not rebuild, edit, repack, or locally change its version.
-5. Complete Store validation and use a staged rollout when available.
-6. After Store installation, decode/upload a replay and confirm dashboard
-   telemetry reports `maui` and the expected three-part version.
-
-The Store controls signing and distribution. If certification fails, fix the
-source and create a new product patch/tag. If a released package is bad, halt
-the rollout and submit a patch-forward package; Store clients cannot be directly
-rolled back by replacing files on the host.
-
-## 7. Complete and record the deployment
-
-For every promotion, record:
-
-- central tag and commit SHA;
-- artifact SHA-256 values;
-- operator and UTC deployment time;
-- previous production version;
-- database backup identifier for server releases;
-- smoke-test result;
-- service distribution release or Store submission URL, when applicable.
-
-Keep the central component release and its artifacts. Production automation may
-later implement these steps behind GitHub environment approvals, but it must
-consume the same checksummed artifacts and must never rebuild during promotion.
+For MAUI, download and verify the central `maui/v<version>` package and submit
+that exact unsigned Store candidate through Microsoft Partner Center. Do not
+rebuild or repack it locally.
 
 ## Emergency rule
 
-If provenance, checksum, configuration, migration state, or target path is
-uncertain, stop. Leave the currently running release in place and resolve the
-uncertainty before changing production.
+If provenance, checksum, configuration, backup, migration state, image digest,
+or target path is uncertain, stop and leave the running release in place. Keep
+at least the current and previous known-good application releases; pruning is a
+separate explicit operation.

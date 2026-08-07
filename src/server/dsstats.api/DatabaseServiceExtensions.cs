@@ -12,7 +12,7 @@ public static class DatabaseServiceExtensions
         var connectionString = configuration["dsstats:ConnectionString"] ?? string.Empty;
         var importConnectionString = configuration["dsstats:ImportConnectionString"] ?? string.Empty;
 
-        var serverVersion = new MySqlServerVersion(new Version(9, 7, 0));
+        var serverVersion = GetServerVersion(configuration);
 
         // Keep only the hot context pooled. Do not store request/user/tenant state on DsstatsContext;
         // pass those values into service methods and LINQ queries instead.
@@ -45,6 +45,19 @@ public static class DatabaseServiceExtensions
             .Configure(x => x.ConnectionString = importConnectionString);
 
         return services;
+    }
+
+    internal static MySqlServerVersion GetServerVersion(IConfiguration configuration)
+    {
+        const string defaultServerVersion = "9.7.0";
+        var configuredVersion = configuration["dsstats:ServerVersion"] ?? defaultServerVersion;
+        if (!Version.TryParse(configuredVersion, out var parsedVersion))
+        {
+            throw new InvalidOperationException(
+                $"Invalid MySQL server version '{configuredVersion}' in dsstats:ServerVersion.");
+        }
+
+        return new MySqlServerVersion(parsedVersion);
     }
 
     private static void SuppressClientCancellationNoise(DbContextOptionsBuilder options)

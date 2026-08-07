@@ -13,14 +13,12 @@ builder.Services.AddLogging(l => l.AddSimpleConsole(o => o.TimestampFormat = "yy
 
 builder.Services.AddHttpClient("api", httpClient =>
 {
-    if (builder.Environment.IsDevelopment())
-    {
-        httpClient.BaseAddress = new Uri("http://localhost:5279");
-    }
-    else
-    {
-        httpClient.BaseAddress = new Uri("http://dsstats10");
-    }
+    var defaultApiBaseAddress = builder.Environment.IsDevelopment()
+        ? "http://localhost:5279"
+        : "http://api:8080";
+    var configuredApiBaseAddress = builder.Configuration["ApiClient:BaseAddress"]
+        ?? defaultApiBaseAddress;
+    httpClient.BaseAddress = new Uri(configuredApiBaseAddress, UriKind.Absolute);
     httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 });
 
@@ -38,9 +36,11 @@ builder.Services.Configure<dsstats.shared.HostOptions>(options =>
 });
 builder.Services.Configure<ReplayUserRatingClientOptions>(options =>
 {
-    options.ApiBaseAddress = builder.Environment.IsDevelopment()
+    var defaultApiBaseAddress = builder.Environment.IsDevelopment()
         ? "http://localhost:5279"
         : string.Empty;
+    options.ApiBaseAddress = builder.Configuration["ReplayUserRating:ApiBaseAddress"]
+        ?? defaultApiBaseAddress;
 });
 
 builder.Services.AddScoped<ISpawnPlaybackSidecarDecoder, DotNetSpawnPlaybackSidecarDecoder>();
@@ -77,6 +77,7 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+app.MapGet("/health/live", static () => Results.NoContent());
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
