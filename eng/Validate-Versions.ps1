@@ -157,6 +157,9 @@ try {
         }
         else {
             Write-Host "Base revision has no central version manifest; treating this as the initial harmonization."
+            # A missing manifest is expected during the one-time conversion. Clear
+            # git show's native exit code so a successful script does not fail CI.
+            $global:LASTEXITCODE = 0
         }
     }
 

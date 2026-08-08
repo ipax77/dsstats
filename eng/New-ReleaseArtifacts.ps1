@@ -90,7 +90,7 @@ try {
         "service" {
             Invoke-Dotnet @("restore", "src/service/service.slnx")
             Invoke-Dotnet @("publish", "src/service/dsstats.service/dsstats.service.csproj", "-c", "Release", "--no-restore")
-            Invoke-Dotnet @("build", "src/service/dsstats.installer/dsstats.installer.wixproj", "-c", "Release", "--no-restore")
+            Invoke-Dotnet @("build", "src/service/dsstats.installer/dsstats.installer.wixproj", "-c", "Release", "--no-restore", "-p:BuildProjectReferences=false")
             $installer = "src/service/dsstats.installer/bin/Release/dsstats.installer.msi"
             if (-not (Test-Path -LiteralPath $installer)) {
                 throw "Service installer was not produced."

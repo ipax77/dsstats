@@ -113,7 +113,8 @@ jobs:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Build.props', 'global.json', 'src/**/*.csproj') }}
       - run: dotnet restore src/service/service.slnx
-      - run: dotnet build src/service/service.slnx --no-restore -c Release
+      - run: dotnet publish src/service/dsstats.service/dsstats.service.csproj --no-restore -c Release
+      - run: dotnet build src/service/dsstats.installer/dsstats.installer.wixproj --no-restore -c Release -p:BuildProjectReferences=false
 
   maui-build:
     needs: changes
@@ -129,5 +130,5 @@ jobs:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Build.props', 'global.json', 'src/**/*.csproj') }}
       - run: dotnet workload install maui-windows --skip-manifest-update
-      - run: dotnet restore src/maui/dsstats.maui/dsstats.maui.csproj
-      - run: dotnet build src/maui/dsstats.maui/dsstats.maui.csproj --no-restore -c Release -f net10.0-windows10.0.19041.0 -p:WindowsPackageType=None
+      - run: dotnet restore src/maui/dsstats.maui/dsstats.maui.csproj -r win-x64
+      - run: dotnet build src/maui/dsstats.maui/dsstats.maui.csproj --no-restore -c Release -f net10.0-windows10.0.19041.0 -r win-x64 -p:WindowsPackageType=None
