@@ -292,6 +292,7 @@ public partial class UploadService
             BlobFilePath = packageDirectory,
             CreatedAt = DateTime.UtcNow,
         };
+        SetDecoderVersion(uploadJob, uploadRequest.AppVersion);
         context.UploadJobs.Add(uploadJob);
         await context.SaveChangesAsync(token);
 

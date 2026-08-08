@@ -38,10 +38,18 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         ForwardedHeaders.XForwardedProto |
         ForwardedHeaders.XForwardedHost;
 
-    options.KnownProxies.Add(IPAddress.Parse("172.22.0.1"));
-    // options.KnownIPNetworks.Add(
-    //     IPNetwork.Parse("172.22.0.0/16")
-    // );
+    foreach (var configuredProxy in builder.Configuration
+                 .GetSection("ReverseProxy:KnownProxies")
+                 .Get<string[]>() ?? [])
+    {
+        if (!IPAddress.TryParse(configuredProxy, out var proxyAddress))
+        {
+            throw new InvalidOperationException(
+                $"ReverseProxy:KnownProxies contains invalid IP address '{configuredProxy}'.");
+        }
+
+        options.KnownProxies.Add(proxyAddress);
+    }
 
     options.ForwardLimit = 1;
 });
@@ -57,6 +65,10 @@ builder.Services.AddCors(options =>
                               "https://dsstats-dev.pax77.org",
                               "https://mydsstats.pax77.org",
                           };
+
+                          allowedOrigins.UnionWith(builder.Configuration
+                              .GetSection("Cors:AllowedOrigins")
+                              .Get<string[]>() ?? []);
 
                           if (builder.Environment.IsDevelopment())
                           {
@@ -202,19 +214,27 @@ builder.Services.AddResponseCompression(options =>
 
 var app = builder.Build();
 
-using var scope = app.Services.CreateScope();
-await using var dbContext = await scope.ServiceProvider
-    .GetRequiredService<IDbContextFactory<DsstatsContext>>()
-    .CreateDbContextAsync();
-dbContext.Database.Migrate();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+var migrateOnStartup = app.Configuration.GetValue<bool?>("Database:MigrateOnStartup")
+    ?? app.Environment.IsDevelopment();
+if (migrateOnStartup || app.Environment.IsDevelopment())
 {
-    var replayUserRatingService = scope.ServiceProvider.GetRequiredService<ReplayUserRatingService>();
-    replayUserRatingService.CollectPendingVotesAsync().Wait();
+    await using var startupScope = app.Services.CreateAsyncScope();
+    if (migrateOnStartup)
+    {
+        await using var dbContext = await startupScope.ServiceProvider
+            .GetRequiredService<IDbContextFactory<DsstatsContext>>()
+            .CreateDbContextAsync();
+        await dbContext.Database.MigrateAsync();
+    }
+
+    if (app.Environment.IsDevelopment())
+    {
+        var replayUserRatingService = startupScope.ServiceProvider.GetRequiredService<ReplayUserRatingService>();
+        await replayUserRatingService.CollectPendingVotesAsync();
+    }
 }
 
+// Configure the HTTP request pipeline.
 app.Use(async (httpContext, next) =>
 {
     try
@@ -242,6 +262,8 @@ app.UseRateLimiter();
 
 app.UseRequestDecompression();
 app.UseResponseCompression();
+app.MapGet("/health/live", static () => Results.NoContent())
+    .AllowAnonymous();
 app.MapControllers();
 
 app.MapHub<UploadHub>("/hubs/upload");

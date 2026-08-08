@@ -10,7 +10,7 @@ public sealed class MauiConfig
     public int MauiConfigId { get; set; }
     public Guid AppGuid { get; set; } = Guid.NewGuid();
     [MaxLength(10)]
-    public string Version { get; set; } = "3.0.3";
+    public string Version { get; set; } = string.Empty;
     public int CPUCores { get; set; } = 2;
     public bool AutoDecode { get; set; } = true;
     public bool CheckForUpdates { get; set; } = true;

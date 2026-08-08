@@ -1,6 +1,7 @@
 using dsstats.db;
 using dsstats.parser;
 using dsstats.shared;
+using dsstats.weblib.Replays;
 
 namespace dsstats.tests;
 
@@ -56,6 +57,37 @@ public sealed class MvpTests
         Replay entity = replay.ToEntity();
 
         Assert.IsTrue(entity.Players.All(player => !player.IsMvp));
+    }
+
+    [TestMethod]
+    public void ReplayHelperDoesNotHighlightMvpWhenReplayHasLeaver()
+    {
+        ReplayDto replay = CreateReplay(secondPlayerDuration: 509);
+        replay.Players[1].IsMvp = true;
+        var helper = CreateReplayHelper(replay);
+
+        string style = helper.GetPlayerTableRowStyle(replay.Players[1]);
+
+        Assert.AreNotEqual("background-color: #00bc8c;", style);
+    }
+
+    [TestMethod]
+    public void ReplayHelperHighlightsMvpWhenReplayHasNoLeaver()
+    {
+        ReplayDto replay = CreateReplay(secondPlayerDuration: 510);
+        replay.Players[1].IsMvp = true;
+        var helper = CreateReplayHelper(replay);
+
+        string style = helper.GetPlayerTableRowStyle(replay.Players[1]);
+
+        Assert.AreEqual("background-color: #00bc8c;", style);
+    }
+
+    private static ReplayHelper CreateReplayHelper(ReplayDto replay)
+    {
+        ReplayDetails details = new() { Replay = replay };
+        var cache = new SpawnPlaybackSidecarCache(new DotNetSpawnPlaybackSidecarDecoder());
+        return new ReplayHelper(details, cache);
     }
 
     private static ReplayDto CreateReplay(int secondPlayerDuration)

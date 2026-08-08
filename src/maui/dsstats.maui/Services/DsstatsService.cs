@@ -1,10 +1,16 @@
 ﻿using dsstats.maui.Services.Models;
+using dsstats.shared.Upload;
 using s2protocol.NET;
 
 namespace dsstats.maui.Services;
 
 public sealed partial class DsstatsService(IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory) : IDisposable
 {
+    internal static readonly Version CurrentVersion =
+        ReplayDecoderVersion.GetReleaseVersion(typeof(DsstatsService).Assembly);
+    internal static readonly string UploadVersion =
+        ReplayDecoderVersion.Format(ReplayDecoderSource.Maui, CurrentVersion);
+
     private readonly ReplayDecoder _replayDecoder = new();
     private readonly ReplayDecoderOptions _decoderOptions = new()
     {

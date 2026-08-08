@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Version>$(DsstatsServiceVersion)</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-dsstats.worker-b8cd172c-ee40-4d05-aa54-f9da07463ba4</UserSecretsId>

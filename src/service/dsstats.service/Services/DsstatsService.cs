@@ -3,6 +3,7 @@ using dsstats.dbServices;
 using dsstats.parser;
 using dsstats.service.Models;
 using dsstats.shared;
+using dsstats.shared.Upload;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using s2protocol.NET;
@@ -38,7 +39,10 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
     };
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
     private int _startupLogged;
-    internal static readonly Version CurrentVersion = GetCurrentVersion();
+    internal static readonly Version CurrentVersion =
+        ReplayDecoderVersion.GetReleaseVersion(typeof(DsstatsService).Assembly);
+    internal static readonly string UploadVersion =
+        ReplayDecoderVersion.Format(ReplayDecoderSource.Service, CurrentVersion);
 
     public async Task StartImportAsync(CancellationToken token)
     {
@@ -387,14 +391,6 @@ internal sealed partial class DsstatsService(IServiceScopeFactory scopeFactory,
     {
         _dbSemaphore.Dispose();
         configSemaphore.Dispose();
-    }
-
-    private static Version GetCurrentVersion()
-    {
-        var assemblyVersion = typeof(DsstatsService).Assembly.GetName().Version;
-        return assemblyVersion is null
-            ? new(0, 0, 0)
-            : new(assemblyVersion.Major, assemblyVersion.Minor, Math.Max(0, assemblyVersion.Build));
     }
 
     private void LogStartupStateOnce(AppOptions config)

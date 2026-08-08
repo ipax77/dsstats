@@ -1275,6 +1275,13 @@ namespace dsstats.migrations.mysql.Migrations
                         .HasPrecision(0)
                         .HasColumnType("datetime(0)");
 
+                    b.Property<byte?>("DecoderSource")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<string>("DecoderVersion")
+                        .HasMaxLength(24)
+                        .HasColumnType("varchar(24)");
+
                     b.Property<string>("Error")
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
@@ -1286,11 +1293,15 @@ namespace dsstats.migrations.mysql.Migrations
                     b.Property<Guid>("Guid")
                         .HasColumnType("char(36)");
 
+                    b.Property<string>("Version")
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
                     b.HasKey("ReplayUploadJobId");
 
-                    b.HasIndex("CreatedAt");
-
                     b.HasIndex("FinishedAt");
+
+                    b.HasIndex("CreatedAt", "DecoderSource", "DecoderVersion");
 
                     b.ToTable("ReplayUploadJobs");
                 });
@@ -1739,6 +1750,13 @@ namespace dsstats.migrations.mysql.Migrations
                         .HasPrecision(0)
                         .HasColumnType("datetime(0)");
 
+                    b.Property<byte?>("DecoderSource")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<string>("DecoderVersion")
+                        .HasMaxLength(24)
+                        .HasColumnType("varchar(24)");
+
                     b.Property<string>("Error")
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
@@ -1752,14 +1770,14 @@ namespace dsstats.migrations.mysql.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("Version")
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
 
                     b.HasKey("UploadJobId");
 
-                    b.HasIndex("CreatedAt");
-
                     b.HasIndex("FinishedAt");
+
+                    b.HasIndex("CreatedAt", "DecoderSource", "DecoderVersion");
 
                     b.ToTable("UploadJobs");
                 });

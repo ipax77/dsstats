@@ -19,7 +19,7 @@ public class ReplayHelper
     private static readonly int min15 = Convert.ToInt32(20_160 / 22.4);
 
     private ReplayDetails _replayDetails;
-    private int maxKills;
+    private readonly bool hasLeaver;
     private readonly Dictionary<ToonIdDto, ActiveBuild> _activeBuilds = [];
     private readonly SpawnPositionHydrationState _spawnPositionHydration = new();
     private readonly SpawnPlaybackSidecarCache _sidecarCache;
@@ -32,11 +32,7 @@ public class ReplayHelper
         _sidecarCache = sidecarCache;
         IsTE = _replayDetails.Replay.Title.Contains("TE");
         RatingType = GetDefaultRating();
-        maxKills = _replayDetails.Replay.Players
-            .SelectMany(p => p.Spawns)
-            .Where(s => s.Breakpoint == Breakpoint.All)
-            .DefaultIfEmpty()
-            .Max(m => m?.KilledValue ?? 0);
+        hasLeaver = HasLeaver(_replayDetails.Replay);
         if (_replayDetails.ReplayRatings.Count > 0)
         {
             HasRating = true;
@@ -273,8 +269,7 @@ public class ReplayHelper
 
     public string GetPlayerTableRowStyle(ReplayPlayerDto replayPlayerDto)
     {
-
-        if (replayPlayerDto.Spawns.FirstOrDefault(f => f.Breakpoint == Breakpoint.All)?.KilledValue == maxKills)
+        if (!hasLeaver && replayPlayerDto.IsMvp)
         {
             return "background-color: #00bc8c;";
         }
@@ -291,6 +286,19 @@ public class ReplayHelper
         }
 
         return "";
+    }
+
+    private static bool HasLeaver(ReplayDto replay)
+    {
+        foreach (ReplayPlayerDto player in replay.Players)
+        {
+            if (ReplayRules.IsLeaver(replay.Duration, player.Duration))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public (string, string) GetMiddleInfo()

@@ -300,14 +300,16 @@ public class DsstatsContext : DbContext
 
         modelBuilder.Entity<UploadJob>(entity =>
         {
+            entity.Property(x => x.DecoderSource).HasConversion<byte?>();
             entity.HasIndex(x => x.FinishedAt);
-            entity.HasIndex(x => x.CreatedAt);
+            entity.HasIndex(x => new { x.CreatedAt, x.DecoderSource, x.DecoderVersion });
         });
 
         modelBuilder.Entity<ReplayUploadJob>(entity =>
         {
+            entity.Property(x => x.DecoderSource).HasConversion<byte?>();
             entity.HasIndex(x => x.FinishedAt);
-            entity.HasIndex(x => x.CreatedAt);
+            entity.HasIndex(x => new { x.CreatedAt, x.DecoderSource, x.DecoderVersion });
         });
 
         modelBuilder.Entity<ReplayRating>(entity =>

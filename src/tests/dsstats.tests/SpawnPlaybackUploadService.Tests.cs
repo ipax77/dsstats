@@ -24,6 +24,30 @@ public sealed class SpawnPlaybackUploadServiceTests
     private static readonly JsonSerializerOptions UploadJsonOptions = new(JsonSerializerDefaults.Web);
 
     [TestMethod]
+    public async Task SaveReplay_StampsApiDecoderVersion()
+    {
+        var tempDirectory = CreateTempDirectory();
+        await using var fixture = await UploadFixture.Create(tempDirectory, Mock.Of<IImportService>());
+        try
+        {
+            var result = await fixture.UploadService.SaveReplay(
+                Guid.NewGuid(),
+                CreateFormFile("replay", [1, 2, 3, 4]));
+
+            Assert.IsTrue(result.Success, result.Error);
+            await using var context = await fixture.ContextFactory.CreateDbContextAsync();
+            var dbJob = await context.ReplayUploadJobs.SingleAsync();
+            Assert.AreEqual("api3.1.0", dbJob.Version);
+            Assert.AreEqual(ReplayDecoderSource.Api, dbJob.DecoderSource);
+            Assert.AreEqual("3.1.0", dbJob.DecoderVersion);
+        }
+        finally
+        {
+            DeleteTempDirectory(tempDirectory);
+        }
+    }
+
+    [TestMethod]
     public async Task ProcessSpawnPlaybackUploadAsync_SingleReplayStoresPackageAndQueuesJob()
     {
         var tempDirectory = CreateTempDirectory();
@@ -57,6 +81,8 @@ public sealed class SpawnPlaybackUploadServiceTests
             var dbJob = await context.UploadJobs.SingleAsync();
             Assert.AreEqual(queuedJob.UploadJobId, dbJob.UploadJobId);
             Assert.AreEqual(string.Empty, dbJob.Version);
+            Assert.AreEqual(ReplayDecoderSource.Maui, dbJob.DecoderSource);
+            Assert.AreEqual(ReplayDecoderVersion.UnknownVersion, dbJob.DecoderVersion);
             Assert.IsNull(dbJob.FinishedAt);
             Assert.AreEqual(string.Empty, dbJob.Error);
         }
@@ -168,6 +194,8 @@ public sealed class SpawnPlaybackUploadServiceTests
             var dbJob = await context.UploadJobs.SingleAsync();
             Assert.AreEqual(queuedJob.UploadJobId, dbJob.UploadJobId);
             Assert.AreEqual("test", dbJob.Version);
+            Assert.AreEqual(ReplayDecoderSource.Maui, dbJob.DecoderSource);
+            Assert.AreEqual("test", dbJob.DecoderVersion);
             Assert.IsNull(dbJob.FinishedAt);
             Assert.AreEqual(string.Empty, dbJob.Error);
         }

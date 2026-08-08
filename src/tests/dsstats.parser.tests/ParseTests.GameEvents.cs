@@ -9,6 +9,7 @@ public sealed partial class ParseTests
 {
     private const string ScanReplayPath = "testdata/Direct Strike (1155).SC2Replay";
     private const string RaynorScanReplayPath = "testdata/Direct Strike (10897).SC2Replay";
+    private const string DehakaScanReplayPath = "testdata/Direct Strike (10858).SC2Replay";
 
     [TestMethod]
     public async Task CanDetectPlayerScanCounts()
@@ -112,6 +113,55 @@ public sealed partial class ParseTests
                 .Where(command => command.TargetX.HasValue && command.TargetY.HasValue)
                 .Select(command => command.Gameloop)
                 .ToArray());
+
+        ReplayDto dto = DirectStrikeReplayDtoMapper.Map(replay, parsed);
+        foreach (ReplayPlayerDto player in dto.Players)
+        {
+            Assert.AreEqual(expected[player.Name], player.ScanCount, player.Name);
+        }
+    }
+
+    [TestMethod]
+    public async Task CanDetectDehakaPrimalWurmScans()
+    {
+        Sc2Replay replay = await GetReplay(DehakaScanReplayPath);
+        DirectStrikeReplay parsed = Sc2DirectStrikeParser.Parse(replay);
+
+        Dictionary<string, int> expected = new(StringComparer.Ordinal)
+        {
+            ["RioDa"] = 20,
+            ["Skamba"] = 1,
+            ["Thaddeus"] = 27,
+            ["PAX"] = 28,
+            ["BabaYaga"] = 3,
+            ["xsharp"] = 10,
+        };
+
+        Assert.HasCount(expected.Count, parsed.Players);
+        foreach (DirectStrikePlayer player in parsed.Players)
+        {
+            Assert.AreEqual(expected[player.Name], player.ScanCount, player.Name);
+        }
+
+        DirectStrikePlayer pax = parsed.Players.Single(player => player.Name == "PAX");
+        Assert.AreEqual("Base97425", parsed.BaseBuild);
+        Assert.AreEqual(Commander.Dehaka, pax.Commander);
+        Assert.AreEqual(4, pax.GamePos);
+        Assert.AreEqual(89, parsed.Players.Sum(player => player.ScanCount));
+
+        Assert.IsNotNull(replay.GameEvents);
+        SCmdEvent[] dehakaScanCommands = replay.GameEvents.BaseGameEvents
+            .OfType<SCmdEvent>()
+            .Where(command => command.UserId == 3
+                && command.AbilLink == 1128
+                && command.AbilCmdIndex == 0
+                && command.TargetX.HasValue
+                && command.TargetY.HasValue)
+            .ToArray();
+        Assert.HasCount(28, dehakaScanCommands);
+        CollectionAssert.AreEqual(
+            new[] { 3844, 5687, 6071, 8094, 8603 },
+            dehakaScanCommands.Take(5).Select(command => command.Gameloop).ToArray());
 
         ReplayDto dto = DirectStrikeReplayDtoMapper.Map(replay, parsed);
         foreach (ReplayPlayerDto player in dto.Players)

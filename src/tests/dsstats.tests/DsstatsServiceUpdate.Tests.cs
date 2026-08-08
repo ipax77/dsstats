@@ -10,7 +10,8 @@ public sealed class DsstatsServiceUpdateTests
     [TestMethod]
     public void CurrentVersion_IsReleaseVersion()
     {
-        Assert.AreEqual(new Version(3, 0, 10), DsstatsService.CurrentVersion);
+        Assert.AreEqual(new Version(3, 1, 0), DsstatsService.CurrentVersion);
+        Assert.AreEqual("ser3.1.0", DsstatsService.UploadVersion);
     }
 
     [TestMethod]
