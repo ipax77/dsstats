@@ -144,8 +144,10 @@ try {
                     server = '^src/server/'
                 }
                 $sharedRuntimeChanged = $changedPaths | Where-Object {
-                    $_ -match '^src/common/' -and $_ -notmatch '/README\.md$' -and $_ -notmatch '\.slnx?$'
-                    -and $_ -notmatch '^src/common/dsstats\.parser/'
+                    $_ -match '^src/common/' -and
+                    $_ -notmatch '/README\.md$' -and
+                    $_ -notmatch '\.slnx?$' -and
+                    $_ -notmatch '^src/common/dsstats\.parser/'
                 }
                 foreach ($component in $componentPatterns.Keys) {
                     $componentChanged = $sharedRuntimeChanged -or ($changedPaths | Where-Object { $_ -match $componentPatterns[$component] })

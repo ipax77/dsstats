@@ -39,7 +39,13 @@ We really like people helping us with the project. Nevertheless, take your time 
 
 ## ChangeLog
 
-<details open="open"><summary>v3.0.11</summary>
+<details open="open"><summary>v3.1.1</summary>
+
+>- Fix version labels in the website, mydsstats, and MAUI navigation
+
+</details>
+
+<details><summary>v3.0.11</summary>
 
 >- Add unit modification and scan count
 

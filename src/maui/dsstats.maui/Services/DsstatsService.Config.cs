@@ -59,7 +59,7 @@ public partial class DsstatsService
 
     public async Task SaveConfig(MauiConfigDto dto)
     {
-        dto.Version = CurrentVersion.ToString();
+        dto.Version = CurrentVersionText;
         bool ignoreReplaysChanged = false;
         bool configSaved = false;
         await configSemaphore.WaitAsync();
@@ -133,7 +133,7 @@ public partial class DsstatsService
 
         if (config is null)
         {
-            config = new() { Version = CurrentVersion.ToString() };
+            config = new() { Version = CurrentVersionText };
             config.Sc2Profiles = GetInitialNamesAndFolders();
             context.MauiConfig.Add(config);
             await context.SaveChangesAsync();
@@ -142,9 +142,9 @@ public partial class DsstatsService
         }
 
         var changed = false;
-        if (!string.Equals(config.Version, CurrentVersion.ToString(), StringComparison.Ordinal))
+        if (!string.Equals(config.Version, CurrentVersionText, StringComparison.Ordinal))
         {
-            config.Version = CurrentVersion.ToString();
+            config.Version = CurrentVersionText;
             changed = true;
         }
 

@@ -3,7 +3,7 @@
 @using dsstats.shared.Upload
 <nav class="navbar navbar-expand-lg bg-secondary-subtle">
 	<div class="container-fluid">
-		<a class="navbar-brand" href="#">dsstats v@CurrentVersion</a>
+		<a class="navbar-brand" href="#">dsstats v@(CurrentVersion)</a>
 		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
 			<span class="navbar-toggler-icon"></span>
 		</button>
@@ -76,6 +76,6 @@
 </nav>
 
 @code {
-    private static readonly Version CurrentVersion = ReplayDecoderVersion.GetReleaseVersion(
-        Assembly.GetEntryAssembly() ?? typeof(ReplayDecoderVersion).Assembly);
+    private static readonly string CurrentVersion = ReplayDecoderVersion.GetReleaseVersion(
+        Assembly.GetEntryAssembly() ?? typeof(ReplayDecoderVersion).Assembly).ToString();
 }

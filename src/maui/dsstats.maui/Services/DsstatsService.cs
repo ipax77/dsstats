@@ -8,6 +8,7 @@ public sealed partial class DsstatsService(IServiceScopeFactory scopeFactory, IH
 {
     internal static readonly Version CurrentVersion =
         ReplayDecoderVersion.GetReleaseVersion(typeof(DsstatsService).Assembly);
+    internal static readonly string CurrentVersionText = CurrentVersion.ToString();
     internal static readonly string UploadVersion =
         ReplayDecoderVersion.Format(ReplayDecoderSource.Maui, CurrentVersion);
 
