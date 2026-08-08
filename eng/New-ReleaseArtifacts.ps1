@@ -36,6 +36,13 @@ function Invoke-Dotnet([string[]]$Arguments) {
     }
 }
 
+function Invoke-Npm([string[]]$Arguments) {
+    & npm @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "npm $($Arguments -join ' ') failed."
+    }
+}
+
 function Compress-Directory([string]$Source, [string]$Destination) {
     Compress-Archive -Path (Join-Path $Source "*") -DestinationPath $Destination -CompressionLevel Optimal
 }
@@ -57,9 +64,20 @@ try {
         }
         "mydsstats" {
             Invoke-Dotnet @("workload", "install", "wasm-tools", "--skip-manifest-update")
+            $indexedDbRoot = "src/mydsstats/dsstats.indexedDb"
+            Invoke-Npm @("--prefix", $indexedDbRoot, "ci")
+            Invoke-Npm @("--prefix", $indexedDbRoot, "run", "build")
             Invoke-Dotnet @("restore", "src/mydsstats/dsstats.pwa/dsstats.pwa.csproj")
             $publish = Join-Path $artifactRoot "site"
-            Invoke-Dotnet @("publish", "src/mydsstats/dsstats.pwa/dsstats.pwa.csproj", "-c", "Release", "--no-restore", "-p:RunAOTCompilation=true", "-o", $publish)
+            Invoke-Dotnet @("publish", "src/mydsstats/dsstats.pwa/dsstats.pwa.csproj", "-c", "Release", "--no-restore", "-p:RunAOTCompilation=true", "-p:SkipWebpackBuild=true", "-o", $publish)
+            foreach ($requiredAsset in @(
+                    "wwwroot/_content/dsstats.indexedDb/js/dsstatsDb.js",
+                    "wwwroot/_content/dsstats.indexedDb/js/spawn-playback-compression.js",
+                    "wwwroot/_content/dsstats.indexedDb/js/pako/index.js")) {
+                if (-not (Test-Path -LiteralPath (Join-Path $publish $requiredAsset) -PathType Leaf)) {
+                    throw "mydsstats publish is missing required static web asset: $requiredAsset"
+                }
+            }
             Compress-Directory $publish (Join-Path $artifactRoot "mydsstats-v$Version.zip")
             Remove-Item -LiteralPath $publish -Recurse -Force
         }
