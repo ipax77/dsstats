@@ -9,7 +9,7 @@
     <FileVersion>1.0.6.0</FileVersion>
   </PropertyGroup>
 
-  <Target Name="RunWebpack" BeforeTargets="Build">
+  <Target Name="RunWebpack" BeforeTargets="Build" Condition="'$(SkipWebpackBuild)' != 'true'">
     <Message Text="Running npm install and webpack build..." Importance="high" />
     <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)" />
     <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)" />
