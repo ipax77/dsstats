@@ -26,6 +26,7 @@ public partial class DecodeService : IDisposable
     public string? LatestReplayHash { get; private set; }
     public static readonly Version Version =
         ReplayDecoderVersion.GetReleaseVersion(typeof(DecodeService).Assembly);
+    public static readonly string VersionText = Version.ToString();
     public static readonly string UploadVersion =
         ReplayDecoderVersion.Format(ReplayDecoderSource.MyDsstats, Version);
     private int _currentWorkerCount = -1;

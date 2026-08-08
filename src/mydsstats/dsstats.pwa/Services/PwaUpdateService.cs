@@ -31,7 +31,7 @@ public sealed class PwaUpdateService(
                 return;
             }
 
-            var version = Uri.EscapeDataString(DecodeService.Version.ToString());
+            var version = Uri.EscapeDataString(DecodeService.VersionText);
             _module = await jsRuntime.InvokeAsync<IJSObjectReference>("import", $"./js/pwa-update.js?v={version}");
             _callbacks = DotNetObjectReference.Create(this);
             IsUpdateAvailable = await _module.InvokeAsync<bool>("initialize", _callbacks);
