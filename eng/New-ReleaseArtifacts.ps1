@@ -122,10 +122,10 @@ try {
             Invoke-Dotnet @("workload", "install", "maui-windows", "--skip-manifest-update")
             $mauiProject = "src/maui/dsstats.maui/dsstats.maui.csproj"
             $mauiRuntime = "win-x64"
-            Invoke-Dotnet @("restore", $mauiProject, "-r", $mauiRuntime, "-p:WindowsPackageType=MSIX")
+            Invoke-Dotnet @("restore", $mauiProject, "-r", $mauiRuntime, "-p:WindowsPackageType=MSIX", "-p:PublishReadyToRun=true")
             $publish = Join-Path $artifactRoot "package"
             $packageOutput = $publish + [System.IO.Path]::DirectorySeparatorChar
-            Invoke-Dotnet @("publish", $mauiProject, "-f", "net10.0-windows10.0.19041.0", "-c", "Release", "-r", $mauiRuntime, "--no-restore", "-p:WindowsPackageType=MSIX", "-p:AppxPackageSigningEnabled=false", "-p:AppxPackageDir=$packageOutput", "-o", $publish)
+            Invoke-Dotnet @("publish", $mauiProject, "-f", "net10.0-windows10.0.19041.0", "-c", "Release", "-r", $mauiRuntime, "--no-restore", "-p:WindowsPackageType=MSIX", "-p:PublishReadyToRun=true", "-p:AppxPackageSigningEnabled=false", "-p:AppxPackageDir=$packageOutput", "-o", $publish)
             $packages = @(Get-ChildItem -LiteralPath $publish -Recurse -File | Where-Object { $_.Extension -in @(".msix", ".msixupload", ".appxupload") })
             if ($packages.Count -eq 0) {
                 throw "MAUI publish did not produce an MSIX or Store upload package."
