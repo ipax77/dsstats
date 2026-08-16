@@ -7,7 +7,7 @@
     <DsstatsParserPatch>0</DsstatsParserPatch>
     <DsstatsMyDsstatsPatch>2</DsstatsMyDsstatsPatch>
     <DsstatsServicePatch>1</DsstatsServicePatch>
-    <DsstatsMauiPatch>1</DsstatsMauiPatch>
+    <DsstatsMauiPatch>3</DsstatsMauiPatch>
     <DsstatsServerPatch>1</DsstatsServerPatch>
 
     <DsstatsVersionBase>$(DsstatsVersionMajor).$(DsstatsParserLine)</DsstatsVersionBase>
