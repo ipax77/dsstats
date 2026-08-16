@@ -28,7 +28,8 @@
 
         <!-- Versions -->
         <ApplicationDisplayVersion>$(DsstatsMauiVersion)</ApplicationDisplayVersion>
-        <ApplicationVersion>1</ApplicationVersion>
+        <!-- The Microsoft Store reserves the fourth package-version component. -->
+        <ApplicationVersion>0</ApplicationVersion>
 
         <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
         <WindowsPackageType>None</WindowsPackageType>
@@ -39,7 +40,7 @@
 
 		<GenerateAppInstallerFile>False</GenerateAppInstallerFile>
 		<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-		<!-- Store candidates are immutable: 3.<parser-line>.<patch>.1. -->
+		<!-- Store candidates are immutable: 3.<parser-line>.<patch>.0. -->
 		<AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
 		<AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
 		<GenerateTestArtifacts>True</GenerateTestArtifacts>
