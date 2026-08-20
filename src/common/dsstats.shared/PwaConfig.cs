@@ -20,7 +20,6 @@ public class PwaConfig
     public static PwaConfig Normalize(PwaConfig config)
     {
         config.CPUCores = NormalizeCpuCores(config.CPUCores);
-        config.IgnoreReplays ??= [];
         return config;
     }
 }
