@@ -83,6 +83,11 @@ public partial class DecodeService
 
                         try
                         {
+                            if (file.Size <= 0)
+                            {
+                                throw new InvalidDataException("Replay file is empty.");
+                            }
+
                             if (file.Size > MaxReplayFileSize)
                             {
                                 throw new InvalidDataException(
@@ -103,7 +108,11 @@ public partial class DecodeService
                         }
                         catch (Exception ex)
                         {
-                            logger.LogWarning(ex, "Failed reading replay {Path}; continuing with the remaining files.", file.Path);
+                            logger.LogWarning(
+                                ex,
+                                "Failed reading replay {ReplayName} ({Path}); continuing with the remaining files.",
+                                GetReplayFileName(file.Path),
+                                file.Path);
                             await decodeChannel.Writer.WriteAsync(
                                 DecodedItem.Failed(file.Path, file.Size, file.LastModified, $"Read failed: {ex.Message}", shouldIgnore: true),
                                 token);
@@ -184,7 +193,8 @@ public partial class DecodeService
                             if (item.SpawnPlayback is null)
                             {
                                 logger.LogWarning(
-                                    "Replay {Path} decoded without spawn playback sidecar. Reason: {Reason}",
+                                    "Replay {ReplayName} ({Path}) decoded without spawn playback sidecar. Reason: {Reason}",
+                                    GetReplayFileName(item.Path),
                                     item.Path,
                                     item.SpawnPlaybackError ?? "worker returned no sidecar payload");
                             }
@@ -214,7 +224,11 @@ public partial class DecodeService
                     }
                     catch (Exception ex)
                     {
-                        logger.LogWarning(ex, "Failed saving replay {Path}; continuing with the remaining files.", item.Path);
+                        logger.LogWarning(
+                            ex,
+                            "Failed saving replay {ReplayName} ({Path}); continuing with the remaining files.",
+                            GetReplayFileName(item.Path),
+                            item.Path);
                         RecordReplayFailure(item with { ShouldIgnore = false }, $"Save failed: {ex.Message}");
                     }
                     finally
@@ -238,7 +252,11 @@ public partial class DecodeService
                 {
                     ignoredReplayPaths.Add(item.Path);
                 }
-                logger.LogWarning("Failed processing replay {Path}: {Error}", item.Path, error);
+                logger.LogWarning(
+                    "Failed processing replay {ReplayName} ({Path}): {Error}",
+                    GetReplayFileName(item.Path),
+                    item.Path,
+                    error);
             }
 
             async Task ReportProgressAsync()
@@ -646,7 +664,10 @@ public partial class DecodeService
         }
         catch (ChannelClosedException)
         {
-            logger.LogDebug("Decode result channel was already closed for {Path}", item.Path);
+            logger.LogDebug(
+                "Decode result channel was already closed for replay {ReplayName} ({Path}).",
+                GetReplayFileName(item.Path),
+                item.Path);
         }
     }
 }
