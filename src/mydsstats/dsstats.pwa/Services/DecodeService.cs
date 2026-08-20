@@ -261,7 +261,11 @@ public partial class DecodeService : IDisposable
             logger.LogInformation("Found {Count} existing replay paths in database.", existingPaths.Count);
 
 
-            var fileInfos = await dbService.PickDirectoryInit(config.ReplayStartName, dirKey, limit);
+            var fileInfos = await dbService.PickDirectoryInit(
+                config.ReplayStartName,
+                dirKey,
+                limit,
+                config.IgnoreReplays);
             totalFiles = fileInfos.Count;
 
             logger.LogInformation("Starting decoding of {FileCount} replays...", fileInfos.Count);
@@ -396,8 +400,8 @@ public partial class DecodeService : IDisposable
         try
         {
             // File read: JSInterop — must stay on main thread
-            var streamRef = await dbService.GetFileContent(path);
-            using var stream = await streamRef.OpenReadStreamAsync(maxAllowedSize: 5_000_000, token);
+            await using var streamRef = await dbService.GetFileContent(path);
+            await using var stream = await streamRef.OpenReadStreamAsync(maxAllowedSize: MaxReplayFileSize, token);
             var ms = new MemoryStream();
             await stream.CopyToAsync(ms, token);
 
@@ -461,7 +465,7 @@ public partial class DecodeService : IDisposable
         {
             if (cts.IsCancellationRequested) break;
             await DecodeFromDirectory(entry.Key, limit, aggregateState);
-            if (decodeCts?.IsCancellationRequested == true) break;
+            if (aggregateState.Cancelled || aggregateState.Failed) break;
         }
     }
 
@@ -500,6 +504,8 @@ public class DecodeInfoEventArgs : EventArgs
     public bool IsIdle { get; set; }
     public bool Saving { get; set; }
     public bool Finished { get; set; }
+    public bool Cancelled { get; set; }
+    public bool Failed { get; set; }
     public string? Info { get; set; }
     public UploadStatus UploadStatus { get; set; }
 }

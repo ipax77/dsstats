@@ -19,6 +19,7 @@ export async function getReplaysFromFolder(
     dirHandle?: FileSystemDirectoryHandle | null,
     rootKey?: string,
     metas: ReplayMeta[] = [],
+    ignoredReplayPaths: string[] = [],
 ): Promise<FileInfoRecord[]> {
     fileHandleMap.clear(); // reset
     try {
@@ -98,6 +99,7 @@ export async function getReplaysFromFolder(
             );
         const legacyPathSet = new Set([...existingPaths, ...relevantMetas.map((meta) => meta.filePath)]);
         const metaByPath = new Map(relevantMetas.map((meta) => [meta.filePath, meta]));
+        const ignoredReplayPathSet = new Set(ignoredReplayPaths);
         if (rootKey) {
             const fingerprintRecords = selectFingerprintFiles(allRecords);
             const fingerprint: DirectoryFingerprint = {
@@ -116,6 +118,9 @@ export async function getReplaysFromFolder(
         for (let i = 0; i < allRecords.length; i++) {
             const record = allRecords[i];
             const currentPath = record.record.path;
+            if (ignoredReplayPathSet.has(currentPath)) {
+                continue;
+            }
             const legacyPath = sourceDisplayName !== pathRoot
                 ? toLegacyPath(currentPath, pathRoot, sourceDisplayName)
                 : null;

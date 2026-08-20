@@ -28,7 +28,7 @@ public class PwaConfigService(IServiceScopeFactory scopeFactory)
         return config ?? PwaConfig.Normalize(new PwaConfig());
     }
 
-    public async Task SaveConfig(PwaConfig config)
+    public async Task SaveConfig(PwaConfig config, bool showNotification = true)
     {
         config = PwaConfig.Normalize(config);
 
@@ -37,7 +37,10 @@ public class PwaConfigService(IServiceScopeFactory scopeFactory)
         await dbService.SaveConfig(config);
         this.config = config;
 
-        var notificationService = scope.ServiceProvider.GetRequiredService<AppNotificationService>();
-        notificationService.ShowSuccess("Config successfully saved.");
+        if (showNotification)
+        {
+            var notificationService = scope.ServiceProvider.GetRequiredService<AppNotificationService>();
+            notificationService.ShowSuccess("Config successfully saved.");
+        }
     }
 }
