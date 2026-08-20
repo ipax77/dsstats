@@ -519,7 +519,8 @@ export async function markReplaysAsUploaded(hashes: string[]): Promise<void> {
 export async function pickDirectoryInit(
     startName: string,
     dirKey?: string,
-    count: number = 100
+    count: number = 100,
+    ignoredReplayPaths: string[] = [],
 ): Promise<FileInfoRecord[]> {
     const metas = await getAllReplayMatas();
 
@@ -534,7 +535,7 @@ export async function pickDirectoryInit(
         }
     }
 
-    return await getReplaysFromFolder(startName, [], count, dirHandle, rootKey, metas);
+    return await getReplaysFromFolder(startName, [], count, dirHandle, rootKey, metas, ignoredReplayPaths);
 }
 
 export async function pickDirectoryHandle(startName: string): Promise<string | null> {

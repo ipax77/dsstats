@@ -303,7 +303,7 @@
 	private bool isLoading;
 	private const string IdleDecodeTooltip = "Chrome may freeze background tabs to save resources. Replay decoding resumes automatically when the page wakes, and this paused time is excluded from elapsed time and ETA.";
 	private bool isLoadingFolders = true;
-	private readonly long maxFileSize = 2 * 1024 * 1024;
+	private const long maxFileSize = DecodeService.MaxReplayFileSize;
 	private readonly IReadOnlyList<int> decodeLimits = [1, 10, 100, 0];
 	private ReplayDto? replay;
 	private int replaysDecoded;
@@ -524,6 +524,8 @@
 			IsIdle = decodeInfoEventArgs.IsIdle,
 			Saving = decodeInfoEventArgs.Saving,
 			Finished = decodeInfoEventArgs.Finished,
+			Cancelled = decodeInfoEventArgs.Cancelled,
+			Failed = decodeInfoEventArgs.Failed,
 			Info = e.Info ?? decodeInfoEventArgs.Info,
 			UploadStatus = e.UploadStatus
 		};
@@ -569,7 +571,7 @@
 		try
 		{
 			await DecodeService.DecodeAllHandles(selectedDecodeLimit);
-			NotificationService.ShowSuccess("Saved folders decode finished.");
+			ShowDecodeCompletionNotification("Saved folders");
 		}
 		finally
 		{
@@ -590,7 +592,7 @@
 		try
 		{
 			await DecodeService.DecodeFromDirectory(key, selectedDecodeLimit);
-			NotificationService.ShowSuccess($"Decode finished for {folderName}.");
+			ShowDecodeCompletionNotification(folderName);
 		}
 		finally
 		{
@@ -658,6 +660,11 @@
 			return decodeInfo.Info ?? "Decoding in progress...";
 		}
 
+		if (decodeInfo.Failed || decodeInfo.Cancelled || decodeInfo.Done < decodeInfo.Total)
+		{
+			return decodeInfo.Info ?? $"Decode stopped after {decodeInfo.Done} of {decodeInfo.Total} replays.";
+		}
+
 		if (decodeInfo.Total == 0 && decodeInfo.Error == 0)
 		{
 			return "No new replays were found for this run.";
@@ -670,12 +677,12 @@
 
 		if (decodeInfo.Successful > 0)
 		{
-			return $"Decoded {decodeInfo.Successful} replay{(decodeInfo.Successful == 1 ? string.Empty : "s")} with {decodeInfo.Error} error{(decodeInfo.Error == 1 ? string.Empty : "s")}.";
+			return decodeInfo.Info ?? $"Decoded {decodeInfo.Successful} replay{(decodeInfo.Successful == 1 ? string.Empty : "s")} with {decodeInfo.Error} error{(decodeInfo.Error == 1 ? string.Empty : "s")}.";
 		}
 
 		if (decodeInfo.Error > 0)
 		{
-			return $"No replays were decoded. {decodeInfo.Error} error{(decodeInfo.Error == 1 ? string.Empty : "s")} occurred.";
+			return decodeInfo.Info ?? $"No replays were decoded. {decodeInfo.Error} error{(decodeInfo.Error == 1 ? string.Empty : "s")} occurred.";
 		}
 
 		return decodeInfo.Info ?? "Decode finished.";
@@ -688,12 +695,47 @@
 			return "info";
 		}
 
+		if (decodeInfo.Failed)
+		{
+			return "danger";
+		}
+
+		if (decodeInfo.Cancelled || decodeInfo.Done < decodeInfo.Total)
+		{
+			return "warning";
+		}
+
 		if (decodeInfo.Total == 0 && decodeInfo.Error == 0)
 		{
 			return "secondary";
 		}
 
 		return decodeInfo.Error > 0 ? "warning" : "success";
+	}
+
+	private void ShowDecodeCompletionNotification(string source)
+	{
+		if (decodeInfoEventArgs is null)
+		{
+			return;
+		}
+
+		if (decodeInfoEventArgs.Failed)
+		{
+			NotificationService.ShowError(decodeInfoEventArgs.Info ?? $"Decode failed for {source}.");
+		}
+		else if (decodeInfoEventArgs.Cancelled || decodeInfoEventArgs.Done < decodeInfoEventArgs.Total)
+		{
+			NotificationService.ShowWarning(decodeInfoEventArgs.Info ?? $"Decode stopped for {source}.");
+		}
+		else if (decodeInfoEventArgs.Error > 0)
+		{
+			NotificationService.ShowWarning(decodeInfoEventArgs.Info ?? $"Decode finished for {source} with errors.");
+		}
+		else
+		{
+			NotificationService.ShowSuccess($"Decode finished for {source}.");
+		}
 	}
 
 	public void Dispose()

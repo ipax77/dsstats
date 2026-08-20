@@ -100,10 +100,19 @@ public class IndexedDbService
         return list;
     }
 
-    public async Task<List<FileInfoRecord>> PickDirectoryInit(string startName, string? dirKey, int limit = 100)
+    public async Task<List<FileInfoRecord>> PickDirectoryInit(
+        string startName,
+        string? dirKey,
+        int limit = 100,
+        IReadOnlyCollection<string>? ignoredReplayPaths = null)
     {
         var module = await _moduleTask;
-        return await module.InvokeAsync<List<FileInfoRecord>>("pickDirectoryInit", startName, dirKey, limit);
+        return await module.InvokeAsync<List<FileInfoRecord>>(
+            "pickDirectoryInit",
+            startName,
+            dirKey,
+            limit,
+            ignoredReplayPaths ?? []);
     }
 
     public async Task<string?> PickDirectoryHandle(string startName)

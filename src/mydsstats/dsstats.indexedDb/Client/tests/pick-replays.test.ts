@@ -239,6 +239,28 @@ describe('getReplaysFromFolder', () => {
         expect(result[1].name).toBe('replay1.txt');
     });
 
+    it('should skip an ignored replay path without reducing the requested limit', async () => {
+        const now = Date.now();
+        const dirHandle = mockDirectoryHandle('ignored-folder', {
+            'replay-new.txt': mockFileHandle('replay-new.txt', mockFile('replay-new.txt', 100, now)),
+            'replay-failed.txt': mockFileHandle('replay-failed.txt', mockFile('replay-failed.txt', 200, now - 1000)),
+            'replay-old.txt': mockFileHandle('replay-old.txt', mockFile('replay-old.txt', 300, now - 2000)),
+        });
+
+        const result = await getReplaysFromFolder(
+            'replay',
+            [],
+            2,
+            dirHandle,
+            'ignored-root',
+            [],
+            ['ignored-root/replay-failed.txt'],
+        );
+
+        expect(result).toHaveLength(2);
+        expect(result.map(file => file.name)).toEqual(['replay-new.txt', 'replay-old.txt']);
+    });
+
     it('should use provided dirHandle if available', async () => {
         const getDirectorySourceFromUserSpy = vi.spyOn(fileHandleRepository, 'getDirectorySourceFromUser');
         const customDirHandle = mockDirectoryHandle('custom-folder', {

@@ -42,6 +42,40 @@
 						<small class="text-muted">Optional prefix to filter replays by filename when decoding from a directory.</small>
 					</div>
 
+					<!-- Ignored Replays -->
+					<div class="mb-3">
+						<div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+							<div>
+								<div class="form-label fw-semibold mb-0">Ignored Replays</div>
+								<small class="text-muted">Failed files are skipped until they are removed here.</small>
+							</div>
+							@if (config.IgnoreReplays.Count > 0)
+							{
+								<button type="button" class="btn btn-sm btn-outline-danger" @onclick="ClearIgnoredReplays">
+									Clear all
+								</button>
+							}
+						</div>
+						@if (config.IgnoreReplays.Count == 0)
+						{
+							<div class="text-muted small">No replay files are currently ignored.</div>
+						}
+						else
+						{
+							<ul class="list-group">
+								@foreach (var ignoredReplay in config.IgnoreReplays)
+								{
+									<li class="list-group-item bgchart text-light d-flex justify-content-between align-items-center gap-2">
+										<span class="text-break" title="@GetIgnoredReplayPath(ignoredReplay)">@GetIgnoredReplayName(ignoredReplay)</span>
+										<button type="button" class="btn btn-sm btn-outline-danger" title="Retry this replay on the next decode" @onclick="() => RemoveIgnoredReplay(ignoredReplay)">
+											<i class="bi bi-x-lg"></i>
+										</button>
+									</li>
+								}
+							</ul>
+						}
+					</div>
+
 					<!-- Save Button -->
 					<div class="text-center mt-4">
 						<div class="btn-group" role="group" aria-label="Config Buttons">
@@ -87,4 +121,32 @@
 			await PwaConfigService.SaveConfig(config);
 		}
 	}
+
+	private async Task RemoveIgnoredReplay(string ignoredReplay)
+	{
+		if (config is null)
+		{
+			return;
+		}
+
+		config.IgnoreReplays.Remove(ignoredReplay);
+		await PwaConfigService.SaveConfig(config);
+	}
+
+	private async Task ClearIgnoredReplays()
+	{
+		if (config is null)
+		{
+			return;
+		}
+
+		config.IgnoreReplays.Clear();
+		await PwaConfigService.SaveConfig(config);
+	}
+
+	private static string GetIgnoredReplayName(string ignoredReplay)
+		=> DecodeService.GetReplayFileName(ignoredReplay);
+
+	private static string GetIgnoredReplayPath(string ignoredReplay)
+		=> ignoredReplay;
 }

@@ -5,7 +5,7 @@
     <DsstatsParserLine>1</DsstatsParserLine>
 
     <DsstatsParserPatch>0</DsstatsParserPatch>
-    <DsstatsMyDsstatsPatch>2</DsstatsMyDsstatsPatch>
+    <DsstatsMyDsstatsPatch>3</DsstatsMyDsstatsPatch>
     <DsstatsServicePatch>1</DsstatsServicePatch>
     <DsstatsMauiPatch>3</DsstatsMauiPatch>
     <DsstatsServerPatch>1</DsstatsServerPatch>
