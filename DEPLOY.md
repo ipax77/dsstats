@@ -279,8 +279,8 @@ deployment audit records are appended to
 The PWA deployment is also artifact-only:
 
 ```bash
-sudo /opt/dsstats-server/deploy/deploy-mydsstats.sh deploy \
-  --version 3.1.0 --source release
+export GH_TOKEN="$(gh auth token)"
+sudo --preserve-env=GH_TOKEN /opt/dsstats-server/deploy/deploy-mydsstats.sh deploy --version 3.1.3 --source release
 
 sudo /opt/dsstats-server/deploy/deploy-mydsstats.sh rollback \
   --version 3.0.9

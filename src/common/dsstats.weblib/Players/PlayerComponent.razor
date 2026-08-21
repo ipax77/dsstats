@@ -164,7 +164,7 @@
                         }
                         @if (details.LongestLoseStreak.Count > 0)
                         {
-                            <p>Longest lose streak <span class="text-warning">@details.LongestLoseStreak.Count</span> form @details.LongestLoseStreak.StartDate.ToString("yyyy-MM-dd") to @details.LongestLoseStreak.EndDate.ToString("yyyy-MM-dd")</p>
+                            <p>Longest lose streak <span class="text-warning">@details.LongestLoseStreak.Count</span> from @details.LongestLoseStreak.StartDate.ToString("yyyy-MM-dd") to @details.LongestLoseStreak.EndDate.ToString("yyyy-MM-dd")</p>
                         }
                         @if (details.CurrentStreak != null)
                         {
