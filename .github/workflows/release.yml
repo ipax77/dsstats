@@ -39,6 +39,9 @@ jobs:
       - name: Validate all consumers for a parser release
         if: steps.tag.outputs.component == 'parser'
         run: dotnet test src/tests/dsstats.parser.tests/dsstats.parser.tests.csproj -c Release
+      - name: Validate server release
+        if: steps.tag.outputs.component == 'server'
+        run: dotnet test src/tests/dsstats.tests/dsstats.tests.csproj -c Release
 
   package:
     needs: validate

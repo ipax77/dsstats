@@ -37,9 +37,12 @@ public sealed class SpawnPlaybackUploadServiceTests
             Assert.IsTrue(result.Success, result.Error);
             await using var context = await fixture.ContextFactory.CreateDbContextAsync();
             var dbJob = await context.ReplayUploadJobs.SingleAsync();
-            Assert.AreEqual("api3.1.1", dbJob.Version);
+            var apiVersion = ReplayDecoderVersion.GetReleaseVersion(typeof(UploadService).Assembly);
+            Assert.AreEqual(
+                ReplayDecoderVersion.Format(ReplayDecoderSource.Api, apiVersion),
+                dbJob.Version);
             Assert.AreEqual(ReplayDecoderSource.Api, dbJob.DecoderSource);
-            Assert.AreEqual("3.1.1", dbJob.DecoderVersion);
+            Assert.AreEqual(apiVersion.ToString(3), dbJob.DecoderVersion);
         }
         finally
         {
