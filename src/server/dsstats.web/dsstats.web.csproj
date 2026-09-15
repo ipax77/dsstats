@@ -5,9 +5,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <BrowserModelsProjectPath Condition="'$(BrowserModelsProjectPath)' == ''">C:\Users\pax77\source\repos\blazor.ai\src\Blazor.AI.BrowserModels\Blazor.AI.BrowserModels.csproj</BrowserModelsProjectPath>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(BrowserModelsProjectPath)" AdditionalProperties="TargetFrameworks=net10.0" />
+    <Content Update="AI\Prompts\**\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.*" />
   </ItemGroup>
 

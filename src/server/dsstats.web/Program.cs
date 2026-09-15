@@ -9,6 +9,15 @@ using pax.BlazorChartJs;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var promptVersion = builder.Configuration["WinrateAI:PromptVersion"] ?? "v1";
+if (!System.Text.RegularExpressions.Regex.IsMatch(promptVersion, "^v[0-9]+$"))
+    throw new InvalidOperationException("WinrateAI:PromptVersion must be a version such as v1.");
+var winratePrompt = dsstats.web.AI.WinratePrompt.Load(Path.Combine(
+    builder.Environment.ContentRootPath, "AI", "Prompts", "winrate", promptVersion + ".json"));
+if (winratePrompt.PromptVersion != promptVersion)
+    throw new InvalidOperationException("The selected prompt version does not match its bundle.");
+builder.Services.AddSingleton(winratePrompt);
+
 builder.Services.AddLogging(l => l.AddSimpleConsole(o => o.TimestampFormat = "yyyy-MM-dd HH:mm:ss: "));
 
 builder.Services.AddHttpClient("api", httpClient =>

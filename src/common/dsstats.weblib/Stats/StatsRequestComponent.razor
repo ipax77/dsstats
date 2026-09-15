@@ -4,6 +4,7 @@
 
 <div class="bgchart border rounded p-2">
     <EditForm EditContext="editContext" FormName="StatsRequest">
+        <fieldset disabled="@IsLoading">
         <div class="row">
             <div class="col-12 col-md-1 align-self-center">
                 @if (IsLoading)
@@ -78,6 +79,7 @@
                 <label class="form-check-label" for="leaverCheck">With Leavers</label>
             </div>
         </div>
+        </fieldset>
     </EditForm>
 </div>
 

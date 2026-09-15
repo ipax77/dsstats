@@ -1,0 +1,145 @@
+@using Blazor.AI.BrowserModels
+@using Microsoft.Extensions.AI
+@using dsstats.shared
+@using dsstats.web.AI
+@implements IDisposable
+@inject WinratePrompt Prompt
+
+<section class="bgchart border rounded p-3 my-2" style="max-width: 1000px;" aria-label="Ask winrate">
+    <h2 class="h5">Ask winrate <span class="badge text-bg-secondary">Experimental</span></h2>
+    <p class="small text-muted">English commander rankings and matchups for the last 90 days, last 12 months or all time.
+        Supports rating bounds, strong players, balanced teams and long games. Each question starts with fresh filters.
+        Inference runs in your browser; questions and plans pass through this website's server connection.</p>
+    <BrowserModelButton SessionMode="BrowserModelSessionMode.Stateless" OnReady="Ready" OnError="ModelError" />
+    <label class="form-label" for="winrate-question">Your question</label>
+    <textarea id="winrate-question" class="form-control" rows="2" maxlength="2000" @bind="question" disabled="@busy"></textarea>
+    <div class="d-flex flex-wrap gap-2 mt-2">
+        <button type="button" class="btn btn-primary" disabled="@(client is null || busy || string.IsNullOrWhiteSpace(question))" @onclick="Ask">Ask</button>
+        @if (busy) { <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button> }
+        <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "Who is the best commander?"'>Best commander</button>
+        <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "What is Kerrigan’s worst matchup?"'>Kerrigan matchups</button>
+    </div>
+    <div role="status" aria-live="polite" class="mt-2">@status</div>
+    @if (error is not null) { <div class="alert alert-warning mt-2" role="alert">@error</div> }
+    @if (plan is not null)
+    {
+        <p class="small mt-2">@plan.Describe()</p>
+        @if (rows is not null)
+        {
+            @if (rows.Count == 0) { <p>No matching results were found.</p> }
+            else
+            {
+                <ol>
+                    @foreach (var row in rows)
+                    {
+                        <li>@row.Commander: @((row.Wins / (double)row.Count).ToString("P1")) winrate,
+                            @row.AvgPerformance.ToString("+0.00;-0.00;0.00") average rating gain over @row.Count.ToString("N0") games.
+                            @if (row.Count < 100) { <span class="text-warning">Small sample (fewer than 100 games).</span> }
+                        </li>
+                    }
+                </ol>
+            }
+        }
+    }
+    <div class="small text-muted">Prompt @Prompt.PromptVersion · Best means average rating gain unless you ask for winrate.</div>
+</section>
+
+@code {
+    [Parameter] public EventCallback<StatsRequest> OnApply { get; set; }
+    private BrowserModelChatClient? client;
+    private CancellationTokenSource? cts;
+    private string question = "Who is the best commander?";
+    private string? error;
+    private string? status;
+    private bool busy;
+    private bool disposed;
+    private WinrateQuery? plan;
+    private StatsRequest? appliedRequest;
+    private IReadOnlyList<WinrateEnt>? rows;
+
+    private void Ready(BrowserModelSession session)
+    {
+        client?.Dispose();
+        client = new(session);
+        error = null;
+    }
+
+    private void ModelError(string message)
+    {
+        Cancel();
+        status = null;
+        // BrowserModelButton displays the initialization error itself.
+        client?.Dispose();
+        client = null;
+    }
+
+    private async Task Ask()
+    {
+        if (client is null || busy) return;
+        Invalidate();
+        var active = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        cts = active;
+        busy = true;
+        status = "Interpreting your question…";
+        try
+        {
+            var messages = Prompt.Messages(question).Select(x => new ChatMessage(new ChatRole(x.Role), x.Content));
+            var response = await client.GetResponseAsync(messages, new ChatOptions
+            {
+                ResponseFormat = ChatResponseFormat.ForJsonSchema(Prompt.ResponseSchema, "winrate_query")
+            }, active.Token);
+            if (disposed || active.IsCancellationRequested || !ReferenceEquals(cts, active)) return;
+            var parsed = WinrateQuery.Parse(response.Text);
+            if (!parsed.Supported) { error = "Try a commander ranking or matchup question using the supported periods and filters."; status = null; return; }
+            var request = parsed.ToRequest();
+            plan = parsed;
+            appliedRequest = request;
+            status = "Request applied. Loading statistics…";
+            await OnApply.InvokeAsync(request);
+        }
+        catch (OperationCanceledException) { if (ReferenceEquals(cts, active)) status = "Query cancelled or timed out. You can try again."; }
+        catch (Exception) { if (ReferenceEquals(cts, active)) { error = "The query could not be interpreted. Try rephrasing it or reinitializing the browser model."; status = null; } }
+        finally
+        {
+            if (ReferenceEquals(cts, active)) { cts = null; busy = false; }
+            active.Dispose();
+        }
+    }
+
+    public void Complete((StatsRequest Request, WinrateResponse Response) result)
+    {
+        if (!ReferenceEquals(appliedRequest, result.Request) || plan is null) return;
+        rows = plan.Select(result.Response);
+        status = null;
+        StateHasChanged();
+    }
+
+    public void LoadFailed(StatsRequest request)
+    {
+        if (!ReferenceEquals(appliedRequest, request)) return;
+        status = null;
+        error = "Statistics could not be loaded. Ask again to retry.";
+        StateHasChanged();
+    }
+
+    private void Cancel()
+    {
+        cts?.Cancel();
+        cts = null;
+        busy = false;
+        status = "Query cancelled.";
+    }
+
+    public void Invalidate()
+    {
+        Cancel();
+        plan = null;
+        appliedRequest = null;
+        rows = null;
+        error = null;
+        status = null;
+        if (!disposed) StateHasChanged();
+    }
+
+    public void Dispose() { disposed = true; cts?.Cancel(); client?.Dispose(); }
+}
