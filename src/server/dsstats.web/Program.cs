@@ -9,6 +9,15 @@ using pax.BlazorChartJs;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var promptVersion = builder.Configuration["StatsAI:PromptVersion"] ?? "v1";
+if (!System.Text.RegularExpressions.Regex.IsMatch(promptVersion, "^v[0-9]+$"))
+    throw new InvalidOperationException("StatsAI:PromptVersion must be a version such as v1.");
+var statsPrompt = dsstats.web.AI.StatsPrompt.Load(Path.Combine(
+    builder.Environment.ContentRootPath, "AI", "Prompts", "stats", promptVersion + ".json"));
+if (statsPrompt.PromptVersion != promptVersion)
+    throw new InvalidOperationException("The selected prompt version does not match its bundle.");
+builder.Services.AddSingleton(statsPrompt);
+
 builder.Services.AddLogging(l => l.AddSimpleConsole(o => o.TimestampFormat = "yyyy-MM-dd HH:mm:ss: "));
 
 builder.Services.AddHttpClient("api", httpClient =>

@@ -1,0 +1,188 @@
+@using Blazor.AI.BrowserModels
+@using Microsoft.Extensions.AI
+@using dsstats.shared
+@using dsstats.web.AI
+@implements IDisposable
+@inject StatsPrompt Prompt
+
+<section class="bgchart border rounded p-3 my-2 d-none d-md-block" style="max-width: 1000px;" aria-labelledby="ask-stats-heading">
+    <div class="d-flex align-items-center justify-content-between gap-2">
+        <h2 id="ask-stats-heading" class="h5 mb-0">Ask stats <span class="badge text-bg-secondary">Experimental</span></h2>
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                data-bs-target="#askStatsCollapse" aria-expanded="true" aria-controls="askStatsCollapse">
+            Show/hide
+        </button>
+    </div>
+    <div class="collapse show pt-2" id="askStatsCollapse">
+    <p class="small text-muted">English commander rankings, matchups, teammate pairs and named-commander game-duration statistics for the last 90 days, last 12 months or all time.
+        Supports rating bounds, strong players, balanced teams and long games. Each question starts with fresh filters.
+        Inference runs in your browser; questions and plans pass through this website's server connection.</p>
+    @if (client is null)
+    {
+        <div class="alert alert-info small py-2" role="note">
+            On first use, your browser may download about 4 GB of model data before initialization completes.
+            <a href="https://support.google.com/chrome/answer/16961953?hl=en" target="_blank" rel="noopener noreferrer">Learn about Chrome's on-device AI</a>.
+        </div>
+    }
+    else
+    {
+        <div class="small text-muted mb-2" role="status">
+            Browser model ready. <a href="chrome://on-device-internals/" target="_blank" rel="noopener noreferrer">View model details</a>
+            · <a href="https://support.google.com/chrome/answer/16961953?hl=en" target="_blank" rel="noopener noreferrer">About on-device AI</a>.
+        </div>
+    }
+    <div class="@(client is null ? null : "d-none")">
+        <BrowserModelButton SessionMode="BrowserModelSessionMode.Stateless" OnReady="Ready" OnError="ModelError" />
+    </div>
+    <label class="form-label" for="stats-question">Your question</label>
+    <textarea id="stats-question" class="form-control" rows="2" maxlength="2000" @bind="question" disabled="@busy"></textarea>
+    <div class="d-flex flex-wrap gap-2 mt-2">
+        <button type="button" class="btn btn-primary" disabled="@(client is null || busy || string.IsNullOrWhiteSpace(question))" @onclick="Ask">Ask</button>
+        @if (busy) { <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button> }
+        <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "Who is the best commander?"'>Best commander</button>
+        <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "What is Kerrigan’s worst matchup?"'>Kerrigan matchups</button>
+        <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "Who works best with Kerrigan?"'>Best teammate</button>
+        <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "When is Kerrigan strongest?"'>Strongest duration</button>
+        <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "Show Kerrigan winrate by game duration."'>Duration series</button>
+    </div>
+    <div role="status" aria-live="polite" class="mt-2">@status</div>
+    @if (error is not null) { <div class="alert alert-warning mt-2" role="alert">@error</div> }
+    @if (plan is not null)
+    {
+        <p class="small mt-2">@plan.Describe()</p>
+        @if (rows is not null)
+        {
+            @if (rows.Count == 0) { <p>No matching results were found.</p> }
+            else if (plan.ReturnMode == "Series")
+            {
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm">
+                        <caption>@plan.Commander by game duration</caption>
+                        <thead><tr><th>Duration</th><th>Winrate</th><th>Average rating gain</th><th>Games</th></tr></thead>
+                        <tbody>
+                            @foreach (var row in rows)
+                            {
+                                <tr><td>@row.Label</td><td>@row.Winrate.ToString("P1")</td><td>@row.Performance.ToString("+0.00;-0.00;0.00")</td>
+                                    <td>@row.Games.ToString("N0") @if (row.Games < 100) { <span class="text-warning">Small sample (fewer than 100 games).</span> }</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <ol>
+                    @foreach (var row in rows)
+                    {
+                        <li>@row.Label: @row.Winrate.ToString("P1") winrate,
+                            @row.Performance.ToString("+0.00;-0.00;0.00") average rating gain over @row.Games.ToString("N0") games.
+                            @if (row.Games < 100) { <span class="text-warning">Small sample (fewer than 100 games).</span> }
+                        </li>
+                    }
+                </ol>
+            }
+        }
+    }
+    <div class="small text-muted">Prompt @Prompt.PromptVersion · Best means average rating gain unless you ask for winrate.</div>
+    </div>
+</section>
+
+@code {
+    [Parameter] public EventCallback<StatsRequest> OnApply { get; set; }
+    private BrowserModelChatClient? client;
+    private CancellationTokenSource? cts;
+    private string question = "Who is the best commander?";
+    private string? error;
+    private string? status;
+    private bool busy;
+    private bool disposed;
+    private StatsQueryPlan? plan;
+    private StatsRequest? appliedRequest;
+    private IReadOnlyList<StatsAnswerRow>? rows;
+
+    private void Ready(BrowserModelSession session)
+    {
+        client?.Dispose();
+        client = new(session);
+        error = null;
+    }
+
+    private void ModelError(string message)
+    {
+        Cancel();
+        status = null;
+        // BrowserModelButton displays the initialization error itself.
+        client?.Dispose();
+        client = null;
+    }
+
+    private async Task Ask()
+    {
+        if (client is null || busy) return;
+        Invalidate();
+        var active = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+        cts = active;
+        busy = true;
+        status = "Interpreting your question…";
+        try
+        {
+            var messages = Prompt.Messages(question).Select(x => new ChatMessage(new ChatRole(x.Role), x.Content));
+            var response = await client.GetResponseAsync(messages, new ChatOptions
+            {
+                ResponseFormat = ChatResponseFormat.ForJsonSchema(Prompt.ResponseSchema, "stats_query")
+            }, active.Token);
+            if (disposed || active.IsCancellationRequested || !ReferenceEquals(cts, active)) return;
+            var parsed = StatsQueryPlan.Parse(response.Text);
+            if (!parsed.Supported) { error = "Try a commander ranking, matchup, teammate or named-commander duration question using the supported periods and filters."; status = null; return; }
+            var request = parsed.ToRequest();
+            plan = parsed;
+            appliedRequest = request;
+            status = "Request applied. Loading statistics…";
+            await OnApply.InvokeAsync(request);
+        }
+        catch (OperationCanceledException) { if (ReferenceEquals(cts, active)) status = "Query cancelled or timed out. You can try again."; }
+        catch (Exception) { if (ReferenceEquals(cts, active)) { error = "The query could not be interpreted. Try rephrasing it or reinitializing the browser model."; status = null; } }
+        finally
+        {
+            if (ReferenceEquals(cts, active)) { cts = null; busy = false; }
+            active.Dispose();
+        }
+    }
+
+    public void Complete((StatsRequest Request, IStatsResponse Response) result)
+    {
+        if (!ReferenceEquals(appliedRequest, result.Request) || plan is null) return;
+        rows = plan.Select(result.Response);
+        status = null;
+        StateHasChanged();
+    }
+
+    public void LoadFailed(StatsRequest request)
+    {
+        if (!ReferenceEquals(appliedRequest, request)) return;
+        status = null;
+        error = "Statistics could not be loaded. Ask again to retry.";
+        StateHasChanged();
+    }
+
+    private void Cancel()
+    {
+        cts?.Cancel();
+        cts = null;
+        busy = false;
+        status = "Query cancelled.";
+    }
+
+    public void Invalidate()
+    {
+        Cancel();
+        plan = null;
+        appliedRequest = null;
+        rows = null;
+        error = null;
+        status = null;
+        if (!disposed) StateHasChanged();
+    }
+
+    public void Dispose() { disposed = true; cts?.Cancel(); client?.Dispose(); }
+}

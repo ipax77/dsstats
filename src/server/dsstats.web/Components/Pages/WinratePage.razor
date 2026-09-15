@@ -41,13 +41,19 @@
     </ul>
 
     <div class="tab-content">
+        @if (Request.Type != StatsType.Count)
+        {
+            <AskStats @ref="askStats" OnApply="ApplyAiRequest" />
+        }
         @if (Request.Type == StatsType.Synergy)
         {
-            <SynergyComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+            <SynergyComponent StatsRequest="Request" OnRequestChanged="RequestChanged"
+                              OnRequestEditing="InvalidateAi" OnResponseLoaded="AiSynergyLoaded" OnLoadFailed="AiLoadFailed" />
         }
         else if (Request.Type == StatsType.Timeline)
         {
-            <TimelineComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+            <TimelineComponent StatsRequest="Request" OnRequestChanged="RequestChanged"
+                               OnRequestEditing="InvalidateAi" OnResponseLoaded="AiTimelineLoaded" OnLoadFailed="AiLoadFailed" />
         }
         else if (Request.Type == StatsType.Count)
         {
@@ -55,12 +61,26 @@
         }
         else
         {
-            <WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+            <WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged"
+                              OnRequestEditing="InvalidateAi" OnResponseLoaded="AiResponseLoaded" OnLoadFailed="AiLoadFailed" />
         }
     </div>
 </div>
 
 @code {
+    private AskStats? askStats;
+    private string? currentUri;
+
+    private void InvalidateAi() => askStats?.Invalidate();
+    private void AiResponseLoaded((StatsRequest Request, WinrateResponse Response) result) => askStats?.Complete((result.Request, result.Response));
+    private void AiSynergyLoaded((StatsRequest Request, SynergyResponse Response) result) => askStats?.Complete((result.Request, result.Response));
+    private void AiTimelineLoaded((StatsRequest Request, TimelineResponse Response) result) => askStats?.Complete((result.Request, result.Response));
+    private void AiLoadFailed(StatsRequest request) => askStats?.LoadFailed(request);
+    private void ApplyAiRequest(StatsRequest request)
+    {
+        Request = request;
+        RequestChanged(request);
+    }
     [SupplyParameterFromQuery]
     public string? St { get; set; }
 
@@ -129,11 +149,11 @@
 
     protected override void OnParametersSet()
     {
-        var newType = NormalizeStatsType(EnumExtensions.ParseEnumOrDefault(St, StatsType.Winrate));
-
-        if (Request.Type != newType)
+        if (currentUri != NavigationManager.Uri)
         {
+            InvalidateAi();
             InitRequest();
+            currentUri = NavigationManager.Uri;
         }
     }
 
@@ -203,7 +223,11 @@
 
     private StatsFilter? InitFilter()
     {
-        StatsFilter filter = new();
+        if (new[] { FromDate, ToDate, FromRating, ToRating, FromDuration, ToDuration, FromExp2Win }
+            .All(string.IsNullOrWhiteSpace)) return null;
+        // A numeric filter alone must not reset the period's dates to the 90-day defaults.
+        var period = Data.GetTimePeriodInfo(EnumExtensions.ParseEnumOrDefault(Tp, TimePeriod.Last90Days));
+        StatsFilter filter = new() { DateRange = new() { From = period.Start, To = period.End } };
 
         if (DateTime.TryParseExact(FromDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var fromDate))
         {
@@ -287,12 +311,8 @@
             Data.MinBuildRating,
             Data.MaxBuildRating);
 
-        // Snap to nearest step
-        var normalized =
-            ((clamped - Data.MinBuildRating) / stepSize) * stepSize
-            + Data.MinBuildRating;
-
-        return normalized;
+        // Preserve exact query bounds, including natural-language requests, on reload.
+        return clamped;
     }
 
     private static int NormalizeDuration(
@@ -420,6 +440,7 @@
             new Dictionary<string, object?>(queryDic)
         );
 
+        currentUri = uri;
         NavigationManager.NavigateTo(uri, replace: true);
     }
 
@@ -428,7 +449,7 @@
         if (Request.Type == type)
             return;
 
-        Request.Type = type;
+        InvalidateAi();
         var newRequest = new StatsRequest
         {
             Type = type,
@@ -438,6 +459,7 @@
             WithLeavers = Request.WithLeavers,
         };
 
+        Request = newRequest;
         RequestChanged(newRequest);
     }
 }

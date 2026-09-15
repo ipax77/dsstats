@@ -1,4 +1,4 @@
-﻿@using Microsoft.Extensions.Logging
+@using Microsoft.Extensions.Logging
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @implements IDisposable
@@ -7,7 +7,7 @@
 @inject IStatsService StatsService
 
 <div class="mb-1" style="max-width: 1000px;">
-    <StatsRequestComponent Request="StatsRequest" IsLoading="isLoading" OnRequestChanged="Update" />
+    <StatsRequestComponent @key="StatsRequest" Request="StatsRequest" IsLoading="isLoading" OnRequestChanged="Update" />
 </div>
 
 @if (response != null && response.TimelineEnts.Count == 0)
@@ -44,7 +44,7 @@
         <div class="col-auto">
             <div class="border rounded border-secondary bgchart"
                  style="min-width: 850px; width: 60vw; height: calc(60vw * 0.5); min-height: 425px;">
-                <TimelineChart @ref="timelineChart" Request="StatsRequest" Response="response" />
+                <TimelineChart @ref="timelineChart" Request="StatsRequest" Response="response" Commanders="selectedCommanders.ToList()" />
             </div>
         </div>
         <div class="col-auto" style="max-width: 400px;">
@@ -101,6 +101,8 @@
     </div>
 }
 
+@if (loadError is not null) { <div class="alert alert-warning" role="alert">@loadError</div> }
+
 @code {
     [Parameter, EditorRequired]
     public StatsRequest StatsRequest { get; set; } = default!;
@@ -114,96 +116,81 @@
     Commander previousInterest = Commander.None;
     HashSet<Commander> selectedCommanders = [];
     TimelineChart? timelineChart;
-    private readonly CancellationTokenSource cts = new();
+    [Parameter] public EventCallback OnRequestEditing { get; set; }
+    [Parameter] public EventCallback<(StatsRequest Request, TimelineResponse Response)> OnResponseLoaded { get; set; }
+    [Parameter] public EventCallback<StatsRequest> OnLoadFailed { get; set; }
+    private StatsRequest? previousRequest;
+    private CancellationTokenSource? loadCts;
+    private string? loadError;
     private bool disposed;
     private int currentSortColumn = 0;
     private bool isDescending = false;
 
-    protected override void OnInitialized()
+    protected override void OnParametersSet()
     {
+        if (ReferenceEquals(previousRequest, StatsRequest)) return;
+        previousRequest = StatsRequest;
         StatsRequest.RatingType = RatingType.Commanders;
-        StatsRequest.TimePeriod = TimePeriod.Last12Months;
-        previousInterest = StatsRequest.Interest;
-        _ = LoadData();
-        base.OnInitialized();
-    }
-
-    private async Task LoadData()
-    {
-        var token = cts.Token;
-        try
-        {
-            response = await StatsService.GetStatsAsync<TimelineResponse>(StatsType.Timeline, StatsRequest, token);
-            if (disposed || token.IsCancellationRequested)
-            {
-                return;
-            }
-
-            ApplyDefaultSelection(forceReset: true);
-        }
-        catch (OperationCanceledException) when (token.IsCancellationRequested)
-        {
-        }
-        catch (Exception ex)
-        {
-            logger.LogError("Failed getting data: {error}", ex.Message);
-        }
-        finally
-        {
-            if (!disposed && !token.IsCancellationRequested)
-            {
-                isLoading = false;
-                await InvokeAsync(StateHasChanged);
-                if (!disposed && response != null)
-                {
-                    timelineChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
-                }
-            }
-        }
+        _ = LoadData(notifyParent: false, resetSelection: true);
     }
 
     private async Task Update()
     {
-        if (disposed)
-        {
-            return;
-        }
+        await OnRequestEditing.InvokeAsync();
+        await LoadData(notifyParent: true, resetSelection: previousInterest != StatsRequest.Interest);
+    }
 
-        var token = cts.Token;
+    private async Task LoadData(bool notifyParent, bool resetSelection)
+    {
+        if (disposed) return;
+        loadCts?.Cancel();
+        var active = new CancellationTokenSource();
+        loadCts = active;
+        var token = active.Token;
+        var requested = StatsRequest;
         isLoading = true;
+        loadError = null;
+        response = null;
+        if (resetSelection) hasManualSelection = false;
         await InvokeAsync(StateHasChanged);
-
-        var interestChanged = previousInterest != StatsRequest.Interest;
-        if (interestChanged)
-        {
-            hasManualSelection = false;
-        }
-
         try
         {
-            response = await StatsService.GetStatsAsync<TimelineResponse>(StatsType.Timeline, StatsRequest, token);
-            if (disposed || token.IsCancellationRequested)
-            {
-                return;
-            }
-
-            previousInterest = StatsRequest.Interest;
-            ApplyDefaultSelection(forceReset: interestChanged);
-            timelineChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+            var loaded = await StatsService.GetStatsAsync<TimelineResponse>(StatsType.Timeline, requested, token);
+            if (disposed || token.IsCancellationRequested || !ReferenceEquals(loadCts, active)) return;
+            response = loaded;
+            previousInterest = requested.Interest;
+            ApplyDefaultSelection(forceReset: resetSelection);
             isLoading = false;
             await InvokeAsync(StateHasChanged);
-            await OnRequestChanged.InvokeAsync(StatsRequest);
+            await Task.Yield();
+            if (disposed || token.IsCancellationRequested || !ReferenceEquals(loadCts, active)) return;
+            timelineChart?.PrepareData(loaded, requested, selectedCommanders.ToList());
+            if (notifyParent) await OnRequestChanged.InvokeAsync(requested);
+            if (!disposed && !token.IsCancellationRequested && ReferenceEquals(loadCts, active))
+                await OnResponseLoaded.InvokeAsync((requested, loaded));
         }
-        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch
         {
+            if (!disposed && ReferenceEquals(loadCts, active))
+            {
+                loadError = "Timeline statistics could not be loaded. Please try again.";
+                isLoading = false;
+                await OnLoadFailed.InvokeAsync(requested);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        finally
+        {
+            if (ReferenceEquals(loadCts, active)) loadCts = null;
+            active.Dispose();
         }
     }
 
     public void Dispose()
     {
         disposed = true;
-        cts.Cancel();
-        cts.Dispose();
+        loadCts?.Cancel();
     }
 
     private void ApplyDefaultSelection(bool forceReset)

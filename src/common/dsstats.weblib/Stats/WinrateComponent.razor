@@ -7,7 +7,7 @@
 @inject IPatchNotesService PatchNotesService
 
 <div class="mb-1" style="max-width: 1000px;">
-    <StatsRequestComponent Request="StatsRequest" IsLoading="isLoading"
+    <StatsRequestComponent @key="StatsRequest" Request="StatsRequest" IsLoading="isLoading"
                            ComparisonMode="comparisonMode" OnRequestChanged="Update" />
 </div>
 
@@ -152,6 +152,11 @@ else if (!comparisonMode && showSampleSizeWarning)
     [Parameter]
     public EventCallback<StatsRequest> OnRequestChanged { get; set; }
 
+    [Parameter] public EventCallback OnRequestEditing { get; set; }
+    [Parameter] public EventCallback<(StatsRequest Request, WinrateResponse Response)> OnResponseLoaded { get; set; }
+    [Parameter] public EventCallback<StatsRequest> OnLoadFailed { get; set; }
+    private StatsRequest? previousRequest;
+
     private WinrateResponse? response;
     private WinrateChart? winrateChart;
     private WinrateComparisonChart? comparisonChart;
@@ -184,8 +189,12 @@ else if (!comparisonMode && showSampleSizeWarning)
             _ => response.WinrateEnts.OrderByDescending(e => e.AvgPerformance)
         };
 
-    protected override void OnInitialized()
+    protected override void OnParametersSet()
     {
+        if (ReferenceEquals(previousRequest, StatsRequest)) return;
+        previousRequest = StatsRequest;
+        response = null;
+        currentSortColumn = null;
         comparisonMode = StatsRequest.Comparison is not null;
         changeDate = StatsRequest.Comparison?.ChangeDate.Date ?? utcToday.AddDays(-30);
         compareDays = StatsRequest.Comparison is null
@@ -235,7 +244,11 @@ else if (!comparisonMode && showSampleSizeWarning)
         }
     }
 
-    private Task Update() => LoadData(notifyParent: true);
+    private async Task Update()
+    {
+        await OnRequestEditing.InvokeAsync();
+        await LoadData(notifyParent: true);
+    }
 
     private async Task LoadData(bool notifyParent)
     {
@@ -249,13 +262,14 @@ else if (!comparisonMode && showSampleSizeWarning)
         previousCts?.Cancel();
         previousCts?.Dispose();
         var token = nextCts.Token;
+        var requested = StatsRequest;
         isLoading = true;
         loadError = null;
         await InvokeAsync(StateHasChanged);
 
         try
         {
-            var loaded = await StatsService.GetStatsAsync<WinrateResponse>(StatsType.Winrate, StatsRequest, token);
+            var loaded = await StatsService.GetStatsAsync<WinrateResponse>(StatsType.Winrate, requested, token);
             if (token.IsCancellationRequested || !ReferenceEquals(loadCts, nextCts))
             {
                 return;
@@ -266,6 +280,8 @@ else if (!comparisonMode && showSampleSizeWarning)
             isLoading = false;
             await InvokeAsync(StateHasChanged);
             await Task.Yield();
+
+            if (token.IsCancellationRequested || !ReferenceEquals(loadCts, nextCts)) return;
 
             if (comparisonMode)
             {
@@ -280,6 +296,8 @@ else if (!comparisonMode && showSampleSizeWarning)
             {
                 await OnRequestChanged.InvokeAsync(StatsRequest);
             }
+            if (!token.IsCancellationRequested && ReferenceEquals(loadCts, nextCts))
+                await OnResponseLoaded.InvokeAsync((requested, loaded));
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
@@ -290,6 +308,7 @@ else if (!comparisonMode && showSampleSizeWarning)
             {
                 loadError = "Winrate statistics could not be loaded. Please try again.";
                 isLoading = false;
+                await OnLoadFailed.InvokeAsync(requested);
                 await InvokeAsync(StateHasChanged);
             }
         }
@@ -412,6 +431,7 @@ else if (!comparisonMode && showSampleSizeWarning)
         }
 
         comparisonMetric = metric;
+        await OnRequestEditing.InvokeAsync();
         if (StatsRequest.Comparison is not null)
         {
             StatsRequest.Comparison = StatsRequest.Comparison with { Metric = metric };
