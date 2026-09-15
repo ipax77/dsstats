@@ -19,18 +19,34 @@ try
         if (!allowed.Contains(args[i]) || !options.TryAdd(args[i], args[i + 1]))
             throw new ArgumentException($"Unknown or duplicate option: {args[i]}");
     }
-    var promptPath = options.GetValueOrDefault("--prompt") ?? "src/server/dsstats.web/AI/Prompts/winrate/v1.json";
-    var casesPath = options.GetValueOrDefault("--cases") ?? "src/tools/dsstats.aiEval/Cases/v1.json";
+    var promptPath = options.GetValueOrDefault("--prompt") ?? "src/server/dsstats.web/AI/Prompts/stats/v1.json";
+    using var bundle = JsonDocument.Parse(File.ReadAllText(promptPath));
+    var legacy = !bundle.RootElement.GetProperty("responseSchema").GetProperty("properties").TryGetProperty("queryType", out _);
+    var casesPath = options.GetValueOrDefault("--cases") ?? (legacy
+        ? "src/tools/dsstats.aiEval/Cases/v1.json" : "src/tools/dsstats.aiEval/Cases/stats-v1.json");
     var model = options.GetValueOrDefault("--model") ?? "google/gemma-4-12b";
     var endpoint = options.GetValueOrDefault("--endpoint") ?? "http://localhost:1234/v1/";
     var repeat = int.Parse(options.GetValueOrDefault("--repeat") ?? "1");
     if (repeat is < 1 or > 20) throw new ArgumentException("Repeat must be between 1 and 20.");
-    var prompt = WinratePrompt.Load(promptPath);
+    var legacyPrompt = legacy ? WinratePrompt.Load(promptPath) : null;
+    var statsPrompt = legacy ? null : StatsPrompt.Load(promptPath);
+    var promptVersion = legacyPrompt?.PromptVersion ?? statsPrompt!.PromptVersion;
+    var promptHash = legacyPrompt?.Hash ?? statsPrompt!.Hash;
+    var responseSchema = legacyPrompt?.ResponseSchema ?? statsPrompt!.ResponseSchema;
+    IReadOnlyList<PromptMessage> Messages(string question) => legacyPrompt is not null
+        ? legacyPrompt.Messages(question) : statsPrompt!.Messages(question);
+    object Parse(string json) => legacy ? WinrateQuery.Parse(json) : StatsQueryPlan.Parse(json);
+    bool Supported(object plan) => plan is WinrateQuery old ? old.Supported : ((StatsQueryPlan)plan).Supported;
+    void Map(object plan)
+    {
+        if (plan is WinrateQuery old) _ = old.ToRequest();
+        else _ = ((StatsQueryPlan)plan).ToRequest();
+    }
     var suite = JsonSerializer.Deserialize<EvaluationSuite>(File.ReadAllText(casesPath), WinrateQuery.JsonOptions)
         ?? throw new InvalidDataException("Empty evaluation suite.");
     if (suite.FormatVersion != 1 || suite.Cases.Length == 0 || suite.Cases.Select(x => x.Id).Distinct().Count() != suite.Cases.Length)
         throw new InvalidDataException("Invalid evaluation suite.");
-    foreach (var item in suite.Cases) item.Expected.Validate();
+    foreach (var item in suite.Cases) _ = Parse(item.Expected.GetRawText());
     var cases = options.TryGetValue("--case", out var caseId) ? suite.Cases.Where(x => x.Id == caseId).ToArray() : suite.Cases;
     if (cases.Length == 0) throw new ArgumentException("The selected case ID does not exist.");
 
@@ -48,41 +64,43 @@ try
             string? raw = null;
             string? rawResponse = null;
             string? error = null;
-            WinrateQuery? actual = null;
+            object? actual = null;
+            var expected = Parse(item.Expected.GetRawText());
             string[] differences = [];
             try
             {
                 var body = new
                 {
                     model,
-                    messages = prompt.Messages(item.Question).Select(x => new { role = x.Role, content = x.Content }),
+                    messages = Messages(item.Question).Select(x => new { role = x.Role, content = x.Content }),
                     temperature = 0,
                     max_tokens = 4096,
                     stream = false,
-                    response_format = new { type = "json_schema", json_schema = new { name = "winrate_query", strict = true, schema = prompt.ResponseSchema } }
+                    response_format = new { type = "json_schema", json_schema = new { name = legacy ? "winrate_query" : "stats_query", strict = true, schema = responseSchema } }
                 };
                 using var response = await http.PostAsJsonAsync("chat/completions", body, cancel.Token);
                 rawResponse = await response.Content.ReadAsStringAsync(cancel.Token);
                 response.EnsureSuccessStatusCode();
                 using var doc = JsonDocument.Parse(rawResponse);
                 raw = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
-                actual = WinrateQuery.Parse(raw ?? "");
-                if (actual.Supported) _ = actual.ToRequest();
+                actual = Parse(raw ?? "");
+                if (Supported(actual)) Map(actual);
                 // Unsupported plans are compared by outcome, not their unused default fields.
-                if (item.Expected.Supported || actual.Supported)
-                    differences = typeof(WinrateQuery).GetProperties()
-                        .Where(p => !Equals(p.GetValue(item.Expected), p.GetValue(actual)))
-                        .Select(p => $"{p.Name}: expected {p.GetValue(item.Expected)}, got {p.GetValue(actual)}").ToArray();
+                if (Supported(expected) || Supported(actual))
+                    differences = actual.GetType().GetProperties()
+                        .Where(p => !Equals(p.GetValue(expected), p.GetValue(actual)))
+                        .Select(p => $"{p.Name}: expected {p.GetValue(expected)}, got {p.GetValue(actual)}").ToArray();
             }
             catch (Exception ex) { error = ex.Message; }
             var passed = error is null && differences.Length == 0;
             if (!passed) failures++;
             Console.WriteLine($"{(passed ? "PASS" : "FAIL")} {item.Id} ({clock.ElapsedMilliseconds} ms) {error ?? string.Join("; ", differences)}");
             results.Add(new { item.Id, item.Question, run, passed, elapsedMs = clock.ElapsedMilliseconds,
-                expected = item.Expected, actual, differences, error, raw, rawResponse });
+                expected, actual, differences, error, raw, rawResponse });
         }
     }
-    var report = JsonSerializer.Serialize(new { model, endpoint, prompt.PromptVersion, prompt.Hash,
+    var report = JsonSerializer.Serialize(new { model, endpoint, promptVersion, hash = promptHash, contract = legacy ? "winrate" : "stats",
+        systemPromptCharacters = Messages("x")[0].Content.Length, promptCharacters = Messages("x").Sum(x => x.Content.Length) - 1,
         promptPath, casesPath, utc = DateTime.UtcNow, cancelled = cancel.IsCancellationRequested, failures, results },
         new JsonSerializerOptions(WinrateQuery.JsonOptions) { WriteIndented = true });
     if (options.TryGetValue("--output", out var output)) await File.WriteAllTextAsync(output, report);
@@ -92,4 +110,4 @@ try
 catch (Exception ex) { Console.Error.WriteLine(ex.Message); return 1; }
 
 sealed record EvaluationSuite(int FormatVersion, EvaluationCase[] Cases);
-sealed record EvaluationCase(string Id, string Question, WinrateQuery Expected);
+sealed record EvaluationCase(string Id, string Question, JsonElement Expected);

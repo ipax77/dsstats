@@ -41,13 +41,19 @@
     </ul>
 
     <div class="tab-content">
+        @if (Request.Type != StatsType.Count)
+        {
+            <AskStats @ref="askStats" OnApply="ApplyAiRequest" />
+        }
         @if (Request.Type == StatsType.Synergy)
         {
-            <SynergyComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+            <SynergyComponent StatsRequest="Request" OnRequestChanged="RequestChanged"
+                              OnRequestEditing="InvalidateAi" OnResponseLoaded="AiSynergyLoaded" OnLoadFailed="AiLoadFailed" />
         }
         else if (Request.Type == StatsType.Timeline)
         {
-            <TimelineComponent StatsRequest="Request" OnRequestChanged="RequestChanged" />
+            <TimelineComponent StatsRequest="Request" OnRequestChanged="RequestChanged"
+                               OnRequestEditing="InvalidateAi" OnResponseLoaded="AiTimelineLoaded" OnLoadFailed="AiLoadFailed" />
         }
         else if (Request.Type == StatsType.Count)
         {
@@ -55,7 +61,6 @@
         }
         else
         {
-            <AskWinrate @ref="askWinrate" OnApply="ApplyAiRequest" />
             <WinrateComponent StatsRequest="Request" OnRequestChanged="RequestChanged"
                               OnRequestEditing="InvalidateAi" OnResponseLoaded="AiResponseLoaded" OnLoadFailed="AiLoadFailed" />
         }
@@ -63,12 +68,14 @@
 </div>
 
 @code {
-    private AskWinrate? askWinrate;
+    private AskStats? askStats;
     private string? currentUri;
 
-    private void InvalidateAi() => askWinrate?.Invalidate();
-    private void AiResponseLoaded((StatsRequest Request, WinrateResponse Response) result) => askWinrate?.Complete(result);
-    private void AiLoadFailed(StatsRequest request) => askWinrate?.LoadFailed(request);
+    private void InvalidateAi() => askStats?.Invalidate();
+    private void AiResponseLoaded((StatsRequest Request, WinrateResponse Response) result) => askStats?.Complete((result.Request, result.Response));
+    private void AiSynergyLoaded((StatsRequest Request, SynergyResponse Response) result) => askStats?.Complete((result.Request, result.Response));
+    private void AiTimelineLoaded((StatsRequest Request, TimelineResponse Response) result) => askStats?.Complete((result.Request, result.Response));
+    private void AiLoadFailed(StatsRequest request) => askStats?.LoadFailed(request);
     private void ApplyAiRequest(StatsRequest request)
     {
         Request = request;

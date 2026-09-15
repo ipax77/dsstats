@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../common/dsstats.shared/dsstats.shared.csproj" />
-    <Compile Include="../../server/dsstats.web/AI/WinrateQuery.cs;../../server/dsstats.web/AI/WinratePrompt.cs" Link="AI/%(Filename)%(Extension)" />
+    <Compile Include="../../server/dsstats.web/AI/*.cs" Link="AI/%(Filename)%(Extension)" />
     <None Update="Cases/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

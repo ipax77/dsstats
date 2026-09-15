@@ -6,7 +6,7 @@
 @inject IStatsService StatsService
 
 <div class="mb-1" style="max-width: 1000px;">
-    <StatsRequestComponent Request="StatsRequest" IsLoading="isLoading" OnRequestChanged="Update" />
+    <StatsRequestComponent @key="StatsRequest" Request="StatsRequest" IsLoading="isLoading" OnRequestChanged="Update" />
 </div>
 
 @if (response != null && response.SynergyEnts.Count == 0)
@@ -43,7 +43,7 @@
         <div class="col-auto">
             <div class="border rounded border-secondary bgchart"
                  style="width: 40vw; min-width: 500px; max-width: 1000px; aspect-ratio: 1 / 1;">
-                <SynergyChart @ref="synergyChart" Request="StatsRequest" Response="response" />
+                <SynergyChart @ref="synergyChart" Request="StatsRequest" Response="response" Commanders="selectedCommanders.ToList()" />
             </div>
         </div>
         <div class="col-auto">
@@ -195,6 +195,8 @@
     </div>
 }
 
+@if (loadError is not null) { <div class="alert alert-warning" role="alert">@loadError</div> }
+
 @code {
     [Parameter, EditorRequired]
     public StatsRequest StatsRequest { get; set; } = default!;
@@ -208,13 +210,19 @@
     bool hasManualSelection;
     Commander previousInterest = Commander.None;
     HashSet<Commander> selectedCommanders = [];
-    private readonly CancellationTokenSource cts = new();
+    [Parameter] public EventCallback OnRequestEditing { get; set; }
+    [Parameter] public EventCallback<(StatsRequest Request, SynergyResponse Response)> OnResponseLoaded { get; set; }
+    [Parameter] public EventCallback<StatsRequest> OnLoadFailed { get; set; }
+    private StatsRequest? previousRequest;
+    private CancellationTokenSource? loadCts;
+    private string? loadError;
     private bool disposed;
 
     private string? currentSortColumn = nameof(SynergyEnt.AvgGain);
     private bool isDescending = true;
 
     private IEnumerable<CommanderSummary> CommanderSummaries => response?.SynergyEnts
+        .SelectMany(e => new[] { (Commander: e.Commander, e.Games), (Commander: e.Teammate, e.Games) }.Distinct())
         .GroupBy(e => e.Commander)
         .Select(g => new CommanderSummary(g.Key, g.Sum(x => x.Games)))
         .OrderByDescending(g => g.Games)
@@ -255,89 +263,71 @@
         }
     }
 
-    protected override void OnInitialized()
+    protected override void OnParametersSet()
     {
+        if (ReferenceEquals(previousRequest, StatsRequest)) return;
+        previousRequest = StatsRequest;
         StatsRequest.RatingType = RatingType.Commanders;
-        previousInterest = StatsRequest.Interest;
-        _ = LoadData();
-        base.OnInitialized();
-    }
-
-    private async Task LoadData()
-    {
-        var token = cts.Token;
-        try
-        {
-            response = await StatsService.GetStatsAsync<SynergyResponse>(StatsType.Synergy, StatsRequest, token);
-            if (disposed || token.IsCancellationRequested)
-            {
-                return;
-            }
-
-            ApplyDefaultSelection(forceReset: true);
-        }
-        catch (OperationCanceledException) when (token.IsCancellationRequested)
-        {
-        }
-        catch
-        {
-        }
-        finally
-        {
-            if (!disposed && !token.IsCancellationRequested)
-            {
-                isLoading = false;
-                await InvokeAsync(StateHasChanged);
-                if (!disposed && response != null)
-                {
-                    synergyChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
-                }
-            }
-        }
+        _ = LoadData(notifyParent: false, resetSelection: true);
     }
 
     private async Task Update()
     {
-        if (disposed)
-        {
-            return;
-        }
+        await OnRequestEditing.InvokeAsync();
+        await LoadData(notifyParent: true, resetSelection: previousInterest != StatsRequest.Interest);
+    }
 
-        var token = cts.Token;
+    private async Task LoadData(bool notifyParent, bool resetSelection)
+    {
+        if (disposed) return;
+        loadCts?.Cancel();
+        var active = new CancellationTokenSource();
+        loadCts = active;
+        var token = active.Token;
+        var requested = StatsRequest;
         isLoading = true;
+        loadError = null;
+        response = null;
+        if (resetSelection) hasManualSelection = false;
         await InvokeAsync(StateHasChanged);
-
-        var interestChanged = previousInterest != StatsRequest.Interest;
-        if (interestChanged)
-        {
-            hasManualSelection = false;
-        }
-
         try
         {
-            response = await StatsService.GetStatsAsync<SynergyResponse>(StatsType.Synergy, StatsRequest, token);
-            if (disposed || token.IsCancellationRequested)
-            {
-                return;
-            }
-
-            previousInterest = StatsRequest.Interest;
-            ApplyDefaultSelection(forceReset: interestChanged);
-            synergyChart?.PrepareData(response, StatsRequest, selectedCommanders.ToList());
+            var loaded = await StatsService.GetStatsAsync<SynergyResponse>(StatsType.Synergy, requested, token);
+            if (disposed || token.IsCancellationRequested || !ReferenceEquals(loadCts, active)) return;
+            response = loaded;
+            previousInterest = requested.Interest;
+            ApplyDefaultSelection(forceReset: resetSelection);
             isLoading = false;
             await InvokeAsync(StateHasChanged);
-            await OnRequestChanged.InvokeAsync(StatsRequest);
+            await Task.Yield();
+            if (disposed || token.IsCancellationRequested || !ReferenceEquals(loadCts, active)) return;
+            synergyChart?.PrepareData(loaded, requested, selectedCommanders.ToList());
+            if (notifyParent) await OnRequestChanged.InvokeAsync(requested);
+            if (!disposed && !token.IsCancellationRequested && ReferenceEquals(loadCts, active))
+                await OnResponseLoaded.InvokeAsync((requested, loaded));
         }
-        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch
         {
+            if (!disposed && ReferenceEquals(loadCts, active))
+            {
+                loadError = "Synergy statistics could not be loaded. Please try again.";
+                isLoading = false;
+                await OnLoadFailed.InvokeAsync(requested);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        finally
+        {
+            if (ReferenceEquals(loadCts, active)) loadCts = null;
+            active.Dispose();
         }
     }
 
     public void Dispose()
     {
         disposed = true;
-        cts.Cancel();
-        cts.Dispose();
+        loadCts?.Cancel();
     }
 
     private void ApplyDefaultSelection(bool forceReset)
@@ -348,7 +338,7 @@
         }
 
         var available = response.SynergyEnts
-            .Select(s => s.Commander)
+            .SelectMany(s => new[] { s.Commander, s.Teammate })
             .Distinct()
             .ToHashSet();
 
@@ -378,30 +368,7 @@
         }
     }
 
-    private IEnumerable<Commander> GetDefaultCommanders()
-    {
-        var ordered = CommanderSummaries.ToList();
-        if (ordered.Count == 0)
-        {
-            return [];
-        }
-
-        if ((int)StatsRequest.Interest > 3 && ordered.Any(x => x.Commander == StatsRequest.Interest))
-        {
-            var interest = ordered.First(x => x.Commander == StatsRequest.Interest).Commander;
-            var second = ordered
-                .Where(x => x.Commander != interest)
-                .Select(x => x.Commander)
-                .FirstOrDefault();
-
-            return second == Commander.None
-                ? [interest]
-                : [interest, second];
-        }
-
-        return ordered.Select(x => x.Commander).Take(2);
-    }
-
+    private IEnumerable<Commander> GetDefaultCommanders() => CommanderSummaries.Select(x => x.Commander);
     private void ToggleCommander(Commander commander, ChangeEventArgs args)
     {
         var isChecked = args.Value switch

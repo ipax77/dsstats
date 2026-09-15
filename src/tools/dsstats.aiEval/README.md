@@ -1,60 +1,106 @@
-# Winrate query evaluation
+# Browser statistics query evaluation
 
-The website uses the browser model. This opt-in console runner tests the same prompt,
-parser, validator and request mapper against LM Studio without calling the statistics API.
-The AI C# sources are linked from the web project, so the runner and unit tests do not
-need a browser dependency or maintain a second implementation.
+The website translates English questions into one validated plan for Winrate,
+Synergy or Timeline. C# maps the plan to the existing statistics API and selects
+the answer; the model does not generate statistics or SQL.
 
-From the repository root, with the model loaded and the LM Studio server running:
+Supported: commander/opponent rankings, teammate/pair rankings, and one named
+commander's ranked duration buckets or complete duration series. Metrics are
+average rating gain and raw winrate. Timeline measures game duration, not calendar
+trends. Each question starts with fresh filters.
+
+## Website configuration
+
+The default bundle is `AI/Prompts/stats/v1.json`. Select a version with
+`StatsAI:PromptVersion` (environment variable `StatsAI__PromptVersion`).
+This replaces the website's former `WinrateAI:PromptVersion` setting.
+Bundles are validated at startup and copied to build/publish output. Restart
+after editing or selecting a version.
+
+Keep ordinary Commanders mode, no leavers, Last90Days / Last12Months / AllTime,
+inclusive rating bounds 500–3000, balanced teams at 40–60%, and long games at
+15 minutes or more. Popularity, exact named-pair/opponent statistics, calendar
+trends, arbitrary duration ranges, early/late presets and all-commander timelines
+remain unsupported.
+
+## LM Studio evaluation
+
+The opt-in console runner uses the same prompt, parser, validator and request
+mapper as the website without calling the statistics API. It links the AI C#
+sources rather than maintaining another implementation.
+
+With LM Studio running and a model loaded, from the repository root:
 
 ```powershell
-dotnet run --project src/tools/dsstats.aiEval -- --output ai-evaluation-v1.json
+dotnet run --project src/tools/dsstats.aiEval -- --output artifacts/stats-ai-evaluation.json
 ```
 
-Defaults: `http://localhost:1234/v1/`, `google/gemma-4-12b`, one pass through
-`Cases/v1.json`, and the website's `AI/Prompts/winrate/v1.json` prompt bundle.
+Create the output directory first if necessary. Defaults:
+`http://localhost:1234/v1/`, `google/gemma-4-12b`, one pass through
+`Cases/stats-v1.json`, and the website's `AI/Prompts/stats/v1.json`.
+
 Override with `--endpoint`, `--model`, `--repeat` (1–20), `--prompt`, and `--cases`.
-Use `--case paraphrase` (or another case ID) to investigate one case quickly.
-Use `--help` for syntax. Paths are relative to the working directory.
+Use `--case timeline-series` to investigate one case. Paths are relative to the
+working directory. Cases run sequentially with temperature 0, a 4096-token
+response budget and a three-minute timeout per request. Ctrl+C cancels.
 
-Cases run sequentially with temperature 0, a 4096-token response budget and a
-three-minute timeout per request. Ctrl+C cancels; failures and cancellation return
-exit code 1. Reports contain prompts/questions, expected and actual plans, semantic
-differences, raw responses, timings, model, prompt version and SHA-256 hash.
-Unsupported cases compare the outcome rather than unused plan fields.
+Reports include expected/actual plans, semantic differences, raw responses,
+timings, prompt version/hash, contract name, system-message character count and
+total message character count including examples. Character counts are not token
+counts. Failures and cancellation return exit code 1. Unsupported cases compare
+the outcome rather than unused plan fields.
 
-## Updating prompts
+### Historical winrate prompts
 
-Copy `v1.json` to `v2.json`, update `promptVersion`, then edit its ordered
-`systemMessages`, examples or schema. `formatVersion` describes the file format;
-keep it at 1 unless the loader changes. Test candidate versions with `--prompt`.
-Keep evaluation questions in the separate cases file, outside the few-shot examples.
-
-Select a website bundle with `WinrateAI:PromptVersion` (environment variable
-`WinrateAI__PromptVersion`), default `v1`. Bundles are validated at startup and
-copied to build/publish output. Restart after editing or selecting a version.
-
-`v2.json` is an included candidate that adds explicit mappings for matchup idioms
-such as "struggles most". Compare it without editing v1:
+The runner detects the contract from the selected response schema and validates
+outputs using the corresponding parser. Existing winrate bundles and their case
+suite remain usable:
 
 ```powershell
-dotnet run --project src/tools/dsstats.aiEval -- --prompt src/server/dsstats.web/AI/Prompts/winrate/v2.json --output ai-evaluation-v2.json
-dotnet run --project src/server/dsstats.web -- --WinrateAI:PromptVersion=v2
+dotnet run --project src/tools/dsstats.aiEval -- --prompt src/server/dsstats.web/AI/Prompts/winrate/v2.json --output artifacts/winrate-v2-evaluation.json
 ```
 
-The local library reference defaults to:
+A legacy prompt defaults to `Cases/v1.json`; a stats prompt defaults to
+`Cases/stats-v1.json`. Do not mix contracts in a case suite.
+
+### Updating prompts
+
+Copy a bundle to the next version and change `promptVersion`. Keep
+`formatVersion=1` while the bundle format stays the same. Compress repeated rules,
+but retain explicit defaults and rejection boundaries. Use examples to distinguish
+opponents from teammates and ranked duration buckets from a chronological series.
+Keep evaluation questions outside the few-shot examples.
+
+## Verification
+
+```powershell
+dotnet build src/server/server.sln
+dotnet build src/tools/dsstats.aiEval
+dotnet test src/tests/dsstats.tests/dsstats.tests.sln
+```
+
+The local browser library reference defaults to
 `C:\Users\pax77\source\repos\blazor.ai\src\Blazor.AI.BrowserModels\Blazor.AI.BrowserModels.csproj`.
-Override it at build time with `-p:BrowserModelsProjectPath=...`.
-The local library project selects .NET 10 under this repository's SDK, and both
-.NET 10 and .NET 11 under its own .NET 11 SDK.
+Override with `-p:BrowserModelsProjectPath=...`.
 
-## Browser smoke test
+### Browser smoke test
 
-Start the API and web projects, open `/winrate` in a compatible desktop Chrome,
-initialize the model, and ask a sample question. Check that the interpreted settings,
-URL, chart and factual answer agree. Try manual filters, another question, cancellation,
-tab changes and a reload. Other stats tabs must not show the AI panel.
-An unavailable browser model must leave ordinary statistics usable.
+Start the API and web projects and open `/winrate` in compatible desktop Chrome.
+Initialize the model and try:
 
-Gemma evaluation measures prompt translation with that model. It does not establish
-Chrome's model accuracy or validate browser inference, downloads or cancellation.
+- Best commander, then Kerrigan's worst matchup.
+- Best teammate for Kerrigan, then best pairs by winrate.
+- When Kerrigan is strongest, then her full winrate series by game duration.
+- Another question within the same tab, with a different commander and period.
+- Manual filters, cancellation, failed statistics loads, rapid tab changes and
+  a reload. A late response must not replace a newer answer.
+- Confirm the interpreted settings, selected tab, URL, chart and answer agree.
+  Duration-series rows are chronological, include every nonempty returned bucket,
+  and label the final interval `35+ min`.
+- Confirm Ask stats remains mounted across the three supported tabs and is absent
+  on Count. Manual navigation clears the answer; an AI-triggered tab switch keeps it.
+- With an unavailable browser model, ordinary statistics controls must still work.
+
+Saved URLs restore statistics settings; questions and answers are transient.
+Gemma evaluation measures that model's translation accuracy. It does not establish
+Chrome model accuracy or validate browser inference, downloads or cancellation.

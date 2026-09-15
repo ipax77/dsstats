@@ -3,21 +3,24 @@
 @using dsstats.shared
 @using dsstats.web.AI
 @implements IDisposable
-@inject WinratePrompt Prompt
+@inject StatsPrompt Prompt
 
-<section class="bgchart border rounded p-3 my-2" style="max-width: 1000px;" aria-label="Ask winrate">
-    <h2 class="h5">Ask winrate <span class="badge text-bg-secondary">Experimental</span></h2>
-    <p class="small text-muted">English commander rankings and matchups for the last 90 days, last 12 months or all time.
+<section class="bgchart border rounded p-3 my-2" style="max-width: 1000px;" aria-label="Ask stats">
+    <h2 class="h5">Ask stats <span class="badge text-bg-secondary">Experimental</span></h2>
+    <p class="small text-muted">English commander rankings, matchups, teammate pairs and named-commander game-duration statistics for the last 90 days, last 12 months or all time.
         Supports rating bounds, strong players, balanced teams and long games. Each question starts with fresh filters.
         Inference runs in your browser; questions and plans pass through this website's server connection.</p>
     <BrowserModelButton SessionMode="BrowserModelSessionMode.Stateless" OnReady="Ready" OnError="ModelError" />
-    <label class="form-label" for="winrate-question">Your question</label>
-    <textarea id="winrate-question" class="form-control" rows="2" maxlength="2000" @bind="question" disabled="@busy"></textarea>
+    <label class="form-label" for="stats-question">Your question</label>
+    <textarea id="stats-question" class="form-control" rows="2" maxlength="2000" @bind="question" disabled="@busy"></textarea>
     <div class="d-flex flex-wrap gap-2 mt-2">
         <button type="button" class="btn btn-primary" disabled="@(client is null || busy || string.IsNullOrWhiteSpace(question))" @onclick="Ask">Ask</button>
         @if (busy) { <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button> }
         <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "Who is the best commander?"'>Best commander</button>
         <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "What is Kerrigan’s worst matchup?"'>Kerrigan matchups</button>
+        <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "Who works best with Kerrigan?"'>Best teammate</button>
+        <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "When is Kerrigan strongest?"'>Strongest duration</button>
+        <button type="button" class="btn btn-outline-info" disabled="@busy" @onclick='() => question = "Show Kerrigan winrate by game duration."'>Duration series</button>
     </div>
     <div role="status" aria-live="polite" class="mt-2">@status</div>
     @if (error is not null) { <div class="alert alert-warning mt-2" role="alert">@error</div> }
@@ -27,14 +30,30 @@
         @if (rows is not null)
         {
             @if (rows.Count == 0) { <p>No matching results were found.</p> }
+            else if (plan.ReturnMode == "Series")
+            {
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm">
+                        <caption>@plan.Commander by game duration</caption>
+                        <thead><tr><th>Duration</th><th>Winrate</th><th>Average rating gain</th><th>Games</th></tr></thead>
+                        <tbody>
+                            @foreach (var row in rows)
+                            {
+                                <tr><td>@row.Label</td><td>@row.Winrate.ToString("P1")</td><td>@row.Performance.ToString("+0.00;-0.00;0.00")</td>
+                                    <td>@row.Games.ToString("N0") @if (row.Games < 100) { <span class="text-warning">Small sample (fewer than 100 games).</span> }</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
             else
             {
                 <ol>
                     @foreach (var row in rows)
                     {
-                        <li>@row.Commander: @((row.Wins / (double)row.Count).ToString("P1")) winrate,
-                            @row.AvgPerformance.ToString("+0.00;-0.00;0.00") average rating gain over @row.Count.ToString("N0") games.
-                            @if (row.Count < 100) { <span class="text-warning">Small sample (fewer than 100 games).</span> }
+                        <li>@row.Label: @row.Winrate.ToString("P1") winrate,
+                            @row.Performance.ToString("+0.00;-0.00;0.00") average rating gain over @row.Games.ToString("N0") games.
+                            @if (row.Games < 100) { <span class="text-warning">Small sample (fewer than 100 games).</span> }
                         </li>
                     }
                 </ol>
@@ -53,9 +72,9 @@
     private string? status;
     private bool busy;
     private bool disposed;
-    private WinrateQuery? plan;
+    private StatsQueryPlan? plan;
     private StatsRequest? appliedRequest;
-    private IReadOnlyList<WinrateEnt>? rows;
+    private IReadOnlyList<StatsAnswerRow>? rows;
 
     private void Ready(BrowserModelSession session)
     {
@@ -86,11 +105,11 @@
             var messages = Prompt.Messages(question).Select(x => new ChatMessage(new ChatRole(x.Role), x.Content));
             var response = await client.GetResponseAsync(messages, new ChatOptions
             {
-                ResponseFormat = ChatResponseFormat.ForJsonSchema(Prompt.ResponseSchema, "winrate_query")
+                ResponseFormat = ChatResponseFormat.ForJsonSchema(Prompt.ResponseSchema, "stats_query")
             }, active.Token);
             if (disposed || active.IsCancellationRequested || !ReferenceEquals(cts, active)) return;
-            var parsed = WinrateQuery.Parse(response.Text);
-            if (!parsed.Supported) { error = "Try a commander ranking or matchup question using the supported periods and filters."; status = null; return; }
+            var parsed = StatsQueryPlan.Parse(response.Text);
+            if (!parsed.Supported) { error = "Try a commander ranking, matchup, teammate or named-commander duration question using the supported periods and filters."; status = null; return; }
             var request = parsed.ToRequest();
             plan = parsed;
             appliedRequest = request;
@@ -106,7 +125,7 @@
         }
     }
 
-    public void Complete((StatsRequest Request, WinrateResponse Response) result)
+    public void Complete((StatsRequest Request, IStatsResponse Response) result)
     {
         if (!ReferenceEquals(appliedRequest, result.Request) || plan is null) return;
         rows = plan.Select(result.Response);

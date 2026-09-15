@@ -1,0 +1,509 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Who is the best commander?",
+      "id": "best"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Winrate",
+        "commander": "Kerrigan",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "What is Kerrigan's best matchup?",
+      "id": "matchup"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Winrate",
+        "commander": "Kerrigan",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Ascending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "What's Kerrigan's worst matchup?",
+      "id": "worst"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 5,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "What are the top five commanders?",
+      "id": "top"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Winrate",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Who has the highest raw win rate?",
+      "id": "raw"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 1800,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Best commander for players above 1800 rating?",
+      "id": "rating"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Winrate",
+        "commander": "Kerrigan",
+        "period": "Last12Months",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 3,
+        "ratingFrom": 1800,
+        "ratingTo": 2400,
+        "balancedTeams": true,
+        "longGames": true
+      },
+      "question": "Top 3 matchups for Kerrigan in balanced long games with rating 1800 to 2400 in the last 12 months?",
+      "id": "combined"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Winrate",
+        "commander": "Dehaka",
+        "period": "AllTime",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Ascending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Against whom does Dehaka struggle most over all time?",
+      "id": "paraphrase"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 2000,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Who is strongest among strong players?",
+      "id": "strong"
+    },
+    {
+      "expected": {
+        "supported": false,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Best commander in TE?",
+      "id": "unsupported"
+    },
+    {
+      "expected": {
+        "supported": false,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Which commander improved most after the patch?",
+      "id": "comparison"
+    },
+    {
+      "expected": {
+        "supported": false,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Best matchup for Batman?",
+      "id": "unknown"
+    },
+    {
+      "expected": {
+        "supported": false,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Top 100 commanders?",
+      "id": "invalid"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Synergy",
+        "commander": "Zagara",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Which teammate is strongest with Zagara?",
+      "id": "synergy-partner"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Synergy",
+        "commander": "Abathur",
+        "period": "Last90Days",
+        "metric": "Winrate",
+        "returnMode": "Ranked",
+        "order": "Ascending",
+        "take": 2,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Bottom 2 partners for Abathur by raw winrate.",
+      "id": "synergy-worst"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Synergy",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 5,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "What are the 5 strongest commander combinations?",
+      "id": "synergy-pairs"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Timeline",
+        "commander": "Tychus",
+        "period": "Last90Days",
+        "metric": "Winrate",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "At what game length does Tychus have his highest win percentage?",
+      "id": "timeline-rank"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Timeline",
+        "commander": "Zeratul",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Ascending",
+        "take": 3,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "At which game durations is Zeratul weakest? Give the bottom 3.",
+      "id": "timeline-worst"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Timeline",
+        "commander": "Swann",
+        "period": "Last12Months",
+        "metric": "Performance",
+        "returnMode": "Series",
+        "order": "Ascending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Show Swann performance across game lengths for the last 12 months.",
+      "id": "timeline-series"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Synergy",
+        "commander": "Mengsk",
+        "period": "AllTime",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 1837,
+        "ratingTo": 3000,
+        "balancedTeams": true,
+        "longGames": false
+      },
+      "question": "Best partner for Mengsk above 1837 rating in balanced games over all time?",
+      "id": "synergy-filters"
+    },
+    {
+      "expected": {
+        "supported": true,
+        "queryType": "Timeline",
+        "commander": "Karax",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 2000,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": true
+      },
+      "question": "When is Karax strongest among strong players in long games?",
+      "id": "timeline-filters"
+    },
+    {
+      "expected": {
+        "supported": false,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Show every commander by game duration.",
+      "id": "unsupported-new-21"
+    },
+    {
+      "expected": {
+        "supported": false,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Who is strongest in early games?",
+      "id": "unsupported-new-22"
+    },
+    {
+      "expected": {
+        "supported": false,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Show Kerrigan performance over the last 30 days.",
+      "id": "unsupported-new-23"
+    },
+    {
+      "expected": {
+        "supported": false,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "What is the winrate of Nova and Raynor together?",
+      "id": "unsupported-new-24"
+    },
+    {
+      "expected": {
+        "supported": false,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Show Kerrigan winrate trends by month.",
+      "id": "unsupported-new-25"
+    },
+    {
+      "expected": {
+        "supported": false,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "When is Nova strongest between 10 and 20 minutes?",
+      "id": "unsupported-new-26"
+    },
+    {
+      "expected": {
+        "supported": false,
+        "queryType": "Winrate",
+        "commander": "None",
+        "period": "Last90Days",
+        "metric": "Performance",
+        "returnMode": "Ranked",
+        "order": "Descending",
+        "take": 1,
+        "ratingFrom": 500,
+        "ratingTo": 3000,
+        "balancedTeams": false,
+        "longGames": false
+      },
+      "question": "Rank teammates for Raynor by number of games.",
+      "id": "unsupported-new-27"
+    }
+  ],
+  "formatVersion": 1
+}
