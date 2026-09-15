@@ -5,12 +5,35 @@
 @implements IDisposable
 @inject StatsPrompt Prompt
 
-<section class="bgchart border rounded p-3 my-2" style="max-width: 1000px;" aria-label="Ask stats">
-    <h2 class="h5">Ask stats <span class="badge text-bg-secondary">Experimental</span></h2>
+<section class="bgchart border rounded p-3 my-2 d-none d-md-block" style="max-width: 1000px;" aria-labelledby="ask-stats-heading">
+    <div class="d-flex align-items-center justify-content-between gap-2">
+        <h2 id="ask-stats-heading" class="h5 mb-0">Ask stats <span class="badge text-bg-secondary">Experimental</span></h2>
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                data-bs-target="#askStatsCollapse" aria-expanded="true" aria-controls="askStatsCollapse">
+            Show/hide
+        </button>
+    </div>
+    <div class="collapse show pt-2" id="askStatsCollapse">
     <p class="small text-muted">English commander rankings, matchups, teammate pairs and named-commander game-duration statistics for the last 90 days, last 12 months or all time.
         Supports rating bounds, strong players, balanced teams and long games. Each question starts with fresh filters.
         Inference runs in your browser; questions and plans pass through this website's server connection.</p>
-    <BrowserModelButton SessionMode="BrowserModelSessionMode.Stateless" OnReady="Ready" OnError="ModelError" />
+    @if (client is null)
+    {
+        <div class="alert alert-info small py-2" role="note">
+            On first use, your browser may download about 4 GB of model data before initialization completes.
+            <a href="https://support.google.com/chrome/answer/16961953?hl=en" target="_blank" rel="noopener noreferrer">Learn about Chrome's on-device AI</a>.
+        </div>
+    }
+    else
+    {
+        <div class="small text-muted mb-2" role="status">
+            Browser model ready. <a href="chrome://on-device-internals/" target="_blank" rel="noopener noreferrer">View model details</a>
+            · <a href="https://support.google.com/chrome/answer/16961953?hl=en" target="_blank" rel="noopener noreferrer">About on-device AI</a>.
+        </div>
+    }
+    <div class="@(client is null ? null : "d-none")">
+        <BrowserModelButton SessionMode="BrowserModelSessionMode.Stateless" OnReady="Ready" OnError="ModelError" />
+    </div>
     <label class="form-label" for="stats-question">Your question</label>
     <textarea id="stats-question" class="form-control" rows="2" maxlength="2000" @bind="question" disabled="@busy"></textarea>
     <div class="d-flex flex-wrap gap-2 mt-2">
@@ -61,6 +84,7 @@
         }
     }
     <div class="small text-muted">Prompt @Prompt.PromptVersion · Best means average rating gain unless you ask for winrate.</div>
+    </div>
 </section>
 
 @code {
