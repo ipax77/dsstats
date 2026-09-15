@@ -18,7 +18,6 @@
     <None Include="..\..\tools\dsstats.aiEval\Cases\stats-v1.json" Link="AI\stats-cases.json" CopyToOutputDirectory="PreserveNewest" />
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
     <Compile Include="..\..\server\dsstats.web\AI\*.cs" Link="AI\%(Filename)%(Extension)" />
-    <None Include="..\..\server\dsstats.web\AI\Prompts\winrate\*.json" Link="AI\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

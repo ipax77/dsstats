@@ -50,19 +50,6 @@ total message character count including examples. Character counts are not token
 counts. Failures and cancellation return exit code 1. Unsupported cases compare
 the outcome rather than unused plan fields.
 
-### Historical winrate prompts
-
-The runner detects the contract from the selected response schema and validates
-outputs using the corresponding parser. Existing winrate bundles and their case
-suite remain usable:
-
-```powershell
-dotnet run --project src/tools/dsstats.aiEval -- --prompt src/server/dsstats.web/AI/Prompts/winrate/v2.json --output artifacts/winrate-v2-evaluation.json
-```
-
-A legacy prompt defaults to `Cases/v1.json`; a stats prompt defaults to
-`Cases/stats-v1.json`. Do not mix contracts in a case suite.
-
 ### Updating prompts
 
 Copy a bundle to the next version and change `promptVersion`. Keep
@@ -104,3 +91,5 @@ Initialize the model and try:
 Saved URLs restore statistics settings; questions and answers are transient.
 Gemma evaluation measures that model's translation accuracy. It does not establish
 Chrome model accuracy or validate browser inference, downloads or cancellation.
+
+See [VALIDATION.md](VALIDATION.md) for the recorded implementation and model checks.

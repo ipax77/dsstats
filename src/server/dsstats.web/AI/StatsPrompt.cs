@@ -3,6 +3,8 @@ using System.Text.Json;
 
 namespace dsstats.web.AI;
 
+public sealed record PromptMessage(string Role, string Content);
+
 public sealed record StatsPromptExample(string Question, StatsQueryPlan Answer);
 
 
@@ -18,7 +20,7 @@ public sealed class StatsPrompt
     public static StatsPrompt Load(string path)
     {
         var bytes = File.ReadAllBytes(path);
-        var prompt = JsonSerializer.Deserialize<StatsPrompt>(bytes, WinrateQuery.JsonOptions)
+        var prompt = JsonSerializer.Deserialize<StatsPrompt>(bytes, StatsQueryPlan.JsonOptions)
             ?? throw new InvalidDataException("Empty prompt bundle.");
         if (prompt.FormatVersion != 1 || string.IsNullOrWhiteSpace(prompt.PromptVersion) ||
             prompt.SystemMessages.Length == 0 || prompt.SystemMessages.Any(string.IsNullOrWhiteSpace) ||
@@ -51,7 +53,7 @@ public sealed class StatsPrompt
         foreach (var example in Examples)
         {
             messages.Add(new("user", example.Question));
-            messages.Add(new("assistant", JsonSerializer.Serialize(example.Answer, WinrateQuery.JsonOptions)));
+            messages.Add(new("assistant", JsonSerializer.Serialize(example.Answer, StatsQueryPlan.JsonOptions)));
         }
         messages.Add(new("user", question));
         return messages;

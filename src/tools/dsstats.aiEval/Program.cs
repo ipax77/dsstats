@@ -20,33 +20,17 @@ try
             throw new ArgumentException($"Unknown or duplicate option: {args[i]}");
     }
     var promptPath = options.GetValueOrDefault("--prompt") ?? "src/server/dsstats.web/AI/Prompts/stats/v1.json";
-    using var bundle = JsonDocument.Parse(File.ReadAllText(promptPath));
-    var legacy = !bundle.RootElement.GetProperty("responseSchema").GetProperty("properties").TryGetProperty("queryType", out _);
-    var casesPath = options.GetValueOrDefault("--cases") ?? (legacy
-        ? "src/tools/dsstats.aiEval/Cases/v1.json" : "src/tools/dsstats.aiEval/Cases/stats-v1.json");
+    var casesPath = options.GetValueOrDefault("--cases") ?? "src/tools/dsstats.aiEval/Cases/stats-v1.json";
     var model = options.GetValueOrDefault("--model") ?? "google/gemma-4-12b";
     var endpoint = options.GetValueOrDefault("--endpoint") ?? "http://localhost:1234/v1/";
     var repeat = int.Parse(options.GetValueOrDefault("--repeat") ?? "1");
     if (repeat is < 1 or > 20) throw new ArgumentException("Repeat must be between 1 and 20.");
-    var legacyPrompt = legacy ? WinratePrompt.Load(promptPath) : null;
-    var statsPrompt = legacy ? null : StatsPrompt.Load(promptPath);
-    var promptVersion = legacyPrompt?.PromptVersion ?? statsPrompt!.PromptVersion;
-    var promptHash = legacyPrompt?.Hash ?? statsPrompt!.Hash;
-    var responseSchema = legacyPrompt?.ResponseSchema ?? statsPrompt!.ResponseSchema;
-    IReadOnlyList<PromptMessage> Messages(string question) => legacyPrompt is not null
-        ? legacyPrompt.Messages(question) : statsPrompt!.Messages(question);
-    object Parse(string json) => legacy ? WinrateQuery.Parse(json) : StatsQueryPlan.Parse(json);
-    bool Supported(object plan) => plan is WinrateQuery old ? old.Supported : ((StatsQueryPlan)plan).Supported;
-    void Map(object plan)
-    {
-        if (plan is WinrateQuery old) _ = old.ToRequest();
-        else _ = ((StatsQueryPlan)plan).ToRequest();
-    }
-    var suite = JsonSerializer.Deserialize<EvaluationSuite>(File.ReadAllText(casesPath), WinrateQuery.JsonOptions)
+    var prompt = StatsPrompt.Load(promptPath);
+    var suite = JsonSerializer.Deserialize<EvaluationSuite>(File.ReadAllText(casesPath), StatsQueryPlan.JsonOptions)
         ?? throw new InvalidDataException("Empty evaluation suite.");
     if (suite.FormatVersion != 1 || suite.Cases.Length == 0 || suite.Cases.Select(x => x.Id).Distinct().Count() != suite.Cases.Length)
         throw new InvalidDataException("Invalid evaluation suite.");
-    foreach (var item in suite.Cases) _ = Parse(item.Expected.GetRawText());
+    foreach (var item in suite.Cases) item.Expected.Validate();
     var cases = options.TryGetValue("--case", out var caseId) ? suite.Cases.Where(x => x.Id == caseId).ToArray() : suite.Cases;
     if (cases.Length == 0) throw new ArgumentException("The selected case ID does not exist.");
 
@@ -64,30 +48,30 @@ try
             string? raw = null;
             string? rawResponse = null;
             string? error = null;
-            object? actual = null;
-            var expected = Parse(item.Expected.GetRawText());
+            StatsQueryPlan? actual = null;
+            var expected = item.Expected;
             string[] differences = [];
             try
             {
                 var body = new
                 {
                     model,
-                    messages = Messages(item.Question).Select(x => new { role = x.Role, content = x.Content }),
+                    messages = prompt.Messages(item.Question).Select(x => new { role = x.Role, content = x.Content }),
                     temperature = 0,
                     max_tokens = 4096,
                     stream = false,
-                    response_format = new { type = "json_schema", json_schema = new { name = legacy ? "winrate_query" : "stats_query", strict = true, schema = responseSchema } }
+                    response_format = new { type = "json_schema", json_schema = new { name = "stats_query", strict = true, schema = prompt.ResponseSchema } }
                 };
                 using var response = await http.PostAsJsonAsync("chat/completions", body, cancel.Token);
                 rawResponse = await response.Content.ReadAsStringAsync(cancel.Token);
                 response.EnsureSuccessStatusCode();
                 using var doc = JsonDocument.Parse(rawResponse);
                 raw = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
-                actual = Parse(raw ?? "");
-                if (Supported(actual)) Map(actual);
+                actual = StatsQueryPlan.Parse(raw ?? "");
+                if (actual.Supported) _ = actual.ToRequest();
                 // Unsupported plans are compared by outcome, not their unused default fields.
-                if (Supported(expected) || Supported(actual))
-                    differences = actual.GetType().GetProperties()
+                if (expected.Supported || actual.Supported)
+                    differences = typeof(StatsQueryPlan).GetProperties()
                         .Where(p => !Equals(p.GetValue(expected), p.GetValue(actual)))
                         .Select(p => $"{p.Name}: expected {p.GetValue(expected)}, got {p.GetValue(actual)}").ToArray();
             }
@@ -99,10 +83,10 @@ try
                 expected, actual, differences, error, raw, rawResponse });
         }
     }
-    var report = JsonSerializer.Serialize(new { model, endpoint, promptVersion, hash = promptHash, contract = legacy ? "winrate" : "stats",
-        systemPromptCharacters = Messages("x")[0].Content.Length, promptCharacters = Messages("x").Sum(x => x.Content.Length) - 1,
+    var report = JsonSerializer.Serialize(new { model, endpoint, prompt.PromptVersion, prompt.Hash, contract = "stats",
+        systemPromptCharacters = prompt.Messages("x")[0].Content.Length, promptCharacters = prompt.Messages("x").Sum(x => x.Content.Length) - 1,
         promptPath, casesPath, utc = DateTime.UtcNow, cancelled = cancel.IsCancellationRequested, failures, results },
-        new JsonSerializerOptions(WinrateQuery.JsonOptions) { WriteIndented = true });
+        new JsonSerializerOptions(StatsQueryPlan.JsonOptions) { WriteIndented = true });
     if (options.TryGetValue("--output", out var output)) await File.WriteAllTextAsync(output, report);
     else Console.WriteLine(report);
     return failures == 0 && !cancel.IsCancellationRequested ? 0 : 1;
@@ -110,4 +94,4 @@ try
 catch (Exception ex) { Console.Error.WriteLine(ex.Message); return 1; }
 
 sealed record EvaluationSuite(int FormatVersion, EvaluationCase[] Cases);
-sealed record EvaluationCase(string Id, string Question, JsonElement Expected);
+sealed record EvaluationCase(string Id, string Question, StatsQueryPlan Expected);

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using dsstats.shared;
 
 namespace dsstats.web.AI;
@@ -18,38 +19,59 @@ public sealed record StatsQueryPlan
     public required bool BalancedTeams { get; init; }
     public required bool LongGames { get; init; }
 
+    public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        RespectNullableAnnotations = true
+    };
+
     public static StatsQueryPlan Parse(string json)
     {
-        var plan = JsonSerializer.Deserialize<StatsQueryPlan>(json, WinrateQuery.JsonOptions)
+        var plan = JsonSerializer.Deserialize<StatsQueryPlan>(json, JsonOptions)
             ?? throw new JsonException("The model returned an empty plan.");
         plan.Validate();
         return plan;
     }
 
-    // Share the established period and filter mapping with historical winrate plans.
-    private WinrateQuery BaseQuery() => new()
-    {
-        Supported = Supported, Interest = Commander, Period = Period,
-        Metric = Metric == "Performance" ? "AvgPerformance" : Metric, Order = Order, Take = Take,
-        RatingFrom = RatingFrom, RatingTo = RatingTo, BalancedTeams = BalancedTeams, LongGames = LongGames
-    };
-
     public void Validate()
     {
+        if (!Enum.TryParse<shared.Commander>(Commander, out var commander) || commander.ToString() != Commander ||
+            (commander != shared.Commander.None && !IsCommander(commander)))
+            throw new ArgumentException("Unknown commander.");
         if (QueryType is not ("Winrate" or "Synergy" or "Timeline") ||
+            Period is not ("Last90Days" or "Last12Months" or "AllTime") ||
+            Order is not ("Ascending" or "Descending") || Take is < 1 or > 18 ||
+            RatingFrom < Data.MinBuildRating || RatingTo > Data.MaxBuildRating || RatingFrom > RatingTo ||
             Metric is not ("Performance" or "Winrate") || ReturnMode is not ("Ranked" or "Series") ||
             (QueryType == "Timeline" && Commander == "None") ||
             (ReturnMode == "Series" && (QueryType != "Timeline" || Order != "Ascending" || Take != 1)))
             throw new ArgumentException("The query contains unsupported settings.");
-        BaseQuery().Validate();
     }
+
+    public static bool IsCommander(shared.Commander commander) => commander >= shared.Commander.Abathur &&
+        commander <= shared.Commander.Zeratul && Enum.IsDefined(commander);
 
     public StatsRequest ToRequest()
     {
         Validate();
         if (!Supported) throw new ArgumentException("This question is outside the supported statistics queries.");
-        var request = BaseQuery().ToRequest();
-        request.Type = Enum.Parse<StatsType>(QueryType);
+        var period = Enum.Parse<TimePeriod>(Period);
+        var request = new StatsRequest
+        {
+            Type = Enum.Parse<StatsType>(QueryType), RatingType = RatingType.Commanders,
+            TimePeriod = period, Interest = Enum.Parse<shared.Commander>(Commander), WithLeavers = false
+        };
+        if (RatingFrom != Data.MinBuildRating || RatingTo != Data.MaxBuildRating || BalancedTeams || LongGames)
+        {
+            var time = Data.GetTimePeriodInfo(period);
+            request.Filter = new StatsFilter
+            {
+                DateRange = new() { From = time.Start, To = time.End },
+                RatingRange = new() { From = RatingFrom, To = RatingTo },
+                Exp2WinRange = new() { From = BalancedTeams ? 40 : 0, To = BalancedTeams ? 60 : 100 },
+                DurationRange = new() { From = LongGames ? 900 : Data.MinDuration, To = Data.MaxDuration }
+            };
+        }
         return request;
     }
 
@@ -60,10 +82,10 @@ public sealed record StatsQueryPlan
         IEnumerable<StatsAnswerRow> rows = (QueryType, response) switch
         {
             ("Winrate", WinrateResponse winrate) => winrate.WinrateEnts
-                .Where(x => WinrateQuery.IsCommander(x.Commander))
+                .Where(x => IsCommander(x.Commander))
                 .Select(x => new StatsAnswerRow(x.Commander.ToString(), x.Count, x.Wins, x.AvgPerformance, (int)x.Commander)),
             ("Synergy", SynergyResponse synergy) => synergy.SynergyEnts
-                .Where(x => WinrateQuery.IsCommander(x.Commander) && WinrateQuery.IsCommander(x.Teammate))
+                .Where(x => IsCommander(x.Commander) && IsCommander(x.Teammate))
                 .Where(x => commander == shared.Commander.None || x.Commander == commander || x.Teammate == commander)
                 .Select(x => new StatsAnswerRow(commander == shared.Commander.None
                     ? $"{x.Commander} + {x.Teammate}"

@@ -22,7 +22,7 @@ public class StatsAiTests
         {
             var plan = Default with { QueryType = type, Commander = "Kerrigan", Period = period,
                 RatingFrom = 1837, RatingTo = 2456, BalancedTeams = true, LongGames = true };
-            var request = StatsQueryPlan.Parse(JsonSerializer.Serialize(plan, WinrateQuery.JsonOptions)).ToRequest();
+            var request = StatsQueryPlan.Parse(JsonSerializer.Serialize(plan, StatsQueryPlan.JsonOptions)).ToRequest();
             Assert.AreEqual(Enum.Parse<StatsType>(type), request.Type);
             Assert.AreEqual(Commander.Kerrigan, request.Interest);
             Assert.AreEqual(Enum.Parse<TimePeriod>(period), request.TimePeriod);
@@ -52,8 +52,8 @@ public class StatsAiTests
             Default with { QueryType = "Timeline", Commander = "Nova", ReturnMode = "Series", Order = "Ascending", Take = 2 } })
             Assert.Throws<ArgumentException>(plan.Validate);
         Assert.Throws<ArgumentException>(() => (Default with { Supported = false }).ToRequest());
-        foreach (var json in new[] { "{}", "null", "not json", JsonSerializer.Serialize(Default, WinrateQuery.JsonOptions).Replace("\"None\"", "null"),
-            JsonSerializer.Serialize(Default, WinrateQuery.JsonOptions).Insert(1, "\"sql\":\"SELECT 1\",") })
+        foreach (var json in new[] { "{}", "null", "not json", JsonSerializer.Serialize(Default, StatsQueryPlan.JsonOptions).Replace("\"None\"", "null"),
+            JsonSerializer.Serialize(Default, StatsQueryPlan.JsonOptions).Insert(1, "\"sql\":\"SELECT 1\",") })
             Assert.Throws<JsonException>(() => StatsQueryPlan.Parse(json));
         Assert.Throws<ArgumentException>(() => Default.Select(new TimelineResponse()));
     }
@@ -115,6 +115,21 @@ public class StatsAiTests
     }
 
     [TestMethod]
+    public void InvalidPromptBundlesAreRejected()
+    {
+        var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "AI", "stats", "v1.json"));
+        var path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(path, json.Replace("\"formatVersion\": 1", "\"formatVersion\": 2"));
+            Assert.Throws<InvalidDataException>(() => StatsPrompt.Load(path));
+            File.WriteAllText(path, json.Replace("\"additionalProperties\": false", "\"additionalProperties\": true"));
+            Assert.Throws<InvalidDataException>(() => StatsPrompt.Load(path));
+        }
+        finally { File.Delete(path); }
+    }
+
+    [TestMethod]
     public void PromptAndHeldOutCasesMatchSchemaAndStartFresh()
     {
         var prompt = StatsPrompt.Load(Path.Combine(AppContext.BaseDirectory, "AI", "stats", "v1.json"));
@@ -126,7 +141,7 @@ public class StatsAiTests
         Assert.AreEqual("Who is worst?", prompt.Messages("Who is worst?")[^1].Content);
         Assert.Throws<ArgumentException>(() => prompt.Messages(new string('a', 2001)));
         using var suite = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "AI", "stats-cases.json")));
-        var plans = prompt.Examples.Select(x => JsonSerializer.SerializeToElement(x.Answer, WinrateQuery.JsonOptions))
+        var plans = prompt.Examples.Select(x => JsonSerializer.SerializeToElement(x.Answer, StatsQueryPlan.JsonOptions))
             .Concat(suite.RootElement.GetProperty("cases").EnumerateArray().Select(x => x.GetProperty("expected")));
         foreach (var json in plans)
         {
