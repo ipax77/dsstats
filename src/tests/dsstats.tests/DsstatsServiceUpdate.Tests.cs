@@ -8,10 +8,17 @@ namespace dsstats.tests;
 public sealed class DsstatsServiceUpdateTests
 {
     [TestMethod]
-    public void CurrentVersion_IsReleaseVersion()
+    public void RuntimeVersions_MatchServiceAssembly()
     {
-        Assert.AreEqual(new Version(3, 1, 1), DsstatsService.CurrentVersion);
-        Assert.AreEqual("ser3.1.1", DsstatsService.UploadVersion);
+        var assemblyVersion = typeof(DsstatsService).Assembly.GetName().Version
+            ?? throw new AssertFailedException("The service assembly has no version.");
+        var expectedReleaseVersion = new Version(
+            assemblyVersion.Major,
+            assemblyVersion.Minor,
+            Math.Max(0, assemblyVersion.Build));
+
+        Assert.AreEqual(expectedReleaseVersion, DsstatsService.CurrentVersion);
+        Assert.AreEqual($"ser{expectedReleaseVersion}", DsstatsService.UploadVersion);
     }
 
     [TestMethod]
