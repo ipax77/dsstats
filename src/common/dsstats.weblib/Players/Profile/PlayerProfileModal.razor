@@ -102,18 +102,34 @@
                     <div class="section-heading"><div><span class="eyebrow">LATEST ACTIVITY</span><h3>Recent replays</h3></div>
                         <a href="@($"replays?ToonIds={Data.GetToonIdString(overview.ToonId)}")">View all replays →</a></div>
                     @if (replayError is not null) { <p role="alert" class="negative">@replayError</p> }
-                    @if (overview.Replays.Count == 0) { <p class="muted">No rated replays in this category yet.</p> }
-                    @foreach (var replay in overview.Replays)
+                    @if (overview.Replays.Count == 0)
                     {
-                        <div class="replay-row">
-                            <div class="replay-date"><strong>@replay.Gametime.ToString("dd MMM")</strong><small>@replay.Gametime.ToString("yyyy · HH:mm")</small></div>
-                            <div class="replay-teams"><div>@foreach (var commander in replay.CommandersTeam1) { <span class="commander-icon preload-@(commander.ToString().ToLowerInvariant())" title="@commander" role="img" aria-label="@commander"></span> }</div>
-                                <span class="versus">vs</span><div>@foreach (var commander in replay.CommandersTeam2) { <span class="commander-icon preload-@(commander.ToString().ToLowerInvariant())" title="@commander" role="img" aria-label="@commander"></span> }</div></div>
-                            <span class="duration">@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</span>
-                            <strong class="gain @(replay.PlayerGain >= 0 ? "positive" : "negative")">@replay.PlayerGain.ToString("+0.00;-0.00;0.00")</strong>
-                            <button class="quiet-button replay-open" disabled="@replayLoading" @onclick="() => OpenReplay(replay.ReplayHash)" aria-label="@($"Open replay from {replay.Gametime:g}")">Open ↗</button>
-                            <details class="replay-information"><summary>Match information</summary>
-                                <span>@replay.GameMode · Average rating @(replay.AvgRating?.ToString("N0") ?? "—") · Team 1 expected win @(replay.Exp2Win?.ToString("P0") ?? "—") · @replay.LeaverType</span></details>
+                        <p class="muted">No rated replays in this category yet.</p>
+                    }
+                    else
+                    {
+                        <div class="profile-replays-scroll">
+                            <table class="tptable profile-replays">
+                                <colgroup><col class="replay-time" /><col class="replay-mode" /><col class="replay-duration" /><col class="replay-team" /><col class="replay-team" /><col class="replay-expected" /><col class="replay-rating" /><col class="replay-gain" /><col class="replay-leaver" /></colgroup>
+                                <thead><tr>
+                                    <th scope="col">Gametime</th><th scope="col">GameMode</th><th scope="col">Duration</th>
+                                    <th scope="col">Team1</th><th scope="col">Team2</th><th scope="col">Exp2Win</th>
+                                    <th scope="col">AvgRating</th><th scope="col">Gain</th><th scope="col">LeaverType</th>
+                                </tr></thead>
+                                <tbody>
+                                    @foreach (var replay in overview.Replays)
+                                    {
+                                        <tr @key="replay" class="pointer @(replayLoading ? "replays-loading" : "")" title="Open replay" @onclick="() => OpenReplay(replay.ReplayHash)">
+                                            <td>@replay.Gametime.ToString("yyyy-MM-dd")</td><td>@replay.GameMode</td>
+                                            <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                                            <td><ReplayTeamComponent Replay="replay" TeamNumber="1" /></td><td><ReplayTeamComponent Replay="replay" TeamNumber="2" /></td>
+                                            <td class="@(replay.Exp2Win >= 0.5 ? "positive" : "negative")">@replay.Exp2Win?.ToString("p0")</td>
+                                            <td>@replay.AvgRating</td><td class="@(replay.PlayerGain >= 0 ? "positive" : "negative")">@replay.PlayerGain.ToString("+0.00;-0.00;0.00")</td>
+                                            <td>@replay.LeaverType</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
                     }
                 </section>
@@ -125,7 +141,7 @@
                 else if (State is { Expanded: true } state)
                 {
                     <section class="panel detail-panel">
-                        <div class="section-heading"><h3>Player insights</h3><span class="badge-label">@Category(overview.RatingType)</span></div>
+                        <div class="section-heading detail-panel-heading"><h3>Player insights</h3><span class="badge-label">@Category(overview.RatingType)</span></div>
                         <div class="section-tabs" role="tablist" aria-label="Player insights">
                             @foreach (var section in new[] { "Performance", "Players", "Breakdown" })
                             {
@@ -179,9 +195,9 @@
                                     @if (gains.AvgGains.Count == 0) { <p class="muted">No commander performance data for this period.</p> }
                                     else
                                     {
-                                        <div class="table-scroll"><table class="breakdown-table"><thead><tr><th>Commander</th><th>Games</th><th>Win rate</th><th>Average gain</th></tr></thead><tbody>
+                                <div class="table-scroll commander-performance"><table class="breakdown-table"><thead><tr><th>Commander</th><th>Games</th><th>Win rate</th><th>Average gain</th></tr></thead><tbody>
                                             @foreach (var gain in gains.AvgGains.OrderByDescending(x => x.Count))
-                                            { <tr><td>@gain.Commander</td><td>@gain.Count</td><td>@(gain.Count > 0 ? (gain.Wins / (double)gain.Count).ToString("P1") : "—")</td><td>@gain.AvgGain.ToString("+0.00;-0.00;0.00")</td></tr> }
+                                            { <tr><td><span class="commander-cell"><span class="commander-icon preload-@(gain.Commander.ToString().ToLowerInvariant())" title="@gain.Commander" role="img" aria-label="@gain.Commander"></span><span>@gain.Commander</span></span></td><td>@gain.Count.ToString("N0")</td><td>@(gain.Count > 0 ? (gain.Wins / (double)gain.Count).ToString("P1") : "—")</td><td class="@(gain.AvgGain >= 0 ? "positive" : "negative")">@gain.AvgGain.ToString("+0.00;-0.00;0.00")</td></tr> }
                                         </tbody></table></div>
                                     }
                                 }

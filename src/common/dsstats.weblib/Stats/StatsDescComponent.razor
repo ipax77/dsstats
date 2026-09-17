@@ -97,11 +97,12 @@
 }
 else if (Response is WinrateResponse winrateResponse)
 {
-    <p class="bgchart text-warning p-2 rounded">
-        The players performance with the Commanders
-    </p>
-    <div class="col-auto table-responsive" style="max-height: 40vh; max-width: 400px;">
-        <table class="tptable w-auto">
+    <div class="profile-commander-performance">
+        <p class="profile-commander-performance-title">
+            The players performance with the Commanders
+        </p>
+        <div class="table-responsive profile-commander-performance-scroll">
+        <table class="tptable profile-commander-performance-table">
             <thead class="user-select-none">
                 <tr>
                     <th class="pointer" @onclick="() => SortBy(nameof(WinrateEnt.Commander))">
@@ -127,8 +128,8 @@ else if (Response is WinrateResponse winrateResponse)
                 {
                     <tr>
                         <td>
-                            <div class="d-flex">
-                                <div class="preload-@(ent.Commander.ToString().ToLower())" alt="@ent.Commander" style="width: 30px; height: 30px;"></div>
+                            <div class="commander-cell">
+                                <span class="commander-icon preload-@(ent.Commander.ToString().ToLowerInvariant())" title="@ent.Commander" role="img" aria-label="@ent.Commander"></span>
                                 <span>@ent.Commander</span>
                             </div>
                         </td>
@@ -143,6 +144,7 @@ else if (Response is WinrateResponse winrateResponse)
                 }
             </tbody>
         </table>
+        </div>
     </div>
 }
 else if (Response is SynergyResponse synergyResponse)
