@@ -59,6 +59,7 @@ builder.Services.AddSingleton<IBuilderService, UnavailableBuilderService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<IReplayImportService, ReplayImportService>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddScoped<IPlayerProfileService, PlayerProfileService>();
 
 builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddScoped<IBuildsService, BuildsService>();

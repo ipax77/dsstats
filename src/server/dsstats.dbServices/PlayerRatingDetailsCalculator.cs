@@ -11,7 +11,8 @@ internal static class PlayerRatingDetailsCalculator
     internal static RatingDetails Calculate(
         List<PlayerReplayData> replays,
         Dictionary<int, PlayerReplayRatingData> ratings,
-        int playerId, DateTime? today = null)
+        int playerId, DateTime? today = null,
+        bool includeHistory = true, bool includeRecent = true, bool includeRelationships = true)
     {
         var state = new StatsState { Past90Days = (today ?? DateTime.Today).AddDays(-90) };
 
@@ -24,11 +25,11 @@ internal static class PlayerRatingDetailsCalculator
             var ctx = BuildReplayContext(replay, rating, playerId, i, total);
 
             ProcessGameMode(state, ctx);
-            ProcessLastReplays(state, ctx);
-            ProcessSelfPlayer(state, ctx);
-            ProcessOtherPlayers(state, ctx);
-            ProcessStreaks(state, ctx);
-            ProcessTopRating(state, ctx);
+            if (includeRecent) ProcessLastReplays(state, ctx);
+            ProcessSelfPlayer(state, ctx, includeHistory);
+            if (includeRelationships) ProcessOtherPlayers(state, ctx);
+            if (includeHistory) ProcessStreaks(state, ctx);
+            if (includeHistory) ProcessTopRating(state, ctx);
         }
 
         return BuildFinalDetails(state);
@@ -94,7 +95,7 @@ internal static class PlayerRatingDetailsCalculator
         s.LastReplays.Add(dto);
     }
 
-    private static void ProcessSelfPlayer(StatsState s, ReplayContext ctx)
+    private static void ProcessSelfPlayer(StatsState s, ReplayContext ctx, bool includeHistory)
     {
         var self = ctx.SelfPlayer;
         if (self is null)
@@ -152,7 +153,7 @@ internal static class PlayerRatingDetailsCalculator
             }
 
             // rating history entry
-            s.RatingHistory.Add((ctx.Replay.Gametime, (float)(ctx.SelfRating.RatingBefore + ctx.SelfRating.RatingDelta), ctx.SelfRating.Games));
+            if (includeHistory) s.RatingHistory.Add((ctx.Replay.Gametime, (float)(ctx.SelfRating.RatingBefore + ctx.SelfRating.RatingDelta), ctx.SelfRating.Games));
         }
     }
 

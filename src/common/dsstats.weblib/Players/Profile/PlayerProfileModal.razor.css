@@ -1,0 +1,93 @@
+.profile-dialog { padding:0; border:1px solid #33445b; border-radius:18px; width:min(1280px, calc(100vw - 48px)); max-width:none; height:min(920px, calc(100dvh - 48px)); max-height:calc(100dvh - 48px); color:#edf2f9; background:#0d1624; box-shadow:0 30px 100px #0009; overflow:hidden; font-variant-numeric:tabular-nums }
+.profile-dialog::backdrop { background:#030912cc; backdrop-filter:blur(5px) }
+.profile-shell { display:flex; flex-direction:column; height:100%; min-height:0 }
+.profile-header { display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; padding:22px 30px; background:#111e30; border-bottom:1px solid #293a50; flex-shrink:0 }
+.identity, .header-actions { display:flex; align-items:center; gap:20px; min-width:0 }
+.identity { flex:1 } .identity>div { min-width:0 }
+h2 { margin:4px 0 0; font-size:clamp(1.3rem, 2.5vw, 1.85rem); font-weight:650; overflow-wrap:anywhere; letter-spacing:-.025em }
+h3 { font-size:1.15rem; font-weight:600; margin:0 } h4 { font-size:1rem; margin:0 }
+.eyebrow { font-size:.65rem; font-weight:700; letter-spacing:.14em; color:#a9b8cc; display:block }
+.profile-scroll { padding:28px 30px; overflow-y:auto; overscroll-behavior:contain; min-height:0; scrollbar-color:#3d506a #0d1624 }
+label { font-size:.72rem; color:#a9b8cc; display:flex; flex-direction:column; gap:5px }
+select { background:#17263c; color:#edf2f9; border:1px solid #3a4e67; border-radius:8px; padding:8px 30px 8px 10px; min-width:140px; font-size:.85rem }
+button { cursor:pointer; transition:background .15s, border-color .15s; font:inherit }
+button:disabled { opacity:.55; cursor:wait }
+button:focus-visible, a:focus-visible, summary:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline:2px solid #e8ba6b; outline-offset:4px }
+.close-button { background:none; border:0; color:#bdc9da; font-size:1.9rem; width:40px; height:40px; line-height:1 }
+.quiet-button { border:1px solid #3a4e67; background:#18283d; color:#dce9fb; border-radius:8px; padding:7px 12px; font-size:.8rem; white-space:nowrap }
+.quiet-button:hover { background:#223752 }
+.primary-button { border:1px solid #e8ba6b; color:#151d29; background:#e8ba6b; font-weight:650; border-radius:9px; padding:12px 20px; white-space:nowrap }
+.primary-button:hover { background:#f2ca85 }
+a { color:#a9d1ff; font-size:.83rem; text-decoration:none } a:hover { text-decoration:underline }
+.summary-grid { display:grid; grid-template-columns:1.6fr 1fr 1fr 1.2fr; gap:16px; align-items:stretch }
+.rating-hero { border-left:3px solid #e8ba6b; padding-left:20px }
+.hero-number { font-size:clamp(2.8rem, 5vw, 3.8rem); font-weight:650; letter-spacing:-.05em; line-height:1.25; color:#f1cd8c }
+.rank { font-size:1rem; color:#c2ccdc; letter-spacing:0; font-weight:400; margin-left:10px }
+.rating-hero p { color:#b3c1d3; font-size:.78rem; margin:5px 0 }
+.metric { display:flex; flex-direction:column; justify-content:center; padding:10px 14px; min-width:0 }
+.metric>span { color:#a9b8cc; font-size:.78rem } .metric strong { font-size:1.75rem; font-weight:550; margin:5px 0 }
+.metric small { color:#8295af; font-size:.73rem }
+.metric .commander { display:flex; align-items:center; gap:9px; font-size:1.2rem; flex-wrap:wrap }
+.commander-icon { display:inline-block; width:28px; height:28px; min-width:28px; background-size:contain; background-position:center; background-repeat:no-repeat; vertical-align:middle }
+.category-strip { display:flex; flex-wrap:wrap; gap:8px; margin:24px 0 }
+.category-strip button { display:flex; align-items:center; gap:16px; border:1px solid #293a50; border-radius:7px; padding:7px 12px; background:transparent; color:#a9b8cc; font-size:.76rem }
+.category-strip .selected { background:#253042; border-color:#8a724f; color:#f1cd8c }
+.category-strip strong { font-weight:600 }
+.progress-grid { display:grid; grid-template-columns:minmax(0, 2.5fr) minmax(220px, 1fr); gap:18px }
+.panel { background:#142135; border:1px solid #293a50; border-radius:12px; padding:22px; min-width:0 }
+.section-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:18px }
+.badge-label { color:#92a6c0; font-size:.62rem; font-weight:600; letter-spacing:.09em }
+.records>div:not(.section-heading) { margin:12px 0; display:flex; flex-wrap:wrap; gap:4px 12px; align-items:baseline }
+.records span, .records small { color:#9baec5; font-size:.75rem } .records strong { font-size:1.25rem; font-weight:550 }
+.records small { flex-basis:100%; font-size:.68rem }
+.records .record-pair { display:grid!important; grid-template-columns:1fr 1fr; border-top:1px solid #293a50; padding-top:12px; margin-bottom:0!important }
+.record-pair>div { display:flex; flex-direction:column; gap:4px }
+.rating-information { margin:12px 0 24px; font-size:.78rem; color:#adbed3 }
+summary { cursor:pointer; padding:8px 0 }
+dl { display:flex; flex-wrap:wrap; gap:20px; margin:10px 0; padding:14px 18px; border:1px solid #293a50; border-radius:8px }
+dt { font-weight:400; font-size:.72rem } dd { margin:4px 0 0; color:#edf2f9; font-size:1rem }
+.recent-panel { margin-top:20px }
+.replay-row { display:grid; grid-template-columns:95px minmax(0, 1fr) 90px 75px 75px; gap:8px 14px; align-items:center; padding:14px 0; border-top:1px solid #293a50 }
+.replay-date strong { display:block; font-size:.83rem; font-weight:500 } .replay-date small { font-size:.68rem; color:#92a6c0 }
+.replay-teams { display:flex; align-items:center; gap:12px; flex-wrap:wrap } .replay-teams>div { display:flex; gap:3px }
+.versus { color:#8295af; font-size:.65rem; text-transform:uppercase } .duration { color:#adbed3; font-size:.8rem }
+.gain { text-align:right; font-size:.85rem; font-weight:500 }
+.positive { color:#7ae0b0!important } .negative { color:#ff9b9b!important }
+.replay-information { grid-column:2/-1; font-size:.72rem; color:#9baec5 } .replay-information summary { padding:0 }
+.replay-information span { display:block; padding-top:8px }
+.details-invitation { margin-top:24px; border:1px solid #66583e; background:linear-gradient(110deg,#23283a,#17253a); padding:26px; border-radius:12px; display:flex; gap:20px; align-items:center; justify-content:space-between }
+.details-invitation h3 { margin:7px 0 } .details-invitation p { color:#adbed3; font-size:.85rem; margin:0 }
+.detail-panel { margin-top:24px }
+.section-tabs { display:flex; gap:24px; border-bottom:1px solid #35475f; margin-bottom:22px }
+.section-tabs button { background:none; border:0; border-bottom:2px solid transparent; padding:10px 0 13px; color:#9baec5; font-size:.9rem }
+.section-tabs [aria-selected=true] { color:#f1cd8c; border-bottom-color:#e8ba6b }
+.chart-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; margin:20px 0 }
+.chart-types { display:flex; flex-wrap:wrap; gap:6px }
+.chart-types button { border:1px solid #35475f; background:transparent; border-radius:6px; padding:7px 10px; color:#b3c1d3; font-size:.8rem }
+.chart-types [aria-pressed=true] { background:#2a3e58; color:#fff; border-color:#6b849f }
+.performance-chart { position:relative; width:100%; height:400px; min-width:0 }
+.relationships-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:26px }
+.breakdown-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; margin-top:28px }
+.breakdown-grid h4 { margin-bottom:16px } h4 small { font-size:.67rem; color:#92a6c0; display:block; margin-top:5px }
+.stat-line { display:flex; justify-content:space-between; gap:12px; font-size:.8rem; border-bottom:1px solid #293a50; padding-bottom:9px; margin-bottom:9px; color:#b3c1d3 } .stat-line strong { color:#edf2f9; font-weight:500 }
+.table-scroll { overflow-x:auto } .breakdown-table { width:100%; font-size:.85rem; border-collapse:collapse }
+.breakdown-table td, .breakdown-table th { padding:10px; border-bottom:1px solid #293a50; text-align:right; white-space:nowrap }
+.breakdown-table td:first-child, .breakdown-table th:first-child { text-align:left }
+.breakdown-table th { color:#9baec5; font-size:.75rem; font-weight:500 }
+.profile-footer { padding-top:22px; color:#8295af; font-size:.72rem; text-align:center }
+.notice { padding:24px; background:#192a42; border-radius:10px; margin-bottom:16px }
+.notice p, .muted, .loading-state p { color:#9baec5; font-size:.9rem }
+.skeleton { background:linear-gradient(90deg,#192a40,#22364d,#192a40); background-size:200% 100%; animation:shimmer 1.8s infinite; border-radius:10px; margin:20px 0 }
+.skeleton-title { width:45%; height:75px } .skeleton-chart { height:260px }
+@keyframes shimmer { to { background-position:-200% 0 } }
+@media (max-width:1000px) { .summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)) } .progress-grid { grid-template-columns:1fr } .records { display:flex; flex-wrap:wrap; gap:12px 24px } .records .section-heading { width:100%; margin-bottom:0 } .records .record-pair { border:0; padding:0; gap:24px } .relationships-grid { grid-template-columns:1fr } }
+@media (max-width:600px) {
+    .profile-dialog { width:100vw; height:100dvh; max-height:100dvh; margin:0; border:0; border-radius:0 }
+    .profile-header { padding:14px 16px; gap:12px } .identity { flex-basis:100%; padding-right:35px } .header-actions { width:100% } .header-actions label { flex-direction:row; align-items:center; gap:12px; flex:1 } .close-button { position:absolute; top:14px; right:10px }
+    .profile-scroll { padding:20px 14px } .panel { padding:16px } .summary-grid { gap:12px } .rating-hero { padding-left:12px } .metric { padding:8px } .hero-number { font-size:2.8rem } .rank { display:block; font-size:.8rem; margin-left:0 } .metric strong { font-size:1.6rem }
+    .category-strip { gap:6px } .category-strip button { padding:6px 8px; gap:8px; font-size:.7rem }
+    .replay-row { grid-template-columns:80px minmax(0,1fr) 65px; gap:9px } .replay-teams { gap:5px; grid-column:2/-1 } .replay-teams .commander-icon { width:23px; min-width:23px; height:23px } .duration { grid-column:1 } .gain { text-align:left } .replay-information { grid-column:1/-1 }
+    .details-invitation { flex-direction:column; align-items:flex-start; padding:20px } .primary-button { width:100% }
+    .section-tabs { gap:20px } .section-tabs button { font-size:.85rem } .breakdown-grid { grid-template-columns:1fr } .performance-chart { height:320px }
+}
+@media (prefers-reduced-motion:reduce) { .skeleton { animation:none } button { transition:none } }

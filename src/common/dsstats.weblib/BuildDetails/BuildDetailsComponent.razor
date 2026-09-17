@@ -366,7 +366,7 @@
     }
 </div>
 
-<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
+<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnPlayerProfileRequest="e => playerModal!.ShowProfile(e)" OnClose="CloseReplay" />
 <BuildDetailsReplayModal @ref="buildDetailsReplayModal" OnFullReplayRequest="ShowReplayDetails" OnClose="CloseReplay" />
 <PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(replayDetails!)" />
 <BuildDetailsPlayerSelectModal @ref="playerSelectModal" OnChanged="PlayerFilterChanged" />

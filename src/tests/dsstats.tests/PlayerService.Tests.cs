@@ -166,7 +166,7 @@ public class PlayerServiceTests
         RatingType = RatingType.Commanders, PageSize = 3, Take = take
     };
 
-    private static void AddReplay(DsstatsContext context, int id, int playerId, RatingType type)
+    internal static void AddReplay(DsstatsContext context, int id, int playerId, RatingType type)
     {
         var replay = new Replay
         {
@@ -184,7 +184,7 @@ public class PlayerServiceTests
         });
     }
 
-    private sealed class Fixture : IDisposable
+    internal sealed class Fixture : IDisposable
     {
         private readonly SqliteConnection connection = new("Filename=:memory:");
         private readonly MemoryCache cache = new(new MemoryCacheOptions());
@@ -193,10 +193,12 @@ public class PlayerServiceTests
         public Mock<IImportService> Import { get; } = new();
         public PlayerService Service { get; }
 
-        public Fixture()
+        public Fixture(Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor? interceptor = null)
         {
             connection.Open();
-            options = new DbContextOptionsBuilder<DsstatsContext>().UseSqlite(connection).Options;
+            var builder = new DbContextOptionsBuilder<DsstatsContext>().UseSqlite(connection);
+            if (interceptor is not null) builder.AddInterceptors(interceptor);
+            options = builder.Options;
             Factory.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
                 .Returns((CancellationToken _) => Task.FromResult(CreateContext()));
             Import.Setup(i => i.GetPlayerId(It.IsAny<ToonIdDto>())).Returns((ToonIdDto id) => id.Id);

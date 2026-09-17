@@ -38,6 +38,8 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
     [Parameter]
     public EventCallback<PlayerStatsResponse> OnPlayerRequest { get; set; }
 
+    [Parameter] public EventCallback<PlayerProfileRequest> OnPlayerProfileRequest { get; set; }
+
     [Parameter]
     public EventCallback OnRatingUpdateRequest { get; set; }
 
@@ -143,6 +145,11 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
             Player = player,
             RatingType = _replayHelper.RatingType,
         };
+        if (HostOptions.Value.Kind == HostAppKind.BlazorServer && OnPlayerProfileRequest.HasDelegate)
+        {
+            await OnPlayerProfileRequest.InvokeAsync(new() { ToonId = player.ToonId, RatingType = request.RatingType });
+            return;
+        }
         var stats = await PlayerService.GetPlayerStats(request);
         await OnPlayerRequest.InvokeAsync(stats);
     }

@@ -1,0 +1,11 @@
+.relationship h3 { font-size:1.1rem; display:flex; justify-content:space-between; flex-wrap:wrap; gap:.5rem }
+.relationship h3 small, .relationship p { color:#9baec5; font-size:.8rem }
+.relationship-scroll { max-height:420px; overflow:auto }
+table { width:100%; font-size:.88rem; border-collapse:collapse }
+th, td { padding:.8rem .5rem; border-bottom:1px solid #293a50; text-align:right; white-space:nowrap }
+th:first-child, td:first-child { text-align:left }
+th { position:sticky; top:0; background:#142135 }
+button { border:0; background:none; color:inherit; padding:0 }
+.player-link { color:#a9d1ff; text-align:left; max-width:180px; overflow-wrap:anywhere; white-space:normal }
+button:focus-visible { outline:2px solid #e8ba6b; outline-offset:4px }
+.positive { color:#7ae0b0 } .negative { color:#ff9b9b }

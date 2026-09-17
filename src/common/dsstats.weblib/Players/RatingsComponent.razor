@@ -1,4 +1,6 @@
-﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.Extensions.Options
+@inject IOptions<HostOptions> ProfileHostOptions
+@using Microsoft.AspNetCore.Components.Web.Virtualization
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @using dsstats.weblib.Replays
@@ -113,7 +115,7 @@
 <PlayerModal @ref="playerModal"
              OnReplayRequest="e => replayModal?.Show(e)"
              OnPlayerRequest="e => ShowPlayerStats(Data.GetToonIdString(e))"
-             OnClose="ClosePlayerStats" />
+             OnClose="ClosePlayerStats" OnProfileSelectionChanged="ProfileSelectionChanged" />
 <ReplayModal @ref="replayModal" OnClose="e => playerModal?.Show(playerStatsResponse!)" />
 
 @code {
@@ -183,6 +185,14 @@
 
     private async Task ShowPlayerStats(string toonIdString)
     {
+        if (ProfileHostOptions.Value.Kind == HostAppKind.BlazorServer)
+        {
+            await playerModal!.ShowProfile(new()
+            {
+                ToonId = Data.GetToonId(toonIdString) ?? new(), RatingType = PlayerRequest.RatingType
+            });
+            return;
+        }
         ratingsRequestComponent?.SetLoading(true);
 
         PlayerStatsRequest statsRequest = new()
@@ -213,6 +223,11 @@
         await OnRequestChanged.InvokeAsync(PlayerRequest);
     }
 
+    private async Task ProfileSelectionChanged(PlayerProfileRequest? request)
+    {
+        PlayerRequest.ToonIdString = request is null ? null : Data.GetToonIdString(request.ToonId);
+        await OnRequestChanged.InvokeAsync(PlayerRequest);
+    }
     private async Task ClosePlayerStats()
     {
         if (_playerNavigationQueue.Count > 0)

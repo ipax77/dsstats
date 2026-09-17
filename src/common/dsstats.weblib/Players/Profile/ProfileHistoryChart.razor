@@ -1,0 +1,41 @@
+@using dsstats.shared
+@using System.Globalization
+
+@if (History.Count == 0)
+{
+    <p class="history-empty">No rated replay history for this category yet.</p>
+}
+else
+{
+    <svg viewBox="0 0 800 260" role="img" aria-labelledby="@titleId" style="width:100%;height:auto;min-height:160px">
+        <title id="@titleId">Lifetime rating history. @History.Count weeks, latest rating @History[^1].Rating.ToString("N0").</title>
+        @foreach (var y in new[] { 30, 90, 150, 210 })
+        {
+            <line x1="52" y1="@y" x2="778" y2="@y" stroke="#293a50" stroke-dasharray="3 6" />
+        }
+        <polyline points="@Points" fill="none" stroke="#e8ba6b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        @foreach (var item in History)
+        {
+            <circle cx="@F(X(item))" cy="@F(Y(item.Rating))" r="3" fill="#e8ba6b">
+                <title>@WeekDate(item).ToString("dd MMM yyyy"): @item.Rating.ToString("N0") rating · @item.Games.ToString("N0") games</title>
+            </circle>
+        }
+        <text x="0" y="34" fill="#9baec5" font-size="12">@Max.ToString("N0")</text>
+        <text x="0" y="214" fill="#9baec5" font-size="12">@Min.ToString("N0")</text>
+        <text x="52" y="249" fill="#9baec5" font-size="12">@WeekDate(History[0]).ToString("MMM yyyy")</text>
+        <text x="778" y="249" fill="#9baec5" font-size="12" text-anchor="end">@WeekDate(History[^1]).ToString("MMM yyyy")</text>
+    </svg>
+}
+
+@code {
+    [Parameter] public List<RatingAtDateTime> History { get; set; } = [];
+    private readonly string titleId = $"history-{Guid.NewGuid():N}";
+    private double Min => Math.Floor(History.Min(x => x.Rating) / 100) * 100;
+    private double Max => Math.Max(Min + 100, Math.Ceiling(History.Max(x => x.Rating) / 100) * 100);
+    private static DateTime WeekDate(RatingAtDateTime item) => ISOWeek.ToDateTime(item.Year, item.Week, DayOfWeek.Monday);
+    private double X(RatingAtDateTime item) => 52 + 726 *
+        (WeekDate(item) - WeekDate(History[0])).TotalDays / Math.Max(7, (WeekDate(History[^1]) - WeekDate(History[0])).TotalDays);
+    private double Y(double rating) => 210 - 180 * (rating - Min) / (Max - Min);
+    private string Points => string.Join(" ", History.Select(x => $"{F(X(x))},{F(Y(x.Rating))}"));
+    private static string F(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+}

@@ -33,7 +33,7 @@ public partial class PlayerService
         details.PercentileMaxRank = await GetPercentileMaxRank(ratingType, context, token);
         return details;
     }
-    private static async Task<List<PlayerReplayData>> LoadReplays(DsstatsContext context, RatingType ratingType, IQueryable<int> replayIds, CancellationToken token)
+    private static async Task<List<PlayerReplayData>> LoadReplays(DsstatsContext context, RatingType ratingType, IQueryable<int> replayIds, CancellationToken token, bool detailsOnly = false)
     {
         return await context.Replays
             .AsNoTracking()
@@ -42,10 +42,10 @@ public partial class PlayerService
             .Select(s => new PlayerReplayData
             {
                 ReplayId = s.ReplayId,
-                ReplayHash = s.ReplayHash,
+                ReplayHash = detailsOnly ? "" : s.ReplayHash,
                 Gametime = s.Gametime,
                 GameMode = s.GameMode,
-                Duration = s.Duration,
+                Duration = detailsOnly ? 0 : s.Duration,
                 WinnerTeam = s.WinnerTeam,
                 Players = s.Players
                     .Select(p => new PlayerReplayParticipantData
@@ -62,7 +62,7 @@ public partial class PlayerService
             .ToListAsync(token);
     }
 
-    private static async Task<Dictionary<int, PlayerReplayRatingData>> LoadReplayRatings(DsstatsContext context, RatingType ratingType, IQueryable<int> replayIds, CancellationToken token)
+    private static async Task<Dictionary<int, PlayerReplayRatingData>> LoadReplayRatings(DsstatsContext context, RatingType ratingType, IQueryable<int> replayIds, CancellationToken token, bool detailsOnly = false)
     {
         return await context.ReplayRatings
             .AsNoTracking()
@@ -71,16 +71,16 @@ public partial class PlayerService
             .Select(rr => new PlayerReplayRatingData
             {
                 ReplayId = rr.ReplayId,
-                LeaverType = rr.LeaverType,
-                ExpectedWinProbability = rr.ExpectedWinProbability,
-                AvgRating = rr.AvgRating,
+                LeaverType = detailsOnly ? LeaverType.None : rr.LeaverType,
+                ExpectedWinProbability = detailsOnly ? 0 : rr.ExpectedWinProbability,
+                AvgRating = detailsOnly ? 0 : rr.AvgRating,
                 PlayerRatings = rr.ReplayPlayerRatings
                     .Select(pr => new PlayerReplayParticipantRatingData
                     {
                         PlayerId = pr.PlayerId,
                         RatingBefore = pr.RatingBefore,
                         RatingDelta = pr.RatingDelta,
-                        Games = pr.Games
+                        Games = detailsOnly ? 0 : pr.Games
                     })
                     .ToList()
             })

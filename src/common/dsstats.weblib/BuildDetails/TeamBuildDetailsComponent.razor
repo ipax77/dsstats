@@ -127,7 +127,7 @@
     </div>
 </div>
 
-<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
+<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnPlayerProfileRequest="e => playerModal!.ShowProfile(e)" OnClose="CloseReplay" />
 <TeamBuildReplayModal @ref="teamBuildReplayModal" OnFullReplayRequest="ShowReplayDetails" OnClose="CloseReplay" />
 <PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(replayDetails!)" />
 
