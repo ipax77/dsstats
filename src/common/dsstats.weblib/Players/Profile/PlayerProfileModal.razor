@@ -167,11 +167,13 @@
                                 else if (state.Charts.TryGetValue((state.ChartType, state.ChartPeriod), out var response))
                                 {
                                     var request = new StatsRequest { Type = state.ChartType, TimePeriod = state.ChartPeriod, RatingType = state.Request.RatingType, WithLeavers = true };
-                                    <div class="performance-chart" @key="(state, state.ChartType, state.ChartPeriod, response)">
-                                        @if (response is WinrateResponse winrate) { <WinrateChart Request="request" Response="winrate" /> }
-                                        else if (response is CountResponse count) { <CountChart Request="request" Response="count" /> }
-                                        else if (response is SynergyResponse synergy) { <SynergyChart Request="request" Response="synergy" Commanders="@(new List<Commander> { Commander.None })" /> }
-                                        else if (response is TimelineResponse timeline) { <TimelineChart Request="request" Response="timeline" Commanders="@(new List<Commander> { Commander.None })" /> }
+                                    <div class="performance-chart-scroll">
+                                        <div class="performance-chart" @key="(state, state.ChartType, state.ChartPeriod, response)">
+                                            @if (response is WinrateResponse winrate) { <WinrateChart Request="request" Response="winrate" /> }
+                                            else if (response is CountResponse count) { <CountChart Request="request" Response="count" /> }
+                                            else if (response is SynergyResponse synergy) { <SynergyChart Request="request" Response="synergy" Commanders="@(new List<Commander> { Commander.None })" /> }
+                                            else if (response is TimelineResponse timeline) { <TimelineChart Request="request" Response="timeline" Commanders="@(new List<Commander> { Commander.None })" /> }
+                                        </div>
                                     </div>
                                     <StatsDescComponent Response="response" />
                                 }
