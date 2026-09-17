@@ -67,6 +67,7 @@
                         { <span class="commander-icon preload-@(rating.Main.ToString().ToLowerInvariant())" aria-hidden="true"></span>@rating.Main }
                         else { <span>—</span> }
                     </strong><small>Most played</small></div>
+                    <div class="metric"><span>Average scans</span><strong>@(overview.AverageScanCount?.ToString("N2") ?? "—")</strong><small>@(overview.ScanCountReplays > 0 ? $"{overview.ScanCountReplays:N0} replays with scan data" : "No scan data available")</small></div>
                 </section>
                 <nav class="category-strip" aria-label="Player rating categories">
                     @foreach (var other in overview.Ratings.OrderBy(x => x.RatingType))

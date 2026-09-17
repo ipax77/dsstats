@@ -19,7 +19,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible, select:focus-visib
 .primary-button { border:1px solid #e8ba6b; color:#151d29; background:#e8ba6b; font-weight:650; border-radius:9px; padding:12px 20px; white-space:nowrap }
 .primary-button:hover { background:#f2ca85 }
 a { color:#a9d1ff; font-size:.83rem; text-decoration:none } a:hover { text-decoration:underline }
-.summary-grid { display:grid; grid-template-columns:1.6fr 1fr 1fr 1.2fr; gap:16px; align-items:stretch }
+.summary-grid { display:grid; grid-template-columns:1.6fr repeat(4,minmax(0,1fr)); gap:16px; align-items:stretch }
 .rating-hero { border-left:3px solid #e8ba6b; padding-left:20px }
 .hero-number { font-size:clamp(2.8rem, 5vw, 3.8rem); font-weight:650; letter-spacing:-.05em; line-height:1.25; color:#f1cd8c }
 .rank { font-size:1rem; color:#c2ccdc; letter-spacing:0; font-weight:400; margin-left:10px }

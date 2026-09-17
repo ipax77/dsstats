@@ -30,6 +30,7 @@ public partial class PlayerService : IPlayerProfileService
             select new
             {
                 rp.ReplayId, rp.Replay!.Gametime, rp.Replay.WinnerTeam, rp.TeamId,
+                rp.ScanCount,
                 Before = rating == null ? (double?)null : rating.RatingBefore,
                 Delta = rating == null ? 0 : rating.RatingDelta,
                 Games = rating == null ? 0 : rating.Games
@@ -56,6 +57,7 @@ public partial class PlayerService : IPlayerProfileService
         }
         var calculated = PlayerRatingDetailsCalculator.Calculate(replays, ratings, playerId.Value,
             includeRecent: false, includeRelationships: false);
+        var scanCounts = history.Where(x => x.ScanCount.HasValue).Select(x => x.ScanCount!.Value).ToList();
 
         var recentKeys = await context.ReplayPlayers
             .Where(p => p.PlayerId == playerId.Value && p.Replay!.Ratings.Any(r => r.RatingType == request.RatingType))
@@ -74,7 +76,10 @@ public partial class PlayerService : IPlayerProfileService
             PercentileMaxRank = await GetPercentileMaxRank(request.RatingType, context, token),
             History = calculated.Ratings, CurrentStreak = calculated.CurrentStreak,
             LongestWinStreak = calculated.LongestWinStreak, LongestLoseStreak = calculated.LongestLoseStreak,
-            TopRating = calculated.TopRating, Replays = recent.Replays
+            TopRating = calculated.TopRating,
+            AverageScanCount = scanCounts.Count == 0 ? null : Math.Round(scanCounts.Average(), 2),
+            ScanCountReplays = scanCounts.Count,
+            Replays = recent.Replays
         };
     }
 

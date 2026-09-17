@@ -19,6 +19,8 @@ public sealed record PlayerOverview
     public StreakPlayerStats LongestLoseStreak { get; init; } = new();
     public StreakPlayerStats? CurrentStreak { get; init; }
     public TopRating TopRating { get; init; } = new();
+    public double? AverageScanCount { get; init; }
+    public int ScanCountReplays { get; init; }
     public List<ReplayListDto> Replays { get; init; } = [];
 }
 

@@ -94,6 +94,28 @@ public class PlayerProfileTests
     }
 
     [TestMethod]
+    public async Task Overview_AveragesOnlyAvailableScanCounts()
+    {
+        using var fixture = new PlayerServiceTests.Fixture();
+        using (var db = fixture.CreateContext())
+        {
+            PlayerServiceTests.AddReplay(db, 1, 1, RatingType.Commanders);
+            PlayerServiceTests.AddReplay(db, 2, 1, RatingType.Commanders);
+            PlayerServiceTests.AddReplay(db, 3, 1, RatingType.Commanders);
+            await db.SaveChangesAsync();
+            var players = await db.ReplayPlayers.Where(x => x.PlayerId == 1).OrderBy(x => x.ReplayId).ToListAsync();
+            players[0].ScanCount = 0;
+            players[1].ScanCount = 4;
+            await db.SaveChangesAsync();
+        }
+
+        var overview = (await fixture.Service.GetOverview(Request()))!;
+
+        Assert.AreEqual(2, overview.ScanCountReplays);
+        Assert.AreEqual(2.0, overview.AverageScanCount);
+    }
+
+    [TestMethod]
     public async Task UnknownAndUnratedPlayers_AreDistinctAndCancellationPropagates()
     {
         using var fixture = new PlayerServiceTests.Fixture();
