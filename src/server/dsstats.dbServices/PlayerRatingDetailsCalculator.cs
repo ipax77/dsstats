@@ -1,18 +1,19 @@
-﻿using dsstats.shared;
+using dsstats.shared;
+using System.Globalization;
 
 namespace dsstats.dbServices;
 
-public partial class PlayerService
+internal static class PlayerRatingDetailsCalculator
 {
     private static readonly TimePeriod _defaultGainTimePeriod = TimePeriod.Last90Days;
 
-    private static RatingDetails GenerateStats3(
-        List<ReplayPlayerStatsData> replays,
-        Dictionary<int, ReplayRatingPlayerStatsData> ratings,
-        int playerId)
+    // Replays must be ordered by Gametime, then ReplayId.
+    internal static RatingDetails Calculate(
+        List<PlayerReplayData> replays,
+        Dictionary<int, PlayerReplayRatingData> ratings,
+        int playerId, DateTime? today = null)
     {
-        var state = InitializeState();
-        state.Past90Days = DateTime.Today.AddDays(-90);
+        var state = new StatsState { Past90Days = (today ?? DateTime.Today).AddDays(-90) };
 
         int total = replays.Count;
         for (int i = 0; i < total; i++)
@@ -33,28 +34,26 @@ public partial class PlayerService
         return BuildFinalDetails(state);
     }
 
-    private static StatsState InitializeState() => new();
-
     private static ReplayContext BuildReplayContext(
-        ReplayPlayerStatsData replay,
-        ReplayRatingPlayerStatsData? rating,
+        PlayerReplayData replay,
+        PlayerReplayRatingData? rating,
         int playerId,
         int index,
         int totalCount)
     {
         var selfPlayer = replay.Players.FirstOrDefault(p => p.PlayerId == playerId);
 
-        var dict = rating?.PlayerRatings?
-            .GroupBy(pr => pr.PlayerId)
-            .ToDictionary(g => g.Key, g => g.First())
-            ?? new Dictionary<int, ReplayPlayerRatingPlayerStatsData>();
-
+        var dict = new Dictionary<int, PlayerReplayParticipantRatingData>();
+        if (rating is not null)
+        {
+            foreach (var playerRating in rating.PlayerRatings)
+                dict.TryAdd(playerRating.PlayerId, playerRating);
+        }
         dict.TryGetValue(playerId, out var selfRating);
 
         return new ReplayContext(replay, rating, selfPlayer, selfRating, dict, index, totalCount);
     }
 
-    // ---------------------- Processing Helpers ----------------------
     private static void ProcessGameMode(StatsState s, ReplayContext ctx)
     {
         var gm = ctx.Replay.GameMode;
@@ -63,8 +62,8 @@ public partial class PlayerService
 
     private static void ProcessLastReplays(StatsState s, ReplayContext ctx)
     {
-        // Keep the last 12 replays (same condition as original: i > replays.Count - 12)
-        if (ctx.Index <= ctx.TotalCount - 12)
+        // Keep up to 12 most recent replays.
+        if (ctx.Index < ctx.TotalCount - 12)
             return;
 
         var replay = ctx.Replay;
@@ -128,7 +127,6 @@ public partial class PlayerService
         // If rated (self rating exists), update rating-related stats
         if (ctx.SelfRating is not null)
         {
-            s.RatedGames++;
 
             // Avg gains in last 90 days by commander
             if (ctx.Replay.Gametime >= s.Past90Days)
@@ -231,7 +229,7 @@ public partial class PlayerService
 
         bool isWin = self.TeamId == ctx.Replay.WinnerTeam;
 
-        if (ctx.Index == 0)
+        if (s.CurrentWin.Count == 0 && s.CurrentLose.Count == 0)
         {
             // initialize
             if (isWin)
@@ -265,7 +263,7 @@ public partial class PlayerService
                 // Only update BestLose if current lose streak was longer
                 if (s.CurrentLose.Count > s.BestLose.Count)
                 {
-                    s.BestLose = s.CurrentLose with { EndDate = ctx.Replay.Gametime };
+                    s.BestLose = s.CurrentLose with { };
                 }
                 s.CurrentWin = new StreakPlayerStats
                 {
@@ -290,7 +288,7 @@ public partial class PlayerService
                 // Only update BestWin if current win streak was longer
                 if (s.CurrentWin.Count > s.BestWin.Count)
                 {
-                    s.BestWin = s.CurrentWin with { EndDate = ctx.Replay.Gametime };
+                    s.BestWin = s.CurrentWin with { };
                 }
                 s.CurrentLose = new StreakPlayerStats
                 {
@@ -319,9 +317,13 @@ public partial class PlayerService
         }
     }
 
-    // ---------------------- Final assembly ----------------------
     private static RatingDetails BuildFinalDetails(StatsState s)
     {
+        foreach (var gain in s.CommanderAvgGains.Values)
+            gain.AvgGain = Math.Round(gain.AvgGain / gain.Count, 2);
+        foreach (var other in s.Teammates.Values.Concat(s.Opponents.Values))
+            other.AvgGain = MathF.Round(other.AvgGain / other.Count, 2);
+
         var details = new RatingDetails
         {
             GameModes = s.GameModeCounts
@@ -333,8 +335,7 @@ public partial class PlayerService
                 .ToList(),
 
             Ratings = s.RatingHistory
-                .OrderBy(x => x.Date)
-                .GroupBy(x => GetIso8601Week(x.Date))
+                .GroupBy(x => (Year: ISOWeek.GetYear(x.Date), Week: ISOWeek.GetWeekOfYear(x.Date)))
                 .Select(g => new RatingAtDateTime
                 {
                     Year = g.Key.Year,
@@ -344,7 +345,7 @@ public partial class PlayerService
                 })
                 .ToList(),
 
-            Replays = s.LastReplays.OrderByDescending(r => r.Gametime).ToList(),
+            Replays = s.LastReplays.AsEnumerable().Reverse().ToList(),
 
             AvgGainResponses = new List<CmdrAvgGainResponse>
                 {
@@ -368,43 +369,40 @@ public partial class PlayerService
 
         return details;
     }
+
+    private sealed class StatsState
+    {
+        public Dictionary<GameMode, int> GameModeCounts { get; } = new();
+        public Dictionary<Commander, int> CommanderCounts { get; } = new();
+        public Dictionary<Commander, PlayerCmdrAvgGain> CommanderAvgGains { get; } = new();
+        public List<ReplayListDto> LastReplays { get; } = new();
+        public Dictionary<ToonIdRec, OtherPlayerStats> Teammates { get; } = new();
+        public Dictionary<ToonIdRec, OtherPlayerStats> Opponents { get; } = new();
+        public Dictionary<int, PosPlayerStats> PosStats { get; } = new();
+        public List<(DateTime Date, float Rating, int Games)> RatingHistory { get; } = new();
+        public long TeammateRatings { get; set; } = 0;
+        public long OpponentRatings { get; set; } = 0;
+        public int TeammateRatingsCount { get; set; } = 0;
+        public int OpponentRatingsCount { get; set; } = 0;
+
+        public bool OnWinStreak { get; set; }
+        public StreakPlayerStats CurrentWin { get; set; } = new();
+        public StreakPlayerStats CurrentLose { get; set; } = new();
+        public StreakPlayerStats BestWin { get; set; } = new();
+        public StreakPlayerStats BestLose { get; set; } = new();
+
+        public TopRating TopRating { get; set; } = new() { Rating = 0, DateAchieved = DateTime.MinValue };
+
+        public DateTime Past90Days { get; set; }
+    }
+
+    private sealed record ReplayContext(
+        PlayerReplayData Replay,
+        PlayerReplayRatingData? Rating,
+        PlayerReplayParticipantData? SelfPlayer,
+        PlayerReplayParticipantRatingData? SelfRating,
+        Dictionary<int, PlayerReplayParticipantRatingData> RatingsByPlayerId,
+        int Index,
+        int TotalCount
+    );
 }
-
-
-// ---------------------- State & Context ----------------------
-internal class StatsState
-{
-    public Dictionary<GameMode, int> GameModeCounts { get; } = new();
-    public Dictionary<Commander, int> CommanderCounts { get; } = new();
-    public Dictionary<Commander, PlayerCmdrAvgGain> CommanderAvgGains { get; } = new();
-    public List<ReplayListDto> LastReplays { get; } = new();
-    public Dictionary<ToonIdRec, OtherPlayerStats> Teammates { get; } = new();
-    public Dictionary<ToonIdRec, OtherPlayerStats> Opponents { get; } = new();
-    public Dictionary<int, PosPlayerStats> PosStats { get; } = new();
-    public List<(DateTime Date, float Rating, int Games)> RatingHistory { get; } = new();
-    public int RatedGames { get; set; } = 0;
-    public long TeammateRatings { get; set; } = 0;
-    public long OpponentRatings { get; set; } = 0;
-    public int TeammateRatingsCount { get; set; } = 0;
-    public int OpponentRatingsCount { get; set; } = 0;
-
-    public bool OnWinStreak { get; set; }
-    public StreakPlayerStats CurrentWin { get; set; } = new();
-    public StreakPlayerStats CurrentLose { get; set; } = new();
-    public StreakPlayerStats BestWin { get; set; } = new();
-    public StreakPlayerStats BestLose { get; set; } = new();
-
-    public TopRating TopRating { get; set; } = new() { Rating = 0, DateAchieved = DateTime.MinValue };
-
-    public DateTime Past90Days { get; set; }
-}
-
-internal record ReplayContext(
-    ReplayPlayerStatsData Replay,
-    ReplayRatingPlayerStatsData? Rating,
-    ReplayPlayerPlayerStatsData? SelfPlayer,
-    ReplayPlayerRatingPlayerStatsData? SelfRating,
-    Dictionary<int, ReplayPlayerRatingPlayerStatsData> RatingsByPlayerId,
-    int Index,
-    int TotalCount
-);
