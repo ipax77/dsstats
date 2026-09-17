@@ -12,7 +12,7 @@
         <div class="relationship-scroll">
             <table>
                 <thead><tr>
-                    @foreach (var column in new[] { "Player", "Games", "Their win rate", "Your gain" })
+                    @foreach (var column in new[] { "Player", "Games", "Their win rate", "Profile player’s gain" })
                     {
                         <th aria-sort="@(sort == column ? (descending ? "descending" : "ascending") : "none")">
                             <button type="button" @onclick="() => Sort(column)">@column @(sort == column ? (descending ? "↓" : "↑") : "")</button>
@@ -47,7 +47,7 @@
     private double Value(OtherPlayerStats item) => sort switch
     {
         "Their win rate" => item.Wins / (double)item.Count,
-        "Your gain" => item.AvgGain,
+        "Profile player’s gain" => item.AvgGain,
         _ => item.Count
     };
 }

@@ -1,14 +1,9 @@
-@using Microsoft.Extensions.Options
 @using dsstats.weblib.Players.Profile
-@inject IOptions<HostOptions> HostOptions
 @using Microsoft.JSInterop
 @using dsstats.shared
 @inject IJSRuntime JSRuntime
 
-@if (HostOptions.Value.Kind == HostAppKind.BlazorServer)
-{
-    <PlayerProfileModal @ref="profileModal" OnSelectionChanged="OnProfileSelectionChanged" />
-}
+<PlayerProfileModal @ref="profileModal" OnSelectionChanged="OnProfileSelectionChanged" />
 <div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@modalId" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen">
         <div class="modal-content">

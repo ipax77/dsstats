@@ -77,6 +77,7 @@ builder.Services.AddScoped<ISpawnPlaybackSidecarDecoder, BrowserSpawnPlaybackSid
 builder.Services.AddScoped<SpawnPlaybackSidecarCache>();
 builder.Services.AddScoped<SpawnPositionHydrationService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
+builder.Services.AddKeyedScoped<IReplayRepository, dsstats.apiServices.ReplayRepository>("api");
 builder.Services.AddScoped<RatingService>();
 builder.Services.AddScoped<SessionProgressService>();
 builder.Services.AddScoped<InHouseAuthClient>();
@@ -92,6 +93,7 @@ builder.Services.AddAuthorizationCore(options =>
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<AuthenticationStateProvider, InHouseAuthenticationStateProvider>();
 builder.Services.AddScoped<IPlayerService, dsstats.apiServices.PlayerService>();
+builder.Services.AddScoped<IPlayerProfileService, dsstats.apiServices.PlayerProfileService>();
 builder.Services.AddScoped<IStatsService, dsstats.apiServices.StatsService>();
 builder.Services.AddScoped<IUnitLifeCostService, NoOpUnitLifeCostService>();
 builder.Services.AddSingleton<IBuilderService, UnavailableBuilderService>();

@@ -5,13 +5,12 @@
 @using Microsoft.JSInterop
 @inject IPlayerProfileService Profiles
 @inject IStatsService Stats
-@inject IReplayRepository Replays
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<dialog @ref="dialog" class="profile-dialog" aria-labelledby="@titleId">
+<dialog @ref="dialog" class="profile-dialog bgchart" aria-labelledby="@titleId">
     <div class="profile-shell">
-        <header class="profile-header">
+        <header class="profile-header bgchart2">
             <div class="identity">
                 @if (session?.CanGoBack == true)
                 {
@@ -67,7 +66,7 @@
                         { <span class="commander-icon preload-@(rating.Main.ToString().ToLowerInvariant())" aria-hidden="true"></span>@rating.Main }
                         else { <span>—</span> }
                     </strong><small>Most played</small></div>
-                    <div class="metric"><span>Average scans</span><strong>@(overview.AverageScanCount?.ToString("N2") ?? "—")</strong><small>@(overview.ScanCountReplays > 0 ? $"{overview.ScanCountReplays:N0} replays with scan data" : "No scan data available")</small></div>
+                    <div class="metric"><span>Scans per replay</span><strong>@(overview.AverageScanCount?.ToString("N2") ?? "—")</strong><small>@(overview.ScanCountReplays > 0 ? $"Lifetime · {overview.ScanCountReplays:N0} replays with scan data" : "No scan data available")</small></div>
                 </section>
                 <nav class="category-strip" aria-label="Player rating categories">
                     @foreach (var other in overview.Ratings.OrderBy(x => x.RatingType))
@@ -109,23 +108,26 @@
                     }
                     else
                     {
-                        <div class="profile-replays-scroll">
+                        <p class="scroll-hint">Scroll horizontally to see more replay details →</p>
+                        @if (replayLoading) { <p role="status" class="muted">Opening replay…</p> }
+                        <div class="profile-replays-scroll" tabindex="0" role="region" aria-label="Recent replays">
                             <table class="tptable profile-replays">
-                                <colgroup><col class="replay-time" /><col class="replay-mode" /><col class="replay-duration" /><col class="replay-team" /><col class="replay-team" /><col class="replay-expected" /><col class="replay-rating" /><col class="replay-gain" /><col class="replay-leaver" /></colgroup>
+                                <colgroup><col class="replay-time" /><col class="replay-gain" /><col class="replay-mode" /><col class="replay-duration" /><col class="replay-team" /><col class="replay-team" /><col class="replay-expected" /><col class="replay-rating" /><col class="replay-leaver" /></colgroup>
                                 <thead><tr>
-                                    <th scope="col">Gametime</th><th scope="col">GameMode</th><th scope="col">Duration</th>
-                                    <th scope="col">Team1</th><th scope="col">Team2</th><th scope="col">Exp2Win</th>
-                                    <th scope="col">AvgRating</th><th scope="col">Gain</th><th scope="col">LeaverType</th>
+                                    <th scope="col">Date</th><th scope="col">Gain</th><th scope="col">Game mode</th><th scope="col">Duration</th>
+                                    <th scope="col">Team 1</th><th scope="col">Team 2</th><th scope="col">Win chance</th>
+                                    <th scope="col">Avg. rating</th><th scope="col">Leaver type</th>
                                 </tr></thead>
                                 <tbody>
                                     @foreach (var replay in overview.Replays)
                                     {
                                         <tr @key="replay" class="pointer @(replayLoading ? "replays-loading" : "")" title="Open replay" @onclick="() => OpenReplay(replay.ReplayHash)">
-                                            <td>@replay.Gametime.ToString("yyyy-MM-dd")</td><td>@replay.GameMode</td>
+                                            <td><button type="button" class="replay-link" disabled="@replayLoading" aria-label="@($"Open replay from {replay.Gametime:dd MMM yyyy HH:mm}")" @onclick="() => OpenReplay(replay.ReplayHash)" @onclick:stopPropagation="true">@replay.Gametime.ToString("yyyy-MM-dd")</button></td>
+                                            <td class="@(replay.PlayerGain >= 0 ? "positive" : "negative")">@replay.PlayerGain.ToString("+0.00;-0.00;0.00")</td><td>@replay.GameMode</td>
                                             <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
                                             <td><ReplayTeamComponent Replay="replay" TeamNumber="1" /></td><td><ReplayTeamComponent Replay="replay" TeamNumber="2" /></td>
                                             <td class="@(replay.Exp2Win >= 0.5 ? "positive" : "negative")">@replay.Exp2Win?.ToString("p0")</td>
-                                            <td>@replay.AvgRating</td><td class="@(replay.PlayerGain >= 0 ? "positive" : "negative")">@replay.PlayerGain.ToString("+0.00;-0.00;0.00")</td>
+                                            <td>@replay.AvgRating</td>
                                             <td>@replay.LeaverType</td>
                                         </tr>
                                     }
@@ -136,8 +138,8 @@
                 </section>
                 @if (State is { Expanded: false })
                 {
-                    <section class="details-invitation"><div><span class="eyebrow">GO DEEPER</span><h3>What’s behind the rating?</h3><p>Explore commander performance, teammates, and opponents.</p></div>
-                        <button class="primary-button" @onclick="Expand">Load details <span aria-hidden="true">↓</span></button></section>
+                    <section class="details-invitation bgchart2"><div><h3>Detailed statistics</h3><p>Commander performance, teammates, and opponents.</p></div>
+                        <button class="primary-button" @onclick="Expand">Show details <span aria-hidden="true">↓</span></button></section>
                 }
                 else if (State is { Expanded: true } state)
                 {
@@ -198,7 +200,7 @@
                                     @if (gains.AvgGains.Count == 0) { <p class="muted">No commander performance data for this period.</p> }
                                     else
                                     {
-                                <div class="table-scroll commander-performance"><table class="breakdown-table"><thead><tr><th>Commander</th><th>Games</th><th>Win rate</th><th>Average gain</th></tr></thead><tbody>
+                                <div class="table-scroll commander-performance" tabindex="0" role="region" aria-label="Commander performance"><table class="breakdown-table"><thead><tr><th>Commander</th><th>Games</th><th>Win rate</th><th>Average gain</th></tr></thead><tbody>
                                             @foreach (var gain in gains.AvgGains.OrderByDescending(x => x.Count))
                                             { <tr><td><span class="commander-cell"><span class="commander-icon preload-@(gain.Commander.ToString().ToLowerInvariant())" title="@gain.Commander" role="img" aria-label="@gain.Commander"></span><span>@gain.Commander</span></span></td><td>@gain.Count.ToString("N0")</td><td>@(gain.Count > 0 ? (gain.Wins / (double)gain.Count).ToString("P1") : "—")</td><td class="@(gain.AvgGain >= 0 ? "positive" : "negative")">@gain.AvgGain.ToString("+0.00;-0.00;0.00")</td></tr> }
                                         </tbody></table></div>
@@ -221,6 +223,7 @@
 <ReplayModal @ref="replayModal" OnClose="Resume" OnPlayerProfileRequest="ShowFromReplay" />
 
 @code {
+    [Inject(Key = "api")] public IReplayRepository Replays { get; set; } = null!;
     [Parameter] public EventCallback<PlayerProfileRequest?> OnSelectionChanged { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     private readonly string titleId = $"profile-{Guid.NewGuid():N}";
@@ -307,6 +310,7 @@
 
     private async Task OpenReplay(string hash)
     {
+        if (replayLoading) return;
         replayLoading = true;
         replayError = null;
         var selected = State;

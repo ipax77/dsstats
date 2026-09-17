@@ -1,11 +1,7 @@
-@using Microsoft.Extensions.Options
-@inject IOptions<HostOptions> ProfileHostOptions
 @using Microsoft.AspNetCore.Components.Web.Virtualization
 @using dsstats.shared
 @using dsstats.shared.Interfaces
-@using dsstats.weblib.Replays
 @inject IPlayerService PlayerService
-@implements IDisposable
 
 <div class="mb-1" style="max-width: 990px;">
     <RatingsRequestComponent @ref="ratingsRequestComponent" Count="totalCount" Request="PlayerRequest" OnRequestChanged="Reload" />
@@ -112,11 +108,7 @@
         </div>
     </div>
 </div>
-<PlayerModal @ref="playerModal"
-             OnReplayRequest="e => replayModal?.Show(e)"
-             OnPlayerRequest="e => ShowPlayerStats(Data.GetToonIdString(e))"
-             OnClose="ClosePlayerStats" OnProfileSelectionChanged="ProfileSelectionChanged" />
-<ReplayModal @ref="replayModal" OnClose="e => playerModal?.Show(playerStatsResponse!)" />
+<PlayerModal @ref="playerModal" OnProfileSelectionChanged="ProfileSelectionChanged" />
 
 @code {
     [Parameter, EditorRequired]
@@ -126,15 +118,10 @@
     public EventCallback<PlayerRatingsRequest> OnRequestChanged { get; set; }
 
     int totalCount = 0;
-    CancellationTokenSource cts = new();
     Virtualize<PlayerRatingListItem>? virtualizeComponent;
     PlayerModal? playerModal;
-    ReplayModal? replayModal;
-    PlayerStatsResponse? playerStatsResponse = null;
     RatingsRequestComponent? ratingsRequestComponent;
     bool showRatingDistribution;
-    private Queue<(string ToonIdString, PlayerStatsResponse Response)> _playerNavigationQueue = new();
-    private const int MaxNavigationHistory = 3;
 
     protected override void OnInitialized()
     {
@@ -183,74 +170,17 @@
         return new ItemsProviderResult<PlayerRatingListItem>(ratings, Math.Min(totalCount, PlayerRequest.PageSize));
     }
 
-    private async Task ShowPlayerStats(string toonIdString)
+    private Task ShowPlayerStats(string toonIdString) => playerModal!.ShowProfile(new()
     {
-        if (ProfileHostOptions.Value.Kind == HostAppKind.BlazorServer)
-        {
-            await playerModal!.ShowProfile(new()
-            {
-                ToonId = Data.GetToonId(toonIdString) ?? new(), RatingType = PlayerRequest.RatingType
-            });
-            return;
-        }
-        ratingsRequestComponent?.SetLoading(true);
-
-        PlayerStatsRequest statsRequest = new()
-        {
-            ToonId = Data.GetToonId(toonIdString) ?? new(),
-            RatingType = PlayerRequest.RatingType
-        };
-
-        var newResponse = await PlayerService.GetPlayerStats(statsRequest, cts.Token);
-
-        // Push current state to queue if we have one
-        if (playerStatsResponse != null && PlayerRequest.ToonIdString != null)
-        {
-            _playerNavigationQueue.Enqueue((PlayerRequest.ToonIdString, playerStatsResponse));
-
-            // Limit queue size
-            if (_playerNavigationQueue.Count > MaxNavigationHistory)
-            {
-                _playerNavigationQueue.Dequeue(); // Remove oldest
-            }
-        }
-
-        playerStatsResponse = newResponse;
-        PlayerRequest.ToonIdString = toonIdString;
-        playerModal?.Show(playerStatsResponse);
-
-        ratingsRequestComponent?.SetLoading(false);
-        await OnRequestChanged.InvokeAsync(PlayerRequest);
-    }
+        ToonId = Data.GetToonId(toonIdString) ?? new(),
+        RatingType = PlayerRequest.RatingType
+    });
 
     private async Task ProfileSelectionChanged(PlayerProfileRequest? request)
     {
         PlayerRequest.ToonIdString = request is null ? null : Data.GetToonIdString(request.ToonId);
         await OnRequestChanged.InvokeAsync(PlayerRequest);
     }
-    private async Task ClosePlayerStats()
-    {
-        if (_playerNavigationQueue.Count > 0)
-        {
-            // Navigate back to previous player
-            var (previousToonId, previousResponse) = _playerNavigationQueue.Dequeue();
-            playerStatsResponse = previousResponse;
-            PlayerRequest.ToonIdString = previousToonId;
-
-            await Task.Delay(100); // Allow modal to close before reopening
-            playerModal?.Show(playerStatsResponse);
-            await OnRequestChanged.InvokeAsync(PlayerRequest);
-        }
-        else
-        {
-            // No more history, fully close
-            PlayerRequest.ToonIdString = null;
-            playerStatsResponse = null;
-            _playerNavigationQueue.Clear();
-            await OnRequestChanged.InvokeAsync(PlayerRequest);
-        }
-    }
-
     private async Task SortList(MouseEventArgs e, string column)
     {
         var exOrder = PlayerRequest.Orders.FirstOrDefault(f => f.Column == column);
@@ -278,11 +208,5 @@
             });
         }
         await Reload();
-    }
-
-    public void Dispose()
-    {
-        cts.Cancel();
-        cts.Dispose();
     }
 }

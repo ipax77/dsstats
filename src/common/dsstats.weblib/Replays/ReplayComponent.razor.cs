@@ -145,7 +145,7 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
             Player = player,
             RatingType = _replayHelper.RatingType,
         };
-        if (HostOptions.Value.Kind == HostAppKind.BlazorServer && OnPlayerProfileRequest.HasDelegate)
+        if (OnPlayerProfileRequest.HasDelegate)
         {
             await OnPlayerProfileRequest.InvokeAsync(new() { ToonId = player.ToonId, RatingType = request.RatingType });
             return;
