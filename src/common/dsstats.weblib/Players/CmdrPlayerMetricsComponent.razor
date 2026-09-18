@@ -2,9 +2,10 @@
 @using dsstats.shared
 @using dsstats.shared.Interfaces
 @using Microsoft.JSInterop
+@using dsstats.weblib.Players.Profile
+@using dsstats.weblib.Replays
 @inject IPlayerService PlayerService
-@inject IReplayRepository ReplayRepository
-@inject NavigationManager NavigationManager
+@inject ILogger<CmdrPlayerMetricsComponent> Logger
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
@@ -40,25 +41,39 @@
 					</span>
 				</div>
 			</div>
-			<CmdrPlayerMetricsInfoComponent @ref="cmdrPlayerInfoComponent" Response="response" />
+			@if (loadError is not null)
+			{
+				<div class="alert alert-danger" role="alert">@loadError</div>
+			}
+			<CmdrPlayerMetricsInfoComponent Response="response" SelectedPlayerId="selectedPlayerId"
+				OnPlayerDetailsRequest="ShowPlayerDetails" OnPlayerReplaysRequest="ShowPlayerReplays" />
 		</div>
 		<div class="col-auto" style="min-width: 700px;">
 			<div class="ms-2 mb-2">
 				<button class="btn btn-sm btn-outline-light bgchart"
 						type="button"
 						id="buildreplaystoggle"
-						data-bs-toggle="collapse"
-						data-bs-target="#buildreplays"
-						aria-expanded="false"
+						aria-expanded="@(showReplays ? "true" : "false")"
 						aria-controls="buildreplays"
 						@onclick="e => showReplays = !showReplays">
 					<span class="bi @(showReplays ? "bi bi-chevron-double-down" : "bi-chevron-double-up")"></span>
 					Replays
 				</button>
+				@if (selectedPlayerId is not null)
+				{
+					<div class="ms-2 p-2 d-inline rounded bgchart">
+						<span class="ms-2">@selectedPlayerName</span>
+						<button class="btn btn-sm btn-outline-light ms-2" type="button" @onclick="ClearPlayerSelection">All players</button>
+					</div>
+				}
 			</div>
-			<div class="collapse" id="buildreplays">
-				<div class="bgchart p-1 rounded">
-				</div>
+			<div id="buildreplays">
+				@if (showReplays)
+				{
+					<div class="bgchart p-1 rounded">
+						<ReplaysComponent @key="replaysRequest" ReplaysRequest="replaysRequest" />
+					</div>
+				}
 			</div>
 		</div>
 		<div class="col-auto">
@@ -76,6 +91,7 @@
 		</div>
 	</div>
 </div>
+<PlayerProfileModal @ref="playerProfileModal" />
 
 @code {
 	[Parameter, EditorRequired]
@@ -89,68 +105,117 @@
 	double avgGain => response.Items.Count == 0 ? 0 : Math.Round(response.Items.Average(a => a.AvgGain), 2);
 
 	private bool showReplays;
-	CmdrPlayerMetricsInfoComponent? cmdrPlayerInfoComponent;
-	// BuildReplaysComponent? buildReplaysComponent;
+	PlayerProfileModal? playerProfileModal;
+	ReplaysRequest replaysRequest = new();
+	ToonIdDto? selectedPlayerId;
+	string? selectedPlayerName;
+	string? loadError;
+	int requestVersion;
+	bool disposed;
+	bool refreshTooltips;
 
-	private ReplayDto? interestReplay { get; set; }
+	protected override Task OnInitializedAsync() => RequestChanged(true);
 
-	protected override async Task OnInitializedAsync()
+	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
-		// await SetCount(Request);
-		RequestChanged(true);
-		await base.OnInitializedAsync();
-	}
-
-	protected override void OnAfterRender(bool firstRender)
-	{
-		if (firstRender)
+		if (firstRender || refreshTooltips)
 		{
-			JSRuntime.InvokeVoidAsync("enableTooltips");
-		}
-		base.OnAfterRender(firstRender);
-	}
-
-	private async Task LoadPlayerInfos(CmdrStrenghtRequest request)
-	{
-		response = await PlayerService.GetCmdrPlayerInfos(request);
-		cmdrPlayerInfoComponent?.SetStrength(response);
-	}
-
-	private void ShowHideReplays(bool show)
-	{
-		showReplays = show;
-		if (showReplays)
-		{
-			RequestChanged();
-		}
-		else
-		{
-			InvokeAsync(() => StateHasChanged());
+			refreshTooltips = false;
+			await JSRuntime.InvokeVoidAsync("enableTooltips");
 		}
 	}
 
-
-	public async void RequestChanged(bool init = false)
+	private Task ShowPlayerDetails(ToonIdDto toonId) => playerProfileModal!.Show(new()
 	{
+		ToonId = toonId,
+		RatingType = Request.RatingType
+	});
+
+	private void ShowPlayerReplays(ToonIdDto toonId)
+	{
+		selectedPlayerId = toonId;
+		selectedPlayerName = response.Items.FirstOrDefault(x => x.ToonId == toonId)?.Name;
+		RebuildReplayRequest();
+		showReplays = true;
+	}
+
+	private void ClearPlayerSelection()
+	{
+		selectedPlayerId = null;
+		selectedPlayerName = null;
+		RebuildReplayRequest();
+	}
+
+	private void RebuildReplayRequest()
+	{
+		replaysRequest = new()
+		{
+			RatingType = Request.RatingType,
+			Commander = selectedPlayerId is null && Request.Interest != Commander.None ? Request.Interest.ToString() : null,
+			Filter = new()
+			{
+				TimePeriod = Request.TimePeriod,
+				TournamentEdition = Request.RatingType is RatingType.StandardTE or RatingType.CommandersTE,
+				GameModes = Request.RatingType switch
+				{
+					RatingType.Standard or RatingType.StandardTE => [GameMode.Standard],
+					RatingType.Commanders or RatingType.CommandersTE => [GameMode.Commanders],
+					_ => []
+				},
+				PosFilters = selectedPlayerId is null ? [] : [new()
+				{
+					Commander = Request.Interest,
+					PlayerNameOrId = Data.GetToonIdString(selectedPlayerId)
+				}]
+			}
+		};
+	}
+
+	public async Task RequestChanged(bool init = false)
+	{
+		var version = ++requestVersion;
+		ClearPlayerSelection();
+		response = new();
+		loadError = null;
+		isLoading = true;
+		// The form mutates Request in place, so each load needs its own snapshot.
+		var request = new CmdrStrenghtRequest
+		{
+			Interest = Request.Interest,
+			RatingType = Request.RatingType,
+			TimePeriod = Request.TimePeriod,
+			MaxRating = Request.MaxRating,
+			MinRating = Request.MinRating,
+			MaxGap = Request.MaxGap,
+			WithoutLeavers = Request.WithoutLeavers,
+			Uploaders = Request.Uploaders
+		};
 		try
 		{
-			isLoading = true;
-			await InvokeAsync(() => StateHasChanged());
-			await LoadPlayerInfos(Request);
-			isLoading = false;
-			await InvokeAsync(() => StateHasChanged());
+			var result = await PlayerService.GetCmdrPlayerInfos(request);
+			if (disposed || version != requestVersion) return;
+			response = result;
+			refreshTooltips = true;
 			if (!init)
 			{
-				await JSRuntime.InvokeVoidAsync("enableTooltips");
 				await OnRequestChanged.InvokeAsync(Request);
 			}
 		}
-		catch
+		catch (Exception ex)
 		{
+			Logger.LogError(ex, "Error loading commander player metrics");
+			if (!disposed && version == requestVersion)
+				loadError = "Unable to load player metrics. Please try changing the filters again.";
+		}
+		finally
+		{
+			if (!disposed && version == requestVersion)
+				isLoading = false;
 		}
 	}
 
 	public void Dispose()
 	{
+		disposed = true;
 	}
 }
