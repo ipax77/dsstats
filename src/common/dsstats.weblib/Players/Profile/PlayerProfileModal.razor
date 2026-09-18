@@ -8,9 +8,9 @@
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<dialog @ref="dialog" class="profile-dialog bgchart" aria-labelledby="@titleId">
+<dialog @ref="dialog" class="profile-dialog" aria-labelledby="@titleId">
     <div class="profile-shell">
-        <header class="profile-header bgchart2">
+        <header class="profile-header bg-dark">
             <div class="identity">
                 @if (session?.CanGoBack == true)
                 {
@@ -143,7 +143,7 @@
                 }
                 else if (State is { Expanded: true } state)
                 {
-                    <section class="panel detail-panel">
+                    <section class="panel detail-panel bg-dark-subtle">
                         <div class="section-heading detail-panel-heading"><h3>Player insights</h3><span class="badge-label">@Category(overview.RatingType)</span></div>
                         <div class="section-tabs" role="tablist" aria-label="Player insights">
                             @foreach (var section in new[] { "Performance", "Players", "Breakdown" })
