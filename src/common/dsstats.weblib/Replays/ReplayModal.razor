@@ -1,4 +1,4 @@
-﻿@using Microsoft.JSInterop
+@using Microsoft.JSInterop
 @using dsstats.shared
 @inject IJSRuntime JSRuntime
 
@@ -8,7 +8,7 @@
             <div class="modal-body" style="background: url('/_content/dsstats.weblib/images/bgbing_soft.jpg') repeat center center fixed;">
                 @if (ReplayDetails != null)
                 {
-                    <ReplayComponent ReplayDetails="ReplayDetails" IsScrollable="IsScrollable" IsCloseable="true" OnPlayerRequest="OnPlayerRequest" OnClose="Close" />
+                    <ReplayComponent ReplayDetails="ReplayDetails" IsScrollable="IsScrollable" IsCloseable="true" OnPlayerRequest="OnPlayerRequest" OnPlayerProfileRequest="OnPlayerProfileRequest" OnClose="Close" />
                 }
             </div>
         </div>
@@ -28,6 +28,8 @@
 
     [Parameter]
     public EventCallback<PlayerStatsResponse> OnPlayerRequest { get; set; }
+
+    [Parameter] public EventCallback<PlayerProfileRequest> OnPlayerProfileRequest { get; set; }
 
     [Parameter]
     public EventCallback OnClose { get; set; }

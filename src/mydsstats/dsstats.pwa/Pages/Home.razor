@@ -61,7 +61,7 @@
                                                     ReplayDetails="currentReplayDetails"
                                                     IsScrollable="true"
                                                     IsCloseable="false"
-                                                    OnPlayerRequest="e => playerModal?.Show(e)"
+                                                    OnPlayerRequest="e => playerModal?.Show(e)" OnPlayerProfileRequest="e => playerModal!.ShowProfile(e)"
                                                     OnScrollRequest="ScrollReplay"
                                                     OnRatingUpdateRequest="UpdateRatings" />
         </div>

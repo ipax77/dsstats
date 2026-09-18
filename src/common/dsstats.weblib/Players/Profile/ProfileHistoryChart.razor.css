@@ -1,0 +1,19 @@
+.history-chart { display:grid; grid-template-columns:max-content minmax(0,1fr); column-gap:12px; font-variant-numeric:tabular-nums; container-type:inline-size }
+.rating-scale { display:flex; flex-direction:column; justify-content:space-between; padding:10px 0; color:#f1cd8c; font-size:.75rem }
+.history-plot { min-width:0; height:200px }
+.history-plot svg { display:block; width:100%; height:100%; overflow:visible }
+.games-label { color:#8fc7ff; font-size:.7rem; padding-top:8px }
+.game-ticks { position:relative; height:34px; border-top:1px solid #5d83ad; color:#8fc7ff; font-size:.75rem }
+.game-tick { position:absolute; top:8px; transform:translateX(-50%); white-space:nowrap }
+.game-tick::before { content:""; position:absolute; height:5px; width:1px; background:#8fc7ff; top:-9px; left:50% }
+.game-tick:first-child { transform:none }
+.game-tick:first-child::before { left:0 }
+.game-tick:last-child:not(:first-child) { transform:translateX(-100%) }
+.game-tick:last-child:not(:first-child)::before { left:100% }
+.history-dates { grid-column:2; display:flex; justify-content:space-between; gap:12px; color:#9baec5; font-size:.75rem; padding-top:4px }
+.mobile-ticks { display:none }
+.history-empty { color:#9baec5; font-size:.9rem }
+@container (max-width:540px) {
+    .desktop-ticks { display:none }
+    .mobile-ticks { display:block }
+}

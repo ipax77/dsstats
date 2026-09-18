@@ -13,6 +13,55 @@ namespace dsstats.tests;
 public sealed class ReplayRepositoryTests
 {
     [TestMethod]
+    public async Task GetReplays_PositionalFilter_MatchesExactPlayerAndTheirCommander()
+    {
+        await using var fixture = await TestFixture.CreateAsync();
+        await SeedReplayAsync(fixture.Context, 1, new DateTime(2026, 5, 1));
+        await SeedReplayAsync(fixture.Context, 2, new DateTime(2026, 5, 2));
+
+        // Same player in the second replay, but on Alarak while someone else plays Abathur.
+        var secondReplayPlayer = await fixture.Context.ReplayPlayers.SingleAsync(x => x.ReplayPlayerId == 2002);
+        secondReplayPlayer.PlayerId = 101;
+        await fixture.Context.SaveChangesAsync();
+
+        var request = new ReplaysRequest
+        {
+            RatingType = RatingType.Commanders,
+            Take = 10,
+            Filter = new()
+            {
+                TimePeriod = TimePeriod.AllTime,
+                GameModes = [GameMode.Commanders],
+                PosFilters = [new()
+                {
+                    Commander = Commander.Abathur,
+                    PlayerNameOrId = Data.GetToonIdString(new() { Region = 1, Realm = 1, Id = 101 })
+                }]
+            }
+        };
+
+        var replays = await fixture.Repository.GetReplays(request);
+        CollectionAssert.AreEqual(new[] { "hash-1" }, replays.Select(x => x.ReplayHash).ToArray());
+        Assert.AreEqual(1, await fixture.Repository.GetReplaysCount(request));
+
+        request.Commander = Commander.Abathur.ToString();
+        request.Filter.PosFilters.Clear();
+        var anotherAbathur = await fixture.Context.ReplayPlayers.SingleAsync(x => x.ReplayPlayerId == 1002);
+        anotherAbathur.Race = Commander.Abathur;
+        await fixture.Context.SaveChangesAsync();
+        Assert.AreEqual(2, await fixture.Repository.GetReplaysCount(request));
+        Assert.HasCount(2, await fixture.Repository.GetReplays(request));
+
+        request.Filter.PosFilters.Add(new()
+        {
+            Commander = Commander.Abathur,
+            PlayerNameOrId = Data.GetToonIdString(new() { Region = 2, Realm = 1, Id = 101 })
+        });
+        Assert.AreEqual(0, await fixture.Repository.GetReplaysCount(request));
+        Assert.IsEmpty(await fixture.Repository.GetReplays(request));
+    }
+
+    [TestMethod]
     public async Task GetReplays_SortsByLeaverType_WithAndWithoutRatings()
     {
         await using var fixture = await TestFixture.CreateAsync();

@@ -1,0 +1,53 @@
+@using dsstats.shared
+
+<section class="relationship">
+    <h3>@Title <small>Avg. rating @AverageRating.ToString("N0")</small></h3>
+    <p>Their win rate · @PlayerName’s rating gain · Lifetime · More than 10 games together</p>
+    @if (Items.Count == 0)
+    {
+        <p>No players with more than 10 shared games in this category.</p>
+    }
+    else
+    {
+        <div class="relationship-scroll">
+            <table>
+                <thead><tr>
+                    @foreach (var column in new[] { "Player", "Games", "Their win rate", "Profile player’s gain" })
+                    {
+                        <th aria-sort="@(sort == column ? (descending ? "descending" : "ascending") : "none")">
+                            <button type="button" @onclick="() => Sort(column)">@column @(sort == column ? (descending ? "↓" : "↑") : "")</button>
+                        </th>
+                    }
+                </tr></thead>
+                <tbody>
+                    @foreach (var item in Sorted)
+                    {
+                        <tr><td><button class="player-link" type="button" @onclick="() => OnPlayer.InvokeAsync(item.Player.ToonId)">@item.Player.Name</button></td>
+                            <td>@item.Count.ToString("N0")</td><td>@((item.Wins / (double)item.Count).ToString("P1"))</td>
+                            <td class="@(item.AvgGain >= 0 ? "positive" : "negative")">@item.AvgGain.ToString("+0.00;-0.00;0.00")</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string PlayerName { get; set; } = "";
+    [Parameter] public List<OtherPlayerStats> Items { get; set; } = [];
+    [Parameter] public int AverageRating { get; set; }
+    [Parameter] public EventCallback<ToonIdDto> OnPlayer { get; set; }
+    private string sort = "Games";
+    private bool descending = true;
+    private void Sort(string column) { descending = sort == column ? !descending : column != "Player"; sort = column; }
+    private IEnumerable<OtherPlayerStats> Sorted => sort == "Player"
+        ? (descending ? Items.OrderByDescending(x => x.Player.Name) : Items.OrderBy(x => x.Player.Name))
+        : (descending ? Items.OrderByDescending(Value) : Items.OrderBy(Value));
+    private double Value(OtherPlayerStats item) => sort switch
+    {
+        "Their win rate" => item.Wins / (double)item.Count,
+        "Profile player’s gain" => item.AvgGain,
+        _ => item.Count
+    };
+}

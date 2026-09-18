@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.AspNetCore.Components.Web.Virtualization
 @using Microsoft.Extensions.Options
 @using Microsoft.JSInterop
 @using dsstats.shared
@@ -53,7 +53,7 @@
 						<th scope="col" class="pointer" @onclick="@(e => SortList(e, "AvgRating"))">
 							<SortArrow Column="AvgRating">AvgRating</SortArrow>
 						</th>
-						@if (IsServerHost)
+						@* @if (IsServerHost)
 						{
 							<th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(ReplayListDto.ReplayUserVoteCount)))">
 								<SortArrow Column="@nameof(ReplayListDto.ReplayUserVoteCount)">Votes</SortArrow>
@@ -61,7 +61,7 @@
 							<th scope="col" class="pointer" @onclick="@(e => SortList(e, nameof(ReplayListDto.ReplayUserScore)))">
 								<SortArrow Column="@nameof(ReplayListDto.ReplayUserScore)">Score</SortArrow>
 							</th>
-						}
+						} *@
 						<th scope="col" class="pointer" @onclick="@(e => SortList(e, "LeaverType"))">
 							<SortArrow Column="LeaverType">LeaverType</SortArrow>
 						</th>
@@ -86,7 +86,7 @@
 								</td>
 								<td class="@(replay.Exp2Win >= 0.5 ? "text-success" : "text-danger")">@replay.Exp2Win?.ToString("p0")</td>
 								<td>@replay.AvgRating</td>
-								@if (IsServerHost)
+								@* @if (IsServerHost)
 								{
 									<td>@(replay.ReplayUserVoteCount?.ToString("N0") ?? "-")</td>
 									<td>
@@ -104,7 +104,7 @@
 											<span>-</span>
 										}
 									</td>
-								}
+								} *@
 								<td>@replay.LeaverType</td>
 							</tr>
 						</ItemContent>
@@ -121,11 +121,17 @@
 					</Virtualize>
 				</tbody>
 			}
+			else if (!isLoading)
+			{
+				<tbody>
+					<tr><td colspan="100">No replays found.</td></tr>
+				</tbody>
+			}
 		</table>
 	</div>
 </div>
 
-<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnClose="CloseReplay" />
+<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnPlayerProfileRequest="e => playerModal!.ShowProfile(e)" OnClose="CloseReplay" />
 <PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(ReplayDetails!)" />
 
 @code {
@@ -173,19 +179,22 @@
 	{
 		isLoading = true;
 		await InvokeAsync(StateHasChanged);
-		SetReplayUserRatingRequestOptions();
-		replaysCount = await ReplayRepository.GetReplaysCount(ReplaysRequest);
-		ReplaysRequest.Page = 1;
-		if (virtualizeComponent != null)
+		try
 		{
-			await InvokeAsync(async () =>
+			SetReplayUserRatingRequestOptions();
+			replaysCount = await ReplayRepository.GetReplaysCount(ReplaysRequest);
+			ReplaysRequest.Page = 1;
+			if (virtualizeComponent != null && replaysCount > 0)
 			{
 				await virtualizeComponent.RefreshDataAsync();
-				isLoading = false;
-				StateHasChanged();
-			});
+			}
+			await OnRequestChanged.InvokeAsync(ReplaysRequest);
 		}
-		await OnRequestChanged.InvokeAsync(ReplaysRequest);
+		finally
+		{
+			isLoading = false;
+			await InvokeAsync(StateHasChanged);
+		}
 	}
 
 	private async ValueTask<ItemsProviderResult<ReplayListDto>> LoadReplays(ItemsProviderRequest request)

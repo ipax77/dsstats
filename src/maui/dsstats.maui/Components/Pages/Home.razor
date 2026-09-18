@@ -12,7 +12,6 @@
 @inject IReplayRepository ReplayRepository
 @inject ImportState ImportState
 @inject SessionProgress SessionProgress
-@inject IPlayerService PlayerService
 @implements IDisposable
 
 <div class="container-fluid">
@@ -95,7 +94,7 @@
 					<ReplayComponent @ref="replayComponent" ReplayDetails="replayDetails"
 									 IsScrollable="true"
 									 IsCloseable="false"
-									 OnPlayerRequest="e => playerModal?.Show(e)"
+									 OnPlayerRequest="e => playerModal?.Show(e)" OnPlayerProfileRequest="e => playerModal!.ShowProfile(e)"
 									 OnScrollRequest="e => ScrollReplay(e)"
 									 OnRatingUpdateRequest="UpdateRatings" />
 				</div>
@@ -641,17 +640,11 @@
 		ImportState.Cancel();
 	}
 
-	private async Task ShowStats(ToonIdDto toonId)
+	private Task ShowStats(ToonIdDto toonId) => playerModal!.ShowProfile(new()
 	{
-		PlayerStatsRequest request = new()
-		{
-			ToonId = toonId,
-			Player = new(),
-			RatingType = RatingType.All,
-		};
-		var stats = await PlayerService.GetPlayerStats(request);
-		playerModal?.Show(stats);
-	}
+		ToonId = toonId,
+		RatingType = RatingType.All,
+	});
 
 	protected override void Dispose(bool disposing)
 	{

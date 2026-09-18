@@ -191,6 +191,7 @@ builder.Services.AddSingleton<BuildDetailGenerationService>();
 builder.Services.AddScoped<IDashboardStatsService, DashboardStatsService>();
 builder.Services.AddScoped<IReplayRepository, ReplayRepository>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddScoped<IPlayerProfileService, PlayerService>();
 builder.Services.AddScoped<TransitionService>();
 builder.Services.AddScoped<IInHouseAuthService, InHouseAuthService>();
 
@@ -229,8 +230,8 @@ if (migrateOnStartup || app.Environment.IsDevelopment())
 
     if (app.Environment.IsDevelopment())
     {
-        var replayUserRatingService = startupScope.ServiceProvider.GetRequiredService<ReplayUserRatingService>();
-        await replayUserRatingService.CollectPendingVotesAsync();
+        // var ratingService = startupScope.ServiceProvider.GetRequiredService<IRatingService>();
+        // await ratingService.CreateRatings();
     }
 }
 

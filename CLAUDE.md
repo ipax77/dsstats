@@ -66,7 +66,7 @@ Interfaces in `dsstats.shared/Interfaces/` are implemented twice — once in `ds
 
 ### Partial classes for large services
 Large services are split into domain-focused partial classes:
-- `PlayerService.cs` + `PlayerService.Player.cs`, `PlayerService.CmdrStrength.cs`, `PlayerService.Distrubution.cs`
+- `PlayerService.cs` + `PlayerService.Leaderboard.cs`, `PlayerService.Profile.cs`, `PlayerService.RatingDetails.cs`, `PlayerService.CommanderPerformance.cs`, `PlayerService.CommanderStrength.cs`, `PlayerService.Distribution.cs`, and `PlayerService.Overview.cs`
 - `RatingService.cs` + `RatingService.Calc.cs`, `RatingService.Pre.cs`, `RatingService.Arcade.cs`, `RatingService.Csv.cs`
 - `ImportService.cs` + `ImportService.Candidates.cs`, `ImportService.Duplicates.cs`, `ImportService.Arcade.cs`
 - `ReplayRepository.cs` + `ReplayRepository.Arcade.cs`, `ReplayRepository.Ratings.cs`

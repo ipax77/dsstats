@@ -1,7 +1,9 @@
-﻿@using Microsoft.JSInterop
+@using dsstats.weblib.Players.Profile
+@using Microsoft.JSInterop
 @using dsstats.shared
 @inject IJSRuntime JSRuntime
 
+<PlayerProfileModal @ref="profileModal" OnSelectionChanged="OnProfileSelectionChanged" />
 <div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@modalId" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen">
         <div class="modal-content">
@@ -19,6 +21,11 @@
 </div>
 
 @code {
+    private PlayerProfileModal? profileModal;
+    [Parameter] public EventCallback<PlayerProfileRequest?> OnProfileSelectionChanged { get; set; }
+    public Task ShowProfile(PlayerProfileRequest request) => profileModal?.Show(request) ?? Task.CompletedTask;
+    public Task ResumeProfile() => profileModal?.Resume() ?? Task.CompletedTask;
+
     private string modalId = "playerModal";
 
     private PlayerStatsResponse? _response;

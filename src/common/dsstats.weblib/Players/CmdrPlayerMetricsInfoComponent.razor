@@ -63,7 +63,7 @@
 		<tbody>
 			@foreach (var info in GetSortedList())
 			{
-				<tr class="pointer @(interestPlayerId == info.ToonId ? "table-primary" : "")"
+				<tr class="pointer @(interestPlayerId == info.ToonId ? "bg-primary" : "")"
 					@onclick="e => OnPlayerDetailsRequest.InvokeAsync(info.ToonId)">
 					<td @onclick:stopPropagation @onclick="e => OnPlayerReplaysRequest.InvokeAsync(info.ToonId)">
 						<span class="bi bi-list-nested text-primary"></span>
@@ -100,6 +100,9 @@
 	[Parameter]
 	public EventCallback<ToonIdDto> OnPlayerReplaysRequest { get; set; }
 
+	[Parameter]
+	public ToonIdDto? SelectedPlayerId { get; set; }
+
 	private List<TableOrder> orders = new()
 	{
 		new TableOrder()
@@ -113,10 +116,10 @@
 	private ToonIdDto? interestPlayerId = null;
 	string searchName = string.Empty;
 
-	protected override void OnInitialized()
+	protected override void OnParametersSet()
 	{
-		SetStrength(Response);
-		base.OnInitialized();
+		interestPlayerId = SelectedPlayerId;
+		computedItems = Response.WithStaticStrength();
 	}
 
 

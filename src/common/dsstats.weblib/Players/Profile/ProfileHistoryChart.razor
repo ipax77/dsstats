@@ -1,0 +1,62 @@
+@using dsstats.shared
+@using System.Globalization
+
+@if (History.Count == 0)
+{
+    <p class="history-empty">No rated replay history for this category yet.</p>
+}
+else
+{
+    <div class="history-chart">
+        <div class="rating-scale" aria-hidden="true"><span>@Max.ToString("N0")</span><span>@Min.ToString("N0")</span></div>
+        <div class="history-plot">
+            <svg viewBox="0 0 1000 200" preserveAspectRatio="none" role="img" aria-labelledby="@titleId">
+                <title id="@titleId">Lifetime rating history. @History.Count weeks, latest rating @History[^1].Rating.ToString("N0").</title>
+                @foreach (var y in new[] { 10, 70, 130, 190 })
+                {
+                    <line x1="0" y1="@y" x2="1000" y2="@y" stroke="#293a50" stroke-dasharray="3 6" vector-effect="non-scaling-stroke" />
+                }
+                <polyline points="@Points" fill="none" stroke="#e8ba6b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+                @foreach (var item in History)
+                {
+                    <circle cx="@F(X(item))" cy="@F(Y(item.Rating))" r="1" fill="#e8ba6b" stroke="#e8ba6b" stroke-width="3" vector-effect="non-scaling-stroke">
+                        <title>@WeekDate(item).ToString("dd MMM yyyy"): @item.Rating.ToString("N0") rating · @item.Games.ToString("N0") games</title>
+                    </circle>
+                }
+            </svg>
+        </div>
+        <span class="games-label">Games</span>
+        <div class="game-ticks">
+            @foreach (var tickCount in new[] { 8, 3 })
+            {
+                <div class="@(tickCount == 8 ? "desktop-ticks" : "mobile-ticks")">
+                    @foreach (var item in GetGameTicks(tickCount))
+                    {
+                        <span class="game-tick" style="left:@(F(X(item) / 10))%">@item.Games.ToString("N0")</span>
+                    }
+                </div>
+            }
+        </div>
+        <div class="history-dates"><span>@WeekDate(History[0]).ToString("MMM yyyy")</span>
+            @if (History.Count > 1) { <span>@WeekDate(History[^1]).ToString("MMM yyyy")</span> }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public List<RatingAtDateTime> History { get; set; } = [];
+    private readonly string titleId = $"history-{Guid.NewGuid():N}";
+    private double Min => Math.Floor(History.Min(x => x.Rating) / 100) * 100;
+    private double Max => Math.Max(Min + 100, Math.Ceiling(History.Max(x => x.Rating) / 100) * 100);
+    private static DateTime WeekDate(RatingAtDateTime item) => ISOWeek.ToDateTime(item.Year, item.Week, DayOfWeek.Monday);
+    private double X(RatingAtDateTime item) => 20 + 960 *
+        (WeekDate(item) - WeekDate(History[0])).TotalDays / Math.Max(7, (WeekDate(History[^1]) - WeekDate(History[0])).TotalDays);
+    private double Y(double rating) => 190 - 180 * (rating - Min) / (Max - Min);
+    private string Points => string.Join(" ", History.Select(x => $"{F(X(x))},{F(Y(x.Rating))}"));
+    private IEnumerable<RatingAtDateTime> GetGameTicks(int count) => History.Count <= count
+        ? History
+        : Enumerable.Range(0, count)
+            .Select(index => History[(int)Math.Round(index * (History.Count - 1) / (double)(count - 1))])
+            .Distinct();
+    private static string F(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+}

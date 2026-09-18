@@ -1,0 +1,378 @@
+@using dsstats.shared
+@using dsstats.shared.Interfaces
+@using dsstats.weblib.Replays
+@using dsstats.weblib.Stats
+@using Microsoft.JSInterop
+@inject IPlayerProfileService Profiles
+@inject IStatsService Stats
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<dialog @ref="dialog" class="profile-dialog" aria-labelledby="@titleId">
+    <div class="profile-shell">
+        <header class="profile-header bg-dark">
+            <div class="identity">
+                @if (session?.CanGoBack == true)
+                {
+                    <button class="quiet-button" @onclick="GoBack" aria-label="Back to previous player">← Back</button>
+                }
+                <div><span class="eyebrow">PLAYER PROFILE @(Overview is null ? "" : " / " + Data.GetRegionString(Overview.RegionId))</span>
+                    <h2 id="@titleId">@(Overview?.Name ?? "Player overview")</h2></div>
+            </div>
+            <div class="header-actions">
+                <label>Rating category
+                    <select value="@State?.Request.RatingType" @onchange="ChangeRating">
+                        @foreach (var type in Enum.GetValues<RatingType>()) { <option value="@type">@Category(type)</option> }
+                    </select>
+                </label>
+                <button class="close-button" @onclick="Close" aria-label="Close player profile">×</button>
+            </div>
+        </header>
+        <div class="profile-scroll" tabindex="-1">
+            @if (State is { OverviewLoading: true })
+            {
+                <div class="loading-state" role="status" aria-live="polite"><span class="eyebrow">LOADING PLAYER</span>
+                    <div class="skeleton skeleton-title"></div><div class="skeleton skeleton-chart"></div>
+                    <p>Preparing ratings and replay history…</p></div>
+            }
+            else if (State?.OverviewError is { } overviewError)
+            {
+                <div class="notice" role="alert"><h3>Player overview unavailable</h3><p>@overviewError</p>
+                    <button class="primary-button" @onclick="RetryOverview">Try again</button></div>
+            }
+            else if (State?.NotFound == true)
+            {
+                <div class="notice"><h3>Player not found</h3><p>There is no profile for this player yet.</p></div>
+            }
+            else if (Overview is { } overview)
+            {
+                var rating = overview.Ratings.FirstOrDefault(x => x.RatingType == overview.RatingType);
+                <section class="summary-grid" aria-label="Rating summary">
+                    <div class="rating-hero">
+                        <span class="eyebrow">@Category(overview.RatingType) RATING</span>
+                        <div class="hero-number">@(rating?.Rating.ToString("N0") ?? "—")
+                            @if (rating?.Pos > 0) { <span class="rank">#@rating.Pos.ToString("N0")</span> }
+                        </div>
+                        @if (rating?.Pos > 0 && overview.PercentileMaxRank >= rating.Pos)
+                        {
+                            <p>Ahead of @((1 - rating.Pos / (double)overview.PercentileMaxRank).ToString("P1")) of ranked players</p>
+                        }
+                        else { <p>No current rank in this category</p> }
+                    </div>
+                    <div class="metric"><span>Games played</span><strong>@(rating?.Games.ToString("N0") ?? "0")</strong><small>Current rating record</small></div>
+                    <div class="metric"><span>Win rate</span><strong>@(rating is { Games: > 0 } ? (rating.Wins / (double)rating.Games).ToString("P1") : "—")</strong><small>@(rating?.Wins.ToString("N0") ?? "0") wins</small></div>
+                    <div class="metric"><span>Main commander</span><strong class="commander">
+                        @if (rating is not null && rating.Main != Commander.None)
+                        { <span class="commander-icon preload-@(rating.Main.ToString().ToLowerInvariant())" aria-hidden="true"></span>@rating.Main }
+                        else { <span>—</span> }
+                    </strong><small>Most played</small></div>
+                    <div class="metric"><span>Scans per replay</span><strong>@(overview.AverageScanCount?.ToString("N2") ?? "—")</strong><small>@(overview.ScanCountReplays > 0 ? $"Lifetime · {overview.ScanCountReplays:N0} replays with scan data" : "No scan data available")</small></div>
+                </section>
+                <nav class="category-strip" aria-label="Player rating categories">
+                    @foreach (var other in overview.Ratings.OrderBy(x => x.RatingType))
+                    {
+                        <button class="@(other.RatingType == overview.RatingType ? "selected" : "")" aria-pressed="@(other.RatingType == overview.RatingType)"
+                                @onclick="() => SelectRating(other.RatingType)">@Category(other.RatingType)<strong>@other.Rating.ToString("N0")</strong></button>
+                    }
+                </nav>
+                <div class="progress-grid">
+                    <section class="panel history-panel"><div class="section-heading"><h3>Rating progression</h3><span class="badge-label">LIFETIME</span></div>
+                        <ProfileHistoryChart History="overview.History" />
+                    </section>
+                    <section class="panel records"><div class="section-heading"><h3>Personal records</h3><span class="badge-label">LIFETIME</span></div>
+                        @if (overview.TopRating.Rating > 0)
+                        { <div><span>Peak rating</span><strong>@overview.TopRating.Rating.ToString("N0")</strong><small>@overview.TopRating.DateAchieved.ToString("dd MMM yyyy")</small></div> }
+                        @if (overview.CurrentStreak is { Count: not 0 } current)
+                        { <div><span>Current streak</span><strong class="@(current.Count > 0 ? "positive" : "negative")">@Math.Abs(current.Count) @(current.Count > 0 ? "wins" : "losses")</strong><small>Since @current.StartDate.ToString("dd MMM yyyy")</small></div> }
+                        <div class="record-pair"><div><span>Longest win streak</span><strong>@overview.LongestWinStreak.Count</strong></div>
+                            <div><span>Longest losing streak</span><strong>@overview.LongestLoseStreak.Count</strong></div></div>
+                    </section>
+                </div>
+                @if (rating is not null)
+                {
+                    <details class="rating-information"><summary>More rating information</summary>
+                        <dl><div><dt>Consistency</dt><dd>@rating.Cons.ToString("N2")</dd></div>
+                            <div><dt>Confidence</dt><dd>@rating.Conf.ToString("N2")</dd></div>
+                            <div><dt>MVP rate</dt><dd>@(rating.Games > 0 ? (rating.Mvps / (double)rating.Games).ToString("P1") : "—")</dd></div>
+                            <div><dt>Main share</dt><dd>@(rating.Games > 0 ? (rating.MainCount / (double)rating.Games).ToString("P1") : "—")</dd></div>
+                            <div><dt>Rating change</dt><dd>@rating.Change.ToString("+0;-0;0")</dd></div></dl>
+                    </details>
+                }
+                <section class="panel recent-panel">
+                    <div class="section-heading"><div><span class="eyebrow">LATEST ACTIVITY</span><h3>Recent replays</h3></div>
+                        <a href="@($"replays?ToonIds={Data.GetToonIdString(overview.ToonId)}")">View all replays →</a></div>
+                    @if (replayError is not null) { <p role="alert" class="negative">@replayError</p> }
+                    @if (overview.Replays.Count == 0)
+                    {
+                        <p class="muted">No rated replays in this category yet.</p>
+                    }
+                    else
+                    {
+                        <p class="scroll-hint">Scroll horizontally to see more replay details →</p>
+                        @if (replayLoading) { <p role="status" class="muted">Opening replay…</p> }
+                        <div class="profile-replays-scroll" tabindex="0" role="region" aria-label="Recent replays">
+                            <table class="tptable profile-replays">
+                                <colgroup><col class="replay-time" /><col class="replay-gain" /><col class="replay-mode" /><col class="replay-duration" /><col class="replay-team" /><col class="replay-team" /><col class="replay-expected" /><col class="replay-rating" /><col class="replay-leaver" /></colgroup>
+                                <thead><tr>
+                                    <th scope="col">Date</th><th scope="col">Gain</th><th scope="col">Game mode</th><th scope="col">Duration</th>
+                                    <th scope="col">Team 1</th><th scope="col">Team 2</th><th scope="col">Win chance</th>
+                                    <th scope="col">Avg. rating</th><th scope="col">Leaver type</th>
+                                </tr></thead>
+                                <tbody>
+                                    @foreach (var replay in overview.Replays)
+                                    {
+                                        <tr @key="replay" class="pointer @(replayLoading ? "replays-loading" : "")" title="Open replay" @onclick="() => OpenReplay(replay.ReplayHash)">
+                                            <td><button type="button" class="replay-link" disabled="@replayLoading" aria-label="@($"Open replay from {replay.Gametime:dd MMM yyyy HH:mm}")" @onclick="() => OpenReplay(replay.ReplayHash)" @onclick:stopPropagation="true">@replay.Gametime.ToString("yyyy-MM-dd")</button></td>
+                                            <td class="@(replay.PlayerGain >= 0 ? "positive" : "negative")">@replay.PlayerGain.ToString("+0.00;-0.00;0.00")</td><td>@replay.GameMode</td>
+                                            <td>@TimeSpan.FromSeconds(replay.Duration).ToString(@"hh\:mm\:ss")</td>
+                                            <td><ReplayTeamComponent Replay="replay" TeamNumber="1" /></td><td><ReplayTeamComponent Replay="replay" TeamNumber="2" /></td>
+                                            <td class="@(replay.Exp2Win >= 0.5 ? "positive" : "negative")">@replay.Exp2Win?.ToString("p0")</td>
+                                            <td>@replay.AvgRating</td>
+                                            <td>@replay.LeaverType</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </section>
+                @if (State is { Expanded: false })
+                {
+                    <section class="details-invitation bgchart2"><div><h3>Detailed statistics</h3><p>Commander performance, teammates, and opponents.</p></div>
+                        <button class="primary-button" @onclick="Expand">Show details <span aria-hidden="true">↓</span></button></section>
+                }
+                else if (State is { Expanded: true } state)
+                {
+                    <section class="panel detail-panel bg-dark-subtle">
+                        <div class="section-heading detail-panel-heading"><h3>Player insights</h3><span class="badge-label">@Category(overview.RatingType)</span></div>
+                        <div class="section-tabs" role="tablist" aria-label="Player insights">
+                            @foreach (var section in new[] { "Performance", "Players", "Breakdown" })
+                            {
+                                <button role="tab" id="@($"{titleId}-{section}")" aria-controls="@($"{titleId}-insights")" aria-selected="@(state.Section == section)"
+                                        tabindex="@(state.Section == section ? 0 : -1)" @onclick="() => SelectSection(section)">@section</button>
+                            }
+                        </div>
+                        @if (state.DetailsLoading) { <p role="status">Loading lifetime statistics…</p> }
+                        @if (state.DetailsError is { } detailError)
+                        { <div class="notice" role="alert"><p>@detailError</p><button class="quiet-button" @onclick="Expand">Retry details</button></div> }
+                        <div role="tabpanel" id="@($"{titleId}-insights")" aria-labelledby="@($"{titleId}-{state.Section}")" tabindex="0">
+                            @if (state.Section == "Performance")
+                            {
+                                <div class="chart-toolbar"><div class="chart-types" aria-label="Performance chart">
+                                    @foreach (var type in new[] { StatsType.Winrate, StatsType.Count, StatsType.Synergy, StatsType.Timeline })
+                                    { <button aria-pressed="@(state.ChartType == type)" @onclick="() => SelectChart(type)">@(type == StatsType.Count ? "Pick count" : type.ToString())</button> }
+                                </div><label>Chart period <select value="@state.ChartPeriod" @onchange="ChangeChartPeriod">
+                                    @foreach (var period in Data.GetBasicTimePeriods()) { <option value="@period">@Data.GetTimePeriodInfo(period).Name</option> }
+                                </select></label></div>
+                                @if (state.ChartLoading) { <div class="skeleton skeleton-chart" role="status" aria-label="Loading performance chart"></div> }
+                                else if (state.ChartError is { } chartError)
+                                { <div class="notice" role="alert"><p>@chartError</p><button class="quiet-button" @onclick="RetryChart">Retry chart</button></div> }
+                                else if (state.Charts.TryGetValue((state.ChartType, state.ChartPeriod), out var response))
+                                {
+                                    var request = new StatsRequest { Type = state.ChartType, TimePeriod = state.ChartPeriod, RatingType = state.Request.RatingType, WithLeavers = true };
+                                    <div class="performance-chart-scroll">
+                                        <div class="performance-chart" @key="(state, state.ChartType, state.ChartPeriod, response)">
+                                            @if (response is WinrateResponse winrate) { <WinrateChart Request="request" Response="winrate" /> }
+                                            else if (response is CountResponse count) { <CountChart Request="request" Response="count" /> }
+                                            else if (response is SynergyResponse synergy) { <SynergyChart Request="request" Response="synergy" Commanders="@(new List<Commander> { Commander.None })" /> }
+                                            else if (response is TimelineResponse timeline) { <TimelineChart Request="request" Response="timeline" Commanders="@(new List<Commander> { Commander.None })" /> }
+                                        </div>
+                                    </div>
+                                    <StatsDescComponent Response="response" />
+                                }
+                            }
+                            else if (state.Details is { } detail && state.Section == "Players")
+                            {
+                                <div class="relationships-grid">
+                                    <ProfilePlayersTable Title="Teammates" PlayerName="overview.Name" Items="detail.Teammates" AverageRating="detail.AvgTeammateRating" OnPlayer="NavigatePlayer" />
+                                    <ProfilePlayersTable Title="Opponents" PlayerName="overview.Name" Items="detail.Opponents" AverageRating="detail.AvgOpponentRating" OnPlayer="NavigatePlayer" />
+                                </div>
+                            }
+                            else if (state.Details is { } breakdown && state.Section == "Breakdown")
+                            {
+                                <div class="chart-toolbar"><h4>Commander performance</h4><label>Performance period <select value="@state.GainPeriod" @onchange="ChangeGainPeriod">
+                                    @foreach (var period in Data.GetBasicTimePeriods()) { <option value="@period">@Data.GetTimePeriodInfo(period).Name</option> }
+                                </select></label></div>
+                                @if (state.GainLoading) { <p role="status">Loading commander performance…</p> }
+                                else if (state.GainError is { } gainError) { <p role="alert">@gainError <button class="quiet-button" @onclick="RetryGains">Retry</button></p> }
+                                else if (state.Gains.TryGetValue(state.GainPeriod, out var gains))
+                                {
+                                    @if (gains.AvgGains.Count == 0) { <p class="muted">No commander performance data for this period.</p> }
+                                    else
+                                    {
+                                <div class="table-scroll commander-performance" tabindex="0" role="region" aria-label="Commander performance"><table class="breakdown-table"><thead><tr><th>Commander</th><th>Games</th><th>Win rate</th><th>Average gain</th></tr></thead><tbody>
+                                            @foreach (var gain in gains.AvgGains.OrderByDescending(x => x.Count))
+                                            { <tr><td><span class="commander-cell"><span class="commander-icon preload-@(gain.Commander.ToString().ToLowerInvariant())" title="@gain.Commander" role="img" aria-label="@gain.Commander"></span><span>@gain.Commander</span></span></td><td>@gain.Count.ToString("N0")</td><td>@(gain.Count > 0 ? (gain.Wins / (double)gain.Count).ToString("P1") : "—")</td><td class="@(gain.AvgGain >= 0 ? "positive" : "negative")">@gain.AvgGain.ToString("+0.00;-0.00;0.00")</td></tr> }
+                                        </tbody></table></div>
+                                    }
+                                }
+                                <div class="breakdown-grid">
+                                    <section><h4>Game modes <small>Lifetime</small></h4>@foreach (var mode in breakdown.GameModes.OrderByDescending(x => x.Count)) { <p class="stat-line"><span>@mode.GameMode</span><strong>@mode.Count.ToString("N0")</strong></p> }</section>
+                                    <section><h4>Commander picks <small>Lifetime</small></h4>@foreach (var commander in breakdown.Commanders.OrderByDescending(x => x.Count)) { <p class="stat-line"><span>@commander.Commander</span><strong>@commander.Count.ToString("N0")</strong></p> }</section>
+                                    <section><h4>Game positions <small>Lifetime</small></h4>@foreach (var position in breakdown.Positions.OrderBy(x => x.GamePos)) { <p class="stat-line"><span>Position @position.GamePos · @position.Count games</span><strong>@(position.Count > 0 ? (position.Wins / (double)position.Count).ToString("P1") : "—") wins</strong></p> }</section>
+                                </div>
+                            }
+                        </div>
+                    </section>
+                }
+                <footer class="profile-footer">Replay statistics reflect available rated replays. Current ratings may include additional arcade games.</footer>
+            }
+        </div>
+    </div>
+</dialog>
+<ReplayModal @ref="replayModal" OnClose="Resume" OnPlayerProfileRequest="ShowFromReplay" />
+
+@code {
+    [Inject(Key = "api")] public IReplayRepository Replays { get; set; } = null!;
+    [Parameter] public EventCallback<PlayerProfileRequest?> OnSelectionChanged { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    private readonly string titleId = $"profile-{Guid.NewGuid():N}";
+    private ElementReference dialog;
+    private IJSObjectReference? module;
+    private DotNetObjectReference<PlayerProfileModal>? reference;
+    private PlayerProfileSession? session;
+    private PlayerProfileState? State => session?.Current;
+    private PlayerOverview? Overview => State?.Overview;
+    private ReplayModal? replayModal;
+    private bool showPending;
+    private bool restorePending;
+    private bool disposed;
+    private bool replayLoading;
+    private string? replayError;
+    private CancellationTokenSource replayCancellation = new();
+
+    public async Task Show(PlayerProfileRequest request)
+    {
+        if (session is null)
+        {
+            session = new(Profiles, Stats);
+            session.Changed += Refresh;
+        }
+        await SaveScroll();
+        showPending = true;
+        restorePending = true;
+        var loading = session.Navigate(request);
+        await OnSelectionChanged.InvokeAsync(request);
+        await loading;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/dsstats.weblib/js/playerProfile.js");
+            reference = DotNetObjectReference.Create(this);
+            await module.InvokeVoidAsync("initialize", dialog, reference);
+        }
+        if (showPending && module is not null)
+        {
+            showPending = false;
+            await module.InvokeVoidAsync("open", dialog);
+        }
+        if (restorePending && module is not null && State?.OverviewLoading == false)
+        {
+            restorePending = false;
+            await module.InvokeVoidAsync("restoreScroll", dialog, State.ScrollTop);
+        }
+    }
+
+    private void Refresh() { if (!disposed) _ = InvokeAsync(StateHasChanged); }
+    private async Task SaveScroll()
+    {
+        if (module is not null && State is not null) State.ScrollTop = await module.InvokeAsync<double>("scrollTop", dialog);
+    }
+    private async Task GoBack()
+    {
+        await SaveScroll();
+        restorePending = true;
+        var loading = session!.Back();
+        await OnSelectionChanged.InvokeAsync(State!.Request);
+        await loading;
+    }
+    private Task ChangeRating(ChangeEventArgs args) => SelectRating(Enum.Parse<RatingType>(args.Value!.ToString()!));
+    private async Task SelectRating(RatingType type)
+    {
+        await SaveScroll();
+        restorePending = true;
+        var loading = session!.SwitchRating(type);
+        await OnSelectionChanged.InvokeAsync(State!.Request);
+        await loading;
+    }
+    private Task NavigatePlayer(ToonIdDto toonId) => Show(new() { ToonId = toonId, RatingType = State!.Request.RatingType });
+    private Task Expand() => session!.Expand();
+    private Task SelectSection(string section) => session!.SelectSection(section);
+    private Task SelectChart(StatsType type) => session!.SelectChart(type, State!.ChartPeriod);
+    private Task ChangeChartPeriod(ChangeEventArgs args) => session!.SelectChart(State!.ChartType, Enum.Parse<TimePeriod>(args.Value!.ToString()!));
+    private Task ChangeGainPeriod(ChangeEventArgs args) => session!.LoadGains(Enum.Parse<TimePeriod>(args.Value!.ToString()!));
+    private Task RetryOverview() => session!.LoadOverview();
+    private Task RetryChart() => session!.LoadChart();
+    private Task RetryGains() => session!.LoadGains();
+
+    private async Task OpenReplay(string hash)
+    {
+        if (replayLoading) return;
+        replayLoading = true;
+        replayError = null;
+        var selected = State;
+        var token = replayCancellation.Token;
+        try
+        {
+            var replay = await Replays.GetReplayDetails(hash).WaitAsync(token);
+            if (disposed || token.IsCancellationRequested || State != selected) return;
+            if (replay is null) { replayError = "This replay is unavailable. Please try again."; return; }
+            await SaveScroll();
+            session!.Suspend();
+            await module!.InvokeVoidAsync("suspend", dialog);
+            replayModal?.Show(replay);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception) { if (State == selected) replayError = "We couldn’t open the replay. Please try again."; }
+        finally { replayLoading = false; }
+    }
+
+    private async Task ShowFromReplay(PlayerProfileRequest request)
+    {
+        await Show(request);
+    }
+
+    public async Task Resume()
+    {
+        if (session is null || disposed) return;
+        showPending = restorePending = true;
+        await session.Resume();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public async Task Close()
+    {
+        replayCancellation.Cancel();
+        replayCancellation.Dispose();
+        replayCancellation = new();
+        if (session is not null) { session.Changed -= Refresh; session.Dispose(); session = null; }
+        if (module is not null) await module.InvokeVoidAsync("close", dialog);
+        await OnSelectionChanged.InvokeAsync(null);
+        await OnClose.InvokeAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static string Category(RatingType type) => type switch
+    {
+        RatingType.StandardTE => "Standard TE", RatingType.CommandersTE => "Commanders TE",
+        RatingType.All => "All modes", _ => type.ToString()
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        replayCancellation.Cancel();
+        replayCancellation.Dispose();
+        if (session is not null) { session.Changed -= Refresh; session.Dispose(); }
+        if (module is not null)
+        {
+            try { await module.InvokeVoidAsync("dispose", dialog); await module.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+        }
+        reference?.Dispose();
+    }
+}

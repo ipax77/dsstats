@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\dsstats.db\dsstats.db.csproj" />
+    <InternalsVisibleTo Include="dsstats.tests" />
   </ItemGroup>
 
   <PropertyGroup>
