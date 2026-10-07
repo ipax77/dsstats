@@ -35,7 +35,7 @@ public class ArcadeJobService(
             if (configuration.GetValue("SC2Arcade:CrawlEnabled", true))
             {
                 var crawlerService = scope.ServiceProvider.GetRequiredService<ICrawlerService>();
-                await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-5), token);
+                await crawlerService.GetLobbyHistory(DateTime.UtcNow.Date.AddDays(-5), token);
             }
             else
             {

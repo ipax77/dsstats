@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
     <ProjectReference Include="../../server/sc2arcade.crawler/sc2arcade.crawler.csproj" />
   </ItemGroup>
 </Project>

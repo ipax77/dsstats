@@ -1,6 +1,7 @@
 # SC2Arcade diagnostic backfill
 
 This standalone .NET 10 command archives SC2Arcade history without connecting to a database.
+The separate `import` command can compare or import a completed archive into MySQL.
 It stops **all requests at the first 403** (also on other HTTP failures, network failures,
 invalid responses, or repeated cursors). There are no automatic retries. Inspect the
 diagnostics, then explicitly run `resume` to try the outstanding request again.
@@ -15,8 +16,7 @@ scheduled work continue. The default is `true`. Verify the production log says
 local attempt. A crawl already in progress must finish or be stopped first.
 
 The console tool cannot disable production remotely. Keep production crawling disabled
-through collection and review. Importing the archive and returning to the five-day
-window are separate follow-up steps; account for newer data arriving during collection.
+through collection, import and review. Account for newer data arriving during collection.
 
 ## Commands
 
@@ -74,5 +74,57 @@ Per-region reports include pages, date range, daily lobby counts, conversion eli
 rejection reasons, and duplicate eligible replay keys within the archive. Eligibility uses
 the same converter as live import, including its existing acceptance of unknown winner
 teams (counted separately). It does not imply a new production row or rating eligibility.
-The complete cutoff-crossing page is retained. A later importer must filter dates and
-deduplicate against production. No importing, matching, or rating changes are performed.
+The complete cutoff-crossing page is retained. The import command filters dates and
+deduplicates against production. Crawl/status do not perform importing, matching, or rating changes.
+
+## Import a completed archive
+
+The configuration file must contain `dsstats:ConnectionString` for the intended target.
+An optional `dsstats:ServerVersion` selects its MySQL version (default 8.4).
+Credentials are read from the file and never printed or copied into the archive.
+
+```text
+dotnet run --project src/tools/sc2arcade.backfill -- import --archive artifacts/sc2arcade-backfill --config C:\data\localserverconfig.json
+dotnet run --project src/tools/sc2arcade.backfill -- import --archive artifacts/sc2arcade-backfill --config C:\data\localserverconfig.json --execute --finalize
+```
+
+Without `--execute`, import is a read-only comparison of archived replay keys with the
+target database. Preview counts distinguish existing from missing eligible replays.
+The archive is fully validated first and locked against concurrent collection/import.
+
+Execution imports at most 500 eligible replays per transaction, creating only missing
+players and preserving existing player names. Players and replay rows commit together.
+The unique `(RegionId, BnetBucketId, BnetRecordId)` database key is the durable resume
+checkpoint. Rerun the same command after interruption; committed replays are recognized
+and skipped. A concurrent conflicting insert rolls back the batch and stops the command;
+rerunning rechecks the database rather than trusting stale in-memory keys. No schema
+migrations, deletes, or updates to existing replays are performed.
+
+An import receipt in `imports/<target hash>/session.json` preserves the original import
+start across retries. Keep this receipt and use the same target configuration on resume.
+`--finalize` re-matches newly imported arcade replays with dsstats replays and calls the
+existing `BatchImportCombinedReplays` procedure. Both steps can be rerun after failure.
+It does **not** perform the full historical rating rebuild: run the production server's
+full rating job, or let the next nightly job do it. Hourly incremental rating updates
+alone do not incorporate all historical changes.
+
+After execution, rerun the preview and verify `missing=0` before considering collection
+fully imported. The June–August historical gap cannot be filled by this archive.
+
+## Production pacing and release
+
+The production crawler now shares the backfill's three-second minimum and header-aware
+request policy, including region transitions. Requests remain sequential; it stops all
+regions at the first HTTP failure or invalid response, with no automatic retry. Selected
+headers and the next permitted request time are logged. The shared deadline also applies
+to subsequent jobs in the same process; unlike the archive journal it is not persisted
+across production restarts. Keep server clocks synchronized.
+
+The nightly cutoff is UTC midnight minus five days. Following the usual merge and server
+release tag, manually deploy the API on the server and restore `SC2Arcade:CrawlEnabled=true`
+(or remove the override). Verify NA and EU completion and absence of HTTP-failure logs
+on the next run. Slower pacing reduces request pressure; it cannot guarantee no future 403.
+
+Do not invoke `eng/New-ReleaseArtifacts.ps1` with its default output directory while this
+archive lives under `artifacts/`: that script deletes its output directory first. Use a
+dedicated output such as `-OutputPath artifacts/releases/<version>` to preserve the archive.
