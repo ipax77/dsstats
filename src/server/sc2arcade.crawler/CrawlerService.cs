@@ -49,6 +49,8 @@ public partial class CrawlerService : ICrawlerService
 
         foreach (var crawlInfo in crawlInfos)
         {
+            using var logScope = logger.BeginScope("SC2Arcade region={RegionId}, map={MapId}",
+                crawlInfo.RegionId, crawlInfo.MapId);
 
             string baseRequest =
                 $"lobbies/history?regionId={crawlInfo.RegionId}&mapId={crawlInfo.MapId}&profileHandle={crawlInfo.Handle}&orderDirection=desc&includeMapInfo=false&includeSlots=true&includeSlotsProfile=true&includeMatchResult=true&includeMatchPlayers=true&limit=200";
@@ -58,7 +60,7 @@ public partial class CrawlerService : ICrawlerService
                 try
                 {
                     var requestUri = BuildRequestUri(crawlInfo, baseRequest);
-                    var response = await httpClient.GetAsync(requestUri, token);
+                    using var response = await httpClient.GetAsync(requestUri, token);
 
                     int waitTime = await HandleResponse(response, crawlInfo, tillTime, token);
 
@@ -75,6 +77,7 @@ public partial class CrawlerService : ICrawlerService
                     if (crawlInfo.Next == null)
                     {
                         await Import(crawlInfo, tillTime, token);
+                        crawlInfo.StopReason ??= "EndOfHistory";
                         break;
                     }
 
@@ -93,9 +96,16 @@ public partial class CrawlerService : ICrawlerService
 
         foreach (var crawlInfo in crawlInfos)
         {
-            logger.LogWarning("{crawlInfo}", crawlInfo);
+            var level = crawlInfo.StopReason is "DateCutoffReached" or "EndOfHistory" or "EmptyPage"
+                ? LogLevel.Information : LogLevel.Warning;
+            logger.Log(level,
+                "SC2Arcade crawl finished: region={RegionId}, map={MapId}, stopReason={StopReason}, pages={Pages}, lobbies={Lobbies}, submittedForImport={SubmittedForImport}, winnerTeamErrors={WinnerTeamErrors}, requestFailures={RequestFailures}, next={Next}",
+                crawlInfo.RegionId, crawlInfo.MapId, crawlInfo.StopReason ?? "Cancelled",
+                crawlInfo.Pages, crawlInfo.Lobbies, crawlInfo.Imports, crawlInfo.Errors,
+                crawlInfo.RequestFailures, crawlInfo.Next);
         }
-        logger.LogWarning("job done.");
+        logger.LogInformation("SC2Arcade crawl phase finished; regionsStoppedOnError={ErrorRegions}",
+            crawlInfos.Count(c => c.StopReason is "HttpError" or "InvalidResponse"));
 
         using var scope = serviceProvider.CreateScope();
         var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
@@ -122,7 +132,9 @@ public partial class CrawlerService : ICrawlerService
 
             if (content.TrimStart().StartsWith('<'))
             {
-                logger.LogWarning("Unexpected HTML response (possible Cloudflare challenge) for next={next}", crawlInfo.Next);
+                crawlInfo.RequestFailures++;
+                logger.LogWarning("Unexpected HTML response (possible Cloudflare challenge) for region={RegionId}, map={MapId}, next={Next}",
+                    crawlInfo.RegionId, crawlInfo.MapId, crawlInfo.Next);
                 return RateLimitFallbackMs;
             }
 
@@ -130,18 +142,26 @@ public partial class CrawlerService : ICrawlerService
                 new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (result == null)
             {
-                logger.LogWarning("Failed to deserialize response for next={next}, stopping crawl", crawlInfo.Next);
+                crawlInfo.StopReason = "InvalidResponse";
+                crawlInfo.RequestFailures++;
+                logger.LogWarning("Invalid response for region={RegionId}, map={MapId}, next={Next}, stopping crawl",
+                    crawlInfo.RegionId, crawlInfo.MapId, crawlInfo.Next);
                 crawlInfo.Next = null;
                 crawlInfo.Done = true;
             }
             else if (result.Results.Count == 0)
             {
-                logger.LogWarning("Empty results page for next={next}, stopping crawl", crawlInfo.Next);
+                crawlInfo.Pages++;
+                crawlInfo.StopReason = "EmptyPage";
+                logger.LogInformation("Empty results page for region={RegionId}, map={MapId}, next={Next}, stopping crawl",
+                    crawlInfo.RegionId, crawlInfo.MapId, crawlInfo.Next);
                 crawlInfo.Next = null;
                 crawlInfo.Done = true;
             }
             else
             {
+                crawlInfo.Pages++;
+                crawlInfo.Lobbies += result.Results.Count;
                 crawlInfo.Results.AddRange(result.Results);
                 crawlInfo.Next = result.Page.Next;
             }
@@ -153,13 +173,21 @@ public partial class CrawlerService : ICrawlerService
         else if (response.StatusCode == HttpStatusCode.TooManyRequests)
         {
             int wait = GetWaitTime(response);
-            logger.LogWarning("Rate limited (429), waiting {wait}ms", wait);
+            crawlInfo.RequestFailures++;
+            logger.LogWarning("Rate limited (429) for region={RegionId}, map={MapId}, next={Next}, waiting {Wait}ms",
+                crawlInfo.RegionId, crawlInfo.MapId, crawlInfo.Next, wait);
             return wait;
         }
         else
         {
-            logger.LogWarning("Non-recoverable HTTP error ({statusCode}) for next={next}, stopping crawl",
-                response.StatusCode, crawlInfo.Next);
+            crawlInfo.StopReason = "HttpError";
+            crawlInfo.RequestFailures++;
+            logger.LogWarning(
+                "HTTP error {StatusCode} ({StatusName}) for region={RegionId}, map={MapId}, next={Next}, stopping crawl without retry; contentType={ContentType}, cfRay={CfRay}, cfMitigated={CfMitigated}, rateLimitRemaining={RateLimitRemaining}, rateLimitReset={RateLimitReset}, retryAfter={RetryAfter}",
+                (int)response.StatusCode, response.StatusCode, crawlInfo.RegionId, crawlInfo.MapId, crawlInfo.Next,
+                response.Content.Headers.ContentType?.ToString(), GetHeader(response, "cf-ray"),
+                GetHeader(response, "cf-mitigated"), GetHeader(response, "x-ratelimit-remaining"),
+                GetHeader(response, "x-ratelimit-reset"), GetHeader(response, "retry-after"));
             await Import(crawlInfo, tillTime, token);
             crawlInfo.Done = true;
             return 0;
@@ -168,7 +196,9 @@ public partial class CrawlerService : ICrawlerService
 
     private async Task HandleError(Exception ex, CrawlInfo crawlInfo, DateTime tillTime, CancellationToken token)
     {
-        logger.LogError("Failed request ({next}): {error}", crawlInfo.Next, ex.Message);
+        crawlInfo.RequestFailures++;
+        logger.LogError(ex, "Failed request or import for region={RegionId}, map={MapId}, next={Next}",
+            crawlInfo.RegionId, crawlInfo.MapId, crawlInfo.Next);
         await Import(crawlInfo, tillTime, token);
         await Task.Delay(ErrorWaitMs, token);
     }
@@ -183,12 +213,16 @@ public partial class CrawlerService : ICrawlerService
         var start = DateTime.UtcNow;
         if (crawlInfo.Results.Last().CreatedAt < tillTime)
         {
+            crawlInfo.StopReason ??= "DateCutoffReached";
             crawlInfo.Done = true;
         }
         await ImportArcadeReplays(crawlInfo, token);
         crawlInfo.Results.Clear();
         return (int)(DateTime.UtcNow - start).TotalMilliseconds;
     }
+
+    private static string? GetHeader(HttpResponseMessage response, string name) =>
+        response.Headers.TryGetValues(name, out var values) ? string.Join(", ", values) : null;
 
     private static int GetWaitTime(HttpResponseMessage response)
     {
@@ -231,6 +265,10 @@ public record CrawlInfo
     public string? Next { get; set; }
     public List<LobbyResult> Results { get; set; } = new();
     public bool Done { get; set; }
+    public string? StopReason { get; set; }
+    public int Pages { get; set; }
+    public int Lobbies { get; set; }
+    public int RequestFailures { get; set; }
 }
 
 public record PlayerSuccess
