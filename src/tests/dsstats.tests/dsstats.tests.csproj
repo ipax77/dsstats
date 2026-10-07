@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\..\sc2arcade-eu-sample.json" Link="testdata\sc2arcade-eu-sample.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\server\dsstats.web\AI\Prompts\stats\*.json" Link="AI\stats\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\tools\dsstats.aiEval\Cases\stats-v1.json" Link="AI\stats-cases.json" CopyToOutputDirectory="PreserveNewest" />
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
@@ -109,6 +110,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\tools\sc2arcade.backfill\sc2arcade.backfill.csproj" />
     <ProjectReference Include="..\..\server\dsstats.db\dsstats.db.csproj" />
     <ProjectReference Include="..\..\server\dsstats.api\dsstats.api.csproj" />
     <ProjectReference Include="..\..\server\dsstats.apiServices\dsstats.apiServices.csproj" />

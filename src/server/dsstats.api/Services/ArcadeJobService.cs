@@ -8,7 +8,8 @@ public class ArcadeJobService(
     IServiceScopeFactory scopeFactory,
     IImportService importService,
     IRatingService ratingService,
-    ILogger<ArcadeJobService> logger)
+    ILogger<ArcadeJobService> logger,
+    IConfiguration configuration)
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
 
@@ -31,8 +32,15 @@ public class ArcadeJobService(
             logger.LogInformation("Arcade job started.");
             using var scope = scopeFactory.CreateAsyncScope();
 
-            var crawlerService = scope.ServiceProvider.GetRequiredService<ICrawlerService>();
-            await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-5), token);
+            if (configuration.GetValue("SC2Arcade:CrawlEnabled", true))
+            {
+                var crawlerService = scope.ServiceProvider.GetRequiredService<ICrawlerService>();
+                await crawlerService.GetLobbyHistory(DateTime.Today.AddDays(-5), token);
+            }
+            else
+            {
+                logger.LogInformation("SC2Arcade crawling disabled by configuration; continuing maintenance.");
+            }
 
             await importService.CheckDuplicateCandidates();
             await importService.CheckRealmDuplicateCandidates();
