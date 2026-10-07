@@ -39,18 +39,19 @@ public partial class ImportService
         await CreatePlayerIds(players);
 
         List<ArcadeReplay> arcadeReplays = [];
+        HashSet<ArcadeReplayKey> pendingKeys = [];
         foreach (var replay in replays)
         {
             var replayKey = replay.GetKey();
-            if (!existingArcadeReplayKeys.Contains(replayKey))
+            if (!existingArcadeReplayKeys.Contains(replayKey) && pendingKeys.Add(replayKey))
             {
                 arcadeReplays.Add(replay.ToEntity(toonIdPlayerIdDict));
-                existingArcadeReplayKeys.Add(replayKey);
             }
         }
 
         await context.ArcadeReplays.AddRangeAsync(arcadeReplays);
         await context.SaveChangesAsync();
+        existingArcadeReplayKeys.UnionWith(pendingKeys);
     }
 
     public async Task ImportArcadeReplaysRaw(List<ArcadeReplayDto> replays)

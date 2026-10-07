@@ -1,215 +1,118 @@
-﻿using dsstats.dbServices;
+using dsstats.dbServices;
 using dsstats.shared.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Net;
+using System.Text.Json;
 
 namespace sc2arcade.crawler;
 
 public partial class CrawlerService : ICrawlerService
 {
-    private const int MinRequestDelayMs = 500;
-    private const int ErrorWaitMs = 5_000;
-    private const int RateLimitFallbackMs = 60_000;
-
     private readonly IServiceProvider serviceProvider;
     private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<CrawlerService> logger;
+    private readonly Sc2ArcadeRequestGate gate;
 
-
-    public CrawlerService(IServiceProvider serviceProvider,
-                          IHttpClientFactory httpClientFactory,
-                          ILogger<CrawlerService> logger)
+    public CrawlerService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory,
+        ILogger<CrawlerService> logger, Sc2ArcadeRequestGate? requestGate = null)
     {
         this.serviceProvider = serviceProvider;
         this.httpClientFactory = httpClientFactory;
         this.logger = logger;
+        gate = requestGate ?? new();
     }
 
-    /// <summary>
-    /// Crawl SC2Arcade lobby information from latest to tillTime
-    /// </summary>
-    /// <param name="tillTime"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
+    /// <summary>Crawl the UTC five-day window, stopping all regions on the first failure.</summary>
     public async Task GetLobbyHistory(DateTime tillTime, CancellationToken token)
     {
-        var httpClient = httpClientFactory.CreateClient("sc2arcardeClient");
-
-        var startTime = DateTime.UtcNow;
-
-        List<CrawlInfo> crawlInfos =
-        [
-            new(regionId: 1, mapId: 208271, handle: "2-S2-1-226401", teMap: false),
-            new(2, 140436, "2-S2-1-226401", false),
-            // new(3, 69942, "2-S2-1-226401", false),
-            // new(1, 327974, "2-S2-1-226401", true),
-            // new(2, 231019, "2-S2-1-226401", true),
-        ];
-
-        foreach (var crawlInfo in crawlInfos)
+        await gate.RunLock.WaitAsync(token);
+        var startTime = DateTime.UtcNow.AddSeconds(-1);
+        List<CrawlInfo> regions = [new(1, 208271, "2-S2-1-226401", false), new(2, 140436, "2-S2-1-226401", false)];
+        bool failed = false;
+        try
         {
-
-            string baseRequest =
-                $"lobbies/history?regionId={crawlInfo.RegionId}&mapId={crawlInfo.MapId}&profileHandle={crawlInfo.Handle}&orderDirection=desc&includeMapInfo=false&includeSlots=true&includeSlotsProfile=true&includeMatchResult=true&includeMatchPlayers=true&limit=200";
-
-            while (!crawlInfo.Done && !token.IsCancellationRequested)
+            using var client = httpClientFactory.CreateClient("sc2arcardeClient");
+            foreach (var region in regions)
             {
-                try
+                if (failed) { region.StopReason = "SkippedAfterFailure"; continue; }
+                var seen = new HashSet<string>();
+                while (!region.Done)
                 {
-                    var requestUri = BuildRequestUri(crawlInfo, baseRequest);
-                    var response = await httpClient.GetAsync(requestUri, token);
-
-                    int waitTime = await HandleResponse(response, crawlInfo, tillTime, token);
-
-                    if (crawlInfo.Done)
+                    token.ThrowIfCancellationRequested();
+                    await gate.WaitAsync(token);
+                    try
                     {
-                        break;
+                        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+                        timeout.CancelAfter(TimeSpan.FromSeconds(60));
+                        using var response = await client.GetAsync(BuildRequestUri(region), HttpCompletionOption.ResponseHeadersRead, timeout.Token);
+                        gate.Observe(response);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            region.StopReason = "HttpError";
+                            logger.LogWarning("SC2Arcade HTTP {Status}: region={Region}, map={Map}, next={Next}; stopping ALL regions without retry; notBefore={NotBefore}, headers={Headers}",
+                                (int)response.StatusCode, region.RegionId, region.MapId, region.Next, gate.NotBefore,
+                                JsonSerializer.Serialize(Sc2ArcadeRequestPolicy.SelectHeaders(response)));
+                            failed = true;
+                        }
+                        else
+                        {
+                            string body = await response.Content.ReadAsStringAsync(timeout.Token);
+                            if (body.TrimStart().StartsWith('<')) throw new InvalidDataException("HTML challenge response.");
+                            using var doc = JsonDocument.Parse(body);
+                            if (doc.RootElement.ValueKind != JsonValueKind.Object
+                                || !doc.RootElement.TryGetProperty("results", out var rows) || rows.ValueKind != JsonValueKind.Array
+                                || !doc.RootElement.TryGetProperty("page", out var page) || page.ValueKind != JsonValueKind.Object
+                                || !page.TryGetProperty("next", out var next) || next.ValueKind is not (JsonValueKind.String or JsonValueKind.Null))
+                                throw new InvalidDataException("Missing results or pagination.");
+                            var data = JsonSerializer.Deserialize<LobbyHistoryResponse>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+                            if (data.Page.Next != null && (data.Page.Next.Length == 0 || data.Page.Next == region.Next || seen.Contains(data.Page.Next)))
+                                throw new InvalidDataException("Repeated pagination cursor.");
+                            // Import before advancing the cursor, so a failed write never skips a page.
+                            region.Results = data.Results.ToList();
+                            await ImportArcadeReplays(region, token);
+                            region.Results.Clear();
+                            seen.Add(region.Next ?? "");
+                            region.Next = data.Page.Next;
+                            region.Pages++;
+                            region.Lobbies += data.Results.Count;
+                            if (data.Results.Any(r => r.CreatedAt <= tillTime)) region.StopReason = "DateCutoffReached";
+                            else if (data.Results.Count == 0 || region.Next == null) region.StopReason = "EndOfHistory";
+                            region.Done = region.StopReason != null;
+                        }
                     }
-
-                    if (crawlInfo.Results.Count > 10000)
+                    catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+                    catch (Exception ex)
                     {
-                        await Import(crawlInfo, tillTime, token);
+                        region.StopReason = ex is JsonException or InvalidDataException ? "InvalidResponse" : "RequestOrImportError";
+                        logger.LogError(ex, "SC2Arcade stopped ALL regions: region={Region}, map={Map}, next={Next}", region.RegionId, region.MapId, region.Next);
+                        failed = true;
                     }
-
-                    if (crawlInfo.Next == null)
-                    {
-                        await Import(crawlInfo, tillTime, token);
-                        break;
-                    }
-
-                    int delay = Math.Max(MinRequestDelayMs, waitTime);
-                    await Task.Delay(delay, token);
+                    if (failed) { region.RequestFailures++; region.Done = true; }
                 }
-                catch (Exception ex)
-                {
-                    await HandleError(ex, crawlInfo, tillTime, token);
-                }
             }
-
-            await Import(crawlInfo, tillTime, token);
-            await Task.Delay(3000, token);
+            using var scope = serviceProvider.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IRatingService>().MatchWithNewArcadeReplays(startTime);
         }
-
-        foreach (var crawlInfo in crawlInfos)
+        finally
         {
-            logger.LogWarning("{crawlInfo}", crawlInfo);
-        }
-        logger.LogWarning("job done.");
-
-        using var scope = serviceProvider.CreateScope();
-        var importService = scope.ServiceProvider.GetRequiredService<IImportService>();
-        importService.ClearExistingArcadeReplayKeys();
-
-        var ratingService = scope.ServiceProvider.GetRequiredService<IRatingService>();
-        await ratingService.MatchWithNewArcadeReplays(startTime);
-    }
-
-    private static string BuildRequestUri(CrawlInfo crawlInfo, string baseRequest)
-    {
-        if (!string.IsNullOrEmpty(crawlInfo.Next))
-        {
-            return baseRequest + $"&after={crawlInfo.Next}";
-        }
-        return baseRequest;
-    }
-
-    private async Task<int> HandleResponse(HttpResponseMessage response, CrawlInfo crawlInfo, DateTime tillTime, CancellationToken token)
-    {
-        if (response.IsSuccessStatusCode)
-        {
-            var content = await response.Content.ReadAsStringAsync(token);
-
-            if (content.TrimStart().StartsWith('<'))
+            foreach (var region in regions)
+                logger.LogInformation("SC2Arcade crawl finished: region={Region}, map={Map}, stopReason={Reason}, pages={Pages}, lobbies={Lobbies}, submittedForImport={Imports}, winnerTeamErrors={Errors}, requestFailures={Failures}, next={Next}",
+                    region.RegionId, region.MapId, region.StopReason ?? "Cancelled", region.Pages, region.Lobbies, region.Imports, region.Errors, region.RequestFailures, region.Next);
+            try
             {
-                logger.LogWarning("Unexpected HTML response (possible Cloudflare challenge) for next={next}", crawlInfo.Next);
-                return RateLimitFallbackMs;
+                using var scope = serviceProvider.CreateScope();
+                scope.ServiceProvider.GetRequiredService<IImportService>().ClearExistingArcadeReplayKeys();
             }
-
-            var result = System.Text.Json.JsonSerializer.Deserialize<LobbyHistoryResponse>(content,
-                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (result == null)
-            {
-                logger.LogWarning("Failed to deserialize response for next={next}, stopping crawl", crawlInfo.Next);
-                crawlInfo.Next = null;
-                crawlInfo.Done = true;
-            }
-            else if (result.Results.Count == 0)
-            {
-                logger.LogWarning("Empty results page for next={next}, stopping crawl", crawlInfo.Next);
-                crawlInfo.Next = null;
-                crawlInfo.Done = true;
-            }
-            else
-            {
-                crawlInfo.Results.AddRange(result.Results);
-                crawlInfo.Next = result.Page.Next;
-            }
-
-            int waitTime = GetWaitTime(response);
-            int importDuration = await Import(crawlInfo, tillTime, token);
-            return Math.Max(0, waitTime - importDuration);
-        }
-        else if (response.StatusCode == HttpStatusCode.TooManyRequests)
-        {
-            int wait = GetWaitTime(response);
-            logger.LogWarning("Rate limited (429), waiting {wait}ms", wait);
-            return wait;
-        }
-        else
-        {
-            logger.LogWarning("Non-recoverable HTTP error ({statusCode}) for next={next}, stopping crawl",
-                response.StatusCode, crawlInfo.Next);
-            await Import(crawlInfo, tillTime, token);
-            crawlInfo.Done = true;
-            return 0;
+            finally { gate.RunLock.Release(); }
         }
     }
 
-    private async Task HandleError(Exception ex, CrawlInfo crawlInfo, DateTime tillTime, CancellationToken token)
+    private static string BuildRequestUri(CrawlInfo region)
     {
-        logger.LogError("Failed request ({next}): {error}", crawlInfo.Next, ex.Message);
-        await Import(crawlInfo, tillTime, token);
-        await Task.Delay(ErrorWaitMs, token);
-    }
-
-    private async Task<int> Import(CrawlInfo crawlInfo, DateTime tillTime, CancellationToken token)
-    {
-        if (crawlInfo.Results.Count == 0)
-        {
-            return 0;
-        }
-
-        var start = DateTime.UtcNow;
-        if (crawlInfo.Results.Last().CreatedAt < tillTime)
-        {
-            crawlInfo.Done = true;
-        }
-        await ImportArcadeReplays(crawlInfo, token);
-        crawlInfo.Results.Clear();
-        return (int)(DateTime.UtcNow - start).TotalMilliseconds;
-    }
-
-    private static int GetWaitTime(HttpResponseMessage response)
-    {
-        if (response.Headers.TryGetValues("x-ratelimit-remaining", out var remainValues)
-            && response.Headers.TryGetValues("x-ratelimit-reset", out var resetValues)
-            && int.TryParse(remainValues.FirstOrDefault(), out int rateLimitRemaining)
-            && int.TryParse(resetValues.FirstOrDefault(), out int rateLimitReset))
-        {
-            if (rateLimitRemaining <= 1)
-            {
-                // Pre-emptively wait when almost out of quota
-                return rateLimitReset * 1000;
-            }
-            return 0;
-        }
-
-        // no headers → conservative fallback
-        return RateLimitFallbackMs;
+        string uri = $"lobbies/history?regionId={region.RegionId}&mapId={region.MapId}&profileHandle={Uri.EscapeDataString(region.Handle)}&orderDirection=desc&includeMapInfo=false&includeSlots=true&includeSlotsProfile=true&includeMatchResult=true&includeMatchPlayers=true&limit=200";
+        return region.Next is null ? uri : uri + "&after=" + Uri.EscapeDataString(region.Next);
     }
 }
-
 public record CrawlInfo
 {
     public CrawlInfo() { }
@@ -231,6 +134,10 @@ public record CrawlInfo
     public string? Next { get; set; }
     public List<LobbyResult> Results { get; set; } = new();
     public bool Done { get; set; }
+    public string? StopReason { get; set; }
+    public int Pages { get; set; }
+    public int Lobbies { get; set; }
+    public int RequestFailures { get; set; }
 }
 
 public record PlayerSuccess
