@@ -332,6 +332,7 @@ public static class ArcadeReplayDtoMapper
         return new()
         {
             RegionId = replay.RegionId,
+            Gametime = replay.CreatedAt,
             GameMode = replay.GameMode,
             Duration = replay.Duration,
             Players = replay.Players.Select(p => p.ToDto(replay.Duration)).ToList(),
