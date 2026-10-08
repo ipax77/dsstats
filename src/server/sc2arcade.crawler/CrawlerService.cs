@@ -96,7 +96,7 @@ public partial class CrawlerService : ICrawlerService
         finally
         {
             foreach (var region in regions)
-                logger.LogInformation("SC2Arcade crawl finished: region={Region}, map={Map}, stopReason={Reason}, pages={Pages}, lobbies={Lobbies}, submittedForImport={Imports}, winnerTeamErrors={Errors}, requestFailures={Failures}, next={Next}",
+                logger.LogWarning("SC2Arcade crawl finished: region={Region}, map={Map}, stopReason={Reason}, pages={Pages}, lobbies={Lobbies}, submittedForImport={Imports}, winnerTeamErrors={Errors}, requestFailures={Failures}, next={Next}",
                     region.RegionId, region.MapId, region.StopReason ?? "Cancelled", region.Pages, region.Lobbies, region.Imports, region.Errors, region.RequestFailures, region.Next);
             try
             {
