@@ -1,6 +1,9 @@
 const sessions = new WeakMap();
 
 export function initialize(dialog, receiver) {
+    // Navigation can remove the element while the module import is in flight.
+    if (!dialog?.isConnected) return false;
+    if (sessions.has(dialog)) return true;
     const state = { receiver, opener: null, parent: null };
     state.cancel = event => { event.preventDefault(); receiver.invokeMethodAsync("Close"); };
     state.keys = event => {
@@ -19,6 +22,12 @@ export function initialize(dialog, receiver) {
     dialog.addEventListener("cancel", state.cancel);
     dialog.addEventListener("keydown", state.keys);
     sessions.set(dialog, state);
+    // Observe ancestors too: navigation may remove an entire containing subtree.
+    state.observer = new MutationObserver(() => {
+        if (!dialog.isConnected) dispose(dialog);
+    });
+    state.observer.observe(document.body, { childList: true, subtree: true });
+    return true;
 }
 
 async function hideModal(modal) {
@@ -42,12 +51,12 @@ export async function open(dialog) {
     dialog.showModal();
 }
 
-export function scrollTop(dialog) { return dialog.querySelector(".profile-scroll")?.scrollTop ?? 0; }
-export function restoreScroll(dialog, top) { const body = dialog.querySelector(".profile-scroll"); if (body) body.scrollTop = top; }
-export function suspend(dialog) { dialog.close(); }
+export function scrollTop(dialog) { return dialog?.querySelector(".profile-scroll")?.scrollTop ?? 0; }
+export function restoreScroll(dialog, top) { const body = dialog?.querySelector(".profile-scroll"); if (body) body.scrollTop = top; }
+export function suspend(dialog) { dialog?.close(); }
 
 export function close(dialog) {
-    dialog.close();
+    dialog?.close();
     const state = sessions.get(dialog);
     if (state?.parent?.isConnected) bootstrap.Modal.getOrCreateInstance(state.parent).show();
     if (state?.opener?.isConnected) state.opener.focus();
@@ -57,6 +66,7 @@ export function close(dialog) {
 export function dispose(dialog) {
     const state = sessions.get(dialog);
     if (!state) return;
+    state.observer.disconnect();
     dialog.close();
     dialog.removeEventListener("cancel", state.cancel);
     dialog.removeEventListener("keydown", state.keys);

@@ -237,6 +237,8 @@
     private bool showPending;
     private bool restorePending;
     private bool disposed;
+    private bool initialized;
+    private readonly CancellationTokenSource lifetimeCancellation = new();
     private bool replayLoading;
     private string? replayError;
     private CancellationTokenSource replayCancellation = new();
@@ -258,22 +260,41 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (disposed) return;
+        var token = lifetimeCancellation.Token;
+        try
         {
-            module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/dsstats.weblib/js/playerProfile.js");
-            reference = DotNetObjectReference.Create(this);
-            await module.InvokeVoidAsync("initialize", dialog, reference);
+            if (firstRender)
+            {
+                var imported = await JS.InvokeAsync<IJSObjectReference>("import", token, "./_content/dsstats.weblib/js/playerProfile.js");
+                if (disposed)
+                {
+                    await DisposeModule(imported);
+                    return;
+                }
+                module = imported;
+                reference = DotNetObjectReference.Create(this);
+            }
+            if (module is null) return;
+            if (!initialized)
+            {
+                initialized = await module.InvokeAsync<bool>("initialize", token, dialog, reference);
+                if (disposed || !initialized) return;
+            }
+            if (showPending)
+            {
+                showPending = false;
+                await module.InvokeVoidAsync("open", token, dialog);
+            }
+            if (disposed) return;
+            if (restorePending && State?.OverviewLoading == false)
+            {
+                restorePending = false;
+                await module.InvokeVoidAsync("restoreScroll", token, dialog, State.ScrollTop);
+            }
         }
-        if (showPending && module is not null)
-        {
-            showPending = false;
-            await module.InvokeVoidAsync("open", dialog);
-        }
-        if (restorePending && module is not null && State?.OverviewLoading == false)
-        {
-            restorePending = false;
-            await module.InvokeVoidAsync("restoreScroll", dialog, State.ScrollTop);
-        }
+        catch (JSDisconnectedException) { }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
     }
 
     private void Refresh() { if (!disposed) _ = InvokeAsync(StateHasChanged); }
@@ -364,15 +385,28 @@
 
     public async ValueTask DisposeAsync()
     {
+        if (disposed) return;
         disposed = true;
+        lifetimeCancellation.Cancel();
         replayCancellation.Cancel();
         replayCancellation.Dispose();
         if (session is not null) { session.Changed -= Refresh; session.Dispose(); }
-        if (module is not null)
+        try
         {
-            try { await module.InvokeVoidAsync("dispose", dialog); await module.DisposeAsync(); }
-            catch (JSDisconnectedException) { }
+            // The browser observes dialog removal and cleans up its event listeners locally.
+            if (module is not null) await DisposeModule(module);
         }
-        reference?.Dispose();
+        finally
+        {
+            reference?.Dispose();
+            lifetimeCancellation.Dispose();
+        }
+    }
+
+    private static async ValueTask DisposeModule(IJSObjectReference module)
+    {
+        try { await module.DisposeAsync(); }
+        catch (JSDisconnectedException) { }
+        catch (OperationCanceledException) { }
     }
 }
