@@ -131,7 +131,7 @@
 	</div>
 </div>
 
-<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnPlayerRequest="e => playerModal?.Show(e)" OnPlayerProfileRequest="e => playerModal!.ShowProfile(e)" OnClose="CloseReplay" />
+<ReplayModal @ref="replayModal" IsCloseable="true" IsScrollable="true" OnScrollRequest="e => LoadNextReplay(!e)" OnPlayerRequest="e => playerModal?.Show(e)" OnPlayerProfileRequest="e => playerModal!.ShowProfile(e)" OnClose="CloseReplay" />
 <PlayerModal @ref="playerModal" OnClose="e => replayModal?.Show(ReplayDetails!)" />
 
 @code {

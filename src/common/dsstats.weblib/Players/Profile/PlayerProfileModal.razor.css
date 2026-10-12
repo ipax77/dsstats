@@ -1,15 +1,8 @@
-.profile-dialog { padding:0; border:1px solid #ffffff26; border-radius:8px; width:min(1280px, calc(100vw - 48px)); max-width:none; height:min(920px, calc(100dvh - 48px)); max-height:calc(100dvh - 48px); color:#edf2f9; box-shadow:0 12px 40px #0008; overflow:hidden; font-variant-numeric:tabular-nums }
-/* Keep bgchart's near-black tone while suppressing text from the underlying page. */
-.profile-dialog.bgchart { background-color:rgb(8 8 8 / 99%) }
-.profile-dialog::backdrop { background:#0009 }
-.profile-shell { display:flex; flex-direction:column; height:100%; min-height:0 }
-.profile-header { display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; padding:22px 30px; border-bottom:1px solid #ffffff26; flex-shrink:0 }
 .identity, .header-actions { display:flex; align-items:center; gap:20px; min-width:0 }
 .identity { flex:1 } .identity>div { min-width:0 }
 h2 { margin:4px 0 0; font-size:clamp(1.3rem, 2.5vw, 1.85rem); font-weight:650; overflow-wrap:anywhere; letter-spacing:-.025em }
 h3 { font-size:1.15rem; font-weight:600; margin:0 } h4 { font-size:1rem; margin:0 }
 .eyebrow { font-size:.65rem; font-weight:700; letter-spacing:.14em; color:#a9b8cc; display:block }
-.profile-scroll { padding:28px 30px; overflow-y:auto; overscroll-behavior:contain; min-height:0; scrollbar-color:#495057 transparent }
 label { font-size:.72rem; color:#a9b8cc; display:flex; flex-direction:column; gap:5px }
 select { background:#17263c; color:#edf2f9; border:1px solid #3a4e67; border-radius:8px; padding:8px 30px 8px 10px; min-width:140px; font-size:.85rem }
 button { cursor:pointer; transition:background .15s, border-color .15s; font:inherit }
@@ -112,16 +105,13 @@ dt { font-weight:400; font-size:.72rem } dd { margin:4px 0 0; color:#edf2f9; fon
 .quiet-button, select, .category-strip button, .chart-types button, .section-tabs button, .replay-link { min-height:44px }
 @media (max-width:1000px) { .summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)) } .rating-hero { grid-column:1 / -1 } .scroll-hint { display:block } .progress-grid { grid-template-columns:1fr } .records { display:flex; flex-wrap:wrap; gap:12px 24px } .records .section-heading { width:100%; margin-bottom:0 } .records .record-pair { border:0; padding:0; gap:24px } .relationships-grid { grid-template-columns:1fr } }
 @media (max-width:600px) {
-    .profile-dialog { width:100vw; height:100dvh; max-height:100dvh; margin:0; border:0; border-radius:0 }
-    .profile-header { padding:14px 16px; gap:12px } .identity { flex-basis:100%; padding-right:35px } .header-actions { width:100% } .header-actions label { flex-direction:row; align-items:center; gap:12px; flex:1 } .close-button { position:absolute; top:14px; right:10px }
-    .profile-scroll { padding:20px 14px } .panel { padding:16px } .summary-grid { gap:12px } .rating-hero { padding-left:12px } .metric { padding:8px } .hero-number { font-size:2.8rem } .rank { display:block; font-size:.8rem; margin-left:0 } .metric strong { font-size:1.6rem }
+    .identity { flex-basis:100%; padding-right:35px } .header-actions { width:100% } .header-actions label { flex-direction:row; align-items:center; gap:12px; flex:1 } .close-button { position:absolute; top:14px; right:10px }
+    .panel { padding:16px } .summary-grid { gap:12px } .rating-hero { padding-left:12px } .metric { padding:8px } .hero-number { font-size:2.8rem } .rank { display:block; font-size:.8rem; margin-left:0 } .metric strong { font-size:1.6rem }
     .category-strip { gap:6px } .category-strip button { padding:6px 8px; gap:8px; font-size:.7rem }
     .profile-replays-scroll { margin:0 -16px -8px; padding-left:16px; padding-right:16px }
     .details-invitation { flex-direction:column; align-items:flex-start; padding:20px } .primary-button { width:100% }
     .section-tabs { gap:20px } .section-tabs button { font-size:.85rem } .breakdown-grid { grid-template-columns:1fr } .performance-chart { height:320px }
     .header-actions label { flex-wrap:wrap }
-    .profile-header { padding-top:max(14px, env(safe-area-inset-top)) }
     .close-button { top:max(14px, env(safe-area-inset-top)) }
-    .profile-scroll { padding-bottom:max(20px, env(safe-area-inset-bottom)) }
 }
 @media (prefers-reduced-motion:reduce) { .skeleton { animation:none } button { transition:none } }

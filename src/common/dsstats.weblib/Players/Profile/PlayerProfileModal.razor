@@ -8,9 +8,9 @@
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<dialog @ref="dialog" class="profile-dialog" aria-labelledby="@titleId">
-    <div class="profile-shell">
-        <header class="profile-header bg-dark">
+<dialog @ref="dialog" class="profile-dialog ds-detail-view" aria-labelledby="@titleId">
+    <div class="profile-shell ds-detail-shell">
+        <header class="profile-header ds-detail-header">
             <div class="identity">
                 @if (session?.CanGoBack == true)
                 {
@@ -25,10 +25,10 @@
                         @foreach (var type in Enum.GetValues<RatingType>()) { <option value="@type">@Category(type)</option> }
                     </select>
                 </label>
-                <button class="close-button" @onclick="Close" aria-label="Close player profile">×</button>
+                <button class="close-button ds-detail-close" @onclick="Close" aria-label="Close player profile">×</button>
             </div>
         </header>
-        <div class="profile-scroll" tabindex="-1">
+        <div class="profile-scroll ds-detail-scroll" tabindex="-1">
             @if (State is { OverviewLoading: true })
             {
                 <div class="loading-state" role="status" aria-live="polite"><span class="eyebrow">LOADING PLAYER</span>
