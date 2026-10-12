@@ -294,10 +294,10 @@ html:has(dialog.ds-detail-view[open]), body:has(dialog.ds-detail-view[open]) { o
 .ds-detail-view .ds-replay-metadata { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 8px; font-size: .8rem; color: var(--detail-muted); }
 .ds-detail-view .ds-replay-body { display: flex; flex-direction: column; gap: 20px; }
 .ds-detail-view .ds-replay-teams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.ds-detail-view .ds-replay-team .tptable { width: 100%; min-width: 620px; table-layout: auto; font-size: .76rem; white-space: nowrap; }
-.ds-detail-view .ds-replay-team .tptable th { position: static; padding: 10px 8px; background: #0f1a29; color: var(--detail-muted); font-size: .68rem; font-weight: 500; }
+.ds-detail-view .ds-replay-team .tptable { width: 100%; min-width: 620px; table-layout: auto; font-size: 1rem; white-space: nowrap; }
+.ds-detail-view .ds-replay-team .tptable th { position: static; padding: 10px 8px; background: #0f1a29; color: var(--detail-muted); font-size: inherit; font-weight: 700; }
 .ds-detail-view .ds-replay-team .tptable td { padding: 7px; }
-.ds-detail-view .ds-replay-player { display: block; width: 110px; min-height: 44px; padding: 0; border: 0; background: none; color: #a9d1ff; font: inherit; font-size: .9rem; text-align: left; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-detail-view .ds-replay-player { display: block; width: 110px; min-height: 44px; padding: 0; border: 0; background: none; color: #a9d1ff; font: inherit; text-align: left; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ds-detail-view button:disabled { opacity: .55; cursor: default; }
 .ds-detail-view .ds-replay-team .tptable tbody tr:hover { background: #12243a; }
 .ds-detail-view .ds-replay-chart { display: flex; flex-wrap: wrap; gap: 20px; }
