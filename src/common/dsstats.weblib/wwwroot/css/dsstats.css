@@ -297,19 +297,22 @@ html:has(dialog.ds-detail-view[open]), body:has(dialog.ds-detail-view[open]) { o
 .ds-detail-view .ds-replay-team .tptable { width: 100%; min-width: 620px; table-layout: auto; font-size: .76rem; white-space: nowrap; }
 .ds-detail-view .ds-replay-team .tptable th { position: static; padding: 10px 8px; background: #0f1a29; color: var(--detail-muted); font-size: .68rem; font-weight: 500; }
 .ds-detail-view .ds-replay-team .tptable td { padding: 7px; }
-.ds-detail-view .ds-replay-player { display: block; width: 90px; min-height: 44px; padding: 0; border: 0; background: none; color: #a9d1ff; font: inherit; text-align: left; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-detail-view .ds-replay-player { display: block; width: 110px; min-height: 44px; padding: 0; border: 0; background: none; color: #a9d1ff; font: inherit; font-size: .9rem; text-align: left; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ds-detail-view button:disabled { opacity: .55; cursor: default; }
 .ds-detail-view .ds-replay-team .tptable tbody tr:hover { background: #12243a; }
 .ds-detail-view .ds-replay-chart { display: flex; flex-wrap: wrap; gap: 20px; }
 .ds-detail-view .ds-detail-chart-scroll { flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; }
 .ds-detail-view .ds-replay-chart-canvas { position: relative; min-width: 500px; width: 100%; height: 400px; }
 .ds-detail-view .ds-replay-chart form { font-size: .8rem; color: var(--detail-muted); }
-.ds-detail-view .ds-replay-builds { min-width: 0; }
-.ds-detail-view .ds-replay-builds > .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr)); gap: 18px; margin: 0; }
-.ds-detail-view .ds-replay-builds > .row > .card { min-width: 0; max-width: 100%; padding: 0; border: 1px solid var(--detail-panel); border-radius: 4px; }
+.ds-detail-view .ds-replay .ds-detail-scroll { max-width: none; }
+.ds-detail-view .ds-replay-body > :not(.ds-replay-builds) { width: 100%; max-width: 1540px; align-self: center; }
+/* 500px build chart + 16px padding on each side + the card border. */
+.ds-detail-view .ds-replay-builds { --replay-build-width: 534px; min-width: 0; }
+.ds-detail-view .ds-replay-builds > .row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 18px; margin: 0; }
+.ds-detail-view .ds-replay-builds > .row > .card { flex: 0 1 var(--replay-build-width); min-width: 0; max-width: min(100%, var(--replay-build-width)); padding: 0; border: 1px solid var(--detail-panel); border-radius: 4px; }
 .ds-detail-view .ds-replay-builds .card-body { overflow-x: auto; }
 .ds-detail-view .ds-replay-playback { overflow-x: auto; }
-.ds-detail-view .ds-replay-footer { margin-top: 20px; background: #0f1a29; }
+.ds-detail-view .ds-replay-footer { max-width: 1540px; margin: 20px auto 0; background: #0f1a29; }
 .ds-detail-view .ds-replay :is(.btn, select) { min-height: 44px; }
 .ds-detail-view .ds-replay select { background-color: #17263c; border-color: #3a4e67; color: #edf2f9; font-size: .85rem; }
 .ds-detail-view .ds-replay-controls .btn { border-color: #3a4e67; color: var(--detail-muted); }
