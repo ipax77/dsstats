@@ -239,3 +239,99 @@
         display: none;
     }
 }
+
+/* Shared presentation, explicitly enabled by the profile and replay modals. */
+.ds-detail-view {
+    --detail-surface: #080b10;
+    --detail-panel: #ffffff1f;
+    --detail-muted: #a9b8cc;
+    --detail-accent: #e8ba6b;
+    color: #edf2f9;
+    font-variant-numeric: tabular-nums;
+}
+dialog.ds-detail-view {
+    width: 100%; max-width: none; height: 100dvh; max-height: none;
+    margin: 0; padding: 0; border: 0; border-radius: 0; overflow: hidden;
+    background: var(--detail-surface);
+}
+dialog.ds-detail-view::backdrop { background: #0009; }
+html:has(dialog.ds-detail-view[open]), body:has(dialog.ds-detail-view[open]) { overflow: hidden; }
+.ds-detail-view .modal-dialog { height: 100dvh; margin: 0; }
+.ds-detail-view .modal-content {
+    height: 100%; border: 0; border-radius: 0; overflow: hidden;
+    background: var(--detail-surface); color: inherit;
+}
+.ds-detail-view .ds-detail-shell { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; }
+.ds-detail-view .ds-detail-header {
+    position: relative; display: flex; flex-wrap: wrap; align-items: center;
+    justify-content: space-between; gap: 16px; flex-shrink: 0;
+    padding: 22px max(30px, calc((100% - 1540px) / 2));
+    border-bottom: 1px solid #ffffff26; background: #151b23;
+}
+.ds-detail-view .ds-detail-identity { min-width: 0; flex: 1; }
+.ds-detail-view h2 { margin: 4px 0 0; font-size: clamp(1.3rem, 2.5vw, 1.85rem); font-weight: 650; overflow-wrap: anywhere; letter-spacing: -.025em; }
+.ds-detail-view .ds-detail-eyebrow { display: block; color: var(--detail-muted); font-size: .65rem; font-weight: 700; letter-spacing: .14em; }
+.ds-detail-view .ds-detail-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.ds-detail-view .ds-detail-scroll {
+    flex: 1; width: 100%; max-width: 1600px; align-self: center; min-height: 0;
+    padding: 28px 30px; overflow-y: auto; overflow-x: hidden;
+    overscroll-behavior: contain; scrollbar-color: #495057 transparent;
+}
+.ds-detail-view .ds-detail-close {
+    background: none; border: 0; color: #bdc9da; font-size: 1.9rem;
+    width: 44px; height: 44px; flex-shrink: 0; line-height: 1; cursor: pointer;
+}
+.ds-detail-view .ds-detail-button {
+    border: 1px solid #3a4e67; background: #18283d; color: #dce9fb;
+    border-radius: 8px; padding: 7px 12px; font-size: .8rem; min-height: 44px;
+}
+.ds-detail-view .ds-detail-button:hover { background: #223752; }
+.ds-detail-view .ds-detail-button[aria-pressed=true] { border-color: var(--detail-accent); color: #f1cd8c; }
+.ds-detail-view :is(button, a, summary, select, input, [tabindex]):focus-visible { outline: 2px solid var(--detail-accent); outline-offset: 4px; }
+.ds-detail-view .ds-detail-panel { border: 1px solid var(--detail-panel); border-radius: 4px; padding: 22px; min-width: 0; }
+.ds-detail-view .ds-detail-table-scroll { overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 8px; }
+.ds-detail-view .ds-detail-scroll-hint { color: var(--detail-muted); font-size: .78rem; margin: 12px 0; }
+.ds-detail-view .ds-replay-metadata { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 8px; font-size: .8rem; color: var(--detail-muted); }
+.ds-detail-view .ds-replay-body { display: flex; flex-direction: column; gap: 20px; }
+.ds-detail-view .ds-replay-teams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.ds-detail-view .ds-replay-team .tptable { width: 100%; min-width: 620px; table-layout: auto; font-size: 1rem; white-space: nowrap; }
+.ds-detail-view .ds-replay-team .tptable th { position: static; padding: 10px 8px; background: #0f1a29; color: var(--detail-muted); font-size: inherit; font-weight: 700; }
+.ds-detail-view .ds-replay-team .tptable td { padding: 7px; }
+.ds-detail-view .ds-replay-player { display: block; width: 110px; min-height: 44px; padding: 0; border: 0; background: none; color: #a9d1ff; font: inherit; text-align: left; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ds-detail-view button:disabled { opacity: .55; cursor: default; }
+.ds-detail-view .ds-replay-team .tptable tbody tr:hover { background: #12243a; }
+.ds-detail-view .ds-replay-chart { display: flex; flex-wrap: wrap; gap: 20px; }
+.ds-detail-view .ds-detail-chart-scroll { flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; }
+.ds-detail-view .ds-replay-chart-canvas { position: relative; min-width: 500px; width: 100%; height: 400px; }
+.ds-detail-view .ds-replay-chart form { font-size: .8rem; color: var(--detail-muted); }
+.ds-detail-view .ds-replay .ds-detail-scroll { max-width: none; }
+.ds-detail-view .ds-replay-body > :not(.ds-replay-builds) { width: 100%; max-width: 1540px; align-self: center; }
+/* 500px build chart + 16px padding on each side + the card border. */
+.ds-detail-view .ds-replay-builds { --replay-build-width: 534px; min-width: 0; }
+.ds-detail-view .ds-replay-builds > .row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 18px; margin: 0; }
+.ds-detail-view .ds-replay-builds > .row > .card { flex: 0 1 var(--replay-build-width); min-width: 0; max-width: min(100%, var(--replay-build-width)); padding: 0; border: 1px solid var(--detail-panel); border-radius: 4px; }
+.ds-detail-view .ds-replay-builds .card-body { overflow-x: auto; }
+.ds-detail-view .ds-replay-playback { overflow-x: auto; }
+.ds-detail-view .ds-replay-footer { max-width: 1540px; margin: 20px auto 0; background: #0f1a29; }
+.ds-detail-view .ds-replay :is(.btn, select) { min-height: 44px; }
+.ds-detail-view .ds-replay select { background-color: #17263c; border-color: #3a4e67; color: #edf2f9; font-size: .85rem; }
+.ds-detail-view .ds-replay-controls .btn { border-color: #3a4e67; color: var(--detail-muted); }
+.ds-detail-view .ds-replay-controls .btn-info { background: #253042; border-color: #8a724f; color: #f1cd8c; }
+.ds-detail-view .ds-replay [aria-label="Rate replay"] .btn { min-width: 32px; }
+@media (max-width: 1000px) {
+    .ds-detail-view .ds-replay-teams { grid-template-columns: 1fr; }
+}
+@media (min-width: 1001px) {
+    .ds-detail-view .ds-detail-scroll-hint { display: none; }
+}
+@media (max-width: 600px) {
+    .ds-detail-view .ds-detail-header { padding: max(14px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 14px max(16px, env(safe-area-inset-left)); gap: 12px; }
+    .ds-detail-view .ds-detail-identity { flex-basis: 100%; padding-right: 44px; }
+    .ds-detail-view .ds-detail-actions { width: 100%; }
+    .ds-detail-view .ds-detail-close { position: absolute; top: max(14px, env(safe-area-inset-top)); right: max(10px, env(safe-area-inset-right)); }
+    .ds-detail-view .ds-detail-scroll { padding: 20px max(14px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
+    .ds-detail-view .ds-detail-panel { padding: 16px; }
+    .ds-detail-view .ds-detail-chart-scroll { flex-basis: 100%; }
+    .ds-detail-view .ds-replay-chart-canvas { height: 280px; }
+    .ds-detail-view .ds-replay-controls .row { row-gap: 12px; }
+}

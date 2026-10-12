@@ -31,6 +31,11 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
     public ReplayDetails ReplayDetails { get; set; } = null!;
 
     [Parameter]
+    public bool ModalPresentation { get; set; }
+
+    [Parameter] public string? TitleId { get; set; }
+
+    [Parameter]
     public bool IsScrollable { get; set; }
 
     [Parameter]
@@ -132,10 +137,7 @@ public partial class ReplayComponent : ComponentBase, IAsyncDisposable
             && !ReferenceEquals(currentReplay, ReplayDetails.Replay);
     }
 
-    public void Scroll(bool left)
-    {
-        OnScrollRequest.InvokeAsync(left);
-    }
+    public Task Scroll(bool left) => OnScrollRequest.InvokeAsync(left);
 
     private async Task RequestPlayerStats(PlayerDto player)
     {

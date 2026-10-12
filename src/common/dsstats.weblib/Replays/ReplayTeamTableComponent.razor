@@ -31,7 +31,14 @@
 					<span class="p-1 bgchart2 rounded-1 @ratingInfo.ColorClass">@ratingInfo.Change</span>
 				</td>
 				<td @onclick:stopPropagation @onclick="() => RequestStats.InvokeAsync(player.Player)">
-					<span class="d-inline-block text-truncate text-decoration-underline" style="width: 100px;">@player.Name</span>
+                    @if (ModalPresentation)
+                    {
+                        <button type="button" class="ds-replay-player" title="@player.Name" aria-label="@($"Open player profile for {player.Name}")">@player.Name</button>
+                    }
+                    else
+                    {
+					    <span class="d-inline-block text-truncate text-decoration-underline" style="width: 100px;">@player.Name</span>
+                    }
 				</td>
 				@if (ReplayHelper.HasRating)
 				{
@@ -77,6 +84,8 @@
 
 	[Parameter, EditorRequired]
 	public List<ReplayPlayerDto> Players { get; set; } = [];
+
+    [Parameter] public bool ModalPresentation { get; set; }
 
 	[Parameter, EditorRequired]
 	public ReplayHelper ReplayHelper { get; set; } = null!;

@@ -2,6 +2,10 @@
 
 const cmdrIconsMap = new Map();
 
+function scrollToElementId(id) {
+    document.getElementById(id)?.scrollIntoView({ block: 'nearest' });
+}
+
 function openModalById(id) {
     const modalElement = document.getElementById(id);
     if (!modalElement) return;

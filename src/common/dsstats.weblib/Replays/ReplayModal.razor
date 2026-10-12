@@ -1,50 +1,97 @@
 @using Microsoft.JSInterop
 @using dsstats.shared
 @inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
-<div class="modal" id="@modalId" aria-hidden="true" aria-labelledby="@modalId" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen">
+<div @ref="modal" class="modal ds-detail-view" id="@modalId" aria-hidden="true" aria-labelledby="@titleId" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
         <div class="modal-content">
-            <div class="modal-body" style="background: url('/_content/dsstats.weblib/images/bgbing_soft.jpg') repeat center center fixed;">
-                @if (ReplayDetails != null)
-                {
-                    <ReplayComponent ReplayDetails="ReplayDetails" IsScrollable="IsScrollable" IsCloseable="true" OnPlayerRequest="OnPlayerRequest" OnPlayerProfileRequest="OnPlayerProfileRequest" OnClose="Close" />
-                }
-            </div>
+            @if (ReplayDetails is not null)
+            {
+                <ReplayComponent ReplayDetails="ReplayDetails" ModalPresentation="true" TitleId="@titleId"
+                                 IsScrollable="IsScrollable" IsCloseable="true" OnScrollRequest="OnScrollRequest" OnPlayerRequest="OnPlayerRequest"
+                                 OnPlayerProfileRequest="OnPlayerProfileRequest" OnClose="Close" />
+            }
         </div>
     </div>
 </div>
 
 @code {
-    private string modalId = "replayModal";
+    private readonly string modalId = $"replay-{Guid.NewGuid():N}";
+    private string titleId => $"{modalId}-title";
+    private ElementReference modal;
+    private ReplayDetails? ReplayDetails;
+    private IJSObjectReference? module;
+    private DotNetObjectReference<ReplayModal>? reference;
+    private bool showPending;
+    private bool disposed;
 
-    private ReplayDetails? ReplayDetails = null;
-
-    [Parameter]
-    public bool IsScrollable { get; set; }
-
-    [Parameter]
-    public bool IsCloseable { get; set; }
-
-    [Parameter]
-    public EventCallback<PlayerStatsResponse> OnPlayerRequest { get; set; }
-
+    [Parameter] public bool IsScrollable { get; set; }
+    [Parameter] public bool IsCloseable { get; set; }
+    [Parameter] public EventCallback<PlayerStatsResponse> OnPlayerRequest { get; set; }
     [Parameter] public EventCallback<PlayerProfileRequest> OnPlayerProfileRequest { get; set; }
-
-    [Parameter]
-    public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<bool> OnScrollRequest { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
 
     public void Show(ReplayDetails replayDetails)
     {
+        if (disposed) return;
         ReplayDetails = replayDetails;
-        InvokeAsync(StateHasChanged);
-        JSRuntime.InvokeVoidAsync("openModalById", modalId);
+        showPending = true;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (disposed) return;
+        try
+        {
+            if (module is null)
+            {
+                var imported = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./_content/dsstats.weblib/js/replayModal.js");
+                if (disposed) { await imported.DisposeAsync(); return; }
+                module = imported;
+                reference = DotNetObjectReference.Create(this);
+                await module.InvokeVoidAsync("initialize", modal, reference);
+            }
+            if (showPending && !disposed)
+            {
+                showPending = false;
+                await module.InvokeVoidAsync("open", modal);
+            }
+        }
+        catch (JSDisconnectedException) { }
+        catch (TaskCanceledException) { }
     }
 
     public async Task Close()
     {
-        await JSRuntime.InvokeVoidAsync("closeModalById", modalId);
+        if (module is not null && !disposed) await module.InvokeVoidAsync("close", modal);
+    }
+
+    [JSInvokable]
+    public async Task Dismissed()
+    {
+        if (disposed || ReplayDetails is null) return;
         ReplayDetails = null;
+        showPending = false;
         await OnClose.InvokeAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        try
+        {
+            if (module is not null)
+            {
+                await module.InvokeVoidAsync("dispose", modal);
+                await module.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException) { }
+        catch (TaskCanceledException) { }
+        finally { reference?.Dispose(); }
     }
 }

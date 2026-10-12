@@ -34,6 +34,8 @@ async function hideModal(modal) {
     if (!modal) return;
     const instance = bootstrap.Modal.getInstance(modal);
     if (!instance) return;
+    if (!modal.classList.contains("show")) return;
+    modal.dataset.profileSuspended = "true";
     await new Promise(resolve => {
         modal.addEventListener("hidden.bs.modal", resolve, { once: true });
         instance.hide();
@@ -59,7 +61,7 @@ export function close(dialog) {
     dialog?.close();
     const state = sessions.get(dialog);
     if (state?.parent?.isConnected) bootstrap.Modal.getOrCreateInstance(state.parent).show();
-    if (state?.opener?.isConnected) state.opener.focus();
+    if (state?.opener?.isConnected) state.opener.focus({ preventScroll: true });
     if (state) { state.opener = null; state.parent = null; }
 }
 
