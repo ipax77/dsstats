@@ -301,8 +301,9 @@ html:has(dialog.ds-detail-view[open]), body:has(dialog.ds-detail-view[open]) { o
 .ds-detail-view button:disabled { opacity: .55; cursor: default; }
 .ds-detail-view .ds-replay-team .tptable tbody tr:hover { background: #12243a; }
 .ds-detail-view .ds-replay-chart { display: flex; flex-wrap: wrap; gap: 20px; }
-.ds-detail-view .ds-detail-chart-scroll { flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; }
-.ds-detail-view .ds-replay-chart-canvas { position: relative; min-width: 500px; width: 100%; height: 400px; }
+/* Vertical scrolling belongs to .ds-detail-scroll, even while Chart.js resizes its canvas. */
+.ds-detail-view .ds-detail-chart-scroll { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
+.ds-detail-view .ds-replay-chart-canvas { position: relative; min-width: 500px; width: 100%; height: 400px; min-height: 400px; }
 .ds-detail-view .ds-replay-chart form { font-size: .8rem; color: var(--detail-muted); }
 .ds-detail-view .ds-replay .ds-detail-scroll { max-width: none; }
 .ds-detail-view .ds-replay-body > :not(.ds-replay-builds) { width: 100%; max-width: 1540px; align-self: center; }
@@ -332,6 +333,6 @@ html:has(dialog.ds-detail-view[open]), body:has(dialog.ds-detail-view[open]) { o
     .ds-detail-view .ds-detail-scroll { padding: 20px max(14px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
     .ds-detail-view .ds-detail-panel { padding: 16px; }
     .ds-detail-view .ds-detail-chart-scroll { flex-basis: 100%; }
-    .ds-detail-view .ds-replay-chart-canvas { height: 280px; }
+    .ds-detail-view .ds-replay-chart-canvas { height: 280px; min-height: 280px; }
     .ds-detail-view .ds-replay-controls .row { row-gap: 12px; }
 }

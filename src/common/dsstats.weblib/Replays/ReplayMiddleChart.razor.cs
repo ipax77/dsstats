@@ -32,7 +32,8 @@ public partial class ReplayMiddleChart : ComponentBase, IDisposable
             Options = new CustomChartJsOptions()
             {
                 Responsive = true,
-                MaintainAspectRatio = true,
+                // The replay layout supplies the height, including when the modal first opens.
+                MaintainAspectRatio = false,
                 Plugins = new CustomPlugins()
                 {
                     ArbitraryLines = new List<ArbitraryLineConfig>(),
