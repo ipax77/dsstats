@@ -5,10 +5,10 @@
     <DsstatsParserLine>1</DsstatsParserLine>
 
     <DsstatsParserPatch>0</DsstatsParserPatch>
-    <DsstatsMyDsstatsPatch>7</DsstatsMyDsstatsPatch>
+    <DsstatsMyDsstatsPatch>8</DsstatsMyDsstatsPatch>
     <DsstatsServicePatch>5</DsstatsServicePatch>
     <DsstatsMauiPatch>7</DsstatsMauiPatch>
-    <DsstatsServerPatch>9</DsstatsServerPatch>
+    <DsstatsServerPatch>10</DsstatsServerPatch>
 
     <DsstatsVersionBase>$(DsstatsVersionMajor).$(DsstatsParserLine)</DsstatsVersionBase>
     <DsstatsParserVersion>$(DsstatsVersionBase).$(DsstatsParserPatch)</DsstatsParserVersion>
