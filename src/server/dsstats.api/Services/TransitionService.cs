@@ -162,6 +162,8 @@ public class TransitionService(IDbContextFactory<DsstatsContext> contextFactory,
         {
             return;
         }
+        // The optional upgrade relationship otherwise leaves rows with a null ReplayPlayerId.
+        context.PlayerUpgrades.RemoveRange(replay.Players.SelectMany(player => player.Upgrades));
         context.Replays.Remove(replay);
         await context.SaveChangesAsync();
         logger.LogWarning($"Deleted replay {replayHash}");
