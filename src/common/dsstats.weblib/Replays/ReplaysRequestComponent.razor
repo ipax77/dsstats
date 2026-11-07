@@ -153,18 +153,21 @@
 
 	private void FieldChanged(object? sender, FieldChangedEventArgs e)
 	{
+		Request.Page = 1;
 		OnRequestChanged.InvokeAsync();
 	}
 
 	private void ClearCommanders()
 	{
 		Request.Commander = string.Empty;
+		Request.Page = 1;
 		OnRequestChanged.InvokeAsync();
 	}
 
 	private void ClearNames()
 	{
 		Request.Name = string.Empty;
+		Request.Page = 1;
 		OnRequestChanged.InvokeAsync();
 	}
 
@@ -175,6 +178,7 @@
 		Request.LinkCommanders = false;
 		replayFiliterModal?.filter.Reset();
 		Request.Filter = null;
+		Request.Page = 1;
 		OnRequestChanged.InvokeAsync();
 	}
 
@@ -247,6 +251,7 @@
 	private void FilterRequest(ReplaysFilter? filter)
 	{
 		Request.Filter = filter;
+		Request.Page = 1;
 		OnRequestChanged.InvokeAsync();
 	}
 

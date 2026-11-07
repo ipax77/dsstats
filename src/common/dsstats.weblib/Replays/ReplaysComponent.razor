@@ -183,7 +183,8 @@
 		{
 			SetReplayUserRatingRequestOptions();
 			replaysCount = await ReplayRepository.GetReplaysCount(ReplaysRequest);
-			ReplaysRequest.Page = 1;
+			var totalPages = Math.Max(1, (int)Math.Ceiling((double)replaysCount / ReplaysRequest.PageSize));
+			ReplaysRequest.Page = Math.Clamp(ReplaysRequest.Page, 1, totalPages);
 			if (virtualizeComponent != null && replaysCount > 0)
 			{
 				await virtualizeComponent.RefreshDataAsync();
@@ -199,13 +200,20 @@
 
 	private async ValueTask<ItemsProviderResult<ReplayListDto>> LoadReplays(ItemsProviderRequest request)
 	{
-		var numReplays = Math.Min(request.Count, replaysCount - request.StartIndex);
+		var pageCount = Math.Min(ReplaysRequest.PageSize,
+			Math.Max(0, replaysCount - (ReplaysRequest.Page - 1) * ReplaysRequest.PageSize));
+		var numReplays = Math.Min(request.Count, Math.Max(0, pageCount - request.StartIndex));
+		if (numReplays == 0)
+		{
+			latestResponse = [];
+			return new ItemsProviderResult<ReplayListDto>([], pageCount);
+		}
 		ReplaysRequest.Skip = request.StartIndex;
 		ReplaysRequest.Take = numReplays;
 		SetReplayUserRatingRequestOptions();
 		var replays = await ReplayRepository.GetReplays(ReplaysRequest, request.CancellationToken);
 		latestResponse = replays;
-		return new ItemsProviderResult<ReplayListDto>(replays, Math.Min(replaysCount, ReplaysRequest.PageSize));
+		return new ItemsProviderResult<ReplayListDto>(replays, pageCount);
 	}
 
 	private async Task SortList(MouseEventArgs e, string column)
@@ -234,6 +242,7 @@
 				Ascending = exOrder == null ? false : !exOrder.Ascending
 			});
 		}
+		ReplaysRequest.Page = 1;
 		await Reload();
 	}
 
